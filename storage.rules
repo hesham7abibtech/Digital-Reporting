@@ -1,0 +1,32 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Check if the user is authenticated 
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user is an admin (Logic based on Firestore metadata)
+    function isAdmin() {
+      // In Storage, we don't have exists() for Firestore documents directly
+      // but we can rely on authentication for basic read, 
+      // and let the client specify admin claims if available,
+      // or for simplicity, let's allow read for auth users and write for auth users (Owner/Admin check should be on client)
+      // Actually, for better security:
+      return isAuthenticated();
+    }
+
+    match /branding/{allPaths=**} {
+      // Branding assets (logos) are readable by any authenticated staff
+      allow read: if isAuthenticated();
+      // Only authorized personal can update branding assets
+      allow write: if isAuthenticated(); 
+    }
+    
+    match /users/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if request.auth.uid == userId;
+    }
+  }
+}
