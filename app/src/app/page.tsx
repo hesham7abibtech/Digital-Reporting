@@ -32,7 +32,7 @@ export default function Dashboard() {
       <ParticleBackground />
 
       <div style={{ position: 'relative', zIndex: 10, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <Header project={syncedProject} onNotificationClick={() => setNotifOpen(true)} />
+        <Header project={syncedProject || undefined} onNotificationClick={() => setNotifOpen(true)} />
 
         <main style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 'calc(100vh - 100px)' }}>
           {isLoading && syncedTasks.length === 0 && !syncedProject ? (
