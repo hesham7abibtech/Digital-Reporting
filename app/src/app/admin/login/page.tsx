@@ -16,7 +16,8 @@ import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { 
   Lock, Mail, Loader2, Globe, ShieldCheck, 
   UserPlus, ArrowLeft, User, ShieldAlert,
-  ChevronRight, Fingerprint, Database, Cpu
+  ChevronRight, Fingerprint, Database, Cpu,
+  CheckCircle2
 } from 'lucide-react';
 import ParticleBackground from '@/components/layout/ParticleBackground';
 
@@ -31,6 +32,7 @@ function AdminLoginContent() {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isScanned, setIsScanned] = useState(false);
+  const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
   
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -105,9 +107,10 @@ function AdminLoginContent() {
         status: 'PENDING_APPROVAL'
       });
 
-      setMessage('REGISTRATION COMPLETE: Security clearance pending administrator approval.');
-      setMode('login');
+      // Sign out user immediately (they need an admin approval first)
+      await auth.signOut();
       setIsSubmitting(false);
+      setShowRegistrationSuccess(true);
     } catch (err: any) {
       console.error('Registration error:', err);
       setError(getFirebaseErrorMessage(err));
@@ -123,7 +126,7 @@ function AdminLoginContent() {
 
     try {
       await sendPasswordResetEmail(auth, email);
-      setMessage('ENCRYPTION RECOVERY: Recovery signal transmitted to your uplink (email).');
+      setMessage('A password reset link has been sent to your email. Please check your inbox.');
       setMode('login');
       setIsSubmitting(false);
     } catch (err: any) {
@@ -243,9 +246,9 @@ function AdminLoginContent() {
              'Restricted Access'}
           </motion.h1>
           <p style={{ textAlign: 'center', color: mode === 'unauthorized' ? '#fca5a5' : '#64748b', fontSize: 15, marginBottom: 40, fontWeight: 500, letterSpacing: '0.01em', opacity: 0.8 }}>
-            {mode === 'login' ? 'Establish secure link to REH Command Center' : 
-             mode === 'register' ? 'Initialize new identity in the registry' : 
-             mode === 'forgot-password' ? 'Request master key override' : 
+            {mode === 'login' ? 'Sign in to access the admin dashboard' : 
+             mode === 'register' ? 'Create a new account to get started' : 
+             mode === 'forgot-password' ? 'Enter your email to reset your password' : 
              'UNAUTHORIZED CLEARANCE DETECTED'}
           </p>
 
@@ -390,11 +393,11 @@ function AdminLoginContent() {
                       <span style={{ fontSize: 12 }}>Securing Link...</span>
                     </div>
                   ) : mode === 'login' ? (
-                    <>Establish Connection <ChevronRight size={18} /></>
+                    <>Sign In <ChevronRight size={18} /></>
                   ) : mode === 'register' ? (
-                    <>Initialize identity <UserPlus size={18} /></>
+                    <>Create Account <UserPlus size={18} /></>
                   ) : (
-                    <>Release Packet <ArrowLeft size={18} /></>
+                    <>Send Reset Link <ArrowLeft size={18} /></>
                   )}
                 </button>
               </form>
@@ -414,7 +417,7 @@ function AdminLoginContent() {
                 {mode === 'login' ? (
                   <><UserPlus size={16} /> Don&apos;t have an account? Create one</>
                 ) : (
-                  <><ArrowLeft size={16} /> Return to Login Uplink</>
+                  <><ArrowLeft size={16} /> Back to Sign In</>
                 )}
               </button>
             </div>
@@ -452,6 +455,91 @@ function AdminLoginContent() {
           Global Registry Monitoring Active
         </span>
       </div>
+
+      {/* Registration Success Modal */}
+      <AnimatePresence>
+        {showRegistrationSuccess && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 30 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 30 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              style={{
+                width: '100%', maxWidth: 440,
+                background: 'rgba(12, 12, 18, 0.95)',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                borderRadius: 28,
+                padding: '48px 40px',
+                textAlign: 'center',
+                position: 'relative',
+                zIndex: 1,
+                boxShadow: '0 40px 100px rgba(0,0,0,0.8), 0 0 40px rgba(16, 185, 129, 0.1)'
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', delay: 0.2, damping: 15 }}
+                style={{
+                  width: 80, height: 80, borderRadius: 24,
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 28px',
+                  boxShadow: '0 10px 30px rgba(16, 185, 129, 0.3)'
+                }}
+              >
+                <CheckCircle2 size={40} color="white" />
+              </motion.div>
+
+              <h2 style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: '0 0 12px', letterSpacing: '-0.02em' }}>
+                Account Created!
+              </h2>
+              <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, margin: '0 0 12px' }}>
+                Your account has been created successfully.
+              </p>
+              <div style={{
+                padding: '16px 20px', borderRadius: 16,
+                background: 'rgba(245, 158, 11, 0.08)',
+                border: '1px solid rgba(245, 158, 11, 0.2)',
+                marginBottom: 32
+              }}>
+                <p style={{ color: '#fbbf24', fontSize: 14, fontWeight: 600, margin: 0, lineHeight: 1.6 }}>
+                  ⏳ Your account is pending admin approval. You will be able to sign in once an administrator activates your account.
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowRegistrationSuccess(false);
+                  setMode('login');
+                  setEmail('');
+                  setPassword('');
+                  setName('');
+                }}
+                style={{
+                  width: '100%', padding: '16px',
+                  borderRadius: 16,
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: 'white', fontSize: 16, fontWeight: 800,
+                  border: 'none', cursor: 'pointer',
+                  boxShadow: '0 10px 30px rgba(16, 185, 129, 0.25)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
+                }}
+              >
+                <ArrowLeft size={18} />
+                Back to Sign In
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
