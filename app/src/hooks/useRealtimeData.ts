@@ -8,12 +8,12 @@ import { doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export function useRealtimeData() {
-  const [dbTasks, tasksLoading] = useCollectionData(collections.tasks);
-  const [dbMembers, membersLoading] = useCollectionData(collections.members);
-  const [dbRegistry, registryLoading] = useCollectionData(collections.registry);
+  const [dbTasks, tasksLoading] = useCollectionData(collections.tasks, { idField: 'id' });
+  const [dbMembers, membersLoading] = useCollectionData(collections.members, { idField: 'id' });
+  const [dbRegistry, registryLoading] = useCollectionData(collections.registry, { idField: 'id' });
   
   // Also sync global project settings
-  const [dbProject, projectLoading] = useDocumentData(doc(db, 'settings', 'project'));
+  const [dbProject, projectLoading] = useDocumentData(doc(db, 'settings', 'project'), { idField: 'id' });
 
   const tasks = (dbTasks as Task[]) || [];
   const members = (dbMembers as TeamMember[]) || [];

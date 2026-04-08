@@ -158,12 +158,8 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
     const currentCompleted = data.filter(t => t.status === 'COMPLETED').length;
     const currentTotal = data.length;
     
-    // Synthesis of a trend: 4 historical mock points + 1 live point
+    // Reset to only show Live point from current Firestore data
     return [
-      { name: 'W10', completed: 3, created: 5 },
-      { name: 'W11', completed: 5, created: 4 },
-      { name: 'W12', completed: 4, created: 6 },
-      { name: 'W13', completed: 6, created: 7 },
       { name: 'Live', completed: currentCompleted, created: currentTotal },
     ];
   }, [data]);
@@ -172,10 +168,8 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
     const delayedCount = data.filter(t => t.status === 'DELAYED').length;
     const criticalCount = data.filter(t => t.priority === 'CRITICAL' && t.status !== 'COMPLETED').length;
     
+    // Reset to only show Live point from current Firestore data
     return [
-      { name: 'Apr 1', value: 2 },
-      { name: 'Apr 3', value: 3 },
-      { name: 'Apr 6', value: 4 },
       { name: 'Live', value: delayedCount + criticalCount },
     ];
   }, [data]);

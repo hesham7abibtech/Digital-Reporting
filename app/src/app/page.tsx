@@ -84,7 +84,7 @@ export default function Dashboard() {
 
       <NotificationPanel isOpen={notifOpen} onClose={() => setNotifOpen(false)} />
       <TaskDetailModal 
-        task={selectedTask} 
+        task={selectedTask ? (syncedTasks.find(t => t.id === selectedTask.id) || selectedTask) : null} 
         isOpen={!!selectedTask} 
         onClose={() => setSelectedTask(null)} 
       />

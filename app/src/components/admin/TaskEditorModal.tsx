@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Trash2, Calendar, User, Tag, Activity, Loader2, Pause, Timer, Search, Globe, ChevronDown, Check, Building2 } from 'lucide-react';
-import { Task, Priority, TaskStatus, TeamMember } from '@/lib/types';
+import { X, Save, Trash2, Calendar, User, Tag, Activity, Loader2, Pause, Timer, Search, Globe, ChevronDown, Check, Building2, Plus, Link, Paperclip, Download } from 'lucide-react';
+import { Task, Priority, TaskStatus, TeamMember, TaskLink, TaskFile } from '@/lib/types';
 import { upsertTask, deleteTask } from '@/services/FirebaseService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
@@ -98,8 +98,12 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
   const [tzSearch, setTzSearch] = useState('');
   const [tzOpen, setTzOpen] = useState(false);
   const tzRef = useRef<HTMLDivElement>(null);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const { showToast } = useToast();
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  
+  // Local state for adding new files/links
+  const [newLink, setNewLink] = useState({ label: '', url: '' });
+  const [newFile, setNewFile] = useState({ name: '', url: '', type: 'pdf' as any });
 
   // Available Time Zones
   const allTimeZones = typeof Intl !== 'undefined' && (Intl as any).supportedValuesOf 
@@ -238,6 +242,17 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
               onChange={e => setFormData({ ...formData, title: e.target.value })}
               style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 15, outline: 'none' }}
               placeholder="System migration..."
+            />
+          </div>
+
+          <div style={{ gridColumn: 'span 2' }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Description</label>
+            <textarea 
+              value={formData.description ?? ''} 
+              onChange={e => setFormData({ ...formData, description: e.target.value })}
+              rows={4}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none', resize: 'vertical' }}
+              placeholder="Detailed task mission parameters..."
             />
           </div>
 
@@ -647,6 +662,145 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
               />
             </div>
           </div>
+
+          {/* Related Files Section */}
+          <div style={{ gridColumn: 'span 2', padding: '24px', borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <Paperclip size={16} style={{ color: '#D4AF37' }} />
+              <span style={{ fontSize: 11, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Related Files Index</span>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+              {formData.files?.map((file, idx) => (
+                <div key={file.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 6, background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <FileText size={16} />
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{file.name}</p>
+                      <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: 0 }}>{file.type.toUpperCase()} • {file.size}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      const newFiles = [...(formData.files || [])];
+                      newFiles.splice(idx, 1);
+                      setFormData({ ...formData, files: newFiles, attachments: newFiles.length });
+                    }}
+                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.6 }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+              {(!formData.files || formData.files.length === 0) && (
+                <p style={{ fontSize: 12, color: 'var(--text-dim)', textAlign: 'center', padding: '10px 0', border: '1px dashed rgba(255,255,255,0.05)', borderRadius: 10 }}>No documents linked to this record.</p>
+              )}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 10 }}>
+              <input 
+                type="text" 
+                placeholder="File name (e.g. Design Specs)"
+                value={newFile.name}
+                onChange={e => setNewFile({ ...newFile, name: e.target.value })}
+                style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 12, outline: 'none' }}
+              />
+              <input 
+                type="url" 
+                placeholder="File URL link"
+                value={newFile.url}
+                onChange={e => setNewFile({ ...newFile, url: e.target.value })}
+                style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 12, outline: 'none' }}
+              />
+              <button 
+                onClick={() => {
+                  if (newFile.name && newFile.url) {
+                    const file: TaskFile = {
+                      id: `file-${Date.now()}`,
+                      name: newFile.name,
+                      url: newFile.url,
+                      type: 'pdf',
+                      size: 'MB',
+                      updatedAt: new Date().toISOString()
+                    };
+                    const newFiles = [...(formData.files || []), file];
+                    setFormData({ ...formData, files: newFiles, attachments: newFiles.length });
+                    setNewFile({ name: '', url: '', type: 'pdf' });
+                    showToast('Document record appended.', 'SUCCESS');
+                  }
+                }}
+                style={{ padding: '8px 14px', borderRadius: 8, background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700 }}
+              >
+                <Plus size={14} /> ADD
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Links Section */}
+          <div style={{ gridColumn: 'span 2', padding: '24px', borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <Link size={16} style={{ color: '#D4AF37' }} />
+              <span style={{ fontSize: 11, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operational Quick Links</span>
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
+              {formData.links?.map((link, idx) => (
+                <div key={link.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 14px', background: 'rgba(212, 175, 55, 0.05)', borderRadius: 10, border: '1px solid rgba(212, 175, 55, 0.15)' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#D4AF37' }}>{link.label}</span>
+                  <button 
+                    onClick={() => {
+                      const newLinks = [...(formData.links || [])];
+                      newLinks.splice(idx, 1);
+                      setFormData({ ...formData, links: newLinks });
+                    }}
+                    style={{ background: 'none', border: 'none', color: '#D4AF37', cursor: 'pointer', padding: 2, display: 'flex', opacity: 0.6 }}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+              {(!formData.links || formData.links.length === 0) && (
+                <p style={{ fontSize: 12, color: 'var(--text-dim)', textAlign: 'center', width: '100%', padding: '10px 0' }}>No external link vectors configured.</p>
+              )}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 10 }}>
+              <input 
+                type="text" 
+                placeholder="Link label (e.g. Dashboard)"
+                value={newLink.label}
+                onChange={e => setNewLink({ ...newLink, label: e.target.value })}
+                style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 12, outline: 'none' }}
+              />
+              <input 
+                type="url" 
+                placeholder="Target URL address"
+                value={newLink.url}
+                onChange={e => setNewLink({ ...newLink, url: e.target.value })}
+                style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 12, outline: 'none' }}
+              />
+              <button 
+                onClick={() => {
+                  if (newLink.label && newLink.url) {
+                    const link: TaskLink = {
+                      id: `link-${Date.now()}`,
+                      label: newLink.label,
+                      url: newLink.url
+                    };
+                    setFormData({ ...formData, links: [...(formData.links || []), link] });
+                    setNewLink({ label: '', url: '' });
+                    showToast('Network vector appended.', 'SUCCESS');
+                  }
+                }}
+                style={{ padding: '8px 14px', borderRadius: 8, background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700 }}
+              >
+                <Plus size={14} /> CONNECT
+              </button>
+            </div>
+          </div>
+
 
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Request Origin Date/Time</label>

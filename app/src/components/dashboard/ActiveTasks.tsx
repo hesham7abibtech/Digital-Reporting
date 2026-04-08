@@ -122,7 +122,7 @@ export default function ActiveTasks({ onTaskClick, tasks: externalTasks }: { onT
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return result;
-  }, [search, filterDept, filterPriority, filterStatus, sortField, sortDir]);
+  }, [search, filterDept, filterPriority, filterStatus, sortField, sortDir, dataToFilter]);
 
   const previewRows = filtered.slice(0, PREVIEW_ROWS);
   const remainingRows = filtered.slice(PREVIEW_ROWS);

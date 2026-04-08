@@ -423,13 +423,6 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
               >
                 Close View
               </button>
-              <button 
-                style={{ padding: '10px 24px', borderRadius: 12, background: '#D4AF37', border: 'none', color: '#0a0a0f', cursor: 'pointer', fontSize: 14, fontWeight: 700, transition: 'all 200ms', boxShadow: '0 8px 16px -4px rgba(212, 175, 55, 0.4)' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-              >
-                Open in Full Editor
-              </button>
             </footer>
           </motion.div>
         </div>
