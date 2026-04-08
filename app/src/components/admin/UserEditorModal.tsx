@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Save, Trash2, Mail, Shield, User, Info } from 'lucide-react';
-import { UserRole } from '@/lib/types';
+import { X, Save, Trash2, Mail, Shield, User, Info, Check, AlertCircle } from 'lucide-react';
+import { UserRole, AdminPermissions } from '@/lib/types';
 import { updateUserProfile, deleteUserProfile } from '@/services/FirebaseService';
 import { useAuth } from '@/context/AuthContext';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import { useToast } from '@/components/shared/EliteToast';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface UserEditorProps {
   userRecord: any | null;
@@ -16,7 +19,7 @@ interface UserEditorProps {
   onClose: () => void;
 }
 
-const roles: UserRole[] = ['OWNER', 'ADMIN', 'PROJECT_MANAGER', 'DEPARTMENT_HEAD', 'VIEWER', 'USER'];
+const roles: UserRole[] = ['OWNER', 'ADMIN', 'TEAM_MATE'];
 
 export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEditorProps) {
   const { userProfile: currentUser } = useAuth();
@@ -29,6 +32,11 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const { showToast } = useToast();
+  
+  const [policiesSnapshot] = useCollection(
+    query(collection(db, 'policies'), orderBy('name', 'asc'))
+  );
+  const policies = policiesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() })) || [];
 
   useEffect(() => {
     if (userRecord) {
@@ -44,7 +52,8 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
       await updateUserProfile(userRecord.uid, {
         role: formData.role,
         status: formData.status,
-        name: formData.name
+        name: formData.name,
+        policyId: formData.role === 'ADMIN' ? formData.policyId : null
       });
       showToast('Security credentials updated.', 'SUCCESS');
       onClose();
@@ -124,32 +133,86 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Security Clearance (Role)</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-              {roles.map(role => {
-                const isRoleDisabled = (role === 'OWNER' && !isOwner) || (targetIsOwner && !isOwner && !isEditingSelf);
-                return (
-                  <button
-                    key={role}
-                    disabled={isRoleDisabled}
-                    onClick={() => setFormData({ ...formData, role: role })}
-                    style={{
-                      padding: '10px', fontSize: 11, fontWeight: 700, borderRadius: 10,
-                      background: formData.role === role ? 'rgba(212, 175, 55, 0.1)' : 'rgba(255,255,255,0.02)',
-                      color: formData.role === role ? '#D4AF37' : isRoleDisabled ? 'rgba(255,255,255,0.1)' : 'var(--text-secondary)',
-                      border: formData.role === role ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(255,255,255,0.04)',
-                      cursor: isRoleDisabled ? 'not-allowed' : 'pointer',
-                      transition: 'all 200ms',
-                      display: 'flex', alignItems: 'center', gap: 6
-                    }}
-                  >
-                    <Shield size={12} />
-                    {role.replace(/_/g, ' ')}
-                  </button>
-                );
-              })}
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Security Clearance & Role Assignment</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {/* OWNER ROLE */}
+              <button
+                type="button"
+                disabled={!isOwner}
+                onClick={() => setFormData({ ...formData, role: 'OWNER', policyId: null })}
+                style={{
+                  padding: '12px 16px', fontSize: 11, fontWeight: 800, borderRadius: 12,
+                  background: formData.role === 'OWNER' ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255,255,255,0.02)',
+                  color: formData.role === 'OWNER' ? '#D4AF37' : !isOwner ? 'rgba(255,255,255,0.05)' : 'var(--text-secondary)',
+                  border: formData.role === 'OWNER' ? '1px solid #D4AF37' : '1px solid rgba(255,255,255,0.05)',
+                  cursor: !isOwner ? 'not-allowed' : 'pointer',
+                  transition: 'all 200ms',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Shield size={14} />
+                  <span>PROJECT OWNER (ABSOLUTE SOVEREIGNTY)</span>
+                </div>
+                {formData.role === 'OWNER' && <Check size={14} />}
+              </button>
+
+              {/* DYNAMIC POLICIES (ADMINS) */}
+              {policies.map((p: any) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, role: 'ADMIN', policyId: p.id })}
+                  style={{
+                    padding: '12px 16px', fontSize: 11, fontWeight: 800, borderRadius: 12,
+                    background: formData.policyId === p.id ? 'rgba(212, 175, 55, 0.1)' : 'rgba(255,255,255,0.02)',
+                    color: formData.policyId === p.id ? '#D4AF37' : 'var(--text-secondary)',
+                    border: formData.policyId === p.id ? '1px solid rgba(212, 175, 55, 0.5)' : '1px solid rgba(255,255,255,0.05)',
+                    cursor: 'pointer',
+                    transition: 'all 200ms',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Shield size={14} style={{ opacity: 0.5 }} />
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: 11 }}>{p.name.toUpperCase()}</div>
+                      <div style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 500, marginTop: 2 }}>DELEGATED ADMINISTRATIVE CLEARANCE</div>
+                    </div>
+                  </div>
+                  {formData.policyId === p.id && <Check size={14} />}
+                </button>
+              ))}
+
+              {/* TEAM MATE ROLE */}
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, role: 'TEAM_MATE', policyId: null })}
+                style={{
+                  padding: '12px 16px', fontSize: 11, fontWeight: 800, borderRadius: 12,
+                  background: (formData.role === 'TEAM_MATE' && !formData.policyId) ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+                  color: (formData.role === 'TEAM_MATE' && !formData.policyId) ? 'white' : 'var(--text-secondary)',
+                  border: (formData.role === 'TEAM_MATE' && !formData.policyId) ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.05)',
+                  cursor: 'pointer',
+                  transition: 'all 200ms',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <User size={14} />
+                  <span>TEAM MATE (RESTRICTED ACCESS)</span>
+                </div>
+                {(formData.role === 'TEAM_MATE' && !formData.policyId) && <Check size={14} />}
+              </button>
             </div>
           </div>
+
+          {policies.length === 0 && formData.role === 'ADMIN' && (
+            <div style={{ padding: '12px 16px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', borderRadius: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
+              <AlertCircle size={16} color="#ef4444" />
+              <p style={{ fontSize: 12, color: '#f87171', margin: 0 }}>No Group Policies established. Administrative access restricted.</p>
+            </div>
+          )}
 
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Access Status</label>

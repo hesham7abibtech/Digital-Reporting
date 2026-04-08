@@ -78,15 +78,38 @@ export interface KPI {
 }
 
 // ─── Team Member Types ────────────────────────────────────────────
-export type UserRole =
-  | 'OWNER'
-  | 'SUPER_ADMIN'
-  | 'ADMIN'
-  | 'PROJECT_MANAGER'
-  | 'DEPARTMENT_HEAD'
-  | 'VIEWER'
-  | 'USER';
+export type UserRole = 'OWNER' | 'ADMIN' | 'TEAM_MATE';
 
+export interface AdminPermissions {
+  manageTasks: boolean;
+  manageTeam: boolean;
+  manageBranding: boolean;
+  manageRegistry: boolean;
+  manageUsers: boolean;
+}
+
+
+export interface PolicyActions {
+  view: boolean;
+  edit: boolean;
+  delete: boolean;
+}
+
+export interface GroupPolicy {
+  id: string;
+  name: string;
+  description: string;
+  modules: {
+    tasks: PolicyActions;
+    team: PolicyActions;
+    branding: PolicyActions;
+    registry: PolicyActions;
+    users: PolicyActions;
+    policies: PolicyActions;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface TeamMember {
   id: string;
@@ -94,6 +117,7 @@ export interface TeamMember {
   email: string;
   avatar: string;
   role: UserRole;
+  policyId?: string; // ID of the assigned GroupPolicy
   department: string;
   isOnline: boolean;
   lastActive: string;

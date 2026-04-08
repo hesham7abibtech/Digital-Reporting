@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Save, Trash2, Layout, Link as LinkIcon, Info, Loader2 } from 'lucide-react';
+import { X, Save, Trash2, Layout, Link as LinkIcon, Info, Loader2, Shield } from 'lucide-react';
 import { DashboardNavItem } from '@/lib/types';
 import { upsertRegistryItem, deleteRegistryItem } from '@/services/FirebaseService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
@@ -13,9 +13,11 @@ interface RegistryEditorProps {
   item: DashboardNavItem | null;
   isOpen: boolean;
   onClose: () => void;
+  readOnly?: boolean;
+  canDelete?: boolean;
 }
 
-export default function RegistryEditorModal({ item, isOpen, onClose }: RegistryEditorProps) {
+export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, canDelete }: RegistryEditorProps) {
   const [formData, setFormData] = useState<Partial<DashboardNavItem>>({
     name: '',
     link: '',
@@ -83,22 +85,51 @@ export default function RegistryEditorModal({ item, isOpen, onClose }: RegistryE
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={24} /></button>
         </div>
         <div style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {readOnly && (
+            <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.1)', display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10 }}>
+              <Shield size={16} color="#D4AF37" />
+              <p style={{ fontSize: 13, color: '#D4AF37', margin: 0, fontWeight: 600 }}>READ-ONLY ACCESS: Site registry modifications restricted.</p>
+            </div>
+          )}
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Dashboard Name</label>
-            <input type="text" value={formData.name ?? ''} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} />
+            <input 
+              type="text" 
+              value={formData.name ?? ''} 
+              onChange={e => setFormData({ ...formData, name: e.target.value })} 
+              disabled={readOnly}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.4)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text' }} 
+            />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Target URL</label>
-            <input type="text" value={formData.link ?? ''} onChange={e => setFormData({ ...formData, link: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} />
+            <input 
+              type="text" 
+              value={formData.link ?? ''} 
+              onChange={e => setFormData({ ...formData, link: e.target.value })} 
+              disabled={readOnly}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.4)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text' }} 
+            />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Group / Category</label>
-              <input type="text" value={formData.category ?? ''} onChange={e => setFormData({ ...formData, category: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} />
+              <input 
+                type="text" 
+                value={formData.category ?? ''} 
+                onChange={e => setFormData({ ...formData, category: e.target.value })} 
+                disabled={readOnly}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.4)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text' }} 
+              />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Access Status</label>
-              <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(20,20,30,1)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }}>
+              <select 
+                value={formData.status} 
+                onChange={e => setFormData({ ...formData, status: e.target.value as any })} 
+                disabled={readOnly}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(20,20,30,1)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.3)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer' }}
+              >
                 {['LIVE', 'UPDATING', 'MAINTENANCE', 'OFFLINE'].map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
@@ -112,28 +143,41 @@ export default function RegistryEditorModal({ item, isOpen, onClose }: RegistryE
           )}
         </div>
         <div style={{ padding: '24px 32px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {item ? <button onClick={() => setIsConfirmOpen(true)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button> : <div />}
+          <button 
+            onClick={() => setIsConfirmOpen(true)} 
+            disabled={!item || !canDelete}
+            style={{ 
+              color: '#ef4444', background: 'none', border: 'none', 
+              cursor: (!item || !canDelete) ? 'not-allowed' : 'pointer',
+              opacity: (!item || !canDelete) ? 0.3 : 1
+            }}
+          >
+            <Trash2 size={18} />
+          </button>
+          
           <div style={{ display: 'flex', gap: 12 }}>
-            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', color: 'white', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}>Cancel</button>
-            <button 
-              onClick={handleSave} 
-              disabled={isSaving} 
-              style={{ 
-                padding: '10px 24px', borderRadius: 10, 
-                background: isSaving ? 'rgba(212, 175, 55, 0.5)' : '#D4AF37', 
-                color: '#0a0a0f', border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer', 
-                fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 
-              }}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  SYNCHING...
-                </>
-              ) : (
-                'Commit Portal'
-              )}
-            </button>
+            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', color: 'white', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}>Dismiss</button>
+            {!readOnly && (
+              <button 
+                onClick={handleSave} 
+                disabled={isSaving} 
+                style={{ 
+                  padding: '10px 24px', borderRadius: 10, 
+                  background: isSaving ? 'rgba(212, 175, 55, 0.5)' : '#D4AF37', 
+                  color: '#0a0a0f', border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer', 
+                  fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 
+                }}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    SYNCING...
+                  </>
+                ) : (
+                  'Commit Portal'
+                )}
+              </button>
+            )}
           </div>
         </div>
       </motion.div>

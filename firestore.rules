@@ -14,7 +14,25 @@ service cloud.firestore {
       let userDoc = /databases/$(database)/documents/users/$(request.auth.uid);
       return isAuthenticated() && 
              exists(userDoc) &&
-             (get(userDoc).data.role in ['ADMIN', 'SUPER_ADMIN', 'OWNER', 'PROJECT_MANAGER', 'DEPARTMENT_HEAD']);
+             (get(userDoc).data.role in ['ADMIN', 'OWNER']);
+    }
+
+    // Check if the user is a superuser (Owner)
+    function isOwnerRole() {
+      let userDoc = /databases/$(database)/documents/users/$(request.auth.uid);
+      return isAuthenticated() && 
+             exists(userDoc) &&
+             get(userDoc).data.role == 'OWNER';
+    }
+
+    // Check granular admin permissions based on Dynamic Group Policy
+    function hasPermission(module, action) {
+      let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return userData.role == 'OWNER' || (
+        userData.role == 'ADMIN' && 
+        userData.policyId != null && 
+        get(/databases/$(database)/documents/policies/$(userData.policyId)).data.modules[module][action] == true
+      );
     }
 
     
@@ -26,43 +44,48 @@ service cloud.firestore {
     // ─── User Profiles ───────────────────────────────────────────────
     
     match /users/{uid} {
-      // Users can read their own profile, Admins can read all (includes list)
       allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid) && request.resource.data.role == 'TEAM_MATE';
       
-      // Allow registration: users can create their own doc with default role
-      allow create: if isOwner(uid) && 
-                      request.resource.data.role == 'USER';
+      allow update: if isOwnerRole() 
+                    || (hasPermission('users', 'edit') && resource.data.role != 'OWNER')
+                    || (isOwner(uid) && request.resource.data.role == resource.data.role);
       
-      // Only Admins can update roles or status of other users
-      // Users can update their own non-role metadata (e.g., name)
-      allow update: if isAdmin() || (isOwner(uid) && request.resource.data.role == resource.data.role);
-      
-      // Only Super Admins can delete users (or just stick to isAdmin for simplicity)
-      allow delete: if isAdmin();
+      allow delete: if isOwnerRole() || hasPermission('users', 'delete');
+    }
+
+    // ─── Group Policies ──────────────────────────────────────────────
+    
+    match /policies/{policyId} {
+      allow read: if isAdmin();
+      allow write: if isOwnerRole(); // Only Owners can forge policies
     }
 
     // ─── Project Data (Tasks, Members, Registry) ─────────────────────
-    // Public read: the main dashboard is publicly accessible and needs
-    // to load data without authentication. Write remains admin-only.
     
     match /tasks/{taskId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update: if hasPermission('tasks', 'edit') 
+                    || (isAuthenticated() && request.auth.uid == resource.data.assigneeId);
+      allow delete: if hasPermission('tasks', 'delete');
     }
     
     match /members/{memberId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update: if hasPermission('team', 'edit');
+      allow delete: if hasPermission('team', 'delete');
     }
     
     match /registry/{registryId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update: if hasPermission('registry', 'edit');
+      allow delete: if hasPermission('registry', 'delete');
     }
     
     match /settings/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update: if hasPermission('branding', 'edit');
+      allow delete: if hasPermission('branding', 'delete');
     }
     
     // ─── Default ─────────────────────────────────────────────────────

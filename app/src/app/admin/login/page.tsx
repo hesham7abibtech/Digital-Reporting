@@ -20,16 +20,26 @@ import {
   Lock, Mail, Loader2, Globe, ShieldCheck, 
   UserPlus, ArrowLeft, User, ShieldAlert,
   ChevronRight, Fingerprint, Database, Cpu,
-  CheckCircle2
+  CheckCircle2, Eye, EyeOff, Circle
 } from 'lucide-react';
 import ParticleBackground from '@/components/layout/ParticleBackground';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'unauthorized';
 
+const DEFAULT_ALLOWED_DOMAINS = ['modon.com', 'insiteinternational.com'];
+
+function validatePassword(password: string): string | null {
+  if (password.length < 8) return 'SECURITY REQUIREMENT: Password must be at least 8 characters long.';
+  if (!/\d/.test(password)) return 'SECURITY REQUIREMENT: Password must contain at least one numerical digit.';
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return 'SECURITY REQUIREMENT: Password must contain at least one special character (e.g. !@#$%).';
+  return null;
+}
+
 function AdminLoginContent() {
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -63,7 +73,6 @@ function AdminLoginContent() {
     if (user && userProfile) {
       const isAuthorized = 
         userProfile.role === 'ADMIN' || 
-        userProfile.role === 'SUPER_ADMIN' || 
         userProfile.role === 'OWNER';
 
       if (isAuthorized) {
@@ -86,13 +95,13 @@ function AdminLoginContent() {
     try {
       // 1. Domain Clearance Check (Pre-flight)
       const projectMetadata = await getProjectMetadata() as ProjectMetadata | null;
-      if (projectMetadata?.allowedDomains && projectMetadata.allowedDomains.length > 0) {
-        const userDomain = email.split('@')[1]?.toLowerCase();
-        if (!userDomain || !projectMetadata.allowedDomains.includes(userDomain)) {
-          setError(`ACCESS DENIED: Your identity domain (@${userDomain}) is not authorized for this project. Authorized domains: @${projectMetadata.allowedDomains.join(', @')}.`);
-          setIsSubmitting(false);
-          return;
-        }
+      const allowed = projectMetadata?.allowedDomains?.length ? projectMetadata.allowedDomains : DEFAULT_ALLOWED_DOMAINS;
+      
+      const userDomain = email.split('@')[1]?.toLowerCase();
+      if (!userDomain || !allowed.includes(userDomain)) {
+        setError(`ACCESS DENIED: Your identity domain (@${userDomain}) is not authorized for this project. Authorized domains: @${allowed.join(', @')}.`);
+        setIsSubmitting(false);
+        return;
       }
 
       // 2. Ensure strict session persistence before sign-in
@@ -115,13 +124,21 @@ function AdminLoginContent() {
     try {
       // 1. Domain Clearance Check
       const projectMetadata = await getProjectMetadata() as ProjectMetadata | null;
-      if (projectMetadata?.allowedDomains && projectMetadata.allowedDomains.length > 0) {
-        const userDomain = email.split('@')[1]?.toLowerCase();
-        if (!userDomain || !projectMetadata.allowedDomains.includes(userDomain)) {
-          setError(`SECURITY ALERT: Unauthorized Domain Signature. Registration is restricted to authorized project domains (@${projectMetadata.allowedDomains.join(', @')}).`);
-          setIsSubmitting(false);
-          return;
-        }
+      const allowed = projectMetadata?.allowedDomains?.length ? projectMetadata.allowedDomains : DEFAULT_ALLOWED_DOMAINS;
+
+      const userDomain = email.split('@')[1]?.toLowerCase();
+      if (!userDomain || !allowed.includes(userDomain)) {
+        setError(`SECURITY ALERT: Unauthorized Domain Signature. Registration is strictly restricted to authorized project domains (@${allowed.join(', @')}).`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 2. Password Strength Check
+      const pwdError = validatePassword(password);
+      if (pwdError) {
+        setError(pwdError);
+        setIsSubmitting(false);
+        return;
       }
 
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -364,18 +381,80 @@ function AdminLoginContent() {
                   <div style={{ position: 'relative' }}>
                     <Lock size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#4b5563' }} />
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       placeholder="Security Signature (Password)"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       style={{
-                        width: '100%', padding: '16px 16px 16px 48px', borderRadius: 16,
+                        width: '100%', padding: '16px 48px 16px 48px', borderRadius: 16,
                         background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
                         color: 'white', fontSize: 16, outline: 'none', transition: 'all 300ms'
                       }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
+                        background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer',
+                        padding: 0, display: 'flex', alignItems: 'center', zIndex: 10
+                      }}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
+                )}
+
+                {/* Password Strength Checklist / Success Indicator (Register Mode Only) */}
+                {mode === 'register' && password.length > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    style={{ marginTop: -12 }}
+                  >
+                    {(() => {
+                      const reqs = [
+                        { label: '8+ Characters Cluster', met: password.length >= 8 },
+                        { label: 'Numerical Digit Inclusion', met: /\d/.test(password) },
+                        { label: 'Special Character Signature', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) }
+                      ];
+                      const allMet = reqs.every(r => r.met);
+
+                      if (allMet) {
+                        return (
+                          <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            style={{ 
+                              display: 'flex', alignItems: 'center', gap: 10, 
+                              padding: '12px 16px', borderRadius: 12, 
+                              background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)',
+                              color: '#34d399'
+                            }}
+                          >
+                            <CheckCircle2 size={16} />
+                            <span style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Security Requirements Satisfied</span>
+                          </motion.div>
+                        );
+                      }
+
+                      return (
+                        <div style={{ 
+                          display: 'flex', flexDirection: 'column', gap: 8, 
+                          padding: '16px', borderRadius: 16, 
+                          background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)'
+                        }}>
+                          {reqs.map((req, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, color: req.met ? '#34d399' : '#4b5563', transition: 'all 300ms' }}>
+                              {req.met ? <CheckCircle2 size={14} /> : <Circle size={14} />}
+                              <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{req.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </motion.div>
                 )}
 
                 {error && (

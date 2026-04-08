@@ -95,9 +95,9 @@ function ChartCard({ title, children, delay = 0, height = 160 }: { title: string
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.4 }}>
       <GlassCard padding="sm" hover={false}>
         <h3 style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', padding: '10px 14px 0', letterSpacing: '0.01em' }}>{title}</h3>
-        <div style={{ width: '100%', height, minWidth: 0, minHeight: height, padding: '4px 6px 6px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ width: '100%', height, minHeight: height, padding: '4px 6px 12px', position: 'relative', overflow: 'hidden' }}>
           {mounted ? (
-            <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+            <div style={{ width: '100%', height: '100%', minWidth: 0, position: 'relative' }}>
               {children}
             </div>
           ) : (

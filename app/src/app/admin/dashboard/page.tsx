@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart3,
@@ -30,6 +31,7 @@ import {
   Globe
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { collections, bulkDelete, getProjectMetadata, updateProjectMetadata, uploadFile } from '@/services/FirebaseService';
 import { useToast } from '@/components/shared/EliteToast';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
@@ -43,12 +45,28 @@ import TaskEditorModal from '@/components/admin/TaskEditorModal';
 import MemberEditorModal from '@/components/admin/MemberEditorModal';
 import RegistryEditorModal from '@/components/admin/RegistryEditorModal';
 import UserEditorModal from '@/components/admin/UserEditorModal';
+import GroupPolicyList from '@/components/admin/GroupPolicyList';
+import GroupPolicyEditor from '@/components/admin/GroupPolicyEditor';
 import BulkActionConfirmModal from '@/components/admin/BulkActionConfirmModal';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 
+const DEFAULT_ALLOWED_DOMAINS = ['modon.com', 'insiteinternational.com'];
+
 export default function AdminDashboardPage() {
   const { logout, userProfile } = useAuth();
-  const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'branding' | 'registry' | 'users'>('tasks');
+  const { isVisible, can, userRole } = usePermissions();
+  const router = useRouter();
+
+  // Security Clearance Protocol: TEAM_MATE access to Command Center is restricted
+  useEffect(() => {
+    if (userProfile && userProfile.role === 'TEAM_MATE') {
+      router.push('/');
+    }
+  }, [userProfile, router]);
+
+  const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'branding' | 'registry' | 'users' | 'policies'>('tasks');
+  const [activeSubTab, setActiveSubTab] = useState<'users' | 'policies'>('users');
+  const [selectedPolicy, setSelectedPolicy] = useState<any>(null);
   const [isBrandingUpdating, setIsBrandingUpdating] = useState(false);
 
   // Elite Partner Logos Manager
@@ -127,7 +145,7 @@ export default function AdminDashboardPage() {
 
   // Sync allowed domains exactly once initially
   if (projectData && !initializedDomains) {
-    setLocalAllowedDomains(projectData.allowedDomains || []);
+    setLocalAllowedDomains(projectData.allowedDomains?.length ? projectData.allowedDomains : DEFAULT_ALLOWED_DOMAINS);
     setInitializedDomains(true);
   }
 
@@ -169,6 +187,10 @@ export default function AdminDashboardPage() {
   };
 
   const handleNewRecord = () => {
+    if (!can(activeTab as any, 'edit')) {
+      showToast('UNAUTHORIZED: Insufficient clearance to initiate new records.', 'ERROR');
+      return;
+    }
     if (activeTab === 'tasks') setSelectedTask(null);
     if (activeTab === 'team') setSelectedMember(null);
     if (activeTab === 'registry') setSelectedRegistry(null);
@@ -185,6 +207,11 @@ export default function AdminDashboardPage() {
   };
 
   const handleEditRecord = (item: any) => {
+    // If user cannot edit, the modal will be in Read-Only mode (passed via props later)
+    if (!can(activeTab as any, 'view')) {
+      showToast('ACCESS DENIED: Insufficient clearance to view this record.', 'ERROR');
+      return;
+    }
     if (activeTab === 'tasks') setSelectedTask(item);
     if (activeTab === 'team') setSelectedMember(item);
     if (activeTab === 'registry') setSelectedRegistry(item);
@@ -272,18 +299,35 @@ export default function AdminDashboardPage() {
               </button>
             </div>
             <div style={{ width: 1, height: 32, background: 'rgba(239, 68, 68, 0.3)' }} />
-            <button
-              onClick={() => setIsBulkModalOpen(true)}
-              style={{
-                background: '#ef4444', color: 'white', border: 'none',
-                padding: '10px 24px', borderRadius: 10, fontSize: 14, fontWeight: 800,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
-                boxShadow: '0 8px 16px rgba(239, 68, 68, 0.4)'
-              }}
-            >
-              <Trash2 size={18} />
-              EXECUTE BULK TERMINATION
-            </button>
+            
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={() => showToast('Command Accepted: Exporting high-fidelity dataset...', 'INFO')}
+                style={{
+                  background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)',
+                  padding: '10px 24px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10
+                }}
+              >
+                <Database size={16} />
+                EXTRACT REGISTRY
+              </button>
+
+              {can(activeTab as any, 'delete') && (
+                <button
+                  onClick={() => setIsBulkModalOpen(true)}
+                  style={{
+                    background: '#ef4444', color: 'white', border: 'none',
+                    padding: '10px 24px', borderRadius: 10, fontSize: 14, fontWeight: 800,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
+                    boxShadow: '0 8px 16px rgba(239, 68, 68, 0.4)'
+                  }}
+                >
+                  <Trash2 size={18} />
+                  TERMINATE RECORDS
+                </button>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -361,12 +405,12 @@ export default function AdminDashboardPage() {
           marginBottom: 24
         }}>
           {[
-            { id: 'tasks', label: 'Digital Deliverables', icon: BarChart3 },
-            { id: 'team', label: 'Digital Project Team', icon: Users },
-            { id: 'branding', label: 'Identity & Branding', icon: Database, ownerOnly: true },
-            { id: 'registry', label: 'Digital Asset Registry', icon: LayoutDashboard },
-            { id: 'users', label: 'Access Control', icon: Shield, ownerOnly: true },
-          ].filter(tab => !tab.ownerOnly || userProfile?.role === 'OWNER').map((tab) => (
+            { id: 'tasks', label: 'Digital Deliverables', icon: BarChart3, permission: 'tasks' },
+            { id: 'team', label: 'Digital Project Team', icon: Users, permission: 'team' },
+            { id: 'branding', label: 'Identity & Branding', icon: Database, permission: 'branding' },
+            { id: 'registry', label: 'Digital Asset Registry', icon: LayoutDashboard, permission: 'registry' },
+            { id: 'users', label: 'Access Control', icon: Shield, permission: 'users' },
+          ].filter(tab => isVisible(tab.permission as any)).map((tab) => (
             <button
               key={tab.id}
               onClick={() => { setActiveTab(tab.id as any); setSelectedIds(new Set()); }}
@@ -423,6 +467,22 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 12 }}>
+                  {activeTab === 'users' && userProfile?.role === 'OWNER' && (
+                    <div style={{ display: 'flex', background: 'rgba(212, 175, 55, 0.05)', padding: 4, borderRadius: 10, border: '1px solid rgba(212, 175, 55, 0.1)', marginRight: 20 }}>
+                      <button 
+                        onClick={() => setActiveSubTab('users')}
+                        style={{ padding: '6px 16px', borderRadius: 8, background: activeSubTab === 'users' ? '#D4AF37' : 'transparent', color: activeSubTab === 'users' ? '#0a0a0f' : '#D4AF37', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
+                      >
+                        USERS
+                      </button>
+                      <button 
+                        onClick={() => setActiveSubTab('policies')}
+                        style={{ padding: '6px 16px', borderRadius: 8, background: activeSubTab === 'policies' ? '#D4AF37' : 'transparent', color: activeSubTab === 'policies' ? '#0a0a0f' : '#D4AF37', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
+                      >
+                        GROUP POLICY
+                      </button>
+                    </div>
+                  )}
                   <div style={{ position: 'relative' }}>
                     <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
                     <input
@@ -431,7 +491,7 @@ export default function AdminDashboardPage() {
                       style={{ padding: '10px 16px 10px 38px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none', width: 240 }}
                     />
                   </div>
-                  {activeTab !== 'users' && activeTab !== 'branding' && (
+                  {activeTab !== 'users' && activeTab !== 'branding' && can(activeTab as any, 'edit') && (
                     <button onClick={handleNewRecord} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, background: '#D4AF37', color: '#0a0a0f', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>
                       <Plus size={18} />
                       New Record
@@ -453,13 +513,13 @@ export default function AdminDashboardPage() {
                             style={{ cursor: 'pointer', width: 18, height: 18 }}
                           />
                         </th>
-                        <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 11, fontWeight: 800, color: '#c9a227', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                        <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
                           {activeTab === 'users' ? 'Staff Identity' : activeTab === 'team' ? 'Project Personnel' : 'Task Definition / Asset'}
                         </th>
-                        <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 11, fontWeight: 800, color: '#c9a227', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                        <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
                           {activeTab === 'users' ? 'Designation' : activeTab === 'team' ? 'Job Title' : 'Delivery Status'}
                         </th>
-                        <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 11, fontWeight: 800, color: '#c9a227', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                        <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
                           {activeTab === 'users' ? 'Access Control' : 'Action Hub'}
                         </th>
                       </tr>
@@ -584,7 +644,7 @@ export default function AdminDashboardPage() {
                       );
                     })}
 
-                    {activeTab === 'users' && usersSnapshot?.docs.map((doc: any) => {
+                    {activeTab === 'users' && activeSubTab === 'users' && usersSnapshot?.docs.map((doc: any) => {
                       const userRec = doc.data();
                       const isSelected = selectedIds.has(doc.id);
                       return (
@@ -618,6 +678,14 @@ export default function AdminDashboardPage() {
                         </tr>
                       );
                     })}
+
+                    {activeTab === 'users' && activeSubTab === 'policies' && (
+                      <tr style={{ background: 'transparent' }}>
+                        <td colSpan={5} style={{ padding: '0' }}>
+                          <GroupPolicyList onEditPolicy={(p: any) => setSelectedPolicy(p)} />
+                        </td>
+                      </tr>
+                    )}
 
                     {activeTab === 'branding' && (
                       <tr style={{ background: 'transparent' }}>
@@ -1039,21 +1107,44 @@ export default function AdminDashboardPage() {
 
       <AnimatePresence>
         {isModalOpen && activeTab === 'tasks' && (
-          <TaskEditorModal
-            task={selectedTask}
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            members={membersSnapshot?.docs.map(doc => ({ ...(doc.data() as TeamMember), id: doc.id })) || []}
+          <TaskEditorModal 
+            task={selectedTask} 
+            isOpen={isModalOpen} 
+            onClose={() => setIsModalOpen(false)} 
+            readOnly={!can('tasks', 'edit')}
+            canDelete={can('tasks', 'delete')}
+            canApprove={can('tasks', 'edit')}
           />
         )}
+        
         {isModalOpen && activeTab === 'team' && (
-          <MemberEditorModal member={selectedMember} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+          <MemberEditorModal 
+            member={selectedMember} 
+            isOpen={isModalOpen} 
+            onClose={() => setIsModalOpen(false)} 
+            readOnly={!can('team', 'edit')}
+            canDelete={can('team', 'delete')}
+          />
         )}
+        
         {isModalOpen && activeTab === 'registry' && (
-          <RegistryEditorModal item={selectedRegistry} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+          <RegistryEditorModal 
+            item={selectedRegistry} 
+            isOpen={isModalOpen} 
+            onClose={() => setIsModalOpen(false)} 
+            readOnly={!can('registry', 'edit')}
+            canDelete={can('registry', 'delete')}
+          />
         )}
-        {isModalOpen && activeTab === 'users' && (
+        {isModalOpen && activeTab === 'users' && activeSubTab === 'users' && (
           <UserEditorModal userRecord={selectedUser} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+        )}
+        {!!selectedPolicy && (
+          <GroupPolicyEditor
+            policy={selectedPolicy}
+            isOpen={!!selectedPolicy}
+            onClose={() => setSelectedPolicy(null)}
+          />
         )}
         {isBulkModalOpen && (
           <BulkActionConfirmModal

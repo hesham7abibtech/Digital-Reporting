@@ -13,14 +13,16 @@ interface MemberEditorProps {
   member: TeamMember | null;
   isOpen: boolean;
   onClose: () => void;
+  readOnly?: boolean;
+  canDelete?: boolean;
 }
 
-export default function MemberEditorModal({ member, isOpen, onClose }: MemberEditorProps) {
+export default function MemberEditorModal({ member, isOpen, onClose, readOnly, canDelete }: MemberEditorProps) {
   const [formData, setFormData] = useState<Partial<TeamMember>>({
     name: '',
     email: '',
     department: '',
-    role: 'VIEWER'
+    role: 'TEAM_MATE'
   });
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export default function MemberEditorModal({ member, isOpen, onClose }: MemberEdi
         name: '',
         email: '',
         avatar: '',
-        role: 'VIEWER',
+        role: 'TEAM_MATE',
         department: 'Architecture',
         isOnline: true,
         lastActive: new Date().toISOString()
@@ -85,15 +87,33 @@ export default function MemberEditorModal({ member, isOpen, onClose }: MemberEdi
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={24} /></button>
         </div>
         <div style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {readOnly && (
+            <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.1)', display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10 }}>
+              <Shield size={16} color="#D4AF37" />
+              <p style={{ fontSize: 13, color: '#D4AF37', margin: 0, fontWeight: 600 }}>READ-ONLY ACCESS: Identity modification restricted.</p>
+            </div>
+          )}
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Full Name</label>
-            <input type="text" value={formData.name ?? ''} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} />
+            <input 
+              type="text" 
+              value={formData.name ?? ''} 
+              onChange={e => setFormData({ ...formData, name: e.target.value })} 
+              disabled={readOnly}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.4)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text' }} 
+            />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Email Interface</label>
             <div style={{ position: 'relative' }}>
               <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
-              <input type="email" value={formData.email ?? ''} onChange={e => setFormData({ ...formData, email: e.target.value })} style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} />
+              <input 
+                type="email" 
+                value={formData.email ?? ''} 
+                onChange={e => setFormData({ ...formData, email: e.target.value })} 
+                disabled={readOnly}
+                style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.4)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text' }} 
+              />
             </div>
           </div>
           <div>
@@ -102,8 +122,9 @@ export default function MemberEditorModal({ member, isOpen, onClose }: MemberEdi
               type="text" 
               value={formData.department ?? ''} 
               onChange={e => setFormData({ ...formData, department: e.target.value })} 
+              disabled={readOnly}
               placeholder="e.g. Senior Project Architect"
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} 
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.4)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text' }} 
             />
           </div>
 
@@ -115,28 +136,41 @@ export default function MemberEditorModal({ member, isOpen, onClose }: MemberEdi
           )}
         </div>
         <div style={{ padding: '24px 32px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {member ? <button onClick={() => setIsConfirmOpen(true)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button> : <div />}
+          <button 
+            onClick={() => setIsConfirmOpen(true)} 
+            disabled={!member || !canDelete}
+            style={{ 
+              color: '#ef4444', background: 'none', border: 'none', 
+              cursor: (!member || !canDelete) ? 'not-allowed' : 'pointer',
+              opacity: (!member || !canDelete) ? 0.3 : 1
+            }}
+          >
+            <Trash2 size={18} />
+          </button>
+          
           <div style={{ display: 'flex', gap: 12 }}>
-            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', color: 'white', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}>Cancel</button>
-            <button 
-              onClick={handleSave} 
-              disabled={isSaving} 
-              style={{ 
-                padding: '10px 24px', borderRadius: 10, 
-                background: isSaving ? 'rgba(212, 175, 55, 0.5)' : '#D4AF37', 
-                color: '#0a0a0f', border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer', 
-                fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 
-              }}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  SYNCING...
-                </>
-              ) : (
-                'Commit Member'
-              )}
-            </button>
+            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', color: 'white', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}>Dismiss</button>
+            {!readOnly && (
+              <button 
+                onClick={handleSave} 
+                disabled={isSaving} 
+                style={{ 
+                  padding: '10px 24px', borderRadius: 10, 
+                  background: isSaving ? 'rgba(212, 175, 55, 0.5)' : '#D4AF37', 
+                  color: '#0a0a0f', border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer', 
+                  fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 
+                }}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    SYNCING...
+                  </>
+                ) : (
+                  'Commit Member'
+                )}
+              </button>
+            )}
           </div>
         </div>
       </motion.div>

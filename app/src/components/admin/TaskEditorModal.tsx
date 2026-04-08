@@ -2,18 +2,23 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Trash2, Calendar, User, Tag, Activity, Loader2, Pause, Timer, Search, Globe, ChevronDown, Check, Building2, Plus, Link, Paperclip, Download, FileText } from 'lucide-react';
+import { X, Save, Trash2, Calendar, User, Tag, Activity, Loader2, Pause, Timer, Search, Globe, ChevronDown, Check, Building2, Plus, Link, Paperclip, Download, FileText, Shield, Lock } from 'lucide-react';
 import { Task, Priority, TaskStatus, TeamMember, TaskLink, TaskFile } from '@/lib/types';
 import { upsertTask, deleteTask } from '@/services/FirebaseService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import { useToast } from '@/components/shared/EliteToast';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface TaskEditorProps {
   task: Task | null;
   isOpen: boolean;
   onClose: () => void;
-  members: TeamMember[];
+  readOnly?: boolean;
+  canDelete?: boolean;
+  canApprove?: boolean;
 }
 
 const priorities: Priority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
@@ -73,7 +78,12 @@ const commonTimeZones = [
   'Asia/Singapore'
 ];
 
-export default function TaskEditorModal({ task, isOpen, onClose, members }: TaskEditorProps) {
+export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDelete, canApprove }: TaskEditorProps) {
+  // Fetch members internally to ensure real-time consistency if needed, 
+  // though they are passed via props in the dashboard, we use useCollection here for maximum sync.
+  const [membersSnapshot] = useCollection(collection(db, 'members'));
+  const members = membersSnapshot?.docs.map(doc => ({ ...(doc.data() as TeamMember), id: doc.id })) || [];
+
   const [formData, setFormData] = useState<Partial<Task>>({
     title: '',
     description: '',
@@ -199,7 +209,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
     }
   };
 
-  if (!isOpen) return null;
+  const isActuallyReadOnly = readOnly || (!task && readOnly); // If creating but no create perms, should also be readOnly
 
   const handleDeptChange = (val: string) => {
     if (val === 'Other') {
@@ -217,9 +227,11 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
     // will now render them for the new timezone in the next render cycle.
   };
 
+  if (!isOpen) return null;
+
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }} />
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}></motion.div>
       
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
@@ -234,13 +246,21 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
         </div>
 
         <div style={{ padding: 32, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, maxHeight: '80vh', overflowY: 'auto' }}>
+          {isActuallyReadOnly && (
+            <div style={{ gridColumn: 'span 2', padding: '12px 16px', borderRadius: 12, background: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.1)', display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10 }}>
+              <Shield size={16} color="#D4AF37" />
+              <p style={{ fontSize: 13, color: '#D4AF37', margin: 0, fontWeight: 600 }}>READ-ONLY ACCESS: Your security clearance does not permit modification of this asset.</p>
+            </div>
+          )}
+
           <div style={{ gridColumn: 'span 2' }}>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Task Title</label>
             <input 
               type="text" 
               value={formData.title ?? ''} 
               onChange={e => setFormData({ ...formData, title: e.target.value })}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 15, outline: 'none' }}
+              disabled={isActuallyReadOnly}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: isActuallyReadOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: isActuallyReadOnly ? '1px solid rgba(255,255,255,0.02)' : '1px solid rgba(255,255,255,0.06)', color: isActuallyReadOnly ? 'rgba(255,255,255,0.4)' : 'white', fontSize: 15, outline: 'none', cursor: isActuallyReadOnly ? 'not-allowed' : 'text' }}
               placeholder="System migration..."
             />
           </div>
@@ -250,8 +270,9 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
             <textarea 
               value={formData.description ?? ''} 
               onChange={e => setFormData({ ...formData, description: e.target.value })}
+              disabled={isActuallyReadOnly}
               rows={4}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none', resize: 'vertical' }}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: isActuallyReadOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: isActuallyReadOnly ? '1px solid rgba(255,255,255,0.02)' : '1px solid rgba(255,255,255,0.06)', color: isActuallyReadOnly ? 'rgba(255,255,255,0.4)' : 'white', fontSize: 15, outline: 'none', cursor: isActuallyReadOnly ? 'not-allowed' : 'text', resize: 'vertical' }}
               placeholder="Detailed task mission parameters..."
             />
           </div>
@@ -496,9 +517,10 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status Track</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status Track (Authorization Required)</label>
              <select 
               value={formData.status} 
+              disabled={isActuallyReadOnly || !canApprove}
               onChange={e => {
                 const newStatus = e.target.value as TaskStatus;
                 const updates: Partial<Task> = { status: newStatus };
@@ -519,10 +541,18 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
                 if (newStatus === 'COMPLETED') updates.completion = 100;
                 setFormData({ ...formData, ...updates });
               }}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#1a1a24', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }}
+              style={{ 
+                width: '100%', padding: '12px 16px', borderRadius: 12, 
+                background: (isActuallyReadOnly || !canApprove) ? 'rgba(255,255,255,0.01)' : '#1a1a24', 
+                border: '1px solid rgba(255,255,255,0.06)', color: (isActuallyReadOnly || !canApprove) ? 'rgba(255,255,255,0.3)' : 'white', 
+                fontSize: 14, outline: 'none', cursor: (isActuallyReadOnly || !canApprove) ? 'not-allowed' : 'pointer' 
+              }}
             >
               {statuses.map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
             </select>
+            {!canApprove && !isActuallyReadOnly && (
+              <p style={{ fontSize: 10, color: '#f59e0b', marginTop: 4, fontWeight: 600 }}>Authorization clearance required to modify status.</p>
+            )}
           </div>
 
           {/* Conditional Administrative Calibration Fields */}
@@ -828,40 +858,45 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
               <p style={{ fontSize: 13, color: '#f87171', margin: 0, fontWeight: 600 }}>{errorMsg}</p>
             </div>
           )}
+          {readOnly && (
+            <div style={{ gridColumn: 'span 2', padding: '12px 16px', background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.2)', borderRadius: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
+              <Lock size={16} color="#D4AF37" style={{ flexShrink: 0 }} />
+              <p style={{ fontSize: 13, color: '#D4AF37', margin: 0, fontWeight: 600 }}>This record is in read-only mode. Upgrade to Premium to enable editing.</p>
+            </div>
+          )}
         </div>
 
         <div style={{ padding: '24px 32px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {task ? (
-             <button onClick={() => setIsConfirmOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ef4444', background: 'none', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-              <Trash2 size={16} />
-              Terminate Record
-            </button>
-          ) : <div />}
+          <button 
+            onClick={() => setIsConfirmOpen(true)} 
+            disabled={!task || !canDelete}
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: 8, color: '#ef4444', background: 'none', border: 'none', 
+              fontSize: 13, fontWeight: 600, cursor: (!task || !canDelete) ? 'not-allowed' : 'pointer',
+              opacity: (!task || !canDelete) ? 0.3 : 1
+            }}
+          >
+            <Trash2 size={16} />
+            Terminate Record
+          </button>
           
           <div style={{ display: 'flex', gap: 12 }}>
-            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', color: 'white', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>Cancel</button>
-            <button 
-              onClick={handleSave} 
-              disabled={isSaving}
-              style={{ 
-                display: 'flex', alignItems: 'center', gap: 8, padding: '10px 24px', 
-                borderRadius: 10, background: isSaving ? 'rgba(212, 175, 55, 0.5)' : '#D4AF37', 
-                color: '#0a0a0f', border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer', 
-                fontSize: 14, fontWeight: 700 
-              }}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  SYNCHING...
-                </>
-              ) : (
-                <>
-                  <Save size={18} />
-                  Commit Changes
-                </>
-              )}
-            </button>
+            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', color: 'white', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>Dismiss</button>
+            {!isActuallyReadOnly && (
+              <button 
+                onClick={handleSave} 
+                disabled={isSaving}
+                style={{ 
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '10px 24px', borderRadius: 10, 
+                  background: '#D4AF37', color: '#0a0a0f', border: 'none', 
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
+                  fontSize: 14, fontWeight: 700 
+                }}
+              >
+                <Save size={18} />
+                {isSaving ? 'Syncing...' : 'Commit Changes'}
+              </button>
+            )}
           </div>
         </div>
       </motion.div>

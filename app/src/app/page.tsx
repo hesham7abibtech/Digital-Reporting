@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import ParticleBackground from '@/components/layout/ParticleBackground';
 import Header from '@/components/layout/Header';
 import ProjectHeader from '@/components/dashboard/ProjectHeader';
@@ -14,14 +14,25 @@ import TaskDetailModal from '@/components/dashboard/TaskDetailModal';
 import type { Task } from '@/lib/types';
 import { useTimeZone } from '@/context/TimeZoneContext';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
+import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Globe } from 'lucide-react';
 
 export default function Dashboard() {
   const { isUpdating, selectedTimeZone } = useTimeZone();
   const { tasks: syncedTasks, members: syncedMembers, registry: syncedRegistry, project: syncedProject, isLoading } = useRealtimeData();
+  const { userProfile } = useAuth();
   const [notifOpen, setNotifOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  const filteredTasks = useMemo(() => {
+    if (!userProfile) return syncedTasks;
+    // TEAM_MATE protocol: Only visible items are those assigned to the current user
+    if (userProfile.role === 'TEAM_MATE') {
+      return syncedTasks.filter(t => t.assigneeId === userProfile.uid);
+    }
+    return syncedTasks;
+  }, [syncedTasks, userProfile]);
 
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
@@ -42,14 +53,13 @@ export default function Dashboard() {
             </div>
           ) : (
             <>
-              {/* Calculate dynamic project completion */}
               {(() => {
-                const total = syncedTasks.length;
-                const completed = syncedTasks.filter(t => t.status === 'COMPLETED').length;
-                const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
-                return <ProjectHeader project={syncedProject || undefined} members={syncedMembers} progress={progress} tasks={syncedTasks} />;
+                const progress = filteredTasks.length > 0 
+                  ? Math.round((filteredTasks.filter(t => t.status === 'COMPLETED').length / filteredTasks.length) * 100) 
+                  : 0;
+                return <ProjectHeader project={syncedProject || undefined} members={syncedMembers} progress={progress} tasks={filteredTasks} />;
               })()}
-              <KPICards tasks={syncedTasks} />
+              <KPICards tasks={filteredTasks} />
 
               {/* Tasks (left) + ALL Charts (right, single spanning column) */}
               <div
@@ -62,15 +72,15 @@ export default function Dashboard() {
               >
                 {/* Left: task sections stacked */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <ActiveTasks tasks={syncedTasks} onTaskClick={handleTaskClick} />
-                  <CompletedTasks tasks={syncedTasks} onTaskClick={handleTaskClick} />
+                  <ActiveTasks tasks={filteredTasks} onTaskClick={handleTaskClick} />
+                  <CompletedTasks tasks={filteredTasks} onTaskClick={handleTaskClick} />
                   <DashboardRegistry items={syncedRegistry} />
                 </div>
 
                 {/* Right: all charts in one column, independent of task expand/collapse */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <ChartsSection position="right" tasks={syncedTasks} />
-                  <ChartsSection position="right-bottom" tasks={syncedTasks} />
+                  <ChartsSection position="right" tasks={filteredTasks} />
+                  <ChartsSection position="right-bottom" tasks={filteredTasks} />
                 </div>
               </div>
             </>

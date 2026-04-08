@@ -9,9 +9,10 @@ import {
   browserSessionPersistence
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { getUserProfile } from '@/services/FirebaseService';
 import { UserRole } from '@/lib/types';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface UserProfile {
   uid: string;
@@ -53,31 +54,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // ensuring the session is cleared when the portal is closed.
     // Explicit beforeunload signOut is avoided to support page refreshes.
 
-    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
-      setLoading(true);
-      setAuthError(null);
+    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
       setUser(authUser);
-      
-      if (authUser) {
-        try {
-          const profile = await getUserProfile(authUser.uid);
-          setUserProfile(profile as UserProfile);
-        } catch (error: any) {
-          console.error('Error fetching user profile:', error);
-          setAuthError(getFirebaseErrorMessage(error));
-          setUserProfile(null);
-        }
-      } else {
+      if (!authUser) {
         setUserProfile(null);
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
-    return () => {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    let profileUnsubscribe: (() => void) | null = null;
+
+    if (user) {
+      setLoading(true);
+      setAuthError(null);
+      
+      const userDocRef = doc(db, 'users', user.uid);
+      profileUnsubscribe = onSnapshot(
+        userDocRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            setUserProfile(snapshot.data() as UserProfile);
+          } else {
+            setUserProfile(null);
+            setAuthError('Identity profile not found in registry.');
+          }
+          setLoading(false);
+        },
+        (error) => {
+          console.error('Profile sync error:', error);
+          setAuthError(getFirebaseErrorMessage(error));
+          setLoading(false);
+        }
+      );
+    }
+
+    return () => {
+      if (profileUnsubscribe) profileUnsubscribe();
+    };
+  }, [user]);
 
   const logout = async () => {
     try {
