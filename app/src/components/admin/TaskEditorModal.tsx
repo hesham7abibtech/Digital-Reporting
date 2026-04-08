@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Trash2, Calendar, User, Tag, Activity, Loader2, Pause, Timer, Search, Globe, ChevronDown, Check, Building2, Plus, Link, Paperclip, Download } from 'lucide-react';
+import { X, Save, Trash2, Calendar, User, Tag, Activity, Loader2, Pause, Timer, Search, Globe, ChevronDown, Check, Building2, Plus, Link, Paperclip, Download, FileText } from 'lucide-react';
 import { Task, Priority, TaskStatus, TeamMember, TaskLink, TaskFile } from '@/lib/types';
 import { upsertTask, deleteTask } from '@/services/FirebaseService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
