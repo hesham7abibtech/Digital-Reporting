@@ -6,6 +6,7 @@ import { X, Save, Trash2, Mail, Shield, User, Info } from 'lucide-react';
 import { UserRole } from '@/lib/types';
 import { updateUserProfile, deleteUserProfile } from '@/services/FirebaseService';
 import { useAuth } from '@/context/AuthContext';
+import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 
 interface UserEditorProps {
   userRecord: any | null;
@@ -19,6 +20,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
   const { userProfile: currentUser } = useAuth();
   const [formData, setFormData] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (userRecord) {
@@ -29,6 +31,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
   const handleSave = async () => {
     if (!userRecord) return;
     setIsSaving(true);
+    setErrorMsg(null);
     try {
       await updateUserProfile(userRecord.uid, {
         role: formData.role,
@@ -38,6 +41,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
       onClose();
     } catch (error) {
       console.error('Failed to update user:', error);
+      setErrorMsg(getFirebaseErrorMessage(error));
     } finally {
       setIsSaving(false);
     }
@@ -51,6 +55,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
         onClose();
       } catch (error) {
         console.error('Failed to delete user:', error);
+        setErrorMsg(getFirebaseErrorMessage(error));
       }
     }
   };
@@ -152,6 +157,13 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
             <div style={{ padding: '12px 16px', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)', borderRadius: 12, display: 'flex', gap: 10 }}>
               <Info size={16} color="#f59e0b" style={{ flexShrink: 0, marginTop: 2 }} />
               <p style={{ fontSize: 12, color: '#f59e0b', margin: 0 }}>Only an existing Owner can modify Owner-level credentials.</p>
+            </div>
+          )}
+
+          {errorMsg && (
+            <div style={{ padding: '12px 16px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
+              <X size={16} color="#ef4444" style={{ flexShrink: 0 }} />
+              <p style={{ fontSize: 13, color: '#f87171', margin: 0, fontWeight: 600 }}>{errorMsg}</p>
             </div>
           )}
         </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Loader2, Trash2, X, ShieldAlert } from 'lucide-react';
+import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 
 interface BulkActionConfirmModalProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ export default function BulkActionConfirmModal({
       onClose();
     } catch (error: any) {
       console.error('Bulk action failed:', error);
-      setErrorDetails(error.message || 'Operation failed due to insufficient administrative clearance.');
+      setErrorDetails(getFirebaseErrorMessage(error));
     } finally {
       setIsExecuting(false);
     }

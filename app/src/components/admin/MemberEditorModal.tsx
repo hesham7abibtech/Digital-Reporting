@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { X, Save, Trash2, User, Mail, Shield, Briefcase, Loader2 } from 'lucide-react';
 import { TeamMember } from '@/lib/types';
 import { upsertMember, deleteMember } from '@/services/FirebaseService';
+import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 
 interface MemberEditorProps {
   member: TeamMember | null;
@@ -15,6 +16,7 @@ interface MemberEditorProps {
 export default function MemberEditorModal({ member, isOpen, onClose }: MemberEditorProps) {
   const [formData, setFormData] = useState<Partial<TeamMember>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (member) {
@@ -35,11 +37,13 @@ export default function MemberEditorModal({ member, isOpen, onClose }: MemberEdi
 
   const handleSave = async () => {
     setIsSaving(true);
+    setErrorMsg(null);
     try {
       await upsertMember(formData as TeamMember);
       onClose();
     } catch (error) {
       console.error('Failed to save member:', error);
+      setErrorMsg(getFirebaseErrorMessage(error));
     } finally {
       setIsSaving(false);
     }
@@ -53,6 +57,7 @@ export default function MemberEditorModal({ member, isOpen, onClose }: MemberEdi
         onClose();
       } catch (error) {
         console.error('Failed to delete member:', error);
+        setErrorMsg(getFirebaseErrorMessage(error));
       }
     }
   };
@@ -91,6 +96,13 @@ export default function MemberEditorModal({ member, isOpen, onClose }: MemberEdi
               {['Architecture', 'MEP', 'Structural', 'Design', 'Project Management', 'QA/QC', 'HSE', 'IT'].map(dept => <option key={dept} value={dept}>{dept}</option>)}
             </select>
           </div>
+
+          {errorMsg && (
+            <div style={{ padding: '12px 16px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
+              <X size={16} color="#ef4444" style={{ flexShrink: 0 }} />
+              <p style={{ fontSize: 13, color: '#f87171', margin: 0, fontWeight: 600 }}>{errorMsg}</p>
+            </div>
+          )}
         </div>
         <div style={{ padding: '24px 32px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {member ? <button onClick={handleDelete} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button> : <div />}

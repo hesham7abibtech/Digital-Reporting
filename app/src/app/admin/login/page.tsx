@@ -11,6 +11,7 @@ import {
 import { auth } from '@/lib/firebase';
 import { createUserProfile } from '@/services/FirebaseService';
 import { useAuth } from '@/context/AuthContext';
+import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { 
   Lock, Mail, Loader2, Globe, ShieldCheck, 
@@ -82,11 +83,7 @@ function AdminLoginContent() {
       // Wait for AuthContext redirect logic above
     } catch (err: any) {
       console.error('Login error:', err);
-      let errorMsg = 'Verification failed. Protocol breached.';
-      if (err.code === 'auth/user-not-found') errorMsg = 'NODE NOT FOUND: Target email is not in the registry.';
-      if (err.code === 'auth/wrong-password') errorMsg = 'SIGNATURE MISMATCH: Security key is incorrect.';
-      
-      setError(errorMsg);
+      setError(getFirebaseErrorMessage(err));
       setIsSubmitting(false);
     }
   };
@@ -113,7 +110,7 @@ function AdminLoginContent() {
       setIsSubmitting(false);
     } catch (err: any) {
       console.error('Registration error:', err);
-      setError(err.message || 'Provisioning failed. Security error.');
+      setError(getFirebaseErrorMessage(err));
       setIsSubmitting(false);
     }
   };
@@ -131,7 +128,7 @@ function AdminLoginContent() {
       setIsSubmitting(false);
     } catch (err: any) {
       console.error('Reset error:', err);
-      setError(err.message || 'Recovery failed. Node unreachable.');
+      setError(getFirebaseErrorMessage(err));
       setIsSubmitting(false);
     }
   };
@@ -415,7 +412,7 @@ function AdminLoginContent() {
                 style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, margin: '0 auto' }}
               >
                 {mode === 'login' ? (
-                  <><UserPlus size={16} /> Request Identity Provisioning</>
+                  <><UserPlus size={16} /> Don&apos;t have an account? Create one</>
                 ) : (
                   <><ArrowLeft size={16} /> Return to Login Uplink</>
                 )}

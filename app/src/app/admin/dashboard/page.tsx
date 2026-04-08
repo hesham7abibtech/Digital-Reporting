@@ -23,6 +23,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { collections, bulkDelete, getProjectMetadata, updateProjectMetadata, uploadFile } from '@/services/FirebaseService';
 import { useToast } from '@/components/shared/EliteToast';
+import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import { useDocument } from 'react-firebase-hooks/firestore';
 import { doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -515,7 +516,7 @@ export default function AdminDashboardPage() {
                                 setSelectedFile(null); // Reset
                               } catch (err: any) {
                                 console.error('[UPLINK_FAILURE]', err);
-                                showToast('Configuration uplink failed.', 'ERROR');
+                                showToast(getFirebaseErrorMessage(err), 'ERROR');
                               } finally {
                                 setIsBrandingUpdating(false);
                               }

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { X, Save, Trash2, Layout, Link as LinkIcon, Info, Loader2 } from 'lucide-react';
 import { DashboardNavItem } from '@/lib/types';
 import { upsertRegistryItem, deleteRegistryItem } from '@/services/FirebaseService';
+import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 
 interface RegistryEditorProps {
   item: DashboardNavItem | null;
@@ -15,6 +16,7 @@ interface RegistryEditorProps {
 export default function RegistryEditorModal({ item, isOpen, onClose }: RegistryEditorProps) {
   const [formData, setFormData] = useState<Partial<DashboardNavItem>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (item) {
@@ -33,11 +35,13 @@ export default function RegistryEditorModal({ item, isOpen, onClose }: RegistryE
 
   const handleSave = async () => {
     setIsSaving(true);
+    setErrorMsg(null);
     try {
       await upsertRegistryItem(formData as DashboardNavItem);
       onClose();
     } catch (error) {
       console.error('Failed to save registry item:', error);
+      setErrorMsg(getFirebaseErrorMessage(error));
     } finally {
       setIsSaving(false);
     }
@@ -51,6 +55,7 @@ export default function RegistryEditorModal({ item, isOpen, onClose }: RegistryE
         onClose();
       } catch (error) {
         console.error('Failed to delete item:', error);
+        setErrorMsg(getFirebaseErrorMessage(error));
       }
     }
   };
@@ -86,6 +91,13 @@ export default function RegistryEditorModal({ item, isOpen, onClose }: RegistryE
               </select>
             </div>
           </div>
+
+          {errorMsg && (
+            <div style={{ padding: '12px 16px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
+              <X size={16} color="#ef4444" style={{ flexShrink: 0 }} />
+              <p style={{ fontSize: 13, color: '#f87171', margin: 0, fontWeight: 600 }}>{errorMsg}</p>
+            </div>
+          )}
         </div>
         <div style={{ padding: '24px 32px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {item ? <button onClick={handleDelete} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button> : <div />}

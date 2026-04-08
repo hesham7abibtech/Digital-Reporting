@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, Trash2, Calendar, User, Tag, Activity, Loader2 } from 'lucide-react';
 import { Task, Priority, TaskStatus, TeamMember } from '@/lib/types';
 import { upsertTask, deleteTask } from '@/services/FirebaseService';
+import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 
 interface TaskEditorProps {
   task: Task | null;
@@ -87,6 +88,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
   });
   const [showCustomDept, setShowCustomDept] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Available Time Zones
   const allTimeZones = typeof Intl !== 'undefined' && (Intl as any).supportedValuesOf 
@@ -143,6 +145,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
 
   const handleSave = async () => {
     setIsSaving(true);
+    setErrorMsg(null);
     try {
       const finalTask = {
         ...formData,
@@ -152,6 +155,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
       onClose();
     } catch (error) {
       console.error('Failed to save task:', error);
+      setErrorMsg(getFirebaseErrorMessage(error));
     } finally {
       setIsSaving(false);
     }
@@ -165,6 +169,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
         onClose();
       } catch (error) {
         console.error('Failed to delete task:', error);
+        setErrorMsg(getFirebaseErrorMessage(error));
       }
     }
   };
@@ -375,6 +380,13 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
               style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }}
             />
           </div>
+
+          {errorMsg && (
+            <div style={{ gridColumn: 'span 2', padding: '12px 16px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
+              <X size={16} color="#ef4444" style={{ flexShrink: 0 }} />
+              <p style={{ fontSize: 13, color: '#f87171', margin: 0, fontWeight: 600 }}>{errorMsg}</p>
+            </div>
+          )}
         </div>
 
         <div style={{ padding: '24px 32px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

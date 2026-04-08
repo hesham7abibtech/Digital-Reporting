@@ -9,6 +9,7 @@ import {
 import { auth } from '@/lib/firebase';
 import { getUserProfile } from '@/services/FirebaseService';
 import { UserRole } from '@/lib/types';
+import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 
 interface UserProfile {
   uid: string;
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUserProfile(profile as UserProfile);
         } catch (error: any) {
           console.error('Error fetching user profile:', error);
-          setAuthError(error.message || 'Identity established but profile sync failed.');
+          setAuthError(getFirebaseErrorMessage(error));
           setUserProfile(null);
         }
       } else {
