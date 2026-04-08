@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ArrowUpDown, Paperclip, ChevronDown, CircleDot, User } from 'lucide-react';
+import { Search, ArrowUpDown, Paperclip, ChevronDown, CircleDot, User, Inbox } from 'lucide-react';
 import { tasks } from '@/lib/data';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
@@ -79,8 +79,8 @@ function TaskRow({ task, index, onClick }: { task: Task; index: number; onClick?
 }
 
 const thStyle: React.CSSProperties = {
-  padding: '10px 14px', textAlign: 'left', fontSize: 12, fontWeight: 500,
-  color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em',
+  padding: '10px 14px', textAlign: 'left', fontSize: 12, fontWeight: 600,
+  color: '#c9a227', textTransform: 'uppercase', letterSpacing: '0.06em',
   cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap',
 };
 
@@ -216,7 +216,17 @@ export default function ActiveTasks({ onTaskClick, tasks: externalTasks }: { onT
           </button>
         )}
 
-        {filtered.length === 0 && <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: 'var(--text-muted)' }}>No tasks match.</div>}
+        {filtered.length === 0 && (
+          <div style={{ padding: '48px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Inbox size={22} style={{ color: 'rgba(59, 130, 246, 0.4)' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>No current data available</p>
+              <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Active tasks will appear here when created</p>
+            </div>
+          </div>
+        )}
       </GlassCard>
     </motion.div>
   );

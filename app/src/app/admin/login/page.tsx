@@ -6,12 +6,15 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   sendPasswordResetEmail,
-  updateProfile
+  updateProfile,
+  setPersistence,
+  browserSessionPersistence
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { createUserProfile } from '@/services/FirebaseService';
+import { createUserProfile, getProjectMetadata } from '@/services/FirebaseService';
 import { useAuth } from '@/context/AuthContext';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
+import { ProjectMetadata } from '@/lib/types';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { 
   Lock, Mail, Loader2, Globe, ShieldCheck, 
@@ -68,7 +71,7 @@ function AdminLoginContent() {
       } else {
         // User is logged in but lacks admin role
         setMode('unauthorized');
-        setError('CLEARANCE REJECTED: Your identity is recognized but your node lacks administrative authority.');
+        setError('CLEARANCE REJECTED: Your identity is recognized but your account lacks administrative authority.');
         setIsSubmitting(false);
       }
     }
@@ -81,6 +84,19 @@ function AdminLoginContent() {
     setIsSubmitting(true);
 
     try {
+      // 1. Domain Clearance Check (Pre-flight)
+      const projectMetadata = await getProjectMetadata() as ProjectMetadata | null;
+      if (projectMetadata?.allowedDomains && projectMetadata.allowedDomains.length > 0) {
+        const userDomain = email.split('@')[1]?.toLowerCase();
+        if (!userDomain || !projectMetadata.allowedDomains.includes(userDomain)) {
+          setError(`ACCESS DENIED: Your identity domain (@${userDomain}) is not authorized for this project. Authorized domains: @${projectMetadata.allowedDomains.join(', @')}.`);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // 2. Ensure strict session persistence before sign-in
+      await setPersistence(auth, browserSessionPersistence);
       await signInWithEmailAndPassword(auth, email, password);
       // Wait for AuthContext redirect logic above
     } catch (err: any) {
@@ -97,6 +113,17 @@ function AdminLoginContent() {
     setIsSubmitting(true);
 
     try {
+      // 1. Domain Clearance Check
+      const projectMetadata = await getProjectMetadata() as ProjectMetadata | null;
+      if (projectMetadata?.allowedDomains && projectMetadata.allowedDomains.length > 0) {
+        const userDomain = email.split('@')[1]?.toLowerCase();
+        if (!userDomain || !projectMetadata.allowedDomains.includes(userDomain)) {
+          setError(`SECURITY ALERT: Unauthorized Domain Signature. Registration is restricted to authorized project domains (@${projectMetadata.allowedDomains.join(', @')}).`);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: name });
       
@@ -151,7 +178,7 @@ function AdminLoginContent() {
   if (loading && !isSubmitting) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0f' }}>
-        <Loader2 className="animate-spin" size={32} color="#3b82f6" />
+        <Loader2 className="animate-spin" size={32} color="#D4AF37" />
       </div>
     );
   }
@@ -160,7 +187,7 @@ function AdminLoginContent() {
     <div style={{ minHeight: '100vh', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, overflow: 'hidden' }}>
       <ParticleBackground />
       
-      <div style={{ position: 'absolute', top: '10%', left: '5%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%)', filter: 'blur(60px)', zIndex: 0 }} />
+      <div style={{ position: 'absolute', top: '10%', left: '5%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(212, 175, 55, 0.05) 0%, transparent 70%)', filter: 'blur(60px)', zIndex: 0 }} />
       <div style={{ position: 'absolute', bottom: '10%', right: '5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, transparent 70%)', filter: 'blur(60px)', zIndex: 0 }} />
 
       <motion.div
@@ -196,10 +223,10 @@ function AdminLoginContent() {
                 position: 'absolute', left: 0, right: 0, height: '2px',
                 background: mode === 'unauthorized'
                   ? 'linear-gradient(to right, transparent, rgba(239, 68, 68, 0.5), transparent)'
-                  : 'linear-gradient(to right, transparent, rgba(59, 130, 246, 0.5), transparent)',
+                  : 'linear-gradient(to right, transparent, rgba(212, 175, 55, 0.5), transparent)',
                 boxShadow: mode === 'unauthorized'
                   ? '0 0 15px rgba(239, 68, 68, 0.8)'
-                  : '0 0 15px rgba(59, 130, 246, 0.8)',
+                  : '0 0 15px rgba(212, 175, 55, 0.8)',
                 zIndex: 20, pointerEvents: 'none'
               }}
             />
@@ -218,7 +245,7 @@ function AdminLoginContent() {
                 width: 72, height: 72, borderRadius: 22, 
                 background: mode === 'unauthorized' 
                   ? 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)'
-                  : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)', 
+                  : 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)', 
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 position: 'relative', overflow: 'hidden'
               }}
@@ -241,7 +268,7 @@ function AdminLoginContent() {
             }}
           >
             {mode === 'login' ? 'Auth Required' : 
-             mode === 'register' ? 'Node Provision' : 
+             mode === 'register' ? 'Account Provision' : 
              mode === 'forgot-password' ? 'Recov Protocol' : 
              'Restricted Access'}
           </motion.h1>
@@ -367,7 +394,7 @@ function AdminLoginContent() {
 
                 {mode === 'login' && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <button type="button" onClick={() => setMode('forgot-password')} style={{ background: 'transparent', border: 'none', color: '#60a5fa', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    <button type="button" onClick={() => setMode('forgot-password')} style={{ background: 'transparent', border: 'none', color: '#D4AF37', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                       Forgotten Credentials?
                     </button>
                   </div>
@@ -378,12 +405,12 @@ function AdminLoginContent() {
                   disabled={isSubmitting}
                   style={{
                     width: '100%', padding: '16px', borderRadius: 16,
-                    background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                    color: 'white', fontSize: 16, fontWeight: 800, border: 'none',
+                    background: '#D4AF37',
+                    color: '#0a0a0f', fontSize: 16, fontWeight: 800, border: 'none',
                     cursor: isSubmitting ? 'not-allowed' : 'pointer',
                     transition: 'all 300ms',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-                    boxShadow: '0 10px 30px rgba(37, 99, 235, 0.2)',
+                    boxShadow: '0 10px 30px rgba(212, 175, 55, 0.2)',
                     letterSpacing: '0.02em', textTransform: 'uppercase'
                   }}
                 >
@@ -548,7 +575,7 @@ export default function AdminLoginPage() {
   return (
     <Suspense fallback={
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0f' }}>
-        <Loader2 className="animate-spin" size={32} color="#3b82f6" />
+        <Loader2 className="animate-spin" size={32} color="#D4AF37" />
       </div>
     }>
       <AdminLoginContent />

@@ -11,10 +11,34 @@ import {
   setDoc,
   writeBatch
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import { tasks as mockTasks, teamMembers as mockMembers, dashboardsRegistry as mockRegistry } from '@/lib/data';
 import { Task, TeamMember, DashboardNavItem } from '@/lib/types';
+import { 
+  getFirestore, 
+  terminate as firestoreTerminate,
+  clearIndexedDbPersistence
+} from 'firebase/firestore';
+
+/**
+ * Strips 'undefined' values from an object recursively.
+ * Firestore setDoc/updateDoc fail if any field is undefined.
+ */
+function sanitizeData(data: any): any {
+  if (data === null || typeof data !== 'object') {
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(sanitizeData);
+  }
+
+  return Object.fromEntries(
+    Object.entries(data)
+      .filter(([_, value]) => value !== undefined)
+      .map(([key, value]) => [key, sanitizeData(value)])
+  );
+}
 
 // ─── Realtime sync hooks usually live in components, but helpers here ───
 
@@ -44,10 +68,10 @@ export async function seedDatabase() {
   const initialMetadata = {
     id: 'project-info',
     projectName: 'Digital Reporting Hub',
-    projectId: 'NODE-001',
+    projectId: 'PRJ-X01',
     companyName: 'KEO International Consultants',
     region: 'Middle East',
-    statusLine: 'System Node Initialized',
+    statusLine: 'System Initialized',
     statusColor: '#3b82f6',
     ownerLogoUrl: '',
     logoUrl: '',
@@ -80,7 +104,8 @@ export async function seedDatabase() {
 
 export async function upsertTask(task: Task) {
   const taskDoc = doc(collections.tasks, task.id);
-  await setDoc(taskDoc, task, { merge: true });
+  const cleanData = sanitizeData(task);
+  await setDoc(taskDoc, cleanData, { merge: true });
 }
 
 export async function deleteTask(id: string) {
@@ -89,7 +114,8 @@ export async function deleteTask(id: string) {
 
 export async function upsertMember(member: TeamMember) {
   const memberDoc = doc(collections.members, member.id);
-  await setDoc(memberDoc, member, { merge: true });
+  const cleanData = sanitizeData(member);
+  await setDoc(memberDoc, cleanData, { merge: true });
 }
 
 export async function deleteMember(id: string) {
@@ -98,7 +124,8 @@ export async function deleteMember(id: string) {
 
 export async function upsertRegistryItem(item: DashboardNavItem) {
   const registryDoc = doc(collections.registry, item.id);
-  await setDoc(registryDoc, item, { merge: true });
+  const cleanData = sanitizeData(item);
+  await setDoc(registryDoc, cleanData, { merge: true });
 }
 
 export async function deleteRegistryItem(id: string) {
@@ -115,20 +142,22 @@ export async function getUserProfile(uid: string) {
 
 export async function createUserProfile(uid: string, data: any) {
   const userDoc = doc(db, 'users', uid);
-  await setDoc(userDoc, {
+  const cleanData = sanitizeData({
     ...data,
     uid,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
-  }, { merge: true });
+  });
+  await setDoc(userDoc, cleanData, { merge: true });
 }
 
 export async function updateUserProfile(uid: string, data: any) {
   const userDoc = doc(db, 'users', uid);
-  await updateDoc(userDoc, {
+  const cleanData = sanitizeData({
     ...data,
     updatedAt: new Date().toISOString()
   });
+  await updateDoc(userDoc, cleanData);
 }
 
 export async function deleteUserProfile(uid: string) {
@@ -157,16 +186,39 @@ export async function getProjectMetadata() {
 
 export async function updateProjectMetadata(data: any) {
   const projectDoc = doc(db, 'settings', 'project');
-  await setDoc(projectDoc, {
+  const cleanData = sanitizeData({
     ...data,
     updatedAt: new Date().toISOString()
-  }, { merge: true });
+  });
+  await setDoc(projectDoc, cleanData, { merge: true });
 }
 
 export async function uploadFile(file: File, path: string) {
-  const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, file);
-  return await getDownloadURL(storageRef);
+  // Cloudinary Direct Unsigned Upload
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+  if (!cloudName || !uploadPreset) {
+    throw new Error('Cloudinary environment variables are missing. Please configure .env.local.');
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', uploadPreset);
+  formData.append('public_id', path); // Optionally set the desired folder/filename
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(`Cloudinary upload failed: ${errorData.error?.message || response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.secure_url;
 }
 
 

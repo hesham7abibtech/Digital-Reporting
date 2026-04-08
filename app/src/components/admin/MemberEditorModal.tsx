@@ -6,6 +6,8 @@ import { X, Save, Trash2, User, Mail, Shield, Briefcase, Loader2 } from 'lucide-
 import { TeamMember } from '@/lib/types';
 import { upsertMember, deleteMember } from '@/services/FirebaseService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
+import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
+import { useToast } from '@/components/shared/EliteToast';
 
 interface MemberEditorProps {
   member: TeamMember | null;
@@ -14,9 +16,16 @@ interface MemberEditorProps {
 }
 
 export default function MemberEditorModal({ member, isOpen, onClose }: MemberEditorProps) {
-  const [formData, setFormData] = useState<Partial<TeamMember>>({});
+  const [formData, setFormData] = useState<Partial<TeamMember>>({
+    name: '',
+    email: '',
+    department: '',
+    role: 'VIEWER'
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (member) {
@@ -40,10 +49,12 @@ export default function MemberEditorModal({ member, isOpen, onClose }: MemberEdi
     setErrorMsg(null);
     try {
       await upsertMember(formData as TeamMember);
+      showToast('Personnel record synchronized successfully.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Failed to save member:', error);
       setErrorMsg(getFirebaseErrorMessage(error));
+      showToast('Synchronization failure. Reference console for logs.', 'ERROR');
     } finally {
       setIsSaving(false);
     }
@@ -51,14 +62,15 @@ export default function MemberEditorModal({ member, isOpen, onClose }: MemberEdi
 
   const handleDelete = async () => {
     if (!member) return;
-    if (confirm('Delete this team member identity?')) {
-      try {
-        await deleteMember(member.id);
-        onClose();
-      } catch (error) {
-        console.error('Failed to delete member:', error);
-        setErrorMsg(getFirebaseErrorMessage(error));
-      }
+    try {
+      await deleteMember(member.id);
+      showToast('Identity purged from registry.', 'SUCCESS');
+      onClose();
+    } catch (error) {
+      console.error('Failed to delete member:', error);
+      setErrorMsg(getFirebaseErrorMessage(error));
+      showToast('Purge sequence failed.', 'ERROR');
+      throw error; // Rethrow for modal error handling if needed
     }
   };
 
@@ -75,26 +87,24 @@ export default function MemberEditorModal({ member, isOpen, onClose }: MemberEdi
         <div style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Full Name</label>
-            <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Professional Role</label>
-            <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value as any })} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(20,20,30,1)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }}>
-              {['SUPER_ADMIN', 'ADMIN', 'PROJECT_MANAGER', 'DEPARTMENT_HEAD', 'VIEWER'].map(role => <option key={role} value={role}>{role.replace('_', ' ')}</option>)}
-            </select>
+            <input type="text" value={formData.name ?? ''} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Email Interface</label>
             <div style={{ position: 'relative' }}>
               <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
-              <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} />
+              <input type="email" value={formData.email ?? ''} onChange={e => setFormData({ ...formData, email: e.target.value })} style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} />
             </div>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Department</label>
-            <select value={formData.department} onChange={e => setFormData({ ...formData, department: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(20,20,30,1)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }}>
-              {['Architecture', 'MEP', 'Structural', 'Design', 'Project Management', 'QA/QC', 'HSE', 'IT'].map(dept => <option key={dept} value={dept}>{dept}</option>)}
-            </select>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Job Title</label>
+            <input 
+              type="text" 
+              value={formData.department ?? ''} 
+              onChange={e => setFormData({ ...formData, department: e.target.value })} 
+              placeholder="e.g. Senior Project Architect"
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} 
+            />
           </div>
 
           {errorMsg && (
@@ -105,7 +115,7 @@ export default function MemberEditorModal({ member, isOpen, onClose }: MemberEdi
           )}
         </div>
         <div style={{ padding: '24px 32px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {member ? <button onClick={handleDelete} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button> : <div />}
+          {member ? <button onClick={() => setIsConfirmOpen(true)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button> : <div />}
           <div style={{ display: 'flex', gap: 12 }}>
             <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', color: 'white', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}>Cancel</button>
             <button 
@@ -113,8 +123,8 @@ export default function MemberEditorModal({ member, isOpen, onClose }: MemberEdi
               disabled={isSaving} 
               style={{ 
                 padding: '10px 24px', borderRadius: 10, 
-                background: isSaving ? 'rgba(59, 130, 246, 0.5)' : '#3b82f6', 
-                color: 'white', border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer', 
+                background: isSaving ? 'rgba(212, 175, 55, 0.5)' : '#D4AF37', 
+                color: '#0a0a0f', border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer', 
                 fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 
               }}
             >
@@ -130,6 +140,16 @@ export default function MemberEditorModal({ member, isOpen, onClose }: MemberEdi
           </div>
         </div>
       </motion.div>
+
+      <EliteConfirmModal 
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Identity Termination"
+        message={`Are you sure you want to permanently revoke the credentials for ${member?.name || 'this member'}? This will purge their record from the secure registry.`}
+        confirmLabel="Authorize Wipe"
+        severity="DANGER"
+      />
     </div>
   );
 }

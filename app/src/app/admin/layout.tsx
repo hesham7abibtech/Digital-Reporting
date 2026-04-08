@@ -36,7 +36,7 @@ export default function AdminLayout({
   if (loading) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0f' }}>
-        <Loader2 className="animate-spin" size={32} color="#3b82f6" />
+        <Loader2 className="animate-spin" size={32} color="#D4AF37" />
       </div>
     );
   }
@@ -45,7 +45,7 @@ export default function AdminLayout({
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0f' }}>
         <div style={{ textAlign: 'center' }}>
-          <Loader2 className="animate-spin" size={32} color="#3b82f6" style={{ margin: '0 auto 16px' }} />
+          <Loader2 className="animate-spin" size={32} color="#D4AF37" style={{ margin: '0 auto 16px' }} />
           <p style={{ color: 'var(--text-dim)', fontSize: 14 }}>Verifying credentials...</p>
         </div>
       </div>

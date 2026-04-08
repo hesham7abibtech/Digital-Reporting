@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Calendar, User, Tag, Paperclip, Clock, 
   FileText, FileCode, FileImage, FileArchive, 
-  Download, ExternalLink, Activity
+  Download, ExternalLink, Activity, Pause, Timer, CheckCircle2,
+  Building2
 } from 'lucide-react';
 import type { Task, TaskFile } from '@/lib/types';
 import StatusBadge from '@/components/shared/StatusBadge';
@@ -165,7 +166,7 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                             }}
                             className="group hover:bg-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.1)]"
                           >
-                            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(59,130,246,0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               {getFileIcon(file.type)}
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
@@ -206,9 +207,9 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                             style={{ 
                               padding: '10px 18px', 
                               borderRadius: 14, 
-                              background: 'rgba(59,130,246,0.1)', 
-                              border: '1px solid rgba(59,130,246,0.2)',
-                              color: '#60a5fa',
+                              background: 'rgba(212, 175, 55, 0.1)', 
+                              border: '1px solid rgba(212, 175, 55, 0.2)',
+                              color: '#D4AF37',
                               fontSize: 13,
                               fontWeight: 500,
                               display: 'flex',
@@ -218,12 +219,12 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                               transition: 'all 200ms'
                             }}
                             onMouseEnter={e => {
-                                e.currentTarget.style.background = 'rgba(59,130,246,0.15)';
-                                e.currentTarget.style.borderColor = 'rgba(59,130,246,0.3)';
+                                e.currentTarget.style.background = 'rgba(212, 175, 55, 0.15)';
+                                e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.3)';
                             }}
                             onMouseLeave={e => {
-                                e.currentTarget.style.background = 'rgba(59,130,246,0.1)';
-                                e.currentTarget.style.borderColor = 'rgba(59,130,246,0.2)';
+                                e.currentTarget.style.background = 'rgba(212, 175, 55, 0.1)';
+                                e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.2)';
                             }}
                           >
                             {link.label}
@@ -265,6 +266,15 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                             <p style={{ fontSize: 13, fontWeight: 500 }}>{formatDate(task.dueDate)}</p>
                           </div>
                         </div>
+                        {task.actualStartDate && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <Timer size={14} style={{ color: '#D4AF37' }} />
+                            <div>
+                              <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Actual Start</p>
+                              <p style={{ fontSize: 13, fontWeight: 500, color: '#D4AF37' }}>{formatDate(task.actualStartDate)}</p>
+                            </div>
+                          </div>
+                        )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <Clock size={14} style={{ color: 'var(--text-dim)' }} />
                           <div>
@@ -275,22 +285,118 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                       </div>
                     </div>
 
+                  {/* Progress — Dynamic by Status */}
                     <div>
                       <p style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12, fontWeight: 600 }}>Progress</p>
-                      <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 8 }}>
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${task.completion}%` }}
-                          transition={{ duration: 1, ease: 'easeOut' }}
-                          style={{ 
-                            height: '100%', 
-                            background: task.completion >= 80 ? '#10b981' : task.completion >= 50 ? '#3b82f6' : '#f59e0b',
-                            boxShadow: '0 0 12px rgba(59,130,246,0.3)'
-                          }} 
-                        />
-                      </div>
-                      <p style={{ fontSize: 13, fontWeight: 600, textAlign: 'right' }}>{task.completion}%</p>
+                      {task.status === 'NOT_STARTED' ? (
+                        <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#64748b' }} />
+                          <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Not Started — 0%</span>
+                        </div>
+                      ) : task.status === 'PENDING_REVIEW' ? (
+                        <div style={{ padding: '14px 16px', borderRadius: 14, background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.12)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <Pause size={16} style={{ color: '#f59e0b' }} />
+                              <span style={{ fontSize: 13, color: '#fbbf24', fontWeight: 700 }}>HOLDING</span>
+                            </div>
+                            <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>Pending Review</span>
+                          </div>
+                          <div style={{ height: 6, borderRadius: 3, background: 'rgba(245, 158, 11, 0.15)', overflow: 'hidden', marginBottom: 8 }}>
+                            <div style={{ height: '100%', borderRadius: 3, width: `${task.completion}%`, background: 'linear-gradient(90deg, #f59e0b, #fbbf24)', boxShadow: '0 0 12px rgba(245, 158, 11, 0.3)' }} />
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>{task.completion}% at hold</span>
+                            {task.pendingReviewDate && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                <Timer size={11} style={{ color: '#f59e0b', opacity: 0.7 }} />
+                                <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700, fontFamily: 'monospace' }}>
+                                  {(() => {
+                                    const ms = Date.now() - new Date(task.pendingReviewDate).getTime();
+                                    const hrs = Math.floor(ms / 3600000);
+                                    const mins = Math.floor((ms % 3600000) / 60000);
+                                    if (hrs >= 24) {
+                                      const days = Math.floor(hrs / 24);
+                                      return `Holding ${days}d ${hrs % 24}h`;
+                                    }
+                                    return `Holding ${hrs}h ${mins}m`;
+                                  })()}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : task.status === 'COMPLETED' ? (
+                        <div style={{ padding: '14px 16px', borderRadius: 14, background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.12)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                            <CheckCircle2 size={16} style={{ color: '#10b981' }} />
+                            <span style={{ fontSize: 13, color: '#34d399', fontWeight: 700 }}>Completed — 100%</span>
+                          </div>
+                          <div style={{ height: 6, borderRadius: 3, background: 'rgba(16, 185, 129, 0.15)', overflow: 'hidden' }}>
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: '100%' }}
+                              transition={{ duration: 1, ease: 'easeOut' }}
+                              style={{ height: '100%', borderRadius: 3, background: 'linear-gradient(90deg, #10b981, #34d399)', boxShadow: '0 0 12px rgba(16, 185, 129, 0.4)' }} 
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 8 }}>
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${task.completion}%` }}
+                              transition={{ duration: 1, ease: 'easeOut' }}
+                              style={{ 
+                                height: '100%', 
+                                background: task.completion >= 80 ? '#10b981' : task.completion >= 50 ? '#D4AF37' : task.status === 'DELAYED' ? '#ef4444' : '#f59e0b',
+                                boxShadow: `0 0 12px ${task.completion >= 80 ? 'rgba(16,185,129,0.3)' : task.completion >= 50 ? 'rgba(212, 175, 55, 0.3)' : 'rgba(245,158,11,0.3)'}`
+                              }} 
+                            />
+                          </div>
+                          <p style={{ fontSize: 13, fontWeight: 600, textAlign: 'right' }}>{task.completion}%</p>
+                        </>
+                      )}
                     </div>
+
+                    {/* Administrative Calibration Metadata */}
+                    {(task.reviewingEntity || task.responsiblePerson) && (
+                      <div style={{ marginTop: 20, padding: 16, borderRadius: 12, background: 'rgba(245, 158, 11, 0.04)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
+                        <p style={{ fontSize: 10, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12, fontWeight: 800 }}>Administrative Metadata</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {task.reviewingEntity && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <Building2 size={13} style={{ color: '#f59e0b', opacity: 0.7 }} />
+                              <div>
+                                <p style={{ fontSize: 10, color: 'var(--text-dim)' }}>Reviewing Entity</p>
+                                <p style={{ fontSize: 12, fontWeight: 600 }}>{task.reviewingEntity}</p>
+                              </div>
+                            </div>
+                          )}
+                          {task.responsiblePerson && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <User size={13} style={{ color: '#f59e0b', opacity: 0.7 }} />
+                              <div>
+                                <p style={{ fontSize: 10, color: 'var(--text-dim)' }}>Responsible Person</p>
+                                <p style={{ fontSize: 12, fontWeight: 600 }}>{task.responsiblePerson}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Requester Info */}
+                    {task.requesterName && (
+                      <div style={{ marginTop: 16 }}>
+                        <p style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, fontWeight: 600 }}>Requested By</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <User size={14} style={{ color: 'var(--text-dim)' }} />
+                          <p style={{ fontSize: 13, fontWeight: 500 }}>{task.requesterName}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div style={{ background: 'rgba(255,255,255,0.02)', padding: 24, borderRadius: 20, border: '1px solid rgba(255,255,255,0.04)' }}>
@@ -318,7 +424,7 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                 Close View
               </button>
               <button 
-                style={{ padding: '10px 24px', borderRadius: 12, background: '#3b82f6', border: 'none', color: 'white', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all 200ms', boxShadow: '0 8px 16px -4px rgba(59,130,246,0.4)' }}
+                style={{ padding: '10px 24px', borderRadius: 12, background: '#D4AF37', border: 'none', color: '#0a0a0f', cursor: 'pointer', fontSize: 14, fontWeight: 700, transition: 'all 200ms', boxShadow: '0 8px 16px -4px rgba(212, 175, 55, 0.4)' }}
                 onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
                 onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
               >

@@ -180,6 +180,15 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
     ];
   }, [data]);
 
+  const noDataPlaceholder = (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-dim)' }}>
+      <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <span style={{ fontSize: 12, fontWeight: 500 }}>No current data available</span>
+    </div>
+  );
+
   if (position === 'right') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -194,21 +203,21 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
                 <Legend layout="vertical" verticalAlign="middle" align="right" formatter={(value: string) => <span style={{ color: '#cbd5e1', fontSize: 13, fontWeight: 500 }}>{value}</span>} iconType="circle" iconSize={9} />
               </PieChart>
             </ResponsiveContainer>
-          ) : (
-            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: 12 }}>No active tasks detected</div>
-          )}
+          ) : noDataPlaceholder}
         </ChartCard>
         <ChartCard title="Tasks by Department" delay={0.25} height={165}>
-          <ResponsiveContainer width="100%" height="100%" debounce={50}>
-            <BarChart data={deptData} barGap={2} barSize={12}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-              <XAxis dataKey="name" {...axisProps} />
-              <YAxis {...axisProps} />
-              <Tooltip content={<PremiumTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-              <Bar dataKey="active" name="Active" fill={palette.blue} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="done" name="Done" fill={palette.emerald} radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {data.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%" debounce={50}>
+              <BarChart data={deptData} barGap={2} barSize={12}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                <XAxis dataKey="name" {...axisProps} />
+                <YAxis {...axisProps} />
+                <Tooltip content={<PremiumTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
+                <Bar dataKey="active" name="Active" fill={palette.blue} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="done" name="Done" fill={palette.emerald} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : noDataPlaceholder}
         </ChartCard>
       </div>
     );
@@ -218,27 +227,31 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <ChartCard title="Weekly Completion Trend" delay={0.3} height={165}>
-          <ResponsiveContainer width="100%" height="100%" debounce={50}>
-            <AreaChart data={weeklyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-              <XAxis dataKey="name" {...axisProps} />
-              <YAxis {...axisProps} />
-              <Tooltip content={<PremiumTooltip />} />
-              <Area type="monotone" dataKey="completed" stroke={palette.emerald} fill="rgba(16, 185, 129, 0.1)" strokeWidth={2.5} name="Completed" dot={{ fill: palette.emerald, r: 3 }} />
-              <Area type="monotone" dataKey="created" stroke={palette.cyan} fill="rgba(6, 182, 212, 0.1)" strokeWidth={2} name="Created" dot={{ fill: palette.cyan, r: 3 }} />
-            </AreaChart>
-          </ResponsiveContainer>
+          {data.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%" debounce={50}>
+              <AreaChart data={weeklyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                <XAxis dataKey="name" {...axisProps} />
+                <YAxis {...axisProps} />
+                <Tooltip content={<PremiumTooltip />} />
+                <Area type="monotone" dataKey="completed" stroke={palette.emerald} fill="rgba(16, 185, 129, 0.1)" strokeWidth={2.5} name="Completed" dot={{ fill: palette.emerald, r: 3 }} />
+                <Area type="monotone" dataKey="created" stroke={palette.cyan} fill="rgba(6, 182, 212, 0.1)" strokeWidth={2} name="Created" dot={{ fill: palette.cyan, r: 3 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : noDataPlaceholder}
         </ChartCard>
         <ChartCard title="Delayed Deliverables" delay={0.35} height={155}>
-          <ResponsiveContainer width="100%" height="100%" debounce={50}>
-            <LineChart data={delayedData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-              <XAxis dataKey="name" {...axisProps} />
-              <YAxis {...axisProps} />
-              <Tooltip content={<PremiumTooltip />} />
-              <Line type="monotone" dataKey="value" stroke={palette.rose} strokeWidth={2.5} name="Delayed" dot={{ fill: palette.rose, r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          {data.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%" debounce={50}>
+              <LineChart data={delayedData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                <XAxis dataKey="name" {...axisProps} />
+                <YAxis {...axisProps} />
+                <Tooltip content={<PremiumTooltip />} />
+                <Line type="monotone" dataKey="value" stroke={palette.rose} strokeWidth={2.5} name="Delayed" dot={{ fill: palette.rose, r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : noDataPlaceholder}
         </ChartCard>
       </div>
     );
@@ -257,21 +270,21 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
               <Legend verticalAlign="bottom" height={28} iconType="circle" iconSize={7} formatter={(v: string) => <span style={{ color: '#94a3b8', fontSize: 10 }}>{v}</span>} />
             </PieChart>
           </ResponsiveContainer>
-        ) : (
-          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: 12 }}>Registry status: Idle. No data ingested.</div>
-        )}
+        ) : noDataPlaceholder}
       </ChartCard>
       <ChartCard title="Tasks by Department" delay={0.25} height={180}>
-        <ResponsiveContainer width="100%" height="100%" debounce={50}>
-          <BarChart data={deptData} barSize={14}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-            <XAxis dataKey="name" {...axisProps} />
-            <YAxis {...axisProps} />
-            <Tooltip content={<PremiumTooltip />} />
-            <Bar dataKey="active" name="Active" fill={palette.blue} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="done" name="Done" fill={palette.emerald} radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        {data.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%" debounce={50}>
+            <BarChart data={deptData} barSize={14}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+              <XAxis dataKey="name" {...axisProps} />
+              <YAxis {...axisProps} />
+              <Tooltip content={<PremiumTooltip />} />
+              <Bar dataKey="active" name="Active" fill={palette.blue} radius={[4, 4, 0, 0]} />
+              <Bar dataKey="done" name="Done" fill={palette.emerald} radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : noDataPlaceholder}
       </ChartCard>
     </div>
   );

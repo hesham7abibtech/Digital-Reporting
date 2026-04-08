@@ -8,7 +8,7 @@ interface StatusBadgeProps {
 
 const statusConfig: Record<TaskStatus, { label: string; color: string; bg: string }> = {
   NOT_STARTED: { label: 'Not Started', color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
-  IN_PROGRESS: { label: 'In Progress', color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
+  IN_PROGRESS: { label: 'In Progress', color: '#D4AF37', bg: 'rgba(212,175,55,0.12)' },
   PENDING_REVIEW: { label: 'Pending Review', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
   COMPLETED: { label: 'Completed', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
   DELAYED: { label: 'Delayed', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },

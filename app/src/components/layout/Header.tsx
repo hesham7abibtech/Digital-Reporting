@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Bell, Search, Globe, ChevronDown, Loader2, X, Clock as ClockIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { notifications } from '@/lib/data';
@@ -77,21 +77,22 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
     >
       {/* Logo Group */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginRight: 24 }}>
-        {project?.ownerLogoUrl && (
-          <img src={project.ownerLogoUrl} alt="Owner Logo" style={{ height: 32, objectFit: 'contain', opacity: 0.9 }} />
-        )}
-        <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.06)' }} />
-        {project?.logoUrl && (
-          <img src={project.logoUrl} alt="Project Logo" style={{ height: 32, objectFit: 'contain' }} />
-        )}
-        {!project?.logoUrl && (
+        {project?.partnerLogos?.map((logo, index) => (
+          <React.Fragment key={`logo-${index}`}>
+            {index > 0 && <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', borderRadius: 1 }} />}
+            <div style={{ padding: '4px 0', display: 'flex', alignItems: 'center' }}>
+              <img src={logo} alt={`Partner Logo ${index + 1}`} style={{ height: 26, width: 'auto', maxWidth: 120, objectFit: 'contain', filter: 'brightness(1.1)' }} />
+            </div>
+          </React.Fragment>
+        ))}
+        {(!project?.partnerLogos || project.partnerLogos.length === 0) && (
           <span style={{ fontSize: 16, fontWeight: 900, letterSpacing: '0.1em', color: 'white' }}>COMMAND CENTER</span>
         )}
       </div>
 
-      {/* Search hub network... */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
-        <div style={{ position: 'relative', maxWidth: 400, width: '100%' }}>
+      {/* Search hub network... - Centered Absolutely */}
+      <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 400 }}>
+        <div style={{ position: 'relative', width: '100%' }}>
           <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
             type="text"
@@ -101,6 +102,8 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
               borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
               fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'all 200ms'
             }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.4)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
           />
         </div>
       </div>
@@ -117,15 +120,15 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '8px 16px', borderRadius: 12,
-              background: 'linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(37,99,235,0.05) 100%)',
-              border: '1px solid rgba(59,130,246,0.2)',
+              background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(184, 134, 11, 0.05) 100%)',
+              border: '1px solid rgba(212, 175, 55, 0.2)',
               color: 'var(--text-primary)', cursor: 'pointer', outline: 'none',
               transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Globe size={15} style={{ color: '#60a5fa' }} />
+              <Globe size={15} style={{ color: '#D4AF37' }} />
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                 <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1 }}>{selectedTimeZone.name} ({selectedTimeZone.code})</span>
                 <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{selectedTimeZone.offset} Hub</span>
@@ -151,7 +154,7 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
                     position: 'absolute', top: '130%', right: 0, width: 320,
                     background: 'rgba(12,12,20,0.98)', backdropFilter: 'blur(32px)',
                     border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16,
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(59,130,246,0.1)',
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(212, 175, 55, 0.1)',
                     overflow: 'hidden', zIndex: 50
                   }}
                 >
@@ -194,14 +197,14 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
                           }}
                           style={{
                             width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: 10,
-                            border: 'none', background: selectedTimeZone.id === tz.id ? 'rgba(59,130,246,0.12)' : 'transparent',
-                            color: selectedTimeZone.id === tz.id ? '#60a5fa' : 'var(--text-secondary)',
+                            border: 'none', background: selectedTimeZone.id === tz.id ? 'rgba(212, 175, 55, 0.12)' : 'transparent',
+                            color: selectedTimeZone.id === tz.id ? '#D4AF37' : 'var(--text-secondary)',
                             fontSize: 13, cursor: 'pointer', transition: 'all 200ms',
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2
                           }}
                         >
                           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: selectedTimeZone.id === tz.id ? '#3b82f6' : 'rgba(255,255,255,0.1)' }} />
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: selectedTimeZone.id === tz.id ? '#D4AF37' : 'rgba(255,255,255,0.1)' }} />
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                               <span style={{ fontWeight: selectedTimeZone.id === tz.id ? 600 : 400 }}>{tz.name} ({tz.code})</span>
                               <span style={{ fontSize: 10, opacity: 0.4 }}>{tz.id.split('/')[0]} Hub</span>
@@ -217,8 +220,8 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
                     )}
                   </div>
 
-                  <div style={{ padding: '10px 16px', background: 'rgba(59,130,246,0.05)', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Globe size={12} style={{ color: '#3b82f6' }} />
+                  <div style={{ padding: '10px 16px', background: 'rgba(212, 175, 55, 0.05)', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Globe size={12} style={{ color: '#D4AF37' }} />
                     <span style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Select your country</span>
                   </div>
                 </motion.div>
@@ -268,18 +271,18 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
               alignItems: 'center', 
               gap: 12, 
               padding: '4px 14px 4px 6px', 
-              background: 'rgba(59, 130, 246, 0.05)', 
-              border: '2px solid #3b82f6', 
+              background: 'rgba(212, 175, 55, 0.05)', 
+              border: '2px solid #D4AF37', 
               borderRadius: 14,
               cursor: 'pointer',
-              boxShadow: '0 0 15px rgba(59, 130, 246, 0.15)'
+              boxShadow: '0 0 15px rgba(212, 175, 55, 0.15)'
             }}>
-              <div style={{ width: 32, height: 32, borderRadius: 10, overflow: 'hidden', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: 13, boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
+              <div style={{ width: 32, height: 32, borderRadius: 10, overflow: 'hidden', background: '#D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0a0a0f', fontWeight: 900, fontSize: 13, boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
                 AR
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: 13, fontWeight: 800, color: 'white', lineHeight: 1 }}>Hesham Habib</span>
-                <span style={{ fontSize: 10, fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 1 }}>OWNER ACCESS</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 1 }}>OWNER ACCESS</span>
               </div>
             </div>
           )}

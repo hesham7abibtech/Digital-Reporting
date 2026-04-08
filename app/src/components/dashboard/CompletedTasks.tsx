@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Paperclip, ChevronDown, ChevronRight } from 'lucide-react';
+import { CheckCircle, Paperclip, ChevronDown, ChevronRight, Inbox } from 'lucide-react';
 import GlassCard from '@/components/shared/GlassCard';
 import PriorityBadge from '@/components/shared/PriorityBadge';
 import { tasks } from '@/lib/data';
@@ -26,8 +26,8 @@ export default function CompletedTasks({ onTaskClick, tasks: externalTasks }: { 
   const remainingRows = completedTasks.slice(PREVIEW_ROWS);
 
   const thStyle: React.CSSProperties = {
-    padding: '10px 14px', textAlign: 'left', fontSize: 12, fontWeight: 500,
-    color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em',
+    padding: '10px 14px', textAlign: 'left', fontSize: 12, fontWeight: 600,
+    color: '#c9a227', textTransform: 'uppercase', letterSpacing: '0.06em',
   };
 
   return (
@@ -70,6 +70,19 @@ export default function CompletedTasks({ onTaskClick, tasks: externalTasks }: { 
             </tbody>
           </table>
         </div>
+
+        {/* Empty state */}
+        {completedTasks.length === 0 && (
+          <div style={{ padding: '40px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Inbox size={20} style={{ color: 'rgba(16, 185, 129, 0.4)' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>No current data available</p>
+              <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Completed tasks will appear here</p>
+            </div>
+          </div>
+        )}
 
         {/* Expand/collapse footer */}
         {remainingRows.length > 0 && (

@@ -81,7 +81,7 @@ export default function BulkActionConfirmModal({
             Bulk {actionName}
           </h3>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>
-            Initiating high-authority deletion for <strong style={{ color: 'white', fontSize: 17 }}>{count} nodes</strong>. 
+            Initiating high-authority deletion for <strong style={{ color: 'white', fontSize: 17 }}>{count} items</strong>. 
             This operation is irreversible and will purge data from the production environment.
           </p>
 

@@ -64,11 +64,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 overflow: 'hidden',
                 border: `1px solid ${
                   toast.type === 'SUCCESS' ? 'rgba(16, 185, 129, 0.3)' : 
-                  toast.type === 'ERROR' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.3)'
+                  toast.type === 'ERROR' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(212, 175, 55, 0.3)'
                 }`,
                 boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 20px ${
                   toast.type === 'SUCCESS' ? 'rgba(16, 185, 129, 0.1)' : 
-                  toast.type === 'ERROR' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)'
+                  toast.type === 'ERROR' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(212, 175, 55, 0.1)'
                 }`,
               }}
             >
@@ -89,22 +89,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
               <div style={{ 
                 width: 44, height: 44, borderRadius: 14, 
-                background: toast.type === 'SUCCESS' ? 'rgba(16, 185, 129, 0.15)' : toast.type === 'ERROR' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                background: toast.type === 'SUCCESS' ? 'rgba(16, 185, 129, 0.15)' : toast.type === 'ERROR' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(212, 175, 55, 0.15)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: `inset 0 0 12px ${
                   toast.type === 'SUCCESS' ? 'rgba(16, 185, 129, 0.2)' : 
-                  toast.type === 'ERROR' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)'
+                  toast.type === 'ERROR' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(212, 175, 55, 0.2)'
                 }`
               }}>
                 {toast.type === 'SUCCESS' && <Zap size={22} color="#10b981" style={{ filter: 'drop-shadow(0 0 8px #10b981)' }} />}
                 {toast.type === 'ERROR' && <ShieldAlert size={22} color="#ef4444" style={{ filter: 'drop-shadow(0 0 8px #ef4444)' }} />}
-                {toast.type === 'INFO' && <Radio size={22} color="#3b82f6" style={{ filter: 'drop-shadow(0 0 8px #3b82f6)' }} />}
+                {toast.type === 'INFO' && <Radio size={22} color="#D4AF37" style={{ filter: 'drop-shadow(0 0 8px #D4AF37)' }} />}
               </div>
               
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ 
                   fontSize: 11, fontWeight: 900, 
-                  color: toast.type === 'SUCCESS' ? '#10b981' : toast.type === 'ERROR' ? '#ef4444' : '#3b82f6', 
+                  color: toast.type === 'SUCCESS' ? '#10b981' : toast.type === 'ERROR' ? '#ef4444' : '#D4AF37', 
                   textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 2,
                   display: 'flex', alignItems: 'center', gap: 6
                 }}>
@@ -146,11 +146,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 transition={{ duration: 5, ease: 'linear' }}
                 style={{
                   position: 'absolute', bottom: 0, left: 0, right: 0, height: 2,
-                  background: toast.type === 'SUCCESS' ? '#10b981' : toast.type === 'ERROR' ? '#ef4444' : '#3b82f6',
+                  background: toast.type === 'SUCCESS' ? '#10b981' : toast.type === 'ERROR' ? '#ef4444' : '#D4AF37',
                   transformOrigin: 'left',
                   boxShadow: `0 0 10px ${
                     toast.type === 'SUCCESS' ? '#10b981' : 
-                    toast.type === 'ERROR' ? '#ef4444' : '#3b82f6'
+                    toast.type === 'ERROR' ? '#ef4444' : '#D4AF37'
                   }`
                 }}
               />

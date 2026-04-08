@@ -53,6 +53,10 @@ export interface Task {
   timeZone: string;
   fileShareLink: string;
   requesterName: string;
+  pendingReviewDate?: string | null; // When task entered PENDING_REVIEW status
+  reviewingEntity?: string | null;
+  responsiblePerson?: string | null;
+  actualStartDate?: string | null;
 
   createdAt: string;
   updatedAt: string;
@@ -163,7 +167,7 @@ export interface ProjectMetadata {
   projectId: string;
   companyName: string;
   region: string;
-  subtitle: string;
+  subtitles?: string[];
   brandingCode: string;
   location: string;
   statusLine: string;
@@ -171,6 +175,12 @@ export interface ProjectMetadata {
   memberCount: string;
   logoUrl: string;
   ownerLogoUrl: string;
+  partnerLogos?: string[];
+  headerBgUrl?: string;
+  headerBgOpacity?: number;
+  headerBgPositionY?: number;
+  headerBgPositionX?: number;
+  allowedDomains?: string[];
   updatedAt: string;
 }
 

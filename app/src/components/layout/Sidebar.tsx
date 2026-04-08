@@ -63,14 +63,15 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
             width: 36,
             height: 36,
             borderRadius: 12,
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+            background: 'linear-gradient(135deg, #D4AF37, #B8860B)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
+            boxShadow: '0 0 15px rgba(212, 175, 55, 0.3)'
           }}
         >
-          <Hexagon size={18} color="white" />
+          <Hexagon size={18} color="#0a0a0f" />
         </div>
         {!collapsed && (
           <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
@@ -102,9 +103,9 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
                 cursor: 'pointer',
                 transition: 'all 200ms',
                 justifyContent: collapsed ? 'center' : 'flex-start',
-                background: isActive ? 'rgba(59,130,246,0.12)' : 'transparent',
-                color: isActive ? '#60a5fa' : 'var(--text-muted)',
-                boxShadow: isActive ? '0 0 12px rgba(59,130,246,0.1)' : 'none',
+                background: isActive ? 'rgba(212, 175, 55, 0.12)' : 'transparent',
+                color: isActive ? '#D4AF37' : 'var(--text-muted)',
+                boxShadow: isActive ? '0 0 12px rgba(212, 175, 55, 0.1)' : 'none',
               }}
             >
               <span style={{ flexShrink: 0, position: 'relative', display: 'flex' }}>
@@ -178,11 +179,11 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
             width: 32,
             height: 32,
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #3b82f6, #06b6d4)',
+            background: 'linear-gradient(135deg, #D4AF37, #B8860B)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'white',
+            color: '#0a0a0f',
             fontSize: 11,
             fontWeight: 700,
             flexShrink: 0,

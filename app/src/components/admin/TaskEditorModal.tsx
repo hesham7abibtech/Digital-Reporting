@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Trash2, Calendar, User, Tag, Activity, Loader2 } from 'lucide-react';
+import { X, Save, Trash2, Calendar, User, Tag, Activity, Loader2, Pause, Timer, Search, Globe, ChevronDown, Check, Building2 } from 'lucide-react';
 import { Task, Priority, TaskStatus, TeamMember } from '@/lib/types';
 import { upsertTask, deleteTask } from '@/services/FirebaseService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
+import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
+import { useToast } from '@/components/shared/EliteToast';
 
 interface TaskEditorProps {
   task: Task | null;
@@ -85,10 +87,19 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     fileShareLink: '',
     requesterName: '',
+    reviewingEntity: '',
+    responsiblePerson: '',
+    actualStartDate: '',
+    pendingReviewDate: null,
   });
   const [showCustomDept, setShowCustomDept] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [tzSearch, setTzSearch] = useState('');
+  const [tzOpen, setTzOpen] = useState(false);
+  const tzRef = useRef<HTMLDivElement>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const { showToast } = useToast();
 
   // Available Time Zones
   const allTimeZones = typeof Intl !== 'undefined' && (Intl as any).supportedValuesOf 
@@ -111,6 +122,9 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
         timeZone: task.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone,
         fileShareLink: task.fileShareLink || '',
         requesterName: task.requesterName || '',
+        reviewingEntity: task.reviewingEntity || '',
+        responsiblePerson: task.responsiblePerson || '',
+        actualStartDate: task.actualStartDate || '',
       });
       
       const standardDepts = ['Architecture', 'MEP', 'Structural', 'Design', 'Project Management', 'QA/QC', 'HSE', 'IT'];
@@ -136,6 +150,10 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         fileShareLink: '',
         requesterName: '',
+        reviewingEntity: '',
+        responsiblePerson: '',
+        actualStartDate: '',
+        pendingReviewDate: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
@@ -152,10 +170,12 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
         updatedAt: new Date().toISOString(),
       } as Task;
       await upsertTask(finalTask);
+      showToast('Task asset synchronized successfully.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Failed to save task:', error);
       setErrorMsg(getFirebaseErrorMessage(error));
+      showToast('Access denied or sync failure.', 'ERROR');
     } finally {
       setIsSaving(false);
     }
@@ -163,14 +183,15 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
 
   const handleDelete = async () => {
     if (!task) return;
-    if (confirm('Are you sure you want to delete this task? This action is irreversible.')) {
-      try {
-        await deleteTask(task.id);
-        onClose();
-      } catch (error) {
-        console.error('Failed to delete task:', error);
-        setErrorMsg(getFirebaseErrorMessage(error));
-      }
+    try {
+      await deleteTask(task.id);
+      showToast('Task record successfully terminated.', 'SUCCESS');
+      onClose();
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      setErrorMsg(getFirebaseErrorMessage(error));
+      showToast('Termination protocol failed.', 'ERROR');
+      throw error;
     }
   };
 
@@ -213,7 +234,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Task Title</label>
             <input 
               type="text" 
-              value={formData.title} 
+              value={formData.title ?? ''} 
               onChange={e => setFormData({ ...formData, title: e.target.value })}
               style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 15, outline: 'none' }}
               placeholder="System migration..."
@@ -233,7 +254,8 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
                       ...formData, 
                       assigneeId: m.id, 
                       assigneeName: m.name, 
-                      assigneeAvatar: m.avatar || '' 
+                      assigneeAvatar: m.avatar || '',
+                      department: m.department 
                     });
                   }
                 }}
@@ -241,7 +263,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
               >
                 <option value="">Select Team Member</option>
                 {members.map(m => (
-                  <option key={m.id} value={m.id}>{m.name} ({m.department})</option>
+                  <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
               </select>
             </div>
@@ -253,7 +275,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
               <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
               <input 
                 type="text" 
-                value={formData.requesterName} 
+                value={formData.requesterName ?? ''} 
                 onChange={e => setFormData({ ...formData, requesterName: e.target.value })}
                 style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }}
                 placeholder="Name of entity requesting task"
@@ -262,19 +284,152 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
           </div>
 
           <div style={{ gridColumn: 'span 2' }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operational Time Zone (Deadlines Intelligence)</label>
-            <select 
-              value={formData.timeZone} 
-              onChange={e => handleTZChange(e.target.value)}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#1a1a24', border: '1px solid rgba(59, 130, 246, 0.3)', color: 'white', fontSize: 14, outline: 'none', boxShadow: '0 0 15px rgba(59, 130, 246, 0.05)' }}
-            >
-              <optgroup label="Quick Access (Regional Core)">
-                {commonTimeZones.map(tz => <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>)}
-              </optgroup>
-              <optgroup label="All Global Nodes">
-                {allTimeZones.map((tz: string) => <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>)}
-              </optgroup>
-            </select>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Globe size={13} style={{ color: '#D4AF37' }} />
+                Operational Time Zone (Deadlines Intelligence)
+              </div>
+            </label>
+            <div ref={tzRef} style={{ position: 'relative' }}>
+              {/* Selected Value Button */}
+              <button
+                type="button"
+                onClick={() => { setTzOpen(!tzOpen); setTzSearch(''); }}
+                style={{
+                  width: '100%', padding: '12px 16px', borderRadius: 12,
+                  background: 'linear-gradient(135deg, rgba(15, 15, 25, 0.95) 0%, rgba(20, 20, 35, 0.95) 100%)',
+                  border: tzOpen ? '1px solid rgba(212, 175, 55, 0.5)' : '1px solid rgba(212, 175, 55, 0.2)',
+                  color: 'white', fontSize: 14, outline: 'none', cursor: 'pointer',
+                  boxShadow: tzOpen ? '0 0 20px rgba(212, 175, 55, 0.1), inset 0 0 30px rgba(212, 175, 55, 0.03)' : '0 0 15px rgba(212, 175, 55, 0.05)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  transition: 'all 200ms',
+                  textAlign: 'left'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Globe size={16} style={{ color: '#D4AF37' }} />
+                  </div>
+                  <div>
+                    <span style={{ fontWeight: 600, display: 'block', fontSize: 14 }}>{(formData.timeZone || '').replace(/_/g, ' ')}</span>
+                    <span style={{ fontSize: 10, color: '#64748b', fontWeight: 600, letterSpacing: '0.03em' }}>
+                      UTC {(() => { try { const f = new Intl.DateTimeFormat('en-US',{timeZone: formData.timeZone, timeZoneName:'shortOffset'}); const p = f.formatToParts(new Date()); return p.find(x=>x.type==='timeZoneName')?.value?.replace('GMT','') || ''; } catch { return ''; } })()}
+                      {' • '}{new Date().toLocaleTimeString('en-US', { timeZone: formData.timeZone, hour: '2-digit', minute: '2-digit', hour12: true })}
+                    </span>
+                  </div>
+                </div>
+                <ChevronDown size={18} style={{ color: '#64748b', transition: 'transform 200ms', transform: tzOpen ? 'rotate(180deg)' : 'none' }} />
+              </button>
+
+              {/* Dropdown Panel */}
+              <AnimatePresence>
+                {tzOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4, scaleY: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scaleY: 1 }}
+                    exit={{ opacity: 0, y: -4, scaleY: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6,
+                      zIndex: 50, borderRadius: 14, overflow: 'hidden',
+                      background: 'rgba(12, 12, 20, 0.98)',
+                      border: '1px solid rgba(212, 175, 55, 0.2)',
+                      boxShadow: '0 20px 50px rgba(0,0,0,0.6), 0 0 30px rgba(212, 175, 55, 0.08)',
+                      backdropFilter: 'blur(20px)',
+                    }}
+                  >
+                    {/* Search Input */}
+                    <div style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ position: 'relative' }}>
+                        <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
+                        <input
+                          type="text"
+                          autoFocus
+                          value={tzSearch}
+                          onChange={e => setTzSearch(e.target.value)}
+                          placeholder="Search timezone..."
+                          style={{
+                            width: '100%', padding: '10px 14px 10px 36px', borderRadius: 10,
+                            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                            color: 'white', fontSize: 13, outline: 'none',
+                          }}
+                          onFocus={e => e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.3)'}
+                          onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Timezone List */}
+                    <div style={{ maxHeight: 280, overflowY: 'auto', padding: '6px 0' }}>
+                      {/* Quick Access */}
+                      {(!tzSearch || commonTimeZones.some(tz => tz.toLowerCase().includes(tzSearch.toLowerCase()))) && (
+                        <>
+                          <div style={{ padding: '6px 16px', fontSize: 9, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Quick Access — Regional Core</div>
+                          {commonTimeZones.filter(tz => !tzSearch || tz.toLowerCase().includes(tzSearch.toLowerCase())).map(tz => (
+                            <button
+                              key={`quick-${tz}`}
+                              type="button"
+                              onClick={() => { handleTZChange(tz); setTzOpen(false); }}
+                              style={{
+                                width: '100%', padding: '10px 16px', border: 'none', cursor: 'pointer',
+                                background: formData.timeZone === tz ? 'rgba(212, 175, 55, 0.1)' : 'transparent',
+                                color: 'white', fontSize: 13, textAlign: 'left',
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                transition: 'background 100ms',
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = formData.timeZone === tz ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255,255,255,0.03)'}
+                              onMouseLeave={e => e.currentTarget.style.background = formData.timeZone === tz ? 'rgba(212, 175, 55, 0.1)' : 'transparent'}
+                            >
+                              <span style={{ fontWeight: formData.timeZone === tz ? 600 : 400 }}>{tz.replace(/_/g, ' ')}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: 10, color: '#64748b', fontFamily: 'monospace' }}>
+                                  {(() => { try { const f = new Intl.DateTimeFormat('en-US',{timeZone:tz,timeZoneName:'shortOffset'}); return f.formatToParts(new Date()).find(x=>x.type==='timeZoneName')?.value || ''; } catch { return ''; } })()}
+                                </span>
+                                {formData.timeZone === tz && <Check size={14} style={{ color: '#D4AF37' }} />}
+                              </div>
+                            </button>
+                          ))}
+                        </>
+                      )}
+
+                      {/* Divider */}
+                      <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', margin: '6px 16px' }} />
+
+                      {/* All Zones (filtered) */}
+                      <div style={{ padding: '6px 16px', fontSize: 9, fontWeight: 900, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.12em' }}>All Global Regions</div>
+                      {allTimeZones
+                        .filter((tz: string) => !tzSearch || tz.toLowerCase().includes(tzSearch.toLowerCase()))
+                        .slice(0, 50)
+                        .map((tz: string) => (
+                          <button
+                            key={tz}
+                            type="button"
+                            onClick={() => { handleTZChange(tz); setTzOpen(false); }}
+                            style={{
+                              width: '100%', padding: '8px 16px', border: 'none', cursor: 'pointer',
+                              background: formData.timeZone === tz ? 'rgba(212, 175, 55, 0.1)' : 'transparent',
+                              color: 'white', fontSize: 12, textAlign: 'left',
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                              transition: 'background 100ms',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = formData.timeZone === tz ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255,255,255,0.03)'}
+                            onMouseLeave={e => e.currentTarget.style.background = formData.timeZone === tz ? 'rgba(212, 175, 55, 0.1)' : 'transparent'}
+                          >
+                            <span style={{ fontWeight: formData.timeZone === tz ? 600 : 400 }}>{tz.replace(/_/g, ' ')}</span>
+                            {formData.timeZone === tz && <Check size={12} style={{ color: '#D4AF37' }} />}
+                          </button>
+                        ))}
+                      {tzSearch && allTimeZones.filter((tz: string) => tz.toLowerCase().includes(tzSearch.toLowerCase())).length === 0 && (
+                        <div style={{ padding: '20px 16px', textAlign: 'center', color: '#475569', fontSize: 12 }}>No timezone matches "{tzSearch}"</div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Click-away listener */}
+              {tzOpen && <div onClick={() => setTzOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />}
+            </div>
           </div>
 
           <div>
@@ -297,9 +452,9 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
                 initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
                 type="text" 
                 placeholder="Enter department name..."
-                value={formData.department}
+                value={formData.department ?? ''}
                 onChange={e => setFormData({ ...formData, department: e.target.value })}
-                style={{ width: '100%', padding: '10px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(59, 130, 246, 0.3)', color: 'white', fontSize: 13, outline: 'none', marginTop: 8 }}
+                style={{ width: '100%', padding: '10px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(212, 175, 55, 0.3)', color: 'white', fontSize: 13, outline: 'none', marginTop: 8 }}
               />
             )}
           </div>
@@ -313,9 +468,9 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
                   onClick={() => setFormData({ ...formData, priority: p })}
                   style={{
                     flex: 1, padding: '8px 0', fontSize: 10, fontWeight: 700, borderRadius: 8,
-                    background: formData.priority === p ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255,255,255,0.02)',
-                    color: formData.priority === p ? '#3b82f6' : '#64748b',
-                    border: formData.priority === p ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(255,255,255,0.04)',
+                    background: formData.priority === p ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255,255,255,0.02)',
+                    color: formData.priority === p ? '#D4AF37' : '#64748b',
+                    border: formData.priority === p ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(255,255,255,0.04)',
                     cursor: 'pointer'
                   }}
                 >
@@ -329,31 +484,163 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status Track</label>
              <select 
               value={formData.status} 
-              onChange={e => setFormData({ ...formData, status: e.target.value as any })}
+              onChange={e => {
+                const newStatus = e.target.value as TaskStatus;
+                const updates: Partial<Task> = { status: newStatus };
+                // Auto-set pendingReviewDate when entering PENDING_REVIEW
+                if (newStatus === 'PENDING_REVIEW' && formData.status !== 'PENDING_REVIEW') {
+                  updates.pendingReviewDate = new Date().toISOString();
+                }
+                // Clear pendingReviewDate when leaving PENDING_REVIEW
+                if (newStatus !== 'PENDING_REVIEW') {
+                  updates.pendingReviewDate = null;
+                }
+                // Auto-set actualStartDate when entering IN_PROGRESS if not set
+                if (newStatus === 'IN_PROGRESS' && !formData.actualStartDate) {
+                  updates.actualStartDate = new Date().toISOString();
+                }
+                // Auto-set completion based on status
+                if (newStatus === 'NOT_STARTED') updates.completion = 0;
+                if (newStatus === 'COMPLETED') updates.completion = 100;
+                setFormData({ ...formData, ...updates });
+              }}
               style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#1a1a24', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }}
             >
               {statuses.map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
             </select>
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Completion Density (%)</label>
-            <input 
-              type="number" 
-              min="0" max="100"
-              value={formData.completion} 
-              onChange={e => setFormData({ ...formData, completion: parseInt(e.target.value) || 0 })}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }}
-            />
-          </div>
+          {/* Conditional Administrative Calibration Fields */}
+          <AnimatePresence>
+            {formData.status === 'PENDING_REVIEW' && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                style={{ gridColumn: 'span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, overflow: 'hidden' }}
+              >
+                <div style={{ padding: 20, borderRadius: 16, background: 'rgba(245, 158, 11, 0.03)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#fbbf24', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reviewing Entity</label>
+                  <div style={{ position: 'relative' }}>
+                    <Building2 size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(245, 158, 11, 0.4)' }} />
+                    <input 
+                      type="text" 
+                      value={formData.reviewingEntity ?? ''} 
+                      onChange={e => setFormData({ ...formData, reviewingEntity: e.target.value })}
+                      style={{ width: '100%', padding: '10px 16px 10px 38px', borderRadius: 10, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(245, 158, 11, 0.15)', color: 'white', fontSize: 13, outline: 'none' }}
+                      placeholder="e.g. Municipal Authority"
+                    />
+                  </div>
+                </div>
+                <div style={{ padding: 20, borderRadius: 16, background: 'rgba(245, 158, 11, 0.03)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#fbbf24', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Responsible Person (if known)</label>
+                  <div style={{ position: 'relative' }}>
+                    <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(245, 158, 11, 0.4)' }} />
+                    <input 
+                      type="text" 
+                      value={formData.responsiblePerson ?? ''} 
+                      onChange={e => setFormData({ ...formData, responsiblePerson: e.target.value })}
+                      style={{ width: '100%', padding: '10px 16px 10px 38px', borderRadius: 10, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(245, 158, 11, 0.15)', color: 'white', fontSize: 13, outline: 'none' }}
+                      placeholder="e.g. Lead Engineer"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {formData.status === 'IN_PROGRESS' && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                style={{ gridColumn: 'span 2', overflow: 'hidden' }}
+              >
+                <div style={{ padding: 20, borderRadius: 16, background: 'rgba(212, 175, 55, 0.03)', border: '1px solid rgba(212, 175, 55, 0.1)' }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operational Sync: Actual Start Date</label>
+                  <div style={{ position: 'relative' }}>
+                    <Timer size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(212, 175, 55, 0.4)' }} />
+                    <input 
+                      type="datetime-local" 
+                      value={toLocalISO(formData.actualStartDate || '', formData.timeZone || '')} 
+                      onChange={e => setFormData({ ...formData, actualStartDate: fromLocalISO(e.target.value, formData.timeZone || '') })}
+                      style={{ width: '100%', padding: '10px 16px 10px 38px', borderRadius: 10, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(212, 175, 55, 0.15)', color: 'white', fontSize: 13, outline: 'none' }}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Dynamic Completion Density — changes based on status */}
+          {formData.status === 'NOT_STARTED' ? (
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Completion Density (%)</label>
+              <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#64748b' }} />
+                <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Not Started — 0%</span>
+              </div>
+            </div>
+          ) : formData.status === 'PENDING_REVIEW' ? (
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Completion Density (%)</label>
+              <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Pause size={16} style={{ color: '#f59e0b' }} />
+                  <span style={{ fontSize: 13, color: '#fbbf24', fontWeight: 700 }}>HOLDING — Pending Review</span>
+                </div>
+                {formData.pendingReviewDate && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Timer size={12} style={{ color: '#f59e0b', opacity: 0.7 }} />
+                    <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600, fontFamily: 'monospace' }}>
+                      {(() => {
+                        const ms = Date.now() - new Date(formData.pendingReviewDate).getTime();
+                        const hrs = Math.floor(ms / 3600000);
+                        const mins = Math.floor((ms % 3600000) / 60000);
+                        if (hrs >= 24) {
+                          const days = Math.floor(hrs / 24);
+                          return `${days}d ${hrs % 24}h`;
+                        }
+                        return `${hrs}h ${mins}m`;
+                      })()}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : formData.status === 'COMPLETED' ? (
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Completion Density (%)</label>
+              <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
+                <span style={{ fontSize: 13, color: '#34d399', fontWeight: 700 }}>Complete — 100%</span>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Completion Density ({formData.completion}%)</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <input 
+                  type="range" 
+                  min="0" max="100"
+                  value={formData.completion} 
+                  onChange={e => setFormData({ ...formData, completion: parseInt(e.target.value) || 0 })}
+                  style={{ flex: 1, accentColor: (formData.completion || 0) >= 80 ? '#10b981' : (formData.completion || 0) >= 50 ? '#D4AF37' : '#f59e0b', height: 6 }}
+                />
+                <span className="font-mono-data" style={{ fontSize: 15, fontWeight: 700, color: 'white', minWidth: 40, textAlign: 'right' }}>{formData.completion}%</span>
+              </div>
+              <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', marginTop: 8 }}>
+                <div style={{ height: '100%', borderRadius: 2, width: `${formData.completion}%`, background: (formData.completion || 0) >= 80 ? '#10b981' : (formData.completion || 0) >= 50 ? '#D4AF37' : '#f59e0b', transition: 'width 200ms' }} />
+              </div>
+            </div>
+          )}
 
           <div style={{ gridColumn: 'span 2' }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>File Share Node (Link)</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>File Share Link</label>
             <div style={{ position: 'relative' }}>
               <Tag size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
               <input 
                 type="url" 
-                value={formData.fileShareLink} 
+                value={formData.fileShareLink ?? ''} 
                 onChange={e => setFormData({ ...formData, fileShareLink: e.target.value })}
                 style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }}
                 placeholder="SharePoint/OneDrive/Server Link"
@@ -391,7 +678,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
 
         <div style={{ padding: '24px 32px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {task ? (
-             <button onClick={handleDelete} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ef4444', background: 'none', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+             <button onClick={() => setIsConfirmOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ef4444', background: 'none', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
               <Trash2 size={16} />
               Terminate Record
             </button>
@@ -404,8 +691,8 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
               disabled={isSaving}
               style={{ 
                 display: 'flex', alignItems: 'center', gap: 8, padding: '10px 24px', 
-                borderRadius: 10, background: isSaving ? 'rgba(59, 130, 246, 0.5)' : '#3b82f6', 
-                color: 'white', border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer', 
+                borderRadius: 10, background: isSaving ? 'rgba(212, 175, 55, 0.5)' : '#D4AF37', 
+                color: '#0a0a0f', border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer', 
                 fontSize: 14, fontWeight: 700 
               }}
             >
@@ -424,6 +711,16 @@ export default function TaskEditorModal({ task, isOpen, onClose, members }: Task
           </div>
         </div>
       </motion.div>
+
+      <EliteConfirmModal 
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Asset Termination"
+        message={`Authorize the irreversible destruction of record: ${task?.title || 'this task'}? This action will purge all associated lifecycle data.`}
+        confirmLabel="Authorize Wipe"
+        severity="DANGER"
+      />
     </div>
   );
 }

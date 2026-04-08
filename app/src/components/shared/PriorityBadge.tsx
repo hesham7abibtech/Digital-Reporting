@@ -8,7 +8,7 @@ interface PriorityBadgeProps {
 
 const config: Record<Priority, { label: string; color: string; dot: string }> = {
   LOW: { label: 'Low', color: '#94a3b8', dot: '#94a3b8' },
-  MEDIUM: { label: 'Medium', color: '#60a5fa', dot: '#60a5fa' },
+  MEDIUM: { label: 'Medium', color: '#D4AF37', dot: '#D4AF37' },
   HIGH: { label: 'High', color: '#fbbf24', dot: '#fbbf24' },
   CRITICAL: { label: 'Critical', color: '#fca5a5', dot: '#fca5a5' },
 };

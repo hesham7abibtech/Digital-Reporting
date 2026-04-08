@@ -7,6 +7,8 @@ import { UserRole } from '@/lib/types';
 import { updateUserProfile, deleteUserProfile } from '@/services/FirebaseService';
 import { useAuth } from '@/context/AuthContext';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
+import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
+import { useToast } from '@/components/shared/EliteToast';
 
 interface UserEditorProps {
   userRecord: any | null;
@@ -18,9 +20,15 @@ const roles: UserRole[] = ['OWNER', 'ADMIN', 'PROJECT_MANAGER', 'DEPARTMENT_HEAD
 
 export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEditorProps) {
   const { userProfile: currentUser } = useAuth();
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<any>({
+    name: '',
+    role: 'VIEWER',
+    status: 'ACTIVE'
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (userRecord) {
@@ -38,10 +46,12 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
         status: formData.status,
         name: formData.name
       });
+      showToast('Security credentials updated.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Failed to update user:', error);
       setErrorMsg(getFirebaseErrorMessage(error));
+      showToast('Access control update failure.', 'ERROR');
     } finally {
       setIsSaving(false);
     }
@@ -49,14 +59,15 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
 
   const handleDelete = async () => {
     if (!userRecord) return;
-    if (confirm('Are you sure you want to revoke this user\'s access? This will remove their profile from the management node.')) {
-      try {
-        await deleteUserProfile(userRecord.uid);
-        onClose();
-      } catch (error) {
-        console.error('Failed to delete user:', error);
-        setErrorMsg(getFirebaseErrorMessage(error));
-      }
+    try {
+      await deleteUserProfile(userRecord.uid);
+      showToast('User access revoked and purged.', 'SUCCESS');
+      onClose();
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      setErrorMsg(getFirebaseErrorMessage(error));
+      showToast('Access revocation failed.', 'ERROR');
+      throw error;
     }
   };
 
@@ -92,9 +103,9 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
               <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
               <input 
                 type="text" 
-                value={formData.name || ''} 
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }}
+                value={formData.name ?? ''} 
+                onChange={e => setFormData({ ...formData, name: e.target.value })} 
+                style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }} 
               />
             </div>
           </div>
@@ -124,9 +135,9 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
                     onClick={() => setFormData({ ...formData, role: role })}
                     style={{
                       padding: '10px', fontSize: 11, fontWeight: 700, borderRadius: 10,
-                      background: formData.role === role ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)',
-                      color: formData.role === role ? '#3b82f6' : isRoleDisabled ? 'rgba(255,255,255,0.1)' : 'var(--text-secondary)',
-                      border: formData.role === role ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(255,255,255,0.04)',
+                      background: formData.role === role ? 'rgba(212, 175, 55, 0.1)' : 'rgba(255,255,255,0.02)',
+                      color: formData.role === role ? '#D4AF37' : isRoleDisabled ? 'rgba(255,255,255,0.1)' : 'var(--text-secondary)',
+                      border: formData.role === role ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(255,255,255,0.04)',
                       cursor: isRoleDisabled ? 'not-allowed' : 'pointer',
                       transition: 'all 200ms',
                       display: 'flex', alignItems: 'center', gap: 6
@@ -170,7 +181,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
 
         <div style={{ padding: '24px 32px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button 
-            onClick={handleDelete} 
+            onClick={() => setIsConfirmOpen(true)} 
             disabled={isEditingSelf || (targetIsOwner && !isOwner)}
             style={{ 
               display: 'flex', alignItems: 'center', gap: 8, color: '#ef4444', background: 'none', border: 'none', 
@@ -189,7 +200,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
               disabled={isSaving || (targetIsOwner && !isOwner && !isEditingSelf)}
               style={{ 
                 display: 'flex', alignItems: 'center', gap: 8, padding: '10px 24px', borderRadius: 10, 
-                background: '#3b82f6', color: 'white', border: 'none', 
+                background: '#D4AF37', color: '#0a0a0f', border: 'none', 
                 cursor: (isSaving || (targetIsOwner && !isOwner && !isEditingSelf)) ? 'not-allowed' : 'pointer',
                 opacity: (targetIsOwner && !isOwner && !isEditingSelf) ? 0.5 : 1,
                 fontSize: 14, fontWeight: 700 
@@ -201,6 +212,16 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
           </div>
         </div>
       </motion.div>
+
+      <EliteConfirmModal 
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Access Revocation"
+        message={`Authorize the immediate termination of terminal access for ${userRecord.name || userRecord.email}? This will invalidate their security clearance and purge their identity profile.`}
+        confirmLabel="Authorize Revocation"
+        severity="DANGER"
+      />
     </div>
   );
 }

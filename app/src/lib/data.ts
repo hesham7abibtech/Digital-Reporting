@@ -8,13 +8,18 @@ export const projectMetadata: ProjectMetadata = {
   projectId: '',
   companyName: '',
   region: '',
-  subtitle: '',
+  subtitles: [],
   brandingCode: '',
   location: '',
   statusLine: 'System Initialized',
   statusColor: '#3b82f6',
   memberCount: '0/0 Members',
   logoUrl: '',
+  partnerLogos: [],
+  headerBgUrl: '',
+  headerBgOpacity: 20,
+  headerBgPositionY: 50,
+  headerBgPositionX: 50,
   ownerLogoUrl: '',
   updatedAt: new Date().toISOString()
 };
@@ -27,7 +32,7 @@ export const activities: Activity[] = [];
 export const notifications: Notification[] = [];
 
 export const projectHealth: ProjectHealth = {
-  overall: { id: 'h1', label: 'Overall', score: 0, trend: 'stable', description: 'Initializing system node...' },
+  overall: { id: 'h1', label: 'Overall', score: 0, trend: 'stable', description: 'Initializing system...' },
   schedule: { id: 'h2', label: 'Schedule', score: 0, trend: 'stable', description: 'No active schedule telemetry' },
   cost: { id: 'h3', label: 'Cost', score: 0, trend: 'stable', description: 'No active cost telemetry' },
   resource: { id: 'h4', label: 'Resource', score: 0, trend: 'stable', description: 'No active resource telemetry' },

@@ -83,7 +83,7 @@ export default function DashboardRegistry({ items: externalItems }: { items?: Da
             </div>
             <div>
               <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>Global Registry</h2>
-              <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0, fontWeight: 500 }}>{registryToFilter.length} nodes connected</p>
+              <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0, fontWeight: 500 }}>{registryToFilter.length} platforms connected</p>
             </div>
           </div>
           
@@ -91,7 +91,7 @@ export default function DashboardRegistry({ items: externalItems }: { items?: Da
             <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
             <input 
               type="text" 
-              placeholder="Filter by name or node..."
+              placeholder="Filter by name or platform..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
@@ -112,7 +112,17 @@ export default function DashboardRegistry({ items: externalItems }: { items?: Da
         </div>
 
         <div style={{ padding: '8px 0' }}>
-          {categories.length > 0 ? categories.map((cat, catIdx) => (
+          {registryToFilter.length === 0 ? (
+            <div style={{ padding: '60px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(139, 92, 246, 0.06)', border: '1px solid rgba(139, 92, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <LayoutDashboard size={24} style={{ color: 'rgba(139, 92, 246, 0.35)' }} />
+              </div>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>No current data available</p>
+                <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Registry platforms will appear here when connected</p>
+              </div>
+            </div>
+          ) : categories.length > 0 ? categories.map((cat, catIdx) => (
             <div key={cat} style={{ marginBottom: catIdx === categories.length - 1 ? 0 : 12 }}>
               <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
                 <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{cat}</span>
@@ -179,7 +189,7 @@ export default function DashboardRegistry({ items: externalItems }: { items?: Da
           )) : (
             <div style={{ padding: '60px 24px', textAlign: 'center' }}>
               <div style={{ color: 'rgba(255,255,255,0.1)', marginBottom: 12 }}><Search size={40} style={{ margin: '0 auto' }} /></div>
-              <p style={{ color: 'var(--text-dim)', fontSize: 14 }}>Electronic node "{search}" not found in current registry phase.</p>
+              <p style={{ color: 'var(--text-dim)', fontSize: 14 }}>Electronic platform "{search}" not found in current registry phase.</p>
             </div>
           )}
         </div>

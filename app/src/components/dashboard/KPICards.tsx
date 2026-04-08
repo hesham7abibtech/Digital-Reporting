@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ClipboardList, CheckCircle, AlertTriangle,
-  TrendingUp, TrendingDown, Minus, Clock, AlertCircle, CircleOff
+  TrendingUp, TrendingDown, Minus, Clock, AlertCircle, CircleOff, Inbox
 } from 'lucide-react';
 import AnimatedCounter from '@/components/shared/AnimatedCounter';
 import MiniChart from '@/components/shared/MiniChart';
@@ -13,7 +13,7 @@ import type { Task } from '@/lib/types';
 
 // 6 essential KPIs — replaced NCR with Not Started
 const kpiData = [
-  { id: 'kpi1', label: 'Active Tasks', value: 0, prev: 0, icon: <ClipboardList size={18} />, color: '#3b82f6', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: false },
+  { id: 'kpi1', label: 'Active Tasks', value: 0, prev: 0, icon: <ClipboardList size={18} />, color: '#D4AF37', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: false },
   { id: 'kpi2', label: 'Completed', value: 0, prev: 0, icon: <CheckCircle size={18} />, color: '#10b981', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: false },
   { id: 'kpi3', label: 'Pending Review', value: 0, prev: 0, icon: <Clock size={18} />, color: '#f59e0b', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true },
   { id: 'kpi4', label: 'Critical', value: 0, prev: 0, icon: <AlertTriangle size={18} />, color: '#ef4444', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true },
@@ -36,7 +36,7 @@ function getPriorityColor(p: string) {
   switch (p) {
     case 'CRITICAL': return '#ef4444';
     case 'HIGH': return '#fbbf24';
-    case 'MEDIUM': return '#3b82f6';
+    case 'MEDIUM': return '#D4AF37';
     default: return '#94a3b8';
   }
 }
@@ -46,7 +46,7 @@ function getStatusColor(s: string) {
     case 'DELAYED': return '#ef4444';
     case 'BLOCKED': return '#ef4444';
     case 'PENDING_REVIEW': return '#f59e0b';
-    case 'IN_PROGRESS': return '#3b82f6';
+    case 'IN_PROGRESS': return '#D4AF37';
     default: return '#94a3b8';
   }
 }
@@ -130,18 +130,17 @@ export default function KPICards({ tasks: externalTasks }: { tasks?: Task[] }) {
 
             {/* Hover Tooltip — premium floating card */}
             <AnimatePresence>
-              {isHovered && relatedTasks.length > 0 && (
+              {isHovered && (
                 <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                  initial={{ opacity: 0, y: 8, x: '-50%', scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, x: '-50%', scale: 1 }}
+                  exit={{ opacity: 0, y: 6, x: '-50%', scale: 0.97 }}
                   transition={{ duration: 0.2 }}
                   style={{
                     position: 'absolute',
                     top: '100%',
-                    left: i === 0 ? 0 : i === 5 ? 'auto' : '50%',
-                    right: i === 5 ? 0 : 'auto',
-                    transform: i === 0 || i === 5 ? 'none' : 'translateX(-50%)',
+                    left: '50%',
+                    right: 'auto',
                     marginTop: 8,
                     zIndex: 100,
                     width: 340,
@@ -156,7 +155,7 @@ export default function KPICards({ tasks: externalTasks }: { tasks?: Task[] }) {
                   {/* Arrow */}
                   <div style={{
                     position: 'absolute', top: -6, 
-                    left: i === 0 ? '15%' : i === 5 ? '85%' : '50%', 
+                    left: '50%', 
                     transform: 'translateX(-50%)',
                     width: 12, height: 12, borderRadius: 2, rotate: '45deg',
                     background: 'rgba(12, 12, 20, 0.96)',
@@ -174,47 +173,55 @@ export default function KPICards({ tasks: externalTasks }: { tasks?: Task[] }) {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {relatedTasks.slice(0, 5).map(task => (
-                      <div
-                        key={task.id}
-                        style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          padding: '8px 10px', borderRadius: 8,
-                          background: 'rgba(255,255,255,0.03)',
-                          border: '1px solid rgba(255,255,255,0.04)',
-                        }}
-                      >
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {task.title}
-                          </p>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{task.assigneeName}</span>
-                            <span style={{ color: 'var(--text-dim)' }}>•</span>
-                            <span style={{
-                              fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 4,
-                              color: getPriorityColor(task.priority), background: `${getPriorityColor(task.priority)}15`,
-                            }}>
-                              {task.priority}
-                            </span>
+                  {relatedTasks.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {relatedTasks.slice(0, 5).map(task => (
+                        <div
+                          key={task.id}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '8px 10px', borderRadius: 8,
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(255,255,255,0.04)',
+                          }}
+                        >
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {task.title}
+                            </p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{task.assigneeName}</span>
+                              <span style={{ color: 'var(--text-dim)' }}>•</span>
+                              <span style={{
+                                fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 4,
+                                color: getPriorityColor(task.priority), background: `${getPriorityColor(task.priority)}15`,
+                              }}>
+                                {task.priority}
+                              </span>
+                            </div>
                           </div>
+                          <span style={{
+                            fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap',
+                            color: getStatusColor(task.status), background: `${getStatusColor(task.status)}15`,
+                            marginLeft: 8,
+                          }}>
+                            {task.status.replace(/_/g, ' ')}
+                          </span>
                         </div>
-                        <span style={{
-                          fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap',
-                          color: getStatusColor(task.status), background: `${getStatusColor(task.status)}15`,
-                          marginLeft: 8,
-                        }}>
-                          {task.status.replace(/_/g, ' ')}
-                        </span>
-                      </div>
-                    ))}
-                    {relatedTasks.length > 5 && (
-                      <p style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2 }}>
-                        +{relatedTasks.length - 5} more
-                      </p>
-                    )}
-                  </div>
+                      ))}
+                      {relatedTasks.length > 5 && (
+                        <p style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2 }}>
+                          +{relatedTasks.length - 5} more
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ padding: '20px 0', textAlign: 'center' }}>
+                      <Inbox size={24} style={{ color: kpi.color, margin: '0 auto 10px', opacity: 0.5 }} />
+                      <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 2 }}>No current data available</p>
+                      <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>Waiting for system activity</p>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

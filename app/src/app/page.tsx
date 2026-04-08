@@ -37,7 +37,7 @@ export default function Dashboard() {
         <main style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 'calc(100vh - 100px)' }}>
           {isLoading && syncedTasks.length === 0 && !syncedProject ? (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', flexDirection: 'column', gap: 16 }}>
-              <div style={{ width: 40, height: 40, border: '2px solid rgba(59, 130, 246, 0.1)', borderTopColor: '#3b82f6', borderRadius: '50%' }} className="animate-spin" />
+              <div style={{ width: 40, height: 40, border: '2px solid rgba(212, 175, 55, 0.1)', borderTopColor: '#D4AF37', borderRadius: '50%' }} className="animate-spin" />
               <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.05em' }}>ESTABLISHING SECURE CONNECTION...</p>
             </div>
           ) : (
@@ -120,8 +120,8 @@ export default function Dashboard() {
                 style={{
                   position: 'absolute',
                   width: 220, height: 220, borderRadius: '50%',
-                  border: '1px solid rgba(59, 130, 246, 0.05)',
-                  borderTop: '1px solid rgba(59, 130, 246, 0.4)',
+                  border: '1px solid rgba(212, 175, 55, 0.05)',
+                  borderTop: '1px solid rgba(212, 175, 55, 0.4)',
                 }}
               />
               <motion.div
@@ -141,9 +141,9 @@ export default function Dashboard() {
                 transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
                 style={{
                   width: 140, height: 140, borderRadius: '50%',
-                  border: '3px solid rgba(59, 130, 246, 0.05)',
-                  borderTop: '3px solid #3b82f6',
-                  boxShadow: '0 0 60px rgba(59, 130, 246, 0.2), inset 0 0 30px rgba(59, 130, 246, 0.1)',
+                  border: '3px solid rgba(212, 175, 55, 0.05)',
+                  borderTop: '3px solid #D4AF37',
+                  boxShadow: '0 0 60px rgba(212, 175, 55, 0.2), inset 0 0 30px rgba(212, 175, 55, 0.1)',
                 }}
               />
               
@@ -155,7 +155,7 @@ export default function Dashboard() {
                 transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
                 style={{ position: 'absolute' }}
               >
-                <Globe size={60} style={{ color: 'white', filter: 'drop-shadow(0 0 15px rgba(59, 130, 246, 0.6))' }} />
+                <Globe size={60} style={{ color: 'white', filter: 'drop-shadow(0 0 15px rgba(212, 175, 55, 0.6))' }} />
               </motion.div>
             </div>
             
@@ -195,7 +195,7 @@ export default function Dashboard() {
                   border: '1px solid rgba(255,255,255,0.05)'
                 }}
               >
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', boxShadow: '0 0 12px #3b82f6' }} className="animate-pulse" />
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4AF37', boxShadow: '0 0 12px #D4AF37' }} className="animate-pulse" />
                 <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', fontWeight: 600, margin: 0, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
                   Applying Regional Offsets: <span style={{ color: '#fff' }}>{selectedTimeZone.name}</span>
                 </p>

@@ -6,6 +6,8 @@ import { X, Save, Trash2, Layout, Link as LinkIcon, Info, Loader2 } from 'lucide
 import { DashboardNavItem } from '@/lib/types';
 import { upsertRegistryItem, deleteRegistryItem } from '@/services/FirebaseService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
+import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
+import { useToast } from '@/components/shared/EliteToast';
 
 interface RegistryEditorProps {
   item: DashboardNavItem | null;
@@ -14,9 +16,16 @@ interface RegistryEditorProps {
 }
 
 export default function RegistryEditorModal({ item, isOpen, onClose }: RegistryEditorProps) {
-  const [formData, setFormData] = useState<Partial<DashboardNavItem>>({});
+  const [formData, setFormData] = useState<Partial<DashboardNavItem>>({
+    name: '',
+    link: '',
+    category: '',
+    status: 'LIVE'
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (item) {
@@ -38,10 +47,12 @@ export default function RegistryEditorModal({ item, isOpen, onClose }: RegistryE
     setErrorMsg(null);
     try {
       await upsertRegistryItem(formData as DashboardNavItem);
+      showToast('Registry asset synchronized.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Failed to save registry item:', error);
       setErrorMsg(getFirebaseErrorMessage(error));
+      showToast('Registry synchronization failure.', 'ERROR');
     } finally {
       setIsSaving(false);
     }
@@ -49,14 +60,15 @@ export default function RegistryEditorModal({ item, isOpen, onClose }: RegistryE
 
   const handleDelete = async () => {
     if (!item) return;
-    if (confirm('Permanently remove this dashboard from the registry?')) {
-      try {
-        await deleteRegistryItem(item.id);
-        onClose();
-      } catch (error) {
-        console.error('Failed to delete item:', error);
-        setErrorMsg(getFirebaseErrorMessage(error));
-      }
+    try {
+      await deleteRegistryItem(item.id);
+      showToast('Asset purged from portal registry.', 'SUCCESS');
+      onClose();
+    } catch (error) {
+      console.error('Failed to delete item:', error);
+      setErrorMsg(getFirebaseErrorMessage(error));
+      showToast('Registry purge sequence failed.', 'ERROR');
+      throw error;
     }
   };
 
@@ -73,16 +85,16 @@ export default function RegistryEditorModal({ item, isOpen, onClose }: RegistryE
         <div style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Dashboard Name</label>
-            <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} />
+            <input type="text" value={formData.name ?? ''} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Target URL</label>
-            <input type="text" value={formData.link} onChange={e => setFormData({ ...formData, link: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} />
+            <input type="text" value={formData.link ?? ''} onChange={e => setFormData({ ...formData, link: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Group / Category</label>
-              <input type="text" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} />
+              <input type="text" value={formData.category ?? ''} onChange={e => setFormData({ ...formData, category: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', outline: 'none' }} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Access Status</label>
@@ -100,7 +112,7 @@ export default function RegistryEditorModal({ item, isOpen, onClose }: RegistryE
           )}
         </div>
         <div style={{ padding: '24px 32px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {item ? <button onClick={handleDelete} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button> : <div />}
+          {item ? <button onClick={() => setIsConfirmOpen(true)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button> : <div />}
           <div style={{ display: 'flex', gap: 12 }}>
             <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', color: 'white', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}>Cancel</button>
             <button 
@@ -108,8 +120,8 @@ export default function RegistryEditorModal({ item, isOpen, onClose }: RegistryE
               disabled={isSaving} 
               style={{ 
                 padding: '10px 24px', borderRadius: 10, 
-                background: isSaving ? 'rgba(59, 130, 246, 0.5)' : '#3b82f6', 
-                color: 'white', border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer', 
+                background: isSaving ? 'rgba(212, 175, 55, 0.5)' : '#D4AF37', 
+                color: '#0a0a0f', border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer', 
                 fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 
               }}
             >
@@ -125,6 +137,16 @@ export default function RegistryEditorModal({ item, isOpen, onClose }: RegistryE
           </div>
         </div>
       </motion.div>
+
+      <EliteConfirmModal 
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Registry Purge"
+        message={`Permanently remove the ${item?.name || 'this portal'} from the administrative registry? Access to this specific dashboard link will be revoked.`}
+        confirmLabel="Authorize Wipe"
+        severity="DANGER"
+      />
     </div>
   );
 }

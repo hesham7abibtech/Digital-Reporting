@@ -1,7 +1,8 @@
 'use client';
 
+import React from 'react';
 import { motion } from 'framer-motion';
-import { Building2, MapPin, Users } from 'lucide-react';
+import { Cpu, MapPin, Users } from 'lucide-react';
 import ProgressRing from '@/components/shared/ProgressRing';
 import type { TeamMember, ProjectMetadata, Task } from '@/lib/types';
 
@@ -25,10 +26,10 @@ export default function ProjectHeader({
   const { statusLine, statusColor } = (() => {
     const delayedCount = tasks?.filter(t => t.status === 'DELAYED').length ?? 0;
     
-    if (delayedCount > 0) return { statusLine: 'Critical Delay Detected', statusColor: '#ef4444' };
-    if (progressScore >= 90) return { statusLine: 'Finalizing Hub Node', statusColor: '#10b981' };
-    if (progressScore >= 50) return { statusLine: 'Optimized / In-Progress', statusColor: '#3b82f6' };
-    return { statusLine: project?.statusLine || 'Node Operational', statusColor: project?.statusColor || '#f59e0b' };
+    if (delayedCount > 0) return { statusLine: 'Critical Pipeline Blockage', statusColor: '#ef4444' };
+    if (progressScore >= 90) return { statusLine: 'Deployment / Finalization', statusColor: '#10b981' };
+    if (progressScore >= 50) return { statusLine: 'Digital Transformation / Sync', statusColor: '#D4AF37' };
+    return { statusLine: project?.statusLine || 'Digital Workflow Online', statusColor: project?.statusColor || '#f59e0b' };
   })();
 
   return (
@@ -37,9 +38,49 @@ export default function ProjectHeader({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
       className="glass-card"
-      style={{ padding: '16px 24px' }}
+      style={{ 
+        padding: '16px 24px', 
+        position: 'relative', 
+        overflow: 'hidden',
+        minHeight: 180,
+        display: 'flex',
+        alignItems: 'center'
+      }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+      {/* Dynamic Site Background Asset */}
+      {project?.headerBgUrl && (
+        <div 
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 0,
+            backgroundImage: `url(${project.headerBgUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: `${project.headerBgPositionX || 50}% ${project.headerBgPositionY || 50}%`,
+            opacity: (project.headerBgOpacity ?? 20) / 100,
+            filter: 'brightness(0.7) contrast(1.1)',
+            transition: 'all 0.4s ease'
+          }}
+        />
+      )}
+
+      {/* Glass Overlay for Depth */}
+      <div 
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1,
+          background: 'radial-gradient(circle at 20% 50%, rgba(10,10,15,0.4) 0%, rgba(10,10,15,0.8) 100%)',
+        }}
+      />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 32, width: '100%', position: 'relative', zIndex: 2 }}>
         {/* Left - Project Info */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 4 }}>
@@ -61,8 +102,8 @@ export default function ProjectHeader({
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
                 padding: '4px 12px', borderRadius: 9999,
-                background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)',
-                fontSize: 14, fontWeight: 500, color: '#06b6d4', flexShrink: 0,
+                background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.2)',
+                fontSize: 14, fontWeight: 500, color: '#D4AF37', flexShrink: 0,
               }}
             >
               <Users size={14} />
@@ -76,16 +117,34 @@ export default function ProjectHeader({
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, fontSize: 15, color: 'var(--text-secondary)' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Building2 size={14} style={{ color: 'var(--text-muted)' }} />
-                {project?.subtitle}
-              </span>
-              <span style={{ color: 'var(--text-dim)' }}>•</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <MapPin size={14} style={{ color: 'var(--text-muted)' }} />
-                {project?.location}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14, fontSize: 13, fontWeight: 600, letterSpacing: '0.01em' }}>
+              {(project?.subtitles && project.subtitles.length > 0) ? (
+                project.subtitles.map((sub, idx) => (
+                  <React.Fragment key={`sub-${idx}`}>
+                    {idx > 0 && <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 300 }}>|</span>}
+                    <span style={{ 
+                      display: 'flex', alignItems: 'center', gap: 8, 
+                      color: idx === 0 ? '#ffffff' : 'rgba(255, 255, 255, 0.8)',
+                      textTransform: idx === 0 ? 'uppercase' : 'none',
+                      fontSize: idx === 0 ? 13 : 13,
+                      letterSpacing: idx === 0 ? '0.05em' : 'normal'
+                    }}>
+                      {idx === 0 && <Cpu size={14} style={{ color: '#D4AF37', filter: 'drop-shadow(0 0 5px rgba(212, 175, 55, 0.5))' }} />}
+                      {sub}
+                    </span>
+                  </React.Fragment>
+                ))
+              ) : (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Cpu size={14} style={{ color: '#D4AF37', filter: 'drop-shadow(0 0 5px rgba(212, 175, 55, 0.5))' }} />
+                  Digital Project Hub
+                </span>
+              )}
+              <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 300 }}>|</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255, 255, 255, 0.8)' }}>
+                <MapPin size={14} style={{ color: '#ef4444', filter: 'drop-shadow(0 0 5px rgba(239, 68, 68, 0.3))' }} />
+                {project?.location || 'Digital Sector'}
               </span>
             </div>
           </div>

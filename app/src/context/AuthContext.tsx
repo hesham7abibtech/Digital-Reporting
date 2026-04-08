@@ -4,7 +4,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   onAuthStateChanged, 
   User, 
-  signOut 
+  signOut,
+  setPersistence,
+  browserSessionPersistence
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { getUserProfile } from '@/services/FirebaseService';
@@ -41,6 +43,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
+    // 1. Enforce Strict Session Persistence (Zero localStorage leakage)
+    setPersistence(auth, browserSessionPersistence).catch((err) => {
+      console.error('Failed to set auth persistence:', err);
+    });
+
+    // 2. Tab Closure Protocol
+    // browserSessionPersistence handles tab/window closure security,
+    // ensuring the session is cleared when the portal is closed.
+    // Explicit beforeunload signOut is avoided to support page refreshes.
+
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       setLoading(true);
       setAuthError(null);
@@ -62,7 +74,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const logout = async () => {
