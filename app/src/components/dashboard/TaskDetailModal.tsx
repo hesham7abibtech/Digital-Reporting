@@ -1,11 +1,12 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Calendar, User, Tag, Paperclip, Clock, 
   FileText, FileCode, FileImage, FileArchive, 
   Download, ExternalLink, Activity, Pause, Timer, CheckCircle2,
-  Building2
+  Building2, UserCheck
 } from 'lucide-react';
 import type { Task, TaskFile } from '@/lib/types';
 import StatusBadge from '@/components/shared/StatusBadge';
@@ -37,6 +38,38 @@ const getFileIcon = (type: string) => {
       return <FileText size={20} />;
   }
 };
+
+// ─── Live Review Timer ────────────────────────────────────────────
+function ReviewTimer({ startDate, prefix = "Holding " }: { startDate: string, prefix?: string }) {
+  const [elapsed, setElapsed] = useState('');
+
+  useEffect(() => {
+    const start = new Date(startDate).getTime();
+    if (isNaN(start)) return;
+
+    const update = () => {
+      const diff = Math.max(0, Date.now() - start);
+      const days = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+
+      const parts: string[] = [];
+      if (days > 0) parts.push(`${days}d`);
+      parts.push(`${hours}h`);
+      parts.push(`${minutes}m`);
+      parts.push(`${seconds}s`);
+      
+      setElapsed(parts.join(' '));
+    };
+
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [startDate]);
+
+  return <span>{prefix}{elapsed}</span>;
+}
 
 export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps) {
   const { formatDate, formatTime } = useTimeZone();
@@ -238,12 +271,43 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                       </div>
                     )}
                   </section>
+
+                  {/* Tags & Classification - Moved below Quick Links */}
+                  <section style={{ marginTop: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, color: 'var(--text-secondary)' }}>
+                      <Tag size={16} />
+                      <h3 style={{ fontSize: 16, fontWeight: 600 }}>Tags & Classification ({task.tags?.length || 0})</h3>
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, background: 'rgba(255,255,255,0.02)', padding: '24px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.04)' }}>
+                      {task.tags && task.tags.length > 0 ? (
+                        task.tags.map(tag => (
+                          <span 
+                            key={tag} 
+                            style={{ 
+                              padding: '6px 14px', 
+                              borderRadius: 12, 
+                              background: 'rgba(212, 175, 55, 0.08)', 
+                              fontSize: 13, 
+                              color: '#D4AF37', 
+                              border: '1px solid rgba(212, 175, 55, 0.15)',
+                              fontWeight: 500
+                            }}
+                          >
+                            #{tag}
+                          </span>
+                        ))
+                      ) : (
+                        <p style={{ fontSize: 14, color: 'var(--text-dim)', margin: 0, opacity: 0.6 }}>No classification tags assigned to this task record.</p>
+                      )}
+                    </div>
+                  </section>
                 </div>
 
                 {/* Right Column: Meta Info */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: 24, borderRadius: 20, border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ marginBottom: 24 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px 20px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ marginBottom: 20 }}>
                       <p style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 16, fontWeight: 600 }}>Assignee</p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600 }}>
@@ -256,14 +320,27 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                       </div>
                     </div>
 
-                    <div style={{ marginBottom: 24 }}>
+                    {/* Requester Info - Moved below Assignee */}
+                    {task.requesterName && (
+                      <div style={{ marginBottom: 20 }}>
+                        <p style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12, fontWeight: 700 }}>Requested By</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <UserCheck size={14} style={{ color: 'var(--text-dim)' }} />
+                          <p style={{ fontSize: 13, fontWeight: 600 }}>{task.requesterName}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ marginBottom: 20 }}>
                       <p style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12, fontWeight: 600 }}>Timeline</p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <Calendar size={14} style={{ color: 'var(--text-dim)' }} />
+                          <Clock size={14} style={{ color: 'var(--text-dim)' }} />
                           <div>
-                            <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Due Date</p>
-                            <p style={{ fontSize: 13, fontWeight: 500 }}>{formatDate(task.dueDate)}</p>
+                            <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Request Origin</p>
+                            <p style={{ fontSize: 13, fontWeight: 500 }}>
+                              {formatDate(task.requestDate || task.createdAt)} <span style={{ color: 'rgba(255,255,255,0.2)', margin: '0 4px' }}>•</span> {formatTime(task.requestDate || task.createdAt)}
+                            </p>
                           </div>
                         </div>
                         {task.actualStartDate && (
@@ -271,22 +348,46 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                             <Timer size={14} style={{ color: '#D4AF37' }} />
                             <div>
                               <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Actual Start</p>
-                              <p style={{ fontSize: 13, fontWeight: 500, color: '#D4AF37' }}>{formatDate(task.actualStartDate)}</p>
+                              <p style={{ fontSize: 13, fontWeight: 500, color: '#D4AF37' }}>
+                                {formatDate(task.actualStartDate)} <span style={{ color: 'rgba(212, 175, 55, 0.2)', margin: '0 4px' }}>•</span> {formatTime(task.actualStartDate)}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                        {task.actualEndDate && task.status === 'COMPLETED' && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <CheckCircle2 size={14} style={{ color: '#10b981' }} />
+                            <div>
+                              <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Actual Finish</p>
+                              <p style={{ fontSize: 13, fontWeight: 500, color: '#10b981' }}>
+                                {formatDate(task.actualEndDate)} <span style={{ color: 'rgba(16, 185, 129, 0.2)', margin: '0 4px' }}>•</span> {formatTime(task.actualEndDate)}
+                              </p>
                             </div>
                           </div>
                         )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <Clock size={14} style={{ color: 'var(--text-dim)' }} />
+                          <Calendar size={14} style={{ color: 'var(--text-dim)' }} />
                           <div>
-                            <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Created</p>
-                            <p style={{ fontSize: 13, fontWeight: 500 }}>{formatDate(task.createdAt)}</p>
+                            <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Due Date</p>
+                            <p style={{ fontSize: 13, fontWeight: 500 }}>
+                              {formatDate(task.dueDate)} <span style={{ color: 'rgba(255,255,255,0.2)', margin: '0 4px' }}>•</span> {formatTime(task.dueDate)}
+                            </p>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.6 }}>
+                          <Activity size={14} style={{ color: 'var(--text-dim)' }} />
+                          <div>
+                            <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>System Creation</p>
+                            <p style={{ fontSize: 12 }}>
+                              {formatDate(task.createdAt)} <span style={{ color: 'rgba(255,255,255,0.2)', margin: '0 4px' }}>•</span> {formatTime(task.createdAt)}
+                            </p>
                           </div>
                         </div>
                       </div>
                     </div>
 
                   {/* Progress — Dynamic by Status */}
-                    <div>
+                    <div style={{ marginBottom: 0 }}>
                       <p style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12, fontWeight: 600 }}>Progress</p>
                       {task.status === 'NOT_STARTED' ? (
                         <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -311,20 +412,18 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                                 <Timer size={11} style={{ color: '#f59e0b', opacity: 0.7 }} />
                                 <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700, fontFamily: 'monospace' }}>
-                                  {(() => {
-                                    const ms = Date.now() - new Date(task.pendingReviewDate).getTime();
-                                    const hrs = Math.floor(ms / 3600000);
-                                    const mins = Math.floor((ms % 3600000) / 60000);
-                                    if (hrs >= 24) {
-                                      const days = Math.floor(hrs / 24);
-                                      return `Holding ${days}d ${hrs % 24}h`;
-                                    }
-                                    return `Holding ${hrs}h ${mins}m`;
-                                  })()}
+                                  <ReviewTimer startDate={task.pendingReviewDate} />
                                 </span>
                               </div>
                             )}
                           </div>
+                          {task.pendingReviewDate && (
+                            <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(245, 158, 11, 0.1)', display: 'flex', justifyContent: 'flex-end' }}>
+                              <span style={{ fontSize: 9, color: 'rgba(245, 158, 11, 0.6)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Started: {formatDate(task.pendingReviewDate)} • {formatTime(task.pendingReviewDate)}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       ) : task.status === 'COMPLETED' ? (
                         <div style={{ padding: '14px 16px', borderRadius: 14, background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.12)' }}>
@@ -360,11 +459,13 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                       )}
                     </div>
 
-                    {/* Administrative Calibration Metadata */}
+                    {/* Administrative Calibration Metadata / Reviewer Details */}
                     {(task.reviewingEntity || task.responsiblePerson) && (
-                      <div style={{ marginTop: 20, padding: 16, borderRadius: 12, background: 'rgba(245, 158, 11, 0.04)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
-                        <p style={{ fontSize: 10, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12, fontWeight: 800 }}>Administrative Metadata</p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div style={{ padding: 14, borderRadius: 12, background: 'rgba(245, 158, 11, 0.04)', border: '1px solid rgba(245, 158, 11, 0.1)', marginTop: 16 }}>
+                        <p style={{ fontSize: 10, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, fontWeight: 800 }}>
+                          {task.status === 'PENDING_REVIEW' ? 'Reviewer Details' : 'Administrative Metadata'}
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                           {task.reviewingEntity && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                               <Building2 size={13} style={{ color: '#f59e0b', opacity: 0.7 }} />
@@ -386,28 +487,6 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                         </div>
                       </div>
                     )}
-
-                    {/* Requester Info */}
-                    {task.requesterName && (
-                      <div style={{ marginTop: 16 }}>
-                        <p style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, fontWeight: 600 }}>Requested By</p>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <User size={14} style={{ color: 'var(--text-dim)' }} />
-                          <p style={{ fontSize: 13, fontWeight: 500 }}>{task.requesterName}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: 24, borderRadius: 20, border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <p style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12, fontWeight: 600 }}>Tags</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {task.tags.map(tag => (
-                        <span key={tag} style={{ padding: '4px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', fontSize: 11, color: 'var(--text-secondary)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
                   </div>
                 </div>
               </div>

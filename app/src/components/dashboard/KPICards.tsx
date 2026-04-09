@@ -51,7 +51,7 @@ function getStatusColor(s: string) {
   }
 }
 
-export default function KPICards({ tasks: externalTasks }: { tasks?: Task[] }) {
+export default function KPICards({ tasks: externalTasks, onTaskClick }: { tasks?: Task[]; onTaskClick?: (task: Task) => void }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // Use external tasks if provided, otherwise fallback to mock
@@ -178,12 +178,17 @@ export default function KPICards({ tasks: externalTasks }: { tasks?: Task[] }) {
                       {relatedTasks.slice(0, 5).map(task => (
                         <div
                           key={task.id}
+                          onClick={() => onTaskClick?.(task)}
                           style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             padding: '8px 10px', borderRadius: 8,
                             background: 'rgba(255,255,255,0.03)',
                             border: '1px solid rgba(255,255,255,0.04)',
+                            cursor: 'pointer',
+                            transition: 'background 200ms',
                           }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
                         >
                           <div style={{ minWidth: 0, flex: 1 }}>
                             <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

@@ -54,12 +54,13 @@ export default function Dashboard() {
           ) : (
             <>
               {(() => {
+                const totalCompletion = filteredTasks.reduce((acc, t) => acc + (t.completion || 0), 0);
                 const progress = filteredTasks.length > 0 
-                  ? Math.round((filteredTasks.filter(t => t.status === 'COMPLETED').length / filteredTasks.length) * 100) 
+                  ? Math.round(totalCompletion / filteredTasks.length) 
                   : 0;
                 return <ProjectHeader project={syncedProject || undefined} members={syncedMembers} progress={progress} tasks={filteredTasks} />;
               })()}
-              <KPICards tasks={filteredTasks} />
+              <KPICards tasks={filteredTasks} onTaskClick={handleTaskClick} />
 
               {/* Tasks (left) + ALL Charts (right, single spanning column) */}
               <div

@@ -28,7 +28,12 @@ import {
   Image as ImageIcon,
   ArrowLeft,
   ArrowRight,
-  Globe
+  Globe,
+  Megaphone,
+  Clock,
+  Send,
+  Bell,
+  Newspaper
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -52,6 +57,187 @@ import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 
 const DEFAULT_ALLOWED_DOMAINS = ['modon.com', 'insiteinternational.com'];
 
+function BroadcastSender({ showToast }: { showToast: any }) {
+  const [loading, setLoading] = useState(false);
+  const [type, setType] = useState<'NOTIF' | 'NEWS'>('NOTIF');
+  const [severity, setSeverity] = useState<'CRITICAL' | 'WARNING' | 'INFO' | 'SUCCESS'>('INFO');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
+  const [link, setLink] = useState('');
+
+  const handleDispatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !description) {
+      showToast('Payload validation failure: Missing title or content.', 'ERROR');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+      const { db } = await import('@/lib/firebase');
+      
+      await addDoc(collection(db, 'broadcasts'), {
+        title,
+        description,
+        type,
+        severity,
+        category,
+        link,
+        timestamp: new Date().toISOString(),
+        readBy: []
+      });
+
+      showToast(`Communications dispatched: ${type} packet synchronized.`, 'SUCCESS');
+      setTitle('');
+      setDescription('');
+      setCategory('');
+      setLink('');
+    } catch (error) {
+       console.error('Dispatch failure:', error);
+       showToast('Broadcast uplink interrupted.', 'ERROR');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 48 }}>
+      <form onSubmit={handleDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Packet Stream</label>
+            <div style={{ display: 'flex', gap: 8, background: 'rgba(0,0,0,0.2)', padding: 4, borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+               {(['NOTIF', 'NEWS'] as const).map(t => (
+                 <button
+                   key={t}
+                   type="button"
+                   onClick={() => setType(t)}
+                   style={{
+                     flex: 1, padding: '10px', borderRadius: 10, border: 'none',
+                     background: type === t ? 'rgba(212, 175, 55, 0.1)' : 'transparent',
+                     color: type === t ? '#D4AF37' : 'rgba(255,255,255,0.3)',
+                     fontSize: 11, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms',
+                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                   }}
+                 >
+                   {t === 'NOTIF' ? <Bell size={14} /> : <Newspaper size={14} />}
+                   {t === 'NOTIF' ? 'NOTIFICATION' : 'NEWS FEED'}
+                 </button>
+               ))}
+            </div>
+          </div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Authority Classification</label>
+            <select
+              value={severity}
+              onChange={(e) => setSeverity(e.target.value as any)}
+              style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }}
+            >
+              <option value="INFO">INFO / SYSTEM</option>
+              <option value="SUCCESS">SUCCESS / COMPLETED</option>
+              <option value="WARNING">WARNING / CAUTION</option>
+              <option value="CRITICAL">CRITICAL / ALARM</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Broadcast Headline</label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter high-impact title..."
+            style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, color: 'white', fontSize: 15, outline: 'none' }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Narrative Body</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Detailed administrative context..."
+            rows={4}
+            style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, color: 'white', fontSize: 15, outline: 'none', resize: 'none' }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Functional Category</label>
+            <input
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="e.g. SYSTEM, MARKET, TEAM"
+              style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }}
+            />
+          </div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Secure Attachment URL</label>
+            <input
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              placeholder="https://..."
+              style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }}
+            />
+          </div>
+        </div>
+
+        <button
+          disabled={loading}
+          style={{
+            marginTop: 12, padding: '16px', background: '#D4AF37', color: '#0a0a0f',
+            border: 'none', borderRadius: 16, fontWeight: 900, fontSize: 15,
+            cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+            boxShadow: '0 10px 30px rgba(212, 175, 55, 0.3)', letterSpacing: '0.05em'
+          }}
+        >
+          {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+          DISPATCH BROADCAST
+        </button>
+      </form>
+
+      <div style={{ padding: 40, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+           <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
+              <Shield size={18} color="#D4AF37" />
+           </div>
+           <span style={{ fontSize: 12, fontWeight: 900, color: 'white', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Transmission Preview</span>
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+           <div style={{
+             width: '100%', maxWidth: 360, padding: 24, borderRadius: 24, background: 'rgba(255,255,255,0.03)',
+             border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+             opacity: title || description ? 1 : 0.3, filter: title || description ? 'none' : 'grayscale(1)'
+           }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: severity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${severity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)'}` }}>
+                   {type === 'NOTIF' ? <Bell size={18} color={severity === 'CRITICAL' ? '#ef4444' : '#60a5fa'} /> : <Newspaper size={18} color="#a78bfa" />}
+                </div>
+                <div>
+                   <span style={{ fontSize: 9, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                     {type} // {severity}
+                   </span>
+                   <h4 style={{ fontSize: 14, fontWeight: 800, color: 'white', margin: 0 }}>{title || 'Headline Protocol'}</h4>
+                </div>
+             </div>
+             <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: 0 }}>
+               {description || 'Establishing secure administrative narrative... awaiting payload input.'}
+             </p>
+             <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
+                <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.2)' }}>RECEPTION TERMINAL PREVIEW</span>
+             </div>
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboardPage() {
   const { logout, userProfile } = useAuth();
   const { isVisible, can, userRole } = usePermissions();
@@ -64,7 +250,7 @@ export default function AdminDashboardPage() {
     }
   }, [userProfile, router]);
 
-  const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'branding' | 'registry' | 'users' | 'policies'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'branding' | 'registry' | 'users' | 'policies' | 'broadcast'>('tasks');
   const [activeSubTab, setActiveSubTab] = useState<'users' | 'policies'>('users');
   const [selectedPolicy, setSelectedPolicy] = useState<any>(null);
   const [isBrandingUpdating, setIsBrandingUpdating] = useState(false);
@@ -409,6 +595,7 @@ export default function AdminDashboardPage() {
             { id: 'team', label: 'Digital Project Team', icon: Users, permission: 'team' },
             { id: 'branding', label: 'Identity & Branding', icon: Database, permission: 'branding' },
             { id: 'registry', label: 'Digital Asset Registry', icon: LayoutDashboard, permission: 'registry' },
+            { id: 'broadcast', label: 'Communications Hub', icon: Megaphone, permission: 'branding' },
             { id: 'users', label: 'Access Control', icon: Shield, permission: 'users' },
           ].filter(tab => isVisible(tab.permission as any)).map((tab) => (
             <button
@@ -459,10 +646,10 @@ export default function AdminDashboardPage() {
               <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>
-                    {activeTab === 'tasks' ? 'Digital Deliverable Matrix' : activeTab === 'team' ? 'Active Digital Project Team' : activeTab === 'registry' ? 'Digital Asset Registry Index' : activeTab === 'branding' ? 'Project Identity & Branding' : 'Security Access Registry'}
+                    {activeTab === 'tasks' ? 'Digital Deliverable Matrix' : activeTab === 'team' ? 'Active Digital Project Team' : activeTab === 'registry' ? 'Digital Asset Registry Index' : activeTab === 'branding' ? 'Project Identity & Branding' : activeTab === 'broadcast' ? 'Elite Broadcast Command' : 'Security Access Registry'}
                   </h2>
                   <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 4 }}>
-                    {activeTab === 'users' ? 'Management of security clearances and administrative roles' : activeTab === 'branding' ? 'Configuration of project branding and site-wide metadata' : 'Real-time synchronization with Digital Workflow Systems'}
+                    {activeTab === 'users' ? 'Management of security clearances and administrative roles' : activeTab === 'branding' ? 'Configuration of project branding and site-wide metadata' : activeTab === 'broadcast' ? 'Dispatch real-time classified notifications and news updates' : 'Real-time synchronization with Digital Workflow Systems'}
                   </p>
                 </div>
 
@@ -491,7 +678,7 @@ export default function AdminDashboardPage() {
                       style={{ padding: '10px 16px 10px 38px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none', width: 240 }}
                     />
                   </div>
-                  {activeTab !== 'users' && activeTab !== 'branding' && can(activeTab as any, 'edit') && (
+                  {activeTab !== 'users' && activeTab !== 'branding' && activeTab !== 'broadcast' && can(activeTab as any, 'edit') && (
                     <button onClick={handleNewRecord} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, background: '#D4AF37', color: '#0a0a0f', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>
                       <Plus size={18} />
                       New Record
@@ -627,14 +814,11 @@ export default function AdminDashboardPage() {
                             <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4 }}>{item.category}</div>
                           </td>
                           <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                            <code style={{ fontSize: 11, color: '#D4AF37', background: 'rgba(212, 175, 55, 0.05)', padding: '2px 6px', borderRadius: 4 }}>{item.link}</code>
-                          </td>
-                          <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: item.status === 'LIVE' ? '#10b981' : item.status === 'UPDATING' ? '#D4AF37' : '#64748b' }} />
-                              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{item.status}</span>
-                            </div>
-                          </td>
+                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                               <div style={{ width: 6, height: 6, borderRadius: '50%', background: item.status === 'LIVE' ? '#10b981' : item.status === 'MAINTENANCE' ? '#D4AF37' : '#64748b' }} />
+                               <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{item.status}</span>
+                             </div>
+                           </td>
                           <td style={{ padding: '12px 32px', textAlign: 'center' }}>
                             <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
                               <MoreVertical size={18} />
@@ -1087,6 +1271,13 @@ export default function AdminDashboardPage() {
                               </motion.button>
                             </div>
                           </form>
+                        </td>
+                      </tr>
+                    )}
+                    {activeTab === 'broadcast' && (
+                      <tr style={{ background: 'transparent' }}>
+                        <td colSpan={5} style={{ padding: '40px' }}>
+                          <BroadcastSender showToast={showToast} />
                         </td>
                       </tr>
                     )}

@@ -17,13 +17,22 @@ export interface TaskFile {
   updatedAt: string;
 }
 
+export interface RegistryLink {
+  label: string;
+  url: string;
+}
+
+export type RegistryStatus = 'LIVE' | 'HOLD' | 'BLOCKED' | 'MAINTENANCE' | 'OFFLINE';
+
 export interface DashboardNavItem {
   id: string;
   name: string;
-  status: 'LIVE' | 'UPDATING' | 'MAINTENANCE';
-  link: string;
+  description?: string;
+  status: RegistryStatus;
   icon: string; // lucide icon name
   category: string;
+  customCategory?: string;
+  links?: RegistryLink[];
 }
 
 export interface TaskLink {
@@ -57,6 +66,7 @@ export interface Task {
   reviewingEntity?: string | null;
   responsiblePerson?: string | null;
   actualStartDate?: string | null;
+  actualEndDate?: string | null;
 
   createdAt: string;
   updatedAt: string;
@@ -121,6 +131,22 @@ export interface TeamMember {
   department: string;
   isOnline: boolean;
   lastActive: string;
+}
+
+// ─── Broadcast & Notification Types ───────────────────────────────
+export type BroadcastType = 'NOTIF' | 'NEWS';
+export type BroadcastSeverity = 'CRITICAL' | 'WARNING' | 'INFO' | 'SUCCESS';
+
+export interface Broadcast {
+  id: string;
+  title: string;
+  description: string;
+  type: BroadcastType;
+  severity: BroadcastSeverity;
+  timestamp: string;
+  link?: string;
+  category?: string;
+  readBy?: string[]; // user IDs who confirmed receipt
 }
 
 // ─── Activity Types ───────────────────────────────────────────────

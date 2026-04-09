@@ -87,6 +87,18 @@ service cloud.firestore {
       allow create, update: if hasPermission('branding', 'edit');
       allow delete: if hasPermission('branding', 'delete');
     }
+
+    // ─── Administrative Broadcasts ───────────────────────────────────
+    
+    match /broadcasts/{broadcastId} {
+      allow read: if isAuthenticated();
+      allow create: if hasPermission('branding', 'edit');
+      allow update: if isAuthenticated() && (
+        hasPermission('branding', 'edit') || 
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']))
+      );
+      allow delete: if hasPermission('branding', 'edit');
+    }
     
     // ─── Default ─────────────────────────────────────────────────────
     

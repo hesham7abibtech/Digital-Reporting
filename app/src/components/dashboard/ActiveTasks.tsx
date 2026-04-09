@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ArrowUpDown, Paperclip, ChevronDown, CircleDot, User, Inbox } from 'lucide-react';
+import { Search, ArrowUpDown, Paperclip, ChevronDown, CircleDot, User, Inbox, Building2, Clock, UserCheck, CheckCircle2, Timer, Activity } from 'lucide-react';
 import { tasks } from '@/lib/data';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
@@ -11,7 +11,7 @@ import type { Priority, TaskStatus, Task } from '@/lib/types';
 import { getDepartmentColor } from '@/lib/utils';
 import { useTimeZone } from '@/context/TimeZoneContext';
 
-type SortField = 'title' | 'priority' | 'status' | 'dueDate' | 'completion';
+type SortField = 'title' | 'priority' | 'status' | 'dueDate' | 'completion' | 'requestDate' | 'actualStartDate' | 'actualEndDate';
 type SortDir = 'asc' | 'desc';
 
 const priorityOrder: Record<Priority, number> = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
@@ -20,6 +20,38 @@ const priorities: (Priority | 'All')[] = ['All', 'LOW', 'MEDIUM', 'HIGH', 'CRITI
 const statuses: (TaskStatus | 'All')[] = ['All', 'NOT_STARTED', 'IN_PROGRESS', 'PENDING_REVIEW', 'DELAYED', 'BLOCKED'];
 
 const PREVIEW_ROWS = 3;
+
+// ─── Live Review Timer ────────────────────────────────────────────
+function ReviewTimer({ startDate }: { startDate: string }) {
+  const [elapsed, setElapsed] = useState('');
+
+  useEffect(() => {
+    const start = new Date(startDate).getTime();
+    if (isNaN(start)) return;
+
+    const update = () => {
+      const diff = Math.max(0, Date.now() - start);
+      const days = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+
+      const parts: string[] = [];
+      if (days > 0) parts.push(`${days}d`);
+      parts.push(`${hours}h`);
+      parts.push(`${minutes}m`);
+      parts.push(`${seconds}s`);
+      
+      setElapsed(parts.join(' '));
+    };
+
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [startDate]);
+
+  return <span className="font-mono-data">{elapsed}</span>;
+}
 
 function TaskRow({ task, index, onClick }: { task: Task; index: number; onClick?: (task: Task) => void }) {
   const { formatDate, formatTime } = useTimeZone();
@@ -50,13 +82,111 @@ function TaskRow({ task, index, onClick }: { task: Task; index: number; onClick?
           </div>
         </div>
       </td>
-      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+      <td style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
         <PriorityBadge priority={task.priority} />
       </td>
-      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-        <StatusBadge status={task.status} />
+      <td style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          <StatusBadge status={task.status} />
+          {/* Reviewer details directly under the Pending Review badge */}
+          {task.status === 'PENDING_REVIEW' && (task.reviewingEntity || task.responsiblePerson || task.pendingReviewDate) && (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 3,
+              marginTop: 2,
+              flexWrap: 'wrap',
+            }}>
+              {task.reviewingEntity && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  fontSize: 10, fontWeight: 600, color: '#f59e0b',
+                  background: 'rgba(245,158,11,0.08)',
+                  padding: '2px 8px', borderRadius: 20,
+                  border: '1px solid rgba(245,158,11,0.15)',
+                  whiteSpace: 'nowrap',
+                }}>
+                  <Building2 size={9} />
+                  {task.reviewingEntity}
+                </span>
+              )}
+              {task.responsiblePerson && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  fontSize: 10, fontWeight: 600, color: '#a78bfa',
+                  background: 'rgba(167,139,250,0.08)',
+                  padding: '2px 8px', borderRadius: 20,
+                  border: '1px solid rgba(167,139,250,0.15)',
+                  whiteSpace: 'nowrap',
+                }}>
+                  <UserCheck size={9} />
+                  {task.responsiblePerson}
+                </span>
+              )}
+              {task.pendingReviewDate && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  fontSize: 10, fontWeight: 700, color: '#38bdf8',
+                  background: 'rgba(56,189,248,0.08)',
+                  padding: '2px 8px', borderRadius: 20,
+                  border: '1px solid rgba(56,189,248,0.15)',
+                  whiteSpace: 'nowrap',
+                }}>
+                  <Clock size={9} className="animate-pulse" />
+                  <ReviewTimer startDate={task.pendingReviewDate} />
+                </span>
+              )}
+            </div>
+          )}
+          {task.status === 'PENDING_REVIEW' && task.pendingReviewDate && (
+            <span style={{ fontSize: 8, color: 'rgba(56,189,248,0.5)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.02em', marginTop: -2 }}>
+              Started: {formatDate(task.pendingReviewDate)} {formatTime(task.pendingReviewDate)}
+            </span>
+          )}
+        </div>
       </td>
-      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+      <td style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: task.requestDate ? 0.8 : 0.2 }}>
+            <Activity size={10} style={{ color: 'var(--text-dim)' }} />
+            <span style={{ fontSize: 11, fontWeight: 500 }}>{task.requestDate ? formatDate(task.requestDate) : '—'}</span>
+          </div>
+          {task.requestDate && (
+            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', fontWeight: 500 }}>
+              {formatTime(task.requestDate)}
+            </span>
+          )}
+        </div>
+      </td>
+      <td style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: task.actualStartDate ? '#D4AF37' : 'rgba(255,255,255,0.05)' }}>
+            <Timer size={10} />
+            <span style={{ fontSize: 11, fontWeight: 600 }}>{task.actualStartDate ? formatDate(task.actualStartDate) : '—'}</span>
+          </div>
+          {task.actualStartDate && (
+            <span style={{ fontSize: 9, color: 'rgba(212, 175, 55, 0.3)', fontWeight: 500 }}>
+              {formatTime(task.actualStartDate)}
+            </span>
+          )}
+        </div>
+      </td>
+      <td style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: (task.actualEndDate && task.status === 'COMPLETED') ? '#10b981' : 'rgba(255,255,255,0.05)' }}>
+            <CheckCircle2 size={10} />
+            <span style={{ fontSize: 11, fontWeight: 700 }}>{(task.actualEndDate && task.status === 'COMPLETED') ? formatDate(task.actualEndDate) : '—'}</span>
+          </div>
+          {task.actualEndDate && task.status === 'COMPLETED' && (
+            <span style={{ fontSize: 9, color: 'rgba(16, 185, 129, 0.3)', fontWeight: 500 }}>
+              {formatTime(task.actualEndDate)}
+            </span>
+          )}
+        </div>
+      </td>
+      <td style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
             {formatDate(task.dueDate)}
@@ -66,12 +196,33 @@ function TaskRow({ task, index, onClick }: { task: Task; index: number; onClick?
           </span>
         </div>
       </td>
-      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+      <td style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', maxWidth: 80 }}>
-            <div style={{ height: '100%', borderRadius: 3, width: `${task.completion}%`, background: task.completion >= 80 ? '#10b981' : task.completion >= 50 ? '#3b82f6' : '#f59e0b' }} />
+          <div style={{
+            flex: 1, height: 6, borderRadius: 3, overflow: 'hidden', maxWidth: 80,
+            background: task.status === 'PENDING_REVIEW' ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.06)',
+          }}>
+            <div
+              className={task.status === 'PENDING_REVIEW' ? 'animate-pulse' : ''}
+              style={{
+                height: '100%', borderRadius: 3, width: `${task.completion}%`,
+                background: task.status === 'PENDING_REVIEW'
+                  ? 'linear-gradient(90deg, #f59e0b, #fbbf24)'
+                  : task.completion >= 80 ? '#10b981' : task.completion >= 50 ? '#3b82f6' : '#f59e0b',
+                boxShadow: task.status === 'PENDING_REVIEW' ? '0 0 8px rgba(245,158,11,0.4)' : 'none',
+                transition: 'width 300ms ease',
+              }}
+            />
           </div>
-          <span className="font-mono-data" style={{ fontSize: 13, color: 'var(--text-muted)', width: 30, textAlign: 'right' }}>{task.completion}%</span>
+          <span
+            className="font-mono-data"
+            style={{
+              fontSize: 13, width: 30, textAlign: 'right',
+              color: task.status === 'PENDING_REVIEW' ? '#fbbf24' : 'var(--text-muted)',
+            }}
+          >
+            {task.completion}%
+          </span>
         </div>
       </td>
     </motion.tr>
@@ -118,6 +269,9 @@ export default function ActiveTasks({ onTaskClick, tasks: externalTasks }: { onT
       else if (sortField === 'priority') cmp = priorityOrder[a.priority] - priorityOrder[b.priority];
       else if (sortField === 'status') cmp = a.status.localeCompare(b.status);
       else if (sortField === 'dueDate') cmp = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      else if (sortField === 'requestDate') cmp = new Date(a.requestDate || 0).getTime() - new Date(b.requestDate || 0).getTime();
+      else if (sortField === 'actualStartDate') cmp = new Date(a.actualStartDate || 0).getTime() - new Date(b.actualStartDate || 0).getTime();
+      else if (sortField === 'actualEndDate') cmp = new Date(a.actualEndDate || 0).getTime() - new Date(b.actualEndDate || 0).getTime();
       else if (sortField === 'completion') cmp = a.completion - b.completion;
       return sortDir === 'asc' ? cmp : -cmp;
     });
@@ -174,6 +328,9 @@ export default function ActiveTasks({ onTaskClick, tasks: externalTasks }: { onT
                   { label: 'Task Name', field: 'title' as SortField, align: 'left' },
                   { label: 'Priority', field: 'priority' as SortField, align: 'center' },
                   { label: 'Status', field: 'status' as SortField, align: 'center' },
+                  { label: 'Requested', field: 'requestDate' as SortField, align: 'center' },
+                  { label: 'Start', field: 'actualStartDate' as SortField, align: 'center' },
+                  { label: 'Finish', field: 'actualEndDate' as SortField, align: 'center' },
                   { label: 'Due Date', field: 'dueDate' as SortField, align: 'center' },
                   { label: 'Progress', field: 'completion' as SortField, align: 'center' }
                 ].map(col => (

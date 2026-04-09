@@ -188,7 +188,7 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <ChartCard title="Tasks by Status" delay={0.2} height={190}>
           {statusData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%" debounce={50}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100} debounce={50}>
               <PieChart>
                 <Pie data={statusData} cx="35%" cy="50%" innerRadius={38} outerRadius={64} paddingAngle={3} dataKey="value" stroke="none" labelLine={false} label={renderCustomLabel}>
                   {statusData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
@@ -201,7 +201,7 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
         </ChartCard>
         <ChartCard title="Tasks by Department" delay={0.25} height={165}>
           {data.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%" debounce={50}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100} debounce={50}>
               <BarChart data={deptData} barGap={2} barSize={12}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
                 <XAxis dataKey="name" {...axisProps} />
@@ -222,7 +222,7 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <ChartCard title="Weekly Completion Trend" delay={0.3} height={165}>
           {data.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%" debounce={50}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100} debounce={50}>
               <AreaChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
                 <XAxis dataKey="name" {...axisProps} />
@@ -236,7 +236,7 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
         </ChartCard>
         <ChartCard title="Delayed Deliverables" delay={0.35} height={155}>
           {data.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%" debounce={50}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100} debounce={50}>
               <LineChart data={delayedData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
                 <XAxis dataKey="name" {...axisProps} />
@@ -255,7 +255,7 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
       <ChartCard title="Tasks by Status" delay={0.2} height={180}>
         {statusData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%" debounce={50}>
+          <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100} debounce={50}>
             <PieChart>
               <Pie data={statusData} cx="50%" cy="45%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value" stroke="none" labelLine={false} label={renderCustomLabel}>
                 {statusData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
@@ -268,7 +268,7 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
       </ChartCard>
       <ChartCard title="Tasks by Department" delay={0.25} height={180}>
         {data.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%" debounce={50}>
+          <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100} debounce={50}>
             <BarChart data={deptData} barSize={14}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
               <XAxis dataKey="name" {...axisProps} />

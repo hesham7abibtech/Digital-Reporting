@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Trash2, Calendar, User, Tag, Activity, Loader2, Pause, Timer, Search, Globe, ChevronDown, Check, Building2, Plus, Link, Paperclip, Download, FileText, Shield, Lock } from 'lucide-react';
+import { X, Save, Trash2, Calendar, User, Tag, Activity, Loader2, Pause, Timer, Search, Globe, ChevronDown, Check, Building2, Plus, Link, Paperclip, Download, FileText, Shield, Lock, UserCheck, Clock, CheckCircle2 } from 'lucide-react';
 import { Task, Priority, TaskStatus, TeamMember, TaskLink, TaskFile } from '@/lib/types';
 import { upsertTask, deleteTask } from '@/services/FirebaseService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
@@ -77,6 +77,38 @@ const commonTimeZones = [
   'America/New_York',
   'Asia/Singapore'
 ];
+
+// ─── Live Review Timer ────────────────────────────────────────────
+function ReviewTimer({ startDate }: { startDate: string }) {
+  const [elapsed, setElapsed] = useState('');
+
+  useEffect(() => {
+    const start = new Date(startDate).getTime();
+    if (isNaN(start)) return;
+
+    const update = () => {
+      const diff = Math.max(0, Date.now() - start);
+      const days = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+
+      const parts: string[] = [];
+      if (days > 0) parts.push(`${days}d`);
+      parts.push(`${hours}h`);
+      parts.push(`${minutes}m`);
+      parts.push(`${seconds}s`);
+      
+      setElapsed(parts.join(' '));
+    };
+
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [startDate]);
+
+  return <span>{elapsed}</span>;
+}
 
 export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDelete, canApprove }: TaskEditorProps) {
   // Fetch members internally to ensure real-time consistency if needed, 
@@ -308,13 +340,26 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Requester Name</label>
             <div style={{ position: 'relative' }}>
-              <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
+              <UserCheck size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
               <input 
                 type="text" 
                 value={formData.requesterName ?? ''} 
                 onChange={e => setFormData({ ...formData, requesterName: e.target.value })}
                 style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }}
                 placeholder="Name of entity requesting task"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Request Origin Date/Time</label>
+            <div style={{ position: 'relative' }}>
+              <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
+              <input 
+                type="datetime-local" 
+                value={toLocalISO(formData.requestDate || '', formData.timeZone || '')} 
+                onChange={e => setFormData({ ...formData, requestDate: fromLocalISO(e.target.value, formData.timeZone || '') })}
+                style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }}
               />
             </div>
           </div>
@@ -538,7 +583,12 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                 }
                 // Auto-set completion based on status
                 if (newStatus === 'NOT_STARTED') updates.completion = 0;
-                if (newStatus === 'COMPLETED') updates.completion = 100;
+                if (newStatus === 'COMPLETED') {
+                  updates.completion = 100;
+                  if (!formData.actualEndDate) {
+                    updates.actualEndDate = new Date().toISOString();
+                  }
+                }
                 setFormData({ ...formData, ...updates });
               }}
               style={{ 
@@ -593,15 +643,15 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
               </motion.div>
             )}
 
-            {formData.status === 'IN_PROGRESS' && (
+            {(formData.status !== 'NOT_STARTED') && (
               <motion.div 
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                style={{ gridColumn: 'span 2', overflow: 'hidden' }}
+                style={{ gridColumn: 'span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, overflow: 'hidden' }}
               >
                 <div style={{ padding: 20, borderRadius: 16, background: 'rgba(212, 175, 55, 0.03)', border: '1px solid rgba(212, 175, 55, 0.1)' }}>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operational Sync: Actual Start Date</label>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actual Start Date</label>
                   <div style={{ position: 'relative' }}>
                     <Timer size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(212, 175, 55, 0.4)' }} />
                     <input 
@@ -612,6 +662,21 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                     />
                   </div>
                 </div>
+
+                {formData.status === 'COMPLETED' && (
+                  <div style={{ padding: 20, borderRadius: 16, background: 'rgba(16, 185, 129, 0.03)', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#10b981', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actual Finish Date</label>
+                    <div style={{ position: 'relative' }}>
+                      <CheckCircle2 size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(16, 185, 129, 0.4)' }} />
+                      <input 
+                        type="datetime-local" 
+                        value={toLocalISO(formData.actualEndDate || '', formData.timeZone || '')} 
+                        onChange={e => setFormData({ ...formData, actualEndDate: fromLocalISO(e.target.value, formData.timeZone || '') })}
+                        style={{ width: '100%', padding: '10px 16px 10px 38px', borderRadius: 10, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(16, 185, 129, 0.15)', color: 'white', fontSize: 13, outline: 'none' }}
+                      />
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -628,25 +693,25 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
           ) : formData.status === 'PENDING_REVIEW' ? (
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Completion Density (%)</label>
-              <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Pause size={16} style={{ color: '#f59e0b' }} />
-                  <span style={{ fontSize: 13, color: '#fbbf24', fontWeight: 700 }}>HOLDING — Pending Review</span>
+              <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.15)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Pause size={16} style={{ color: '#f59e0b' }} />
+                    <span style={{ fontSize: 13, color: '#fbbf24', fontWeight: 700 }}>HOLDING — Pending Review</span>
+                  </div>
+                  {formData.pendingReviewDate && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Timer size={12} style={{ color: '#f59e0b', opacity: 0.7 }} />
+                      <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600, fontFamily: 'monospace' }}>
+                        <ReviewTimer startDate={formData.pendingReviewDate} />
+                      </span>
+                    </div>
+                  )}
                 </div>
                 {formData.pendingReviewDate && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Timer size={12} style={{ color: '#f59e0b', opacity: 0.7 }} />
-                    <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600, fontFamily: 'monospace' }}>
-                      {(() => {
-                        const ms = Date.now() - new Date(formData.pendingReviewDate).getTime();
-                        const hrs = Math.floor(ms / 3600000);
-                        const mins = Math.floor((ms % 3600000) / 60000);
-                        if (hrs >= 24) {
-                          const days = Math.floor(hrs / 24);
-                          return `${days}d ${hrs % 24}h`;
-                        }
-                        return `${hrs}h ${mins}m`;
-                      })()}
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(245, 158, 11, 0.1)', display: 'flex', justifyContent: 'flex-end' }}>
+                    <span style={{ fontSize: 9, color: 'rgba(212, 175, 55, 0.6)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Started: {new Date(formData.pendingReviewDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • {new Date(formData.pendingReviewDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 )}

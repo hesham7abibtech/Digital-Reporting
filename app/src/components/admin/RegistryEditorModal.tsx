@@ -20,9 +20,9 @@ interface RegistryEditorProps {
 export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, canDelete }: RegistryEditorProps) {
   const [formData, setFormData] = useState<Partial<DashboardNavItem>>({
     name: '',
-    link: '',
-    category: '',
-    status: 'LIVE'
+    category: 'DASHBOARD',
+    status: 'LIVE',
+    links: []
   });
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -36,10 +36,10 @@ export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, c
       setFormData({
         id: `reg-${Date.now()}`,
         name: '',
-        link: '',
         icon: 'LayoutDashboard',
         status: 'LIVE',
-        category: 'Project Operations'
+        category: 'DASHBOARD',
+        links: []
       });
     }
   }, [item, isOpen]);
@@ -92,7 +92,7 @@ export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, c
             </div>
           )}
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Dashboard Name</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>File name</label>
             <input 
               type="text" 
               value={formData.name ?? ''} 
@@ -101,39 +101,125 @@ export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, c
               style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.4)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text' }} 
             />
           </div>
+
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Target URL</label>
-            <input 
-              type="text" 
-              value={formData.link ?? ''} 
-              onChange={e => setFormData({ ...formData, link: e.target.value })} 
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Description</label>
+            <textarea 
+              value={formData.description ?? ''} 
+              onChange={e => setFormData({ ...formData, description: e.target.value })} 
               disabled={readOnly}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.4)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text' }} 
+              placeholder="Portal functional overview..."
+              style={{ width: '100%', minHeight: 80, padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.4)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text', resize: 'vertical', fontSize: 13 }} 
             />
+          </div>
+          {/* Supplemental Links Management */}
+          <div style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <LinkIcon size={14} /> Supplemental Resources
+              </label>
+              {!readOnly && (
+                <button
+                  onClick={() => setFormData({ 
+                    ...formData, 
+                    links: [...(formData.links || []), { label: '', url: '' }] 
+                  })}
+                  style={{ fontSize: 11, fontWeight: 700, color: '#D4AF37', background: 'rgba(212, 175, 55, 0.1)', border: 'none', padding: '4px 10px', borderRadius: 6, cursor: 'pointer' }}
+                >
+                  + Add Link
+                </button>
+              )}
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {(formData.links || []).length === 0 ? (
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', textAlign: 'center', margin: '10px 0' }}>No supplemental links configured</p>
+              ) : (
+                formData.links?.map((link, idx) => (
+                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: 8, alignItems: 'center' }}>
+                    <input 
+                      type="text" 
+                      placeholder="Label" 
+                      value={link.label} 
+                      onChange={e => {
+                        const newLinks = [...(formData.links || [])];
+                        newLinks[idx].label = e.target.value;
+                        setFormData({ ...formData, links: newLinks });
+                      }}
+                      disabled={readOnly}
+                      style={{ padding: '8px 10px', fontSize: 12, borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white' }}
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="URL (https://...)" 
+                      value={link.url} 
+                      onChange={e => {
+                        const newLinks = [...(formData.links || [])];
+                        newLinks[idx].url = e.target.value;
+                        setFormData({ ...formData, links: newLinks });
+                      }}
+                      disabled={readOnly}
+                      style={{ padding: '8px 10px', fontSize: 12, borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white' }}
+                    />
+                    {!readOnly && (
+                      <button 
+                        onClick={() => {
+                          const newLinks = formData.links?.filter((_, i) => i !== idx);
+                          setFormData({ ...formData, links: newLinks });
+                        }}
+                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.6 }}
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Group / Category</label>
-              <input 
-                type="text" 
-                value={formData.category ?? ''} 
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Category</label>
+              <select 
+                value={formData.category || 'DASHBOARD'} 
                 onChange={e => setFormData({ ...formData, category: e.target.value })} 
                 disabled={readOnly}
-                style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.4)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text' }} 
-              />
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(20,20,30,1)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.3)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer' }}
+              >
+                <option value="DASHBOARD">Dashboard</option>
+                <option value="REPORT">Report</option>
+                <option value="OTHER">Other (Manual Input)</option>
+              </select>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Access Status</label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Status</label>
               <select 
                 value={formData.status} 
                 onChange={e => setFormData({ ...formData, status: e.target.value as any })} 
                 disabled={readOnly}
                 style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(20,20,30,1)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.3)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer' }}
               >
-                {['LIVE', 'UPDATING', 'MAINTENANCE', 'OFFLINE'].map(s => <option key={s} value={s}>{s}</option>)}
+                <option value="LIVE">Live</option>
+                <option value="HOLD">Hold</option>
+                <option value="BLOCKED">Blocked</option>
+                <option value="MAINTENANCE">Maintenance</option>
               </select>
             </div>
           </div>
+
+          {formData.category === 'OTHER' && (
+            <div>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Custom Category</label>
+              <input 
+                type="text" 
+                value={formData.customCategory ?? ''} 
+                onChange={e => setFormData({ ...formData, customCategory: e.target.value })} 
+                placeholder="Enter category name..."
+                disabled={readOnly}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.4)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text' }} 
+              />
+            </div>
+          )}
 
           {errorMsg && (
             <div style={{ padding: '12px 16px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
