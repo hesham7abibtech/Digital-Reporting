@@ -57,8 +57,11 @@ export interface Task {
   fileZone: string; // Internal tracking
   timeZone: string;
   fileShareLink: string;
+  deliverableType?: string[];
+  cde?: string[];
   pendingReviewDate?: string | null; // When task entered PENDING_REVIEW status
   submittingDate?: string | null;
+  submitterName?: string;
 
   createdAt: string;
   updatedAt: string;
@@ -211,6 +214,15 @@ export interface ReportSummaryField {
   isVisible: boolean;
 }
 
+export interface HeaderBadge {
+  id: string;
+  label: string;
+  color: string;
+  isVisible: boolean;
+  icon?: string;
+  isAutomated?: boolean;
+}
+
 // ─── Project Metadata Types ───────────────────────────────────────
 export interface ProjectMetadata {
   id: string; // usually 'project'
@@ -220,6 +232,7 @@ export interface ProjectMetadata {
   companyName: string;
   region: string;
   subtitles?: string[];
+  headerBadges?: HeaderBadge[];
   brandingCode: string;
   location: string;
   statusLine: string;

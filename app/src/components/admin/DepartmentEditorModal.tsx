@@ -49,11 +49,11 @@ export default function DepartmentEditorModal({ department, isOpen, onClose, can
         name: formData.name,
         abbreviation: formData.abbreviation.toUpperCase().trim()
       });
-      showToast('Operational department synchronized.', 'SUCCESS');
+      showToast('Operational category synchronized.', 'SUCCESS');
       onClose();
     } catch (error) {
-      console.error('Failed to save department:', error);
-      showToast('Department synchronization failure.', 'ERROR');
+      console.error('Failed to save category:', error);
+      showToast('Category synchronization failure.', 'ERROR');
     } finally {
       setIsSaving(false);
     }
@@ -63,10 +63,10 @@ export default function DepartmentEditorModal({ department, isOpen, onClose, can
     if (!department) return;
     try {
       await deleteDepartment(department.id);
-      showToast('Department purged from production protocols.', 'SUCCESS');
+      showToast('Category purged from production protocols.', 'SUCCESS');
       onClose();
     } catch (error) {
-      console.error('Failed to delete department:', error);
+      console.error('Failed to delete category:', error);
       showToast('Purge sequence failed.', 'ERROR');
     }
   };
@@ -78,13 +78,13 @@ export default function DepartmentEditorModal({ department, isOpen, onClose, can
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }} />
       <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ width: '100%', maxWidth: 450, background: '#12121a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, position: 'relative', zIndex: 1, overflow: 'hidden' }}>
         <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Departmental Registry Entry</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Category Registry Entry</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={24} /></button>
         </div>
 
         <div style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full Department Name</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full Category Name</label>
             <div style={{ position: 'relative' }}>
               <Building2 size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(212, 175, 55, 0.4)' }} />
               <input 
@@ -140,7 +140,7 @@ export default function DepartmentEditorModal({ department, isOpen, onClose, can
               }}
             >
               {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-              SYNC DEPT
+              SYNC CATEGORY
             </button>
           </div>
         </div>
@@ -150,8 +150,8 @@ export default function DepartmentEditorModal({ department, isOpen, onClose, can
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleDelete}
-        title="Department Purge Sequence"
-        message={`Are you sure you want to permanently delete the ${department?.name} department? This may affect records linked to this operational vector.`}
+        title="Category Purge Sequence"
+        message={`Are you sure you want to permanently delete the ${department?.name} category? This may affect records linked to this operational vector.`}
         confirmLabel="Authorize Deletion"
         severity="DANGER"
       />

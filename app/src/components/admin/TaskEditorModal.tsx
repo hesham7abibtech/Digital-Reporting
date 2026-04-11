@@ -4,12 +4,12 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, Trash2, Calendar, Search, ChevronDown, Check, Plus, Link, Shield, Lock, Clock, CheckCircle2 } from 'lucide-react';
 import { Task, TaskStatus, TaskLink, Department } from '@/lib/types';
-import { upsertTask, deleteTask } from '@/services/FirebaseService';
+import { upsertTask, deleteTask, updateMetadataSuggestions } from '@/services/FirebaseService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import { useToast } from '@/components/shared/EliteToast';
-import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { useCollection, useDocument } from 'react-firebase-hooks/firestore';
+import { collection, query, orderBy, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface TaskEditorProps {
@@ -58,6 +58,11 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
     deptsSnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as Department)) || [], 
   [deptsSnapshot]);
 
+  const [usersSnapshot] = useCollection(query(collection(db, 'users'), orderBy('name', 'asc')));
+  const personnel = useMemo(() => 
+    usersSnapshot?.docs.map(d => (d.data() as any).name as string) || [], 
+  [usersSnapshot]);
+
   const [formData, setFormData] = useState<Partial<Task>>({
     title: '',
     description: '',
@@ -66,15 +71,29 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
     completion: 0,
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     fileShareLink: '',
+    deliverableType: [],
+    cde: [],
     submittingDate: new Date().toISOString(),
     pendingReviewDate: null,
+    submitterName: ''
   });
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { showToast } = useToast();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [newLink, setNewLink] = useState({ label: '', url: '' });
+  const [newType, setNewType] = useState('');
+  const [newCde, setNewCde] = useState('');
   const originalIdRef = useRef<string | null>(null);
+
+  const [metadataSnapshot] = useDocument(doc(db, 'settings', 'taskMetadata'));
+  const suggestions = useMemo(() => {
+    const data = metadataSnapshot?.data();
+    return {
+      types: (data?.deliverableTypes || []) as string[],
+      cdes: (data?.cdeEnvironments || []) as string[]
+    };
+  }, [metadataSnapshot]);
 
   const getAbbr = useCallback((name: string) => {
     const d = departments.find(dept => dept.name === name);
@@ -110,7 +129,10 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         completion: task.completion || 0,
         timeZone: task.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone,
         fileShareLink: task.fileShareLink || '',
+        deliverableType: Array.isArray(task.deliverableType) ? task.deliverableType : (task.deliverableType ? [task.deliverableType] : []),
+        cde: Array.isArray(task.cde) ? task.cde : (task.cde ? [task.cde] : []),
         submittingDate: task.submittingDate || (task as any).actualEndDate || (task as any).actualStartDate || new Date().toISOString(),
+        submitterName: task.submitterName || '',
       });
     } else if (isOpen) {
       originalIdRef.current = null;
@@ -129,8 +151,11 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         tags: [],
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         fileShareLink: '',
+        deliverableType: [],
+        cde: [],
         submittingDate: new Date().toISOString(),
         pendingReviewDate: null,
+        submitterName: '',
         updatedAt: new Date().toISOString(),
       });
     }
@@ -144,6 +169,12 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         ...formData,
         updatedAt: new Date().toISOString(),
       } as Task;
+      
+      // Update global suggestions
+      if (formData.deliverableType || formData.cde) {
+        await updateMetadataSuggestions(formData.deliverableType || [], formData.cde || []);
+      }
+
       const idChanged = originalIdRef.current && finalTask.id !== originalIdRef.current;
       await upsertTask(finalTask);
       if (idChanged && originalIdRef.current) await deleteTask(originalIdRef.current);
@@ -201,36 +232,85 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
             <input type="text" value={formData.title ?? ''} onChange={e => setFormData({ ...formData, title: e.target.value })} disabled={isActuallyReadOnly} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: isActuallyReadOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: isActuallyReadOnly ? '1px solid rgba(255,255,255,0.02)' : '1px solid rgba(255,255,255,0.06)', color: isActuallyReadOnly ? 'rgba(255,255,255,0.4)' : 'white', fontSize: 15, outline: 'none', cursor: isActuallyReadOnly ? 'not-allowed' : 'text' }} placeholder="System migration..." />
           </div>
           <div style={{ gridColumn: 'span 2' }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Description</label>
-            <textarea value={formData.description ?? ''} onChange={e => setFormData({ ...formData, description: e.target.value })} disabled={isActuallyReadOnly} rows={4} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: isActuallyReadOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: isActuallyReadOnly ? '1px solid rgba(255,255,255,0.02)' : '1px solid rgba(255,255,255,0.06)', color: isActuallyReadOnly ? 'rgba(255,255,255,0.4)' : 'white', fontSize: 15, outline: 'none', cursor: isActuallyReadOnly ? 'not-allowed' : 'text', resize: 'vertical' }} placeholder="Detailed task mission parameters..." />
-          </div>
-          <div style={{ gridColumn: 'span 2' }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Submitting Date</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Submission Date</label>
             <div style={{ position: 'relative' }}>
               <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
               <input type="date" value={toLocalISO(formData.submittingDate || '', formData.timeZone || '')} onChange={e => setFormData({ ...formData, submittingDate: fromLocalISO(e.target.value, formData.timeZone || '') })} style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }} />
             </div>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operational Department</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Task Category</label>
             <select value={formData.department} onChange={e => handleDeptChange(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#1a1a24', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }}>
-              <option value="" disabled>Select Department</option>
+              <option value="" disabled>Select Category</option>
               {departments.map(d => (<option key={d.id} value={d.name}>{d.name} ({d.abbreviation})</option>))}
             </select>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status Track</label>
-             <select value={formData.status} disabled={isActuallyReadOnly || !canApprove} onChange={e => {
-                const newStatus = e.target.value as TaskStatus;
-                const updates: Partial<Task> = { status: newStatus };
-                if (newStatus === 'PENDING_REVIEW' && formData.status !== 'PENDING_REVIEW') updates.pendingReviewDate = new Date().toISOString();
-                if (newStatus !== 'PENDING_REVIEW') updates.pendingReviewDate = null;
-                if (newStatus === 'NOT_STARTED') updates.completion = 0;
-                if (newStatus === 'COMPLETED') updates.completion = 100;
-                setFormData({ ...formData, ...updates });
-              }} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: (isActuallyReadOnly || !canApprove) ? 'rgba(255,255,255,0.01)' : '#1a1a24', border: '1px solid rgba(255,255,255,0.06)', color: (isActuallyReadOnly || !canApprove) ? 'rgba(255,255,255,0.3)' : 'white', fontSize: 14, outline: 'none', cursor: (isActuallyReadOnly || !canApprove) ? 'not-allowed' : 'pointer' }}>
-              {statuses.map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Submitter (PERSONNEL)</label>
+            <select value={formData.submitterName || ''} onChange={e => setFormData({ ...formData, submitterName: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#1a1a24', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }}>
+              <option value="">Unassigned</option>
+              {personnel.map(name => (<option key={name} value={name}>{name}</option>))}
             </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Deliverable Type</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+              {formData.deliverableType?.map((type, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 10px', background: 'rgba(255,255,255,0.05)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>{type}</span>
+                  <button onClick={() => {
+                      const newTypes = [...(formData.deliverableType || [])];
+                      newTypes.splice(idx, 1);
+                      setFormData({ ...formData, deliverableType: newTypes });
+                    }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: 2, display: 'flex' }}><X size={10} /></button>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input type="text" list="type-suggestions" value={newType} onChange={e => setNewType(e.target.value)} style={{ flex: 1, padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 13, outline: 'none' }} placeholder="e.g. RVT, DWG" />
+              <datalist id="type-suggestions">
+                {suggestions.types.map(t => <option key={t} value={t} />)}
+              </datalist>
+              <button 
+                onClick={() => {
+                  if (newType.trim()) {
+                    setFormData({ ...formData, deliverableType: [...(formData.deliverableType || []), newType.trim()] });
+                    setNewType('');
+                  }
+                }}
+                style={{ padding: '0 14px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
+              >ADD</button>
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>CDE (Environment)</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+              {formData.cde?.map((env, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 10px', background: 'rgba(255,255,255,0.05)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>{env}</span>
+                  <button onClick={() => {
+                      const newCdes = [...(formData.cde || [])];
+                      newCdes.splice(idx, 1);
+                      setFormData({ ...formData, cde: newCdes });
+                    }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: 2, display: 'flex' }}><X size={10} /></button>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input type="text" list="cde-suggestions" value={newCde} onChange={e => setNewCde(e.target.value)} style={{ flex: 1, padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 13, outline: 'none' }} placeholder="e.g. Onedrive, ACC" />
+              <datalist id="cde-suggestions">
+                {suggestions.cdes.map(c => <option key={c} value={c} />)}
+              </datalist>
+              <button 
+                onClick={() => {
+                  if (newCde.trim()) {
+                    setFormData({ ...formData, cde: [...(formData.cde || []), newCde.trim()] });
+                    setNewCde('');
+                  }
+                }}
+                style={{ padding: '0 14px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
+              >ADD</button>
+            </div>
           </div>
           <div style={{ gridColumn: 'span 2', padding: '24px', borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -262,6 +342,10 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                   }
                 }} style={{ padding: '8px 14px', borderRadius: 8, background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700 }}><Plus size={14} /> CONNECT</button>
             </div>
+          </div>
+          <div style={{ gridColumn: 'span 2', marginTop: 10 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Notes</label>
+            <textarea value={formData.description ?? ''} onChange={e => setFormData({ ...formData, description: e.target.value })} disabled={isActuallyReadOnly} rows={4} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: isActuallyReadOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: isActuallyReadOnly ? '1px solid rgba(255,255,255,0.02)' : '1px solid rgba(255,255,255,0.06)', color: isActuallyReadOnly ? 'rgba(255,255,255,0.4)' : 'white', fontSize: 15, outline: 'none', cursor: isActuallyReadOnly ? 'not-allowed' : 'text', resize: 'vertical' }} placeholder="Additional notes or parameters..." />
           </div>
         </div>
         <div style={{ padding: '24px 32px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

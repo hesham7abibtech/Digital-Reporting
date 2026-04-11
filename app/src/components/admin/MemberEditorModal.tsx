@@ -130,7 +130,7 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
             </div>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Operational Department</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Functional Category</label>
             <select 
               value={formData.department} 
               onChange={e => setFormData({ ...formData, department: e.target.value })} 

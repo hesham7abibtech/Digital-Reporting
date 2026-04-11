@@ -12,8 +12,8 @@ interface ProjectHeaderProps {
   dateRangeText?: string;
 }
 
-export default function ProjectHeader({ 
-  members, 
+export default function ProjectHeader({
+  members,
   project,
   tasks,
   dateRangeText
@@ -23,7 +23,7 @@ export default function ProjectHeader({
   // AI Status Intelligence
   const { statusLine, statusColor } = (() => {
     const delayedCount = tasks?.filter(t => t.status === 'DELAYED').length ?? 0;
-    
+
     if (delayedCount > 0) return { statusLine: 'Critical Pipeline Blockage', statusColor: '#ef4444' };
     return { statusLine: project?.statusLine || 'Digital Workflow Online', statusColor: project?.statusColor || '#f59e0b' };
   })();
@@ -34,18 +34,18 @@ export default function ProjectHeader({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
       className="glass-card"
-      style={{ 
-        padding: '16px 24px', 
-        position: 'relative', 
+      style={{
+        padding: '24px 32px',
+        position: 'relative',
         overflow: 'hidden',
-        minHeight: 180,
+        minHeight: 140,
         display: 'flex',
         alignItems: 'center'
       }}
     >
       {/* Dynamic Site Background Asset */}
       {project?.headerBgUrl && (
-        <div 
+        <div
           style={{
             position: 'absolute',
             top: 0,
@@ -64,7 +64,7 @@ export default function ProjectHeader({
       )}
 
       {/* Glass Overlay for Depth */}
-      <div 
+      <div
         style={{
           position: 'absolute',
           top: 0,
@@ -103,8 +103,8 @@ export default function ProjectHeader({
                 project.subtitles.map((sub, idx) => (
                   <React.Fragment key={`sub-${idx}`}>
                     {idx > 0 && <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 300 }}>|</span>}
-                    <span style={{ 
-                      display: 'flex', alignItems: 'center', gap: 8, 
+                    <span style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
                       color: idx === 0 ? '#ffffff' : 'rgba(255, 255, 255, 0.8)',
                       textTransform: idx === 0 ? 'uppercase' : 'none',
                       fontSize: idx === 0 ? 13 : 13,
@@ -129,47 +129,94 @@ export default function ProjectHeader({
             </div>
           </div>
 
-          {/* Health Badge */}
-          <span
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '6px 16px', borderRadius: 9999,
-              background: `${statusColor}15`, border: `1px solid ${statusColor}40`,
-            }}
-          >
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: statusColor }} />
-            <span style={{ fontSize: 14, fontWeight: 700, color: statusColor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{statusLine}</span>
-          </span>
+          {/* Dynamic Insight Badges */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+            {project?.headerBadges?.filter(b => b.isVisible).map((badge) => {
+              let displayText = badge.label;
+              const color = badge.color || '#D4AF37';
 
-          <span
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '6px 16px', borderRadius: 9999,
-              background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.3)',
-              marginLeft: 12
-            }}
-          >
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4AF37', boxShadow: '0 0 10px #D4AF37' }} className="animate-pulse" />
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{dateRangeText || 'MONTHLY PERFORMANCE'}</span>
-          </span>
+              // Handle Automated Data Injection
+              if (badge.isAutomated) {
+                if (badge.id === 'status-line') displayText = statusLine;
+                if (badge.id === 'date-range') displayText = dateRangeText || 'MONTHLY PERFORMANCE';
+                if (badge.id === 'task-count') displayText = `Deliverables Count: ${tasks?.length || 0}`;
+              }
 
-          {/* Perfectly Aligned Integrated Tasks Count KPI */}
-          <span
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 10,
-              padding: '6px 18px', borderRadius: 9999,
-              background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)',
-              marginLeft: 12,
-              backdropFilter: 'blur(10px)',
-            }}
-          >
-            <Cpu size={14} style={{ color: '#818cf8', filter: 'drop-shadow(0 0 5px rgba(99, 102, 241, 0.4))' }} />
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Tasks Count: <span style={{ color: '#fff', marginLeft: 4, fontSize: 15, fontWeight: 900 }}>{tasks?.length || 0}</span>
-            </span>
-          </span>
+              return (
+                <span
+                  key={badge.id}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    padding: '6px 16px', borderRadius: 9999,
+                    background: `${color}15`, border: `1px solid ${color}40`,
+                    backdropFilter: 'blur(10px)',
+                  }}
+                >
+                  <div style={{ 
+                    width: 7, height: 7, borderRadius: '50%', 
+                    background: color,
+                    boxShadow: badge.id === 'task-count' || badge.id === 'date-range' ? `0 0 8px ${color}` : 'none'
+                  }} className={badge.id === 'date-range' ? "animate-pulse" : ""} />
+                  <span style={{ 
+                    fontSize: 13, fontWeight: 800, color, 
+                    textTransform: 'uppercase', letterSpacing: '0.06em' 
+                  }}>
+                    {displayText}
+                  </span>
+                </span>
+              );
+            })}
+
+            {/* Legacy Fallback if no badges defined */}
+            {(!project?.headerBadges || project.headerBadges.length === 0) && (
+              <>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 9999, background: `${statusColor}15`, border: `1px solid ${statusColor}40` }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: statusColor }} />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: statusColor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{statusLine}</span>
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 9999, background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.3)', marginLeft: 0 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4AF37', boxShadow: '0 0 10px #D4AF37' }} className="animate-pulse" />
+                  <span style={{ fontSize: 13, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{dateRangeText || 'MONTHLY PERFORMANCE'}</span>
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '6px 18px', borderRadius: 9999, background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)', marginLeft: 0, backdropFilter: 'blur(10px)' }}>
+                  <Cpu size={14} style={{ color: '#818cf8', filter: 'drop-shadow(0 0 5px rgba(99, 102, 241, 0.4))' }} />
+                  <span style={{ fontSize: 13, fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    Deliverables Count: <span style={{ color: '#fff', marginLeft: 4, fontSize: 15, fontWeight: 900 }}>{tasks?.length || 0}</span>
+                  </span>
+                </span>
+              </>
+            )}
+          </div>
         </div>
 
+        {/* Right - Project Logo Overlay */}
+        {project?.logoUrl && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            style={{ 
+              flexShrink: 0, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              paddingLeft: 32,
+              borderLeft: '1px solid rgba(255,255,255,0.08)'
+            }}
+          >
+            <img 
+              src={project.logoUrl} 
+              alt="Project Identity" 
+              style={{ 
+                maxHeight: 100, 
+                width: 'auto', 
+                maxWidth: 280,
+                filter: 'brightness(1.2) drop-shadow(0 0 15px rgba(255,255,255,0.1))',
+                objectFit: 'contain'
+              }} 
+            />
+          </motion.div>
+        )}
       </div>
     </motion.div>
   );

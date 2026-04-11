@@ -14,9 +14,17 @@ interface ExportMenuProps {
   dateRangeText?: string;
   // State for Modal editing
   filterMode: 'monthly' | 'custom' | 'all';
+  setFilterMode: (mode: 'monthly' | 'custom' | 'all') => void;
   filterDept: string[];
   setFilterDept: (val: string[]) => void;
   availableDepts: string[];
+  // New technical filters
+  filterType: string[];
+  setFilterType: (val: string[]) => void;
+  availableTypes: string[];
+  filterCDE: string[];
+  setFilterCDE: (val: string[]) => void;
+  availableCDEs: string[];
   // Date states
   selectedYear: number;
   setSelectedYear: (y: number) => void;
@@ -32,7 +40,9 @@ interface ExportMenuProps {
 
 export default function ExportMenu({ 
   tasks, projectMetadata, dateRangeText,
-  filterMode, filterDept, setFilterDept, availableDepts,
+  filterMode, setFilterMode, filterDept, setFilterDept, availableDepts,
+  filterType, setFilterType, availableTypes,
+  filterCDE, setFilterCDE, availableCDEs,
   selectedYear, setSelectedYear, yearOptions,
   selectedMonth, setSelectedMonth, monthOptions,
   startDate, setStartDate, endDate, setEndDate
@@ -62,7 +72,7 @@ export default function ExportMenu({
     setIsOpen(false);
   };
 
-  const handleConfirmGeneration = async (type: 'pdf' | 'excel', onProgress: (p: number) => void) => {
+  const handleConfirmGeneration = async (type: 'pdf' | 'excel', perspective: 'table' | 'dashboard' | 'both', onProgress: (p: number) => void) => {
     // Phase 1: Preparation (0-20%)
     onProgress(10);
     await new Promise(r => setTimeout(r, 400));
@@ -74,13 +84,13 @@ export default function ExportMenu({
         // Excel generation (Simulate heavy lifting)
         await new Promise(r => setTimeout(r, 600));
         onProgress(60);
-        result = exportToExcel(tasks, projectMetadata, dateRangeText);
+        result = await exportToExcel(tasks, projectMetadata, dateRangeText, perspective);
         onProgress(90);
       } else {
         // PDF generation
         await new Promise(r => setTimeout(r, 800));
         onProgress(55);
-        result = await exportToPDF(tasks, projectMetadata, dateRangeText);
+        result = await exportToPDF(tasks, projectMetadata, dateRangeText, perspective);
         onProgress(85);
       }
       
@@ -206,9 +216,16 @@ export default function ExportMenu({
         projectMetadata={projectMetadata}
         dateRangeText={dateRangeText}
         filterMode={filterMode}
+        setFilterMode={setFilterMode}
         filterDept={filterDept}
         setFilterDept={setFilterDept}
         availableDepts={availableDepts}
+        filterType={filterType}
+        setFilterType={setFilterType}
+        availableTypes={availableTypes}
+        filterCDE={filterCDE}
+        setFilterCDE={setFilterCDE}
+        availableCDEs={availableCDEs}
         selectedYear={selectedYear}
         setSelectedYear={setSelectedYear}
         yearOptions={yearOptions}

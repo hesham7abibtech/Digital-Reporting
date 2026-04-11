@@ -16,6 +16,7 @@ import {
   Clock
 } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, updateDoc, doc, arrayUnion } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
 import { Broadcast, BroadcastSeverity } from '@/lib/types';
 import { getRelativeTime } from '@/lib/utils';
@@ -85,7 +86,12 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
     return () => unsubscribe();
   }, []);
 
-  const userId = auth.currentUser?.uid;
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubAuth = onAuthStateChanged(auth, user => setUserId(user?.uid || null));
+    return () => unsubAuth();
+  }, []);
 
   const filtered = broadcasts.filter(b => {
     if (activeTab === 'ALERTS') return b.type === 'NOTIF';
@@ -115,7 +121,7 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 z-[4000] bg-black/60 backdrop-blur-md"
             onClick={onClose}
           />
 
@@ -125,7 +131,7 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-[500px] z-[101] bg-[#050508] border-l border-white/5 flex flex-col shadow-[-40px_0_100px_rgba(0,0,0,0.9)]"
+            className="fixed right-0 top-0 bottom-0 w-full max-w-[500px] z-[4001] bg-[#050508] border-l border-white/5 flex flex-col shadow-[-40px_0_100px_rgba(0,0,0,0.9)]"
           >
             <div 
               className="relative overflow-hidden border-b border-white/[0.03] bg-gradient-to-b from-white/[0.02] to-transparent"
@@ -215,6 +221,7 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 + 0.1 }}
+                    onClick={() => !isRead && handleConfirmReceipt(item.id)}
                     className={`group relative border transition-all duration-500 cursor-pointer
                       ${!isRead && item.type === 'NOTIF' ? 'shadow-[0_10px_20px_-10px_rgba(0,0,0,0.5)]' : 'hover:opacity-100'}`}
                     style={{
@@ -222,7 +229,8 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
                       borderRadius: '20px',
                       backgroundColor: !isRead && item.type === 'NOTIF' ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.01)',
                       borderColor: !isRead && item.type === 'NOTIF' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)',
-                      opacity: !isRead && item.type === 'NOTIF' ? 1 : 0.8
+                      opacity: !isRead && item.type === 'NOTIF' ? 1 : 0.8,
+                      transform: 'translateZ(0)'
                     }}
                   >
                     {/* Pulsing Aura for Critical alerts */}
@@ -284,7 +292,11 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
                             href={item.link} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/5 flex items-center justify-center text-white/60 hover:text-white border border-transparent hover:border-white/20 transition-all hover:bg-white/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!isRead) handleConfirmReceipt(item.id);
+                            }}
+                            className="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/5 flex items-center justify-center text-white/60 hover:text-white transition-all hover:bg-white/10"
                           >
                             <TrendingUp size={13} />
                           </a>

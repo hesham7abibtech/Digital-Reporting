@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import ProjectHeader from '@/components/dashboard/ProjectHeader';
 import KPICards from '@/components/dashboard/KPICards';
 import ActiveTasks from '@/components/dashboard/ActiveTasks';
+import AnalyticsDashboardView from '@/components/dashboard/AnalyticsDashboardView';
 import DashboardRegistry from '@/components/dashboard/DashboardRegistry';
 import ChartsSection from '@/components/dashboard/ChartsSection';
 import NotificationPanel from '@/components/dashboard/NotificationPanel';
@@ -16,8 +17,9 @@ import type { Task } from '@/lib/types';
 import { useTimeZone } from '@/context/TimeZoneContext';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
 import { useAuth } from '@/context/AuthContext';
+import { useRegistryView } from '@/hooks/useRegistryView';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, CalendarRange, X, Calendar, Database } from 'lucide-react';
+import { Globe, CalendarRange, X, Calendar, Database, TableProperties, BarChart3 } from 'lucide-react';
 import { useEffect } from 'react';
 
 export default function Dashboard() {
@@ -33,8 +35,11 @@ export default function Dashboard() {
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [filterMode, setFilterMode] = useState<'monthly' | 'custom' | 'all'>('all');
-  const [filterDept, setFilterDept] = useState<string[]>(['All Departments']);
+  const [filterDept, setFilterDept] = useState<string[]>(['All Categories']);
+  const [filterType, setFilterType] = useState<string[]>(['All Types']);
+  const [filterCDE, setFilterCDE] = useState<string[]>(['All Environments']);
   const [search, setSearch] = useState('');
+  const { activeView, setActiveView } = useRegistryView('table');
 
   const months = [
     "January", "February", "March", "April", "May", "June",
@@ -122,24 +127,40 @@ export default function Dashboard() {
   // Dynamic filter options based on tasks in the selected date range
   const availableDepts = useMemo(() => {
     const depts = new Set(dateFilteredTasks.map(t => t.department));
-    return ['All Departments', ...Array.from(depts).sort()];
+    return ['All Categories', ...Array.from(depts).sort()];
   }, [dateFilteredTasks]);
 
-  // Reset filter if it is no longer available in the new pool
+  const availableTypes = useMemo(() => {
+    const types = new Set(dateFilteredTasks.flatMap(t => t.deliverableType || []));
+    return ['All Types', ...Array.from(types).sort()];
+  }, [dateFilteredTasks]);
+
+  const availableCDEs = useMemo(() => {
+    const cdes = new Set(dateFilteredTasks.flatMap(t => t.cde || []));
+    return ['All Environments', ...Array.from(cdes).sort()];
+  }, [dateFilteredTasks]);
+
+  // Reset filters if they are no longer available in the new pool
   useEffect(() => {
-    // If "All Departments" is in the filterDept, we don't need to reset
-    if (filterDept.includes('All Departments')) return;
-    
-    // Otherwise, remove any departments that are no longer in availableDepts
-    const validDepts = filterDept.filter(d => availableDepts.includes(d));
-    
-    // If everything was removed, reset to 'All Departments'
-    if (validDepts.length === 0) {
-      setFilterDept(['All Departments']);
-    } else if (validDepts.length !== filterDept.length) {
-      setFilterDept(validDepts);
-    }
+    if (filterDept.includes('All Categories')) return;
+    const valid = filterDept.filter(d => availableDepts.includes(d));
+    if (valid.length === 0) setFilterDept(['All Categories']);
+    else if (valid.length !== filterDept.length) setFilterDept(valid);
   }, [availableDepts, filterDept]);
+
+  useEffect(() => {
+    if (filterType.includes('All Types')) return;
+    const valid = filterType.filter(t => availableTypes.includes(t));
+    if (valid.length === 0) setFilterType(['All Types']);
+    else if (valid.length !== filterType.length) setFilterType(valid);
+  }, [availableTypes, filterType]);
+
+  useEffect(() => {
+    if (filterCDE.includes('All Environments')) return;
+    const valid = filterCDE.filter(c => availableCDEs.includes(c));
+    if (valid.length === 0) setFilterCDE(['All Environments']);
+    else if (valid.length !== filterCDE.length) setFilterCDE(valid);
+  }, [availableCDEs, filterCDE]);
 
   // Tasks from the previous equivalent period for KPI growth comparisons
   const previousPeriodTasks = useMemo(() => {
@@ -175,8 +196,22 @@ export default function Dashboard() {
     let result = dateFilteredTasks;
 
     // Apply Department filter
-    if (!filterDept.includes('All Departments') && filterDept.length > 0) {
+    if (filterDept.length > 0 && !filterDept.includes('All Categories')) {
       result = result.filter(t => filterDept.includes(t.department));
+    }
+
+    // Apply Deliverable Type filter
+    if (filterType.length > 0 && !filterType.includes('All Types')) {
+      result = result.filter(t =>
+        (t.deliverableType || []).some(type => filterType.includes(type))
+      );
+    }
+
+    // Apply CDE Environment filter
+    if (filterCDE.length > 0 && !filterCDE.includes('All Environments')) {
+      result = result.filter(t =>
+        (t.cde || []).some(env => filterCDE.includes(env))
+      );
     }
 
     // Apply Search filter
@@ -356,6 +391,7 @@ export default function Dashboard() {
                     projectMetadata={syncedProject || undefined}
                     dateRangeText={filterDateText}
                     filterMode={filterMode}
+                    setFilterMode={setFilterMode}
                     filterDept={filterDept}
                     setFilterDept={setFilterDept}
                     availableDepts={availableDepts}
@@ -369,29 +405,141 @@ export default function Dashboard() {
                     setStartDate={setStartDate}
                     endDate={endDate}
                     setEndDate={setEndDate}
+                    filterType={filterType}
+                    setFilterType={setFilterType}
+                    availableTypes={availableTypes}
+                    filterCDE={filterCDE}
+                    setFilterCDE={setFilterCDE}
+                    availableCDEs={availableCDEs}
                   />
                 </div>
               </div>
 
 
+              {/* ══════════ VIEW TOGGLE ══════════ */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 4px',
+                marginTop: 8,
+                marginBottom: -4,
+              }}>
+                <div style={{
+                  display: 'flex',
+                  background: 'rgba(0,0,0,0.35)',
+                  borderRadius: 12,
+                  padding: 3,
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  position: 'relative',
+                }}>
+                  {[
+                    { key: 'table' as const, label: 'Table View', icon: <TableProperties size={14} /> },
+                    { key: 'dashboard' as const, label: 'Dashboard', icon: <BarChart3 size={14} /> },
+                  ].map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveView(tab.key)}
+                      style={{
+                        padding: '7px 18px',
+                        borderRadius: 9,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        border: 'none',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        zIndex: 1,
+                        background: 'transparent',
+                        color: activeView === tab.key ? '#D4AF37' : 'rgba(255,255,255,0.4)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 7,
+                        transition: 'color 0.3s ease',
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      {activeView === tab.key && (
+                        <motion.div
+                          layoutId="view-toggle-bg"
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background: 'rgba(212, 175, 55, 0.1)',
+                            borderRadius: 9,
+                            border: '1px solid rgba(212, 175, 55, 0.2)',
+                            zIndex: -1,
+                          }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        />
+                      )}
+                      {tab.icon}
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ══════════ CONDITIONAL VIEW RENDERING ══════════ */}
               <div style={{ marginTop: 12 }}>
-                <ActiveTasks
-                  tasks={filteredTasks}
-                  onTaskClick={handleTaskClick}
-                  // Pass filtering props down to keep UI in the table header
-                  search={search}
-                  setSearch={setSearch}
-                  filterDept={filterDept}
-                  setFilterDept={setFilterDept}
-                  availableDepts={availableDepts}
-                />
+                <AnimatePresence mode="wait">
+                  {activeView === 'table' ? (
+                    <motion.div
+                      key="table-view"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      <ActiveTasks
+                        tasks={filteredTasks}
+                        onTaskClick={handleTaskClick}
+                        search={search}
+                        setSearch={setSearch}
+                        filterDept={filterDept}
+                        setFilterDept={setFilterDept}
+                        availableDepts={availableDepts}
+                        filterType={filterType}
+                        setFilterType={setFilterType}
+                        availableTypes={availableTypes}
+                        filterCDE={filterCDE}
+                        setFilterCDE={setFilterCDE}
+                        availableCDEs={availableCDEs}
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="dashboard-view"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      <AnalyticsDashboardView
+                        tasks={filteredTasks}
+                        previousPeriodTasks={previousPeriodTasks}
+                        search={search}
+                        setSearch={setSearch}
+                        filterDept={filterDept}
+                        setFilterDept={setFilterDept}
+                        availableDepts={availableDepts}
+                        filterType={filterType}
+                        setFilterType={setFilterType}
+                        availableTypes={availableTypes}
+                        filterCDE={filterCDE}
+                        setFilterCDE={setFilterCDE}
+                        availableCDEs={availableCDEs}
+                        onTaskClick={handleTaskClick}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </>
           )}
         </main>
 
         <footer style={{ padding: '10px 24px', borderTop: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
-          <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>© 2026 Insite (KEO) — REH Command Center v1.0</p>
+          <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>© 2026 Insite (KEO) — REH Command Center v1.0 - Powred By : Hesham Habib</p>
         </footer>
       </div>
 

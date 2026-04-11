@@ -190,14 +190,14 @@ export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, c
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Department</label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Task Category</label>
               <select 
                 value={formData.department || ''} 
                 onChange={e => setFormData({ ...formData, department: e.target.value })} 
                 disabled={readOnly}
                 style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(20,20,30,1)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.3)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer' }}
               >
-                <option value="">Select Department</option>
+                <option value="">Select Category</option>
                 {availableDepartments?.map(dept => (
                   <option key={dept.id} value={dept.name}>{dept.name}</option>
                 ))}

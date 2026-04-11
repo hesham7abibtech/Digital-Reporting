@@ -198,7 +198,7 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
             </ResponsiveContainer>
           ) : noDataPlaceholder}
         </ChartCard>
-        <ChartCard title="Tasks by Department" delay={0.25} height={165}>
+        <ChartCard title="Tasks by Category" delay={0.25} height={165}>
           {data.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100} debounce={50}>
               <BarChart data={deptData} barGap={2} barSize={12}>
@@ -265,7 +265,7 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
           </ResponsiveContainer>
         ) : noDataPlaceholder}
       </ChartCard>
-      <ChartCard title="Tasks by Department" delay={0.25} height={180}>
+      <ChartCard title="Tasks by Category" delay={0.25} height={180}>
         {data.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100} debounce={50}>
             <BarChart data={deptData} barSize={14}>

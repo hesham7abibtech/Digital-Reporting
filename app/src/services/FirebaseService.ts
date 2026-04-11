@@ -49,6 +49,7 @@ export const collections = {
   users: collection(db, 'users'),
   settings: collection(db, 'settings'),
   departments: collection(db, 'departments'),
+  broadcasts: collection(db, 'broadcasts'),
 };
 
 /**
@@ -198,6 +199,17 @@ export async function bulkDelete(collectionName: string, ids: string[]) {
   await batch.commit();
 }
 
+/**
+ * Marks a broadcast as read by adding the user's ID to the readBy array
+ */
+export async function markBroadcastAsRead(id: string, userId: string) {
+  const { arrayUnion, updateDoc, doc } = await import('firebase/firestore');
+  const ref = doc(db, 'broadcasts', id);
+  await updateDoc(ref, {
+    readBy: arrayUnion(userId)
+  });
+}
+
 // ─── Project Metadata Helpers ─────────────────────────────────────
 
 export async function getProjectMetadata() {
@@ -213,6 +225,21 @@ export async function updateProjectMetadata(data: any) {
     updatedAt: new Date().toISOString()
   });
   await setDoc(projectDoc, cleanData, { merge: true });
+}
+
+export async function updateMetadataSuggestions(types: string[], cdes: string[]) {
+  const metaDoc = doc(db, 'settings', 'taskMetadata');
+  const snapshot = await getDoc(metaDoc);
+  const currentData = snapshot.exists() ? snapshot.data() : { deliverableTypes: [], cdeEnvironments: [] };
+  
+  const updatedTypes = Array.from(new Set([...(currentData.deliverableTypes || []), ...types]));
+  const updatedCdes = Array.from(new Set([...(currentData.cdeEnvironments || []), ...cdes]));
+  
+  await setDoc(metaDoc, {
+    deliverableTypes: updatedTypes,
+    cdeEnvironments: updatedCdes,
+    updatedAt: new Date().toISOString()
+  }, { merge: true });
 }
 
 export async function uploadFile(file: File, path: string) {

@@ -25,11 +25,11 @@ function formatReportDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '-';
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return '-';
-  
+
   const day = String(date.getDate()).padStart(2, '0');
   const month = date.toLocaleString('en-GB', { month: 'short' }).toUpperCase();
   const year = date.getFullYear();
-  
+
   return `${day}-${month}-${year}`;
 }
 
@@ -38,14 +38,14 @@ function formatReportDate(dateStr: string | null | undefined): string {
  */
 function formatGeneratedOn(): string {
   const now = new Date();
-  return now.toLocaleString('en-US', { 
+  return now.toLocaleString('en-US', {
     year: 'numeric',
     month: 'numeric',
     day: 'numeric',
-    hour: 'numeric', 
-    minute: '2-digit', 
-    second: '2-digit', 
-    hour12: true 
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
   });
 }
 
@@ -103,400 +103,625 @@ function hexToRgb(hex: string): [number, number, number] {
 }
 
 /**
- * Elite Excel Export with Executive Summary and Comprehensive Task Registry
- * Migrated to exceljs to support professional styling (Blue + Underline)
+ * Gets exact dynamic column configuration by combining metadata constraints
+ * with the user's localized 'active-tasks' table layout config.
  */
-export async function exportToExcel(tasks: Task[], metadata: ProjectMetadata | undefined, dateRangeText?: string) {
+export function getDynamicExportColumns(metadataExcluded: string[], format: 'excel' | 'pdf' = 'excel') {
+  const baseColumns = [
+    { id: 'id', excelLabel: 'ID', pdfLabel: 'UID', width: 25 },
+    { id: 'title', excelLabel: 'Asset / Task Title', pdfLabel: 'ASSET TITLE', width: 50 },
+    { id: 'department', excelLabel: 'Task Category', pdfLabel: 'TASK CATEGORY', width: 20 },
+    { id: 'submitterName', excelLabel: 'Submitter', pdfLabel: 'SUBMITTER', width: 25 },
+    { id: 'submittingDate', excelLabel: 'Submission Date', pdfLabel: 'SUBMISSION DATE', width: 20 },
+    { id: 'deliverableType', excelLabel: 'Deliverable Type', pdfLabel: 'DELIVERABLE TYPE', width: 25 },
+    { id: 'cde', excelLabel: 'CDE', pdfLabel: 'CDE', width: 20 },
+    { id: 'links', excelLabel: 'Deliverables Links', pdfLabel: 'DELIVERABLES LINKS', width: 35 }
+  ];
+ 
+  let savedSettings: Record<string, { visible: boolean; order: number }> = {};
+  if (typeof window !== 'undefined') {
+    const savedJSON = localStorage.getItem('table-cols-active-tasks');
+    if (savedJSON) {
+      try { savedSettings = JSON.parse(savedJSON); } catch(e){}
+    }
+  }
+ 
+  const exclusionsBridge: Record<string, string> = { 'uid': 'id', 'dept': 'department' };
+  const normalizedExclusions = metadataExcluded.map(e => exclusionsBridge[e] || e);
+ 
+  const processedColumns = baseColumns.map((col, idx) => {
+    let s = savedSettings[col.id];
+    
+    // Submitter
+    if (col.id === 'submitterName' && !s) {
+      const deptOrder = savedSettings['department']?.order ?? 3;
+      s = { visible: true, order: deptOrder + 0.5 };
+    }
+
+    return {
+      id: col.id,
+      label: format === 'pdf' ? col.pdfLabel : col.excelLabel,
+      width: col.width,
+      visible: normalizedExclusions.includes(col.id) ? false : (s ? s.visible : true),
+      order: s ? s.order : idx
+    };
+  }).filter(c => c.visible).sort((a, b) => a.order - b.order);
+
+  return processedColumns;
+}
+
+/**
+ * Computes analytics data for Dashboard exports
+ */
+function getDashboardAnalytics(tasks: Task[]) {
+  const categories: Record<string, number> = {};
+  const types: Record<string, number> = {};
+  const cde: Record<string, number> = {};
+  const submitters: Record<string, number> = {};
+  
+  tasks.forEach(t => {
+    // Categories
+    categories[t.department] = (categories[t.department] || 0) + 1;
+    
+    // Deliverable Types
+    if (Array.isArray(t.deliverableType)) {
+      t.deliverableType.forEach(type => {
+        types[type] = (types[type] || 0) + 1;
+      });
+    }
+    
+    // CDE
+    if (Array.isArray(t.cde)) {
+      t.cde.forEach(env => {
+        cde[env] = (cde[env] || 0) + 1;
+      });
+    }
+    
+    // Submitters
+    if (t.submitterName) {
+      submitters[t.submitterName] = (submitters[t.submitterName] || 0) + 1;
+    }
+  });
+  
+  return {
+    total: tasks.length,
+    categories: Object.entries(categories).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value),
+    types: Object.entries(types).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value),
+    cde: Object.entries(cde).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value),
+    submitters: Object.entries(submitters).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value),
+    activeSubmitters: Object.keys(submitters).length
+  };
+}
+
+/**
+ * Elite Excel Export with Table or Dashboard focus
+ */
+/**
+ * Elite Excel Export with Table, Dashboard, or Consolidated focus
+ */
+export async function exportToExcel(
+  tasks: Task[], 
+  metadata: ProjectMetadata | undefined, 
+  dateRangeText: string | undefined,
+  perspective: 'table' | 'dashboard' | 'both' = 'table'
+) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'KEO Digital Intelligence';
   workbook.lastModifiedBy = 'KEO Admin Hub';
   workbook.created = new Date();
-  workbook.modified = new Date();
 
-  // 1. Executive Summary Sheet
-  const summarySheet = workbook.addWorksheet('Executive Summary');
-  summarySheet.columns = [{ width: 25 }, { width: 50 }];
-
-  summarySheet.addRow(['PROJECT EXECUTIVE SUMMARY']).font = { bold: true, size: 12 };
-  summarySheet.addRow([]);
-
-  const defaultSummaryFields = [
-    { id: 'projectName', label: 'Project Name', value: '', isVisible: true },
-    { id: 'reportTitle', label: 'Report Title', value: '', isVisible: true },
-    { id: 'periodReference', label: 'Period Reference', value: '', isVisible: true },
-    { id: 'activeDate', label: 'Active Date Range', value: '', isVisible: true },
-    { id: 'generatedOn', label: 'Generated On', value: '', isVisible: true },
-    { id: 'totalTasks', label: 'Total Tasks Count', value: '', isVisible: true }
-  ];
-
-  const fieldsToRender = metadata?.reportSummaryFields || defaultSummaryFields;
-
-  fieldsToRender.forEach(field => {
-    if (!field.isVisible) return;
-
-    let rowValue = field.value || '';
-    if (!rowValue) {
-      if (field.id === 'projectName') rowValue = metadata?.projectName || 'RHK - Wadi Yemm';
-      if (field.id === 'reportTitle') rowValue = metadata?.reportTitle || 'Executive Summary Report';
-      if (field.id === 'periodReference') rowValue = metadata?.reportSubtitle || 'Operational Performance & Deliverables';
-      if (field.id === 'activeDate') rowValue = dateRangeText || 'April 2026';
-      if (field.id === 'generatedOn') rowValue = formatGeneratedOn();
-      if (field.id === 'totalTasks') rowValue = tasks.length.toString();
-    }
-
-    if (field.id === 'totalTasks') {
-      summarySheet.addRow([]);
-    }
-
-    const row = summarySheet.addRow([field.label, rowValue]);
-    row.getCell(1).font = { bold: true, size: 11 };
-    row.getCell(2).font = { size: 11 };
-  });
-
-  // Apply basic styling to summary
-  summarySheet.getColumn(1).font = { bold: true };
-
-  // 2. Comprehensive Master Registry Sheet
-  const dataSheet = workbook.addWorksheet('Comprehensive Registry');
-  
-  const maxLinks = Math.min(Math.max(...tasks.map(t => getTaskLinks(t).length), 1), 5);
-  const deliverableHeaders = Array.from({ length: maxLinks }, (_, idx) => `Deliverable ${idx + 1}`);
-
-  const excluded = metadata?.reportExcludedFields || [];
-
-  const allColumns = [
-    { id: 'uid', label: 'Task ID', width: 20 },
-    { id: 'title', label: 'Asset / Task Title', width: 45 },
-    { id: 'dept', label: 'Department', width: 20 },
-    { id: 'status', label: 'Status', width: 20 },
-    { id: 'submittingDate', label: 'Submitting Date', width: 20 },
-    { id: 'links', label: 'LinksPlaceholder', width: 30 }
-  ];
-
-  const visibleColumns = allColumns.filter(c => !excluded.includes(c.id));
-
-  const headers: string[] = [];
-  const colWidths: any[] = [];
-
-  visibleColumns.forEach(c => {
-    if (c.id === 'links') {
-      for (let i = 0; i < maxLinks; i++) {
-        headers.push(`Deliverable ${i + 1}`);
-        colWidths.push({ width: 30 });
-      }
-    } else {
-      headers.push(c.label);
-      colWidths.push({ width: c.width });
-    }
-  });
-
-  // Always append notes column
-  headers.push('Notes');
-  colWidths.push({ width: 50 });
-
-  const excelHeaderBg = metadata?.reportExcelHeaderColor || '0A0A0F';
-  const excelHeaderText = metadata?.reportExcelHeaderTextColor || 'FFFFFF';
-  const excelBodyText = metadata?.reportExcelBodyTextColor || '475569';
-
-  const headerRow = dataSheet.addRow(headers);
-  headerRow.font = { bold: true, color: { argb: 'FF' + excelHeaderText.replace('#', '') } };
-  headerRow.fill = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FF' + excelHeaderBg.replace('#', '') }
-  };
-  headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
-
-  tasks.forEach((t) => {
-    const taskLinks = getTaskLinks(t);
-    const rowData: any[] = [];
+  // Helper to add Master Registry sheet
+  const addRegistrySheet = (name: string, isMain: boolean) => {
+    const dataSheet = workbook.addWorksheet(name);
+    const excluded = metadata?.reportExcludedFields || [];
+    const visibleColumns = getDynamicExportColumns(excluded, 'excel');
+    
+    const maxLinks = Math.max(...tasks.map(t => getTaskLinks(t).length), 1);
+    const headers: string[] = [];
+    const colWidths: any[] = [];
 
     visibleColumns.forEach(c => {
-      if (c.id === 'uid') rowData.push(t.id.toUpperCase());
-      if (c.id === 'title') rowData.push(t.title);
-      if (c.id === 'dept') rowData.push(t.department);
-      if (c.id === 'status') rowData.push(t.status.replace(/_/g, ' '));
-      if (c.id === 'submittingDate') rowData.push(formatReportDate(t.submittingDate));
       if (c.id === 'links') {
-        for (let i = 0; i < maxLinks; i++) {
-          rowData.push(taskLinks[i]?.label || '');
+        for (let i = 0; i < Math.min(maxLinks, 5); i++) {
+          headers.push(`Deliverable ${i + 1}`);
+        }
+      } else {
+        headers.push(c.label);
+      }
+    });
+
+    const headerColors = { bg: metadata?.reportExcelHeaderColor || '0A0A0F', text: metadata?.reportExcelHeaderTextColor || 'FFFFFF' };
+    const hRow = dataSheet.addRow(headers);
+    hRow.font = { bold: true, color: { argb: 'FF' + headerColors.text.replace('#', '') } };
+    hRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + headerColors.bg.replace('#', '') } };
+    hRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    tasks.forEach(t => {
+      const links = getTaskLinks(t);
+      const rowData: any[] = [];
+      visibleColumns.forEach(c => {
+        if (c.id === 'id') rowData.push(t.id.toUpperCase());
+        else if (c.id === 'title') rowData.push(t.title);
+        else if (c.id === 'department') rowData.push(t.department);
+        else if (c.id === 'submitterName') rowData.push(t.submitterName || '-');
+        else if (c.id === 'submittingDate') rowData.push(formatReportDate(t.submittingDate));
+        else if (c.id === 'deliverableType') rowData.push(Array.isArray(t.deliverableType) ? t.deliverableType.join(' | ') : t.deliverableType);
+        else if (c.id === 'cde') rowData.push(Array.isArray(t.cde) ? t.cde.join(' | ') : t.cde);
+        else if (c.id === 'links') {
+          for (let i = 0; i < Math.min(maxLinks, 5); i++) rowData.push(links[i]?.label || '');
+        }
+      });
+      const row = dataSheet.addRow(rowData);
+      row.alignment = { vertical: 'middle', horizontal: 'center' };
+      
+      // Hyperlinks
+      if (!excluded.includes('links')) {
+        const lIdx = visibleColumns.findIndex(vv => vv.id === 'links');
+        if (lIdx !== -1) {
+          links.slice(0, 5).forEach((link, idx) => {
+            const cell = row.getCell(lIdx + 1 + idx);
+            if (link.url) {
+              cell.value = { text: link.label || 'Link', hyperlink: link.url };
+              cell.font = { color: { argb: 'FF0563C1' }, underline: true };
+            }
+          });
         }
       }
     });
 
-    rowData.push(t.description || '');
-    const row = dataSheet.addRow(rowData);
-
-    // Style the deliverable links
-    if (!excluded.includes('links')) {
-      const linksColIndex = visibleColumns.findIndex(c => c.id === 'links');
-      if (linksColIndex !== -1) {
-        // exceljs is 1-indexed for cells
-        taskLinks.slice(0, maxLinks).forEach((link, idx) => {
-          const cell = row.getCell(linksColIndex + 1 + idx);
-          if (link.url) {
-            cell.value = { text: link.label || 'View Deliverable', hyperlink: link.url };
-            cell.font = { color: { argb: 'FF0563C1' }, underline: true };
-          }
+    // AUTO-SIZE COLUMNS
+    dataSheet.columns.forEach((column) => {
+      let maxLen = 0;
+      if (column && column.eachCell) {
+        column.eachCell({ includeEmpty: true }, (cell) => {
+          const L = cell.value ? cell.value.toString().length : 10;
+          if (L > maxLen) maxLen = L;
         });
       }
-    }
+      if (column) column.width = maxLen < 15 ? 15 : maxLen + 5;
+    });
 
-    // General row alignment
-    row.alignment = { vertical: 'middle', horizontal: 'center' };
-    
-    // Find title column index for left alignment
-    const titleIdx = visibleColumns.findIndex(c => c.id === 'title');
-    if (titleIdx !== -1) {
-      row.getCell(titleIdx + 1).alignment = { vertical: 'middle', horizontal: 'left' };
-    }
-  });
-
-  // Column width optimizations
-  dataSheet.columns = colWidths;
-
-  // Auto-filter
-  dataSheet.autoFilter = {
-    from: { row: 1, column: 1 },
-    to: { row: 1, column: headers.length }
+    dataSheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: headers.length } };
+    return dataSheet;
   };
+  
+  if (perspective === 'dashboard' || perspective === 'both') {
+    const analytics = getDashboardAnalytics(tasks);
+    
+    // 1. Dashboard Overview Sheet
+    const summarySheet = workbook.addWorksheet('Dashboard Overview');
+    summarySheet.columns = [{ width: 30 }, { width: 40 }];
+    
+    // Branded Header
+    const titleRow = summarySheet.addRow(['ANALYTICS EXECUTIVE SUMMARY']);
+    titleRow.font = { bold: true, size: 14, color: { argb: 'FFD4AF37' } };
+    summarySheet.addRow([]);
+    
+    // KPI Cards as Data
+    summarySheet.addRow(['CORE METRICS']).font = { bold: true };
+    summarySheet.addRow(['Total Deliverables Tracking', analytics.total]);
+    summarySheet.addRow(['Active Technical Categories', analytics.categories.length]);
+    summarySheet.addRow(['Unique Project Submitters', analytics.activeSubmitters]);
+    summarySheet.addRow(['Primary CDE Environment', analytics.cde[0]?.name || 'N/A']);
+    summarySheet.addRow(['Report Period', dateRangeText || 'All Time']);
+    summarySheet.addRow(['Generated On', formatGeneratedOn()]);
+    
+    summarySheet.addRow([]);
+    summarySheet.addRow(['VISUALIZATION DATA MAPPING']).font = { bold: true };
+    
+    // 2. Dynamic Analytics Data Sheet (HIDDEN - Backend DB)
+    const dataSheet = workbook.addWorksheet('Analytics Data Matrix');
+    dataSheet.state = 'hidden'; // Hide as requested, used for data mapping
+    dataSheet.columns = [{ width: 25 }, { width: 20 }, { width: 15 }, { width: 25 }, { width: 15 }];
+    
+    const headerRow = dataSheet.addRow(['Metric Group', 'Dimension', 'Count', 'Percentage of Total', 'Growth Index']);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0A0A0F' } };
+    headerRow.alignment = { horizontal: 'center' };
+    
+    const addGroup = (label: string, items: {name: string, value: number}[]) => {
+      items.forEach(item => {
+        const row = dataSheet.addRow([
+          label, 
+          item.name, 
+          item.value, 
+          `${((item.value / analytics.total) * 100).toFixed(1)}%`,
+          'STABLE'
+        ]);
+        row.alignment = { horizontal: 'center' };
+      });
+      dataSheet.addRow([]); // Spacer
+    };
+    
+    addGroup('Functional Categories', analytics.categories);
+    addGroup('Deliverable Types', analytics.types);
+    addGroup('CDE Usage', analytics.cde);
+    addGroup('Team Contributions', analytics.submitters);
+    
+    // 3. Raw Filtered Data
+    addRegistrySheet('Filtered Registry Source', false);
+  }
+
+  if (perspective === 'table' || perspective === 'both') {
+    // 1. Executive Summary Sheet
+    const summarySheet = workbook.addWorksheet(perspective === 'both' ? 'Project Narrative' : 'Executive Summary');
+    summarySheet.columns = [{ width: 25 }, { width: 55 }];
+
+    summarySheet.addRow(['PROJECT EXECUTIVE SUMMARY']).font = { bold: true, size: 12 };
+    summarySheet.addRow([]);
+
+    const fieldsToRender = metadata?.reportSummaryFields || [];
+    fieldsToRender.forEach(field => {
+      if (!field.isVisible) return;
+      let val = field.value || (
+        field.id === 'projectName' ? (metadata?.projectName || 'Project') : 
+        field.id === 'generatedOn' ? formatGeneratedOn() :
+        field.id === 'totalTasks' ? tasks.length.toString() : 
+        field.id === 'activeDate' ? (dateRangeText || 'All Time') : ''
+      );
+      const row = summarySheet.addRow([field.label, val]);
+      row.getCell(1).font = { bold: true };
+    });
+
+    // 2. Comprehensive Master Registry
+    addRegistrySheet('Comprehensive Registry', true);
+  }
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const filename = `${metadata?.projectName || 'Project'}_Master_Registry_${new Date().toISOString().split('T')[0]}.xlsx`;
-  
+  const filename = `${metadata?.projectName || 'Project'}_${perspective === 'dashboard' ? 'Analytics_Insights' : 'Master_Registry'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
   return { blob, filename };
 }
 
 /**
- * Elite PDF Export with Comprehensive Data Coverage
+ * Elite PDF Export with Table or Dashboard focus
  */
-export async function exportToPDF(tasks: Task[], metadata: ProjectMetadata | undefined, dateRangeText?: string) {
+/**
+ * Elite PDF Export with Table, Dashboard, or Consolidated focus
+ */
+export async function exportToPDF(
+  tasks: Task[], 
+  metadata: ProjectMetadata | undefined, 
+  dateRangeText: string | undefined,
+  perspective: 'table' | 'dashboard' | 'both' = 'table'
+) {
   const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  // ─── PAGE 1: SIGNATURE COVER ───
   const bgColor = hexToRgb(metadata?.reportBgColor || '#0a0a0f');
   const accentColor = hexToRgb(metadata?.reportAccentColor || '#D4AF37');
   const headerTextColor = hexToRgb(metadata?.reportHeaderTextColor || '#D4AF37');
-  const bodyTextColor = hexToRgb(metadata?.reportPdfBodyTextColor || '#b0b0b0');
 
-  doc.setFillColor(...bgColor);
-  doc.rect(0, 0, pageWidth, pageHeight, 'F');
-  
-  doc.setFillColor(...accentColor);
-  doc.rect(0, 0, 5, pageHeight, 'F');
+  // Helper for Cover Page
+  const drawCover = () => {
+    doc.setFillColor(...bgColor);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    doc.setFillColor(...accentColor);
+    doc.rect(0, 0, 5, pageHeight, 'F');
 
-  // Insert Brand Logos (Symmetrical Placement - Aspect Ratio Preserved)
-  const modonBase64 = await loadLogoBase64('/logos/modon_logo.png');
-  const insiteBase64 = await loadLogoBase64('/logos/insite_logo.png');
-  
-  if (insiteBase64) {
-    const props = doc.getImageProperties(insiteBase64);
-    const h = 20; // Targeted Height
-    const w = (props.width * h) / props.height;
-    doc.addImage(insiteBase64, 'PNG', 20, 15, w, h);
-  }
-  
-  if (modonBase64) {
-    const props = doc.getImageProperties(modonBase64);
-    const h = 11; // Targeted Height (Reduced for balance)
-    const w = (props.width * h) / props.height;
-    doc.addImage(modonBase64, 'PNG', pageWidth - 20 - w, 16, w, h);
-  }
-
-  let logoY = 42; // Professional Padding Alignment to avoid logo overlap
-  doc.setTextColor(...headerTextColor);
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text(metadata?.reportBranding || 'KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT', 20, logoY);
-
-  const defaultSummaryFields = [
-    { id: 'projectName', label: 'Project Name', value: '', isVisible: true },
-    { id: 'reportTitle', label: 'Report Title', value: '', isVisible: true },
-    { id: 'periodReference', label: 'Period Reference', value: '', isVisible: true },
-    { id: 'temporalReference', label: 'Temporal Period', value: '', isVisible: true },
-    { id: 'activeDate', label: 'Active Date Range', value: '', isVisible: true },
-    { id: 'generatedOn', label: 'Generated On', value: '', isVisible: true },
-    { id: 'totalTasks', label: 'Total Tasks Count', value: '', isVisible: true }
-  ];
-
-  const fieldsToRender = metadata?.reportSummaryFields || defaultSummaryFields;
-  const reportTitleField = fieldsToRender.find(f => f.id === 'reportTitle');
-  const periodRefField = fieldsToRender.find(f => f.id === 'periodReference');
-
-  if (reportTitleField && reportTitleField.isVisible) {
     doc.setTextColor(...headerTextColor);
-    doc.setFontSize(48); // High Density Elevation
-    let val = reportTitleField.value || metadata?.reportTitle || 'EXECUTIVE SUMMARY';
-    doc.text(val, 20, logoY + 20);
-  }
-  
-  if (periodRefField && periodRefField.isVisible) {
-    doc.setFontSize(18); // Scaled
-    doc.setTextColor(255, 255, 255); // Explicit White for contrast
-    let val = periodRefField.value || 'OPERATIONAL PERFORMANCE & DELIVERABLES';
-    doc.text(val, 20, logoY + 32);
-  }
-
-  let currentY = logoY + 60;
-  doc.setFontSize(15); // Increased for full-page fill
-
-  fieldsToRender.forEach(field => {
-    if (!field.isVisible) return;
-    if (field.id === 'reportTitle' || field.id === 'periodReference') return; 
-    
-    let rowValue = field.value || '';
-    if (!rowValue) {
-      if (field.id === 'projectName') rowValue = metadata?.projectName || 'RHK - Wadi Yemm';
-      if (field.id === 'temporalReference') rowValue = metadata?.reportTemporalReference || 'MAY 2026 HUB RECAP';
-      if (field.id === 'activeDate') rowValue = dateRangeText || 'MAY 01 - MAY 31, 2026';
-      if (field.id === 'generatedOn') rowValue = formatGeneratedOn();
-      if (field.id === 'totalTasks') rowValue = tasks.length.toString();
-    }
-    
-    // Elite Dual-Tone Typography
-    doc.setTextColor(...accentColor); // GOLD Label
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text(`${field.label}:`, 20, currentY);
-    
-    const labelWidth = doc.getTextWidth(`${field.label}: `);
-    doc.setTextColor(255, 255, 255); // WHITE Value
-    doc.setFont('helvetica', 'normal');
-    doc.text(rowValue, 20 + labelWidth, currentY);
-    
-    currentY += 16; // Increased Vertical Leading for full height utilization
-  });
+    doc.text(metadata?.reportBranding || 'KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT', 20, 42);
 
-  if (metadata?.reportSummary) {
+    doc.setFontSize(48);
+    const title = perspective === 'dashboard' ? 'ANALYTICS INSIGHTS' : (perspective === 'both' ? 'EXECUTIVE MASTER REPORT' : (metadata?.reportTitle || 'EXECUTIVE SUMMARY'));
+    doc.text(title, 20, 62);
+
+    doc.setFontSize(18);
+    doc.setTextColor(255, 255, 255);
+    doc.text(perspective === 'dashboard' ? 'VISUAL PERFORMANCE & METRIC SUMMARY' : (perspective === 'both' ? 'CONSOLIDATED ANALYTICS & REGISTRY TRANSCRIPT' : (metadata?.reportSubtitle || 'OPERATIONAL PERFORMANCE & DELIVERABLES')), 20, 74);
+
+    let currentY = 100;
+    const summaryFields = metadata?.reportSummaryFields || [];
+    summaryFields.forEach(f => {
+      if (!f.isVisible) return;
+      if (f.id === 'reportTitle' || f.id === 'periodReference') return;
+      
+      let val = f.value || '';
+      if (!val) {
+        if (f.id === 'projectName') val = metadata?.projectName || 'Project';
+        if (f.id === 'activeDate') val = dateRangeText || 'All Time';
+        if (f.id === 'generatedOn') val = formatGeneratedOn();
+        if (f.id === 'totalTasks') val = tasks.length.toString();
+      }
+
+      doc.setTextColor(...accentColor);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${f.label}:`, 20, currentY);
+      const labelW = doc.getTextWidth(`${f.label}: `);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'normal');
+      doc.text(val, 20 + labelW, currentY);
+      currentY += 15;
+    });
+
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(10);
-    doc.setTextColor(160, 160, 160);
-    const splitSummary = doc.splitTextToSize(metadata.reportSummary, pageWidth - 100);
-    doc.text(splitSummary, 20, currentY + 15);
-  }
+    doc.text(metadata?.reportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM', 20, pageHeight - 15);
+  };
 
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(12); // Slightly larger footer
-  doc.setFont('helvetica', 'bold');
-  doc.text(metadata?.reportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM', 20, pageHeight - 15);
-
-  // ─── PAGE 2+: COMPREHENSIVE DATA TABLE ───
-  doc.addPage();
-  doc.setFillColor(255, 255, 255);
-  doc.rect(0, 0, pageWidth, pageHeight, 'F');
-  
-  doc.setTextColor(30, 41, 59); // Slate-800
-  doc.setFontSize(12);
-  doc.text(metadata?.reportBranding || 'KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT', 14, 20);
-
-  const excluded = metadata?.reportExcludedFields || [];
-  
-  const allHeaders = [
-    { id: 'uid', label: 'UID' },
-    { id: 'title', label: 'ASSET TITLE' },
-    { id: 'dept', label: 'DEPT' },
-    { id: 'status', label: 'STATUS' },
-    { id: 'submittingDate', label: 'SUBMITTING DATE' },
-    { id: 'links', label: 'DELIVERABLES LINKS' }
-  ];
-
-  const visibleHeaders = allHeaders.filter(h => !excluded.includes(h.id));
-  const headLabels = visibleHeaders.map(h => h.label);
-
-  const tableData = tasks.map(t => {
-    const taskLinks = getTaskLinks(t);
-    const labelString = taskLinks.map(l => l.label).join(' | ');
+  // Helper for Dashboard Page
+  const drawDashboard = () => {
+    const analytics = getDashboardAnalytics(tasks);
+    doc.addPage();
+    doc.setFillColor(...bgColor);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
     
-    const row = [];
-    if (!excluded.includes('uid')) row.push(t.id.toUpperCase());
-    if (!excluded.includes('title')) row.push(t.title);
-    if (!excluded.includes('dept')) row.push(t.department);
-    if (!excluded.includes('status')) row.push(t.status.replace(/_/g, ' '));
-    if (!excluded.includes('submittingDate')) row.push(formatReportDate(t.submittingDate));
-    if (!excluded.includes('links')) row.push(labelString || '-');
+    doc.setTextColor(...headerTextColor);
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ANALYTICS SUMMARY', 20, 25);
     
-    return row;
-  });
+    // 1. KPI ROW (Top)
+    let kpiX = 20, kpiY = 35;
+    const kpiW = (pageWidth - 60) / 5;
+    const drawKPI = (label: string, value: string | number, color: [number,number,number]) => {
+      // High-Contrast Professional Card Logic
+      doc.setFillColor(...accentColor);
+      doc.rect(kpiX, kpiY, 3, 30, 'F');
+      
+      doc.setFillColor(25, 25, 30); // Solid high-density slate
+      doc.roundedRect(kpiX + 3, kpiY, kpiW - 3, 30, 4, 4, 'F');
+      
+      doc.setTextColor(...color);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text(value.toString(), kpiX + kpiW/2 + 1.5, kpiY + 16, { align: 'center' });
+      
+      doc.setTextColor(255, 255, 255); // SOLID WHITE FOR GUARANTEED VISIBILITY
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.text(label.toUpperCase(), kpiX + kpiW/2 + 1.5, kpiY + 25, { align: 'center' });
+      kpiX += kpiW + 5;
+    };
+    
+    drawKPI('Total Vectors', analytics.total, accentColor);
+    drawKPI('Categories', analytics.categories.length, [66, 153, 225]);
+    drawKPI('Submitters', analytics.activeSubmitters, [72, 187, 120]);
+    drawKPI('Types', analytics.types.length, [237, 137, 54]);
+    drawKPI('Primary CDE', analytics.cde[0]?.name || 'N/A', [159, 122, 234]);
+    
+    // 2. PIE / DONUT DISTRIBUTION CHARTS
+    const chartColors: [number, number, number][] = [
+      accentColor, 
+      [66, 153, 225], [72, 187, 120], [237, 137, 54], [159, 122, 234], [245, 101, 101]
+    ];
 
-  const linksColIndex = visibleHeaders.findIndex(h => h.id === 'links');
+    const drawDonutChart = (title: string, data: {name: string, value: number}[], x: number, y: number, radius: number) => {
+      doc.setTextColor(...accentColor);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text(title.toUpperCase(), x + radius, y - 5, { align: 'center' });
+      
+      const cx = x + radius, cy = y + radius + 2;
+      let startAngle = -Math.PI / 2;
+      const sorted = data.slice(0, 5);
+      
+      // Render Pie Wedges with Surgical Precision
+      sorted.forEach((d, i) => {
+        const sliceAngle = (d.value / (analytics.total || 1)) * 2 * Math.PI;
+        if (sliceAngle <= 0) return;
+        
+        doc.setFillColor(...(chartColors[i % chartColors.length]));
+        const segments = 60; // ANTI-FACETING RESOLUTION
+        for (let s = 0; s < segments; s++) {
+          const a1 = startAngle + (s / segments) * sliceAngle;
+          const a2 = startAngle + ((s + 1) / segments) * sliceAngle;
+          doc.triangle(
+            cx, cy,
+            cx + radius * Math.cos(a1), cy + radius * Math.sin(a1),
+            cx + radius * Math.cos(a2), cy + radius * Math.sin(a2),
+            'F'
+          );
+        }
+        startAngle += sliceAngle;
+      });
 
-  autoTable(doc, {
-    startY: 30,
-    head: [headLabels],
-    body: tableData,
-    theme: 'grid',
-    headStyles: { 
-      fillColor: bgColor, 
-      textColor: headerTextColor,
-      fontSize: 10,
-      fontStyle: 'bold',
-      halign: 'center',
-      valign: 'middle'
-    },
-    styles: { 
-      fontSize: 9, 
-      cellPadding: 5, 
-      overflow: 'linebreak',
-      halign: 'center',
-      valign: 'middle'
-    },
-    columnStyles: {
-      0: { cellWidth: 35, halign: 'center' },
-      1: { cellWidth: 'auto', halign: 'center' },
-      ...(linksColIndex !== -1 ? { [linksColIndex]: { cellWidth: 80, textColor: [5, 99, 193], fontStyle: 'bold', halign: 'center' } } : {})
-    },
-    didDrawCell: (data: any) => {
-      if (data.section === 'body' && data.column.index === linksColIndex && linksColIndex !== -1) {
-        const task = tasks[data.row.index];
-        const taskLinks = getTaskLinks(task);
-        if (taskLinks.length > 0) {
-          const delimiter = ' | ';
-          const delimiterWidth = doc.getTextWidth(delimiter);
-          
-          // Calculate total width for center alignment calibration
-          const totalWidth = taskLinks.reduce((acc, link, i) => {
-            return acc + doc.getTextWidth(link.label) + (i < taskLinks.length - 1 ? delimiterWidth : 0);
-          }, 0);
-
-          // Center the hit-area start point
-          let currentX = data.cell.x + (data.cell.width - totalWidth) / 2;
-          
-          taskLinks.forEach((link, idx) => {
-            const labelWidth = doc.getTextWidth(link.label);
-            // Draw a subtle underline manually to ensure it's visible in PDF
-            doc.setDrawColor(5, 99, 193);
-            doc.line(currentX, data.cell.y + data.cell.height / 2 + 2, currentX + labelWidth, data.cell.y + data.cell.height / 2 + 2);
-            
-            doc.link(currentX, data.cell.y, labelWidth, data.cell.height, { 
-              url: link.url,
-              target: '_blank' 
-            } as any); 
-            currentX += labelWidth + delimiterWidth;
-          });
+      // Background "Rest" Slice
+      const totalVal = sorted.reduce((acc, curr) => acc + curr.value, 0);
+      if (totalVal < analytics.total) {
+        const restAngle = ((analytics.total - totalVal) / analytics.total) * 2 * Math.PI;
+        doc.setFillColor(40, 40, 45); // Solid dark slate rest wedge
+        const segments = 20;
+        for (let s = 0; s < segments; s++) {
+          const a1 = startAngle + (s / segments) * restAngle;
+          const a2 = startAngle + ((s + 1) / segments) * restAngle;
+          doc.triangle(cx, cy, cx+radius*Math.cos(a1), cy+radius*Math.sin(a1), cx+radius*Math.cos(a2), cy+radius*Math.sin(a2), 'F');
         }
       }
-    }
-  });
 
-  // ─── GENERATION & DEEP PATCHING ───
-  // Note: jsPDF hardcodes URI actions without /NewWindow support. 
-  // We perform a "Deep Patch" on the raw PDF string to inject this directive.
-  const rawOutput = doc.output();
-  // Robust, space-insensitive regex to catch various jsPDF formatting styles
-  const patchedOutput = rawOutput.replace(
-    /\/S\s*\/URI\s*\/URI\s*\((.*?)\)\s*>>/g, 
-    '/S /URI /URI ($1) /NewWindow true /Target (new) >>'
-  );
+      // Elegant Center Hole
+      doc.setFillColor(...bgColor);
+      doc.circle(cx, cy, radius * 0.65, 'F');
+      
+      // High-Visibility Legend
+      let legendY = cy - (sorted.length * 3);
+      sorted.forEach((d, i) => {
+        doc.setFillColor(...(chartColors[i % chartColors.length]));
+        doc.rect(x + radius * 2 + 8, legendY - 2.5, 3, 3, 'F');
+        
+        doc.setTextColor(255, 255, 255); // SOLID WHITE LABELS
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${d.name.substring(0, 20).toUpperCase()}`, x + radius * 2 + 14, legendY);
+        
+        doc.setTextColor(...accentColor);
+        doc.setFontSize(7.5);
+        doc.text(`${((d.value/analytics.total)*100).toFixed(0)}%`, x + radius * 2 + 75, legendY, { align: 'right' });
+        legendY += 7.5;
+      });
+    };
+    
+    const chartR = 30; // SCALED UP FOR EXECUTIVE PRESENCE
+    const chartSpacing = (pageWidth - 40) / 3;
+    drawDonutChart('Category Performance', analytics.categories, 15, 85, chartR);
+    drawDonutChart('Technical Distributions', analytics.types, 15 + chartSpacing, 85, chartR);
+    drawDonutChart('CDE Dominance Profile', analytics.cde, 15 + chartSpacing * 2, 85, chartR);
 
-  // Convert binary string to ArrayBuffer for safe Blob creation
-  const finalBuffer = new Uint8Array(patchedOutput.length);
-  for (let i = 0; i < patchedOutput.length; i++) {
-    finalBuffer[i] = patchedOutput.charCodeAt(i) & 0xFF;
+    // 3. TIMELINE ROW (Bottom)
+    const drawTimelineChart = (x: number, y: number) => {
+      doc.setTextColor(...accentColor);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('SUBMISSION TIMELINE TRENDS', x, y);
+
+      const timeline: Record<string, number> = {};
+      [...tasks].sort((a,b) => new Date(a.submittingDate || 0).getTime() - new Date(b.submittingDate || 0).getTime())
+           .forEach(t => {
+              if (!t.submittingDate) return;
+              const d = new Date(t.submittingDate);
+              const key = `${d.toLocaleString('en-GB', { month: 'short' })} ${d.getFullYear()}`;
+              timeline[key] = (timeline[key] || 0) + 1;
+           });
+
+      const timelineData = Object.entries(timeline).slice(-6);
+      const max = Math.max(...timelineData.map(d => d[1]), 1);
+      const chartW = pageWidth - 40;
+      const chartH = 35;
+      const barW = (chartW / (timelineData.length || 1)) - 15;
+
+      timelineData.forEach((d, i) => {
+        const bX = x + (i * (barW + 15));
+        const h = (d[1] / max) * chartH;
+        doc.setTextColor(255, 255, 255, 0.6);
+        doc.setFontSize(7);
+        doc.text(d[0], bX + barW / 2, y + chartH + 12, { align: 'center' });
+        doc.setFillColor(25, 25, 30); 
+        doc.roundedRect(bX + 1, y + chartH + 5 - h + 1, barW, h, 2, 2, 'F');
+        doc.setFillColor(...accentColor);
+        doc.roundedRect(bX, y + chartH + 5 - h, barW, h, 2, 2, 'F');
+        doc.setTextColor(255, 255, 255); // High contrast white
+        doc.setFont('helvetica', 'bold');
+        doc.text(d[1].toString(), bX + barW / 2, y + chartH + 5 - h - 3, { align: 'center' });
+      });
+    };
+    
+    drawTimelineChart(20, 155);
+  };
+
+  // Helper for Section Divider
+  const drawDivider = (title: string) => {
+    doc.addPage();
+    doc.setFillColor(...accentColor);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    
+    doc.setTextColor(...bgColor);
+    doc.setFontSize(42);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title.toUpperCase(), pageWidth / 2, pageHeight / 2 - 10, { align: 'center' });
+    
+    doc.setFontSize(14);
+    doc.text('KEO DIGITAL INTELLIGENCE // TRANSITIONING TO REGISTRY DATA', pageWidth / 2, pageHeight / 2 + 10, { align: 'center' });
+    
+    doc.setDrawColor(...bgColor);
+    doc.setLineWidth(1);
+    doc.line(pageWidth / 2 - 50, pageHeight / 2 + 20, pageWidth / 2 + 50, pageHeight / 2 + 20);
+  };
+
+  // Helper for Table Registry
+  const drawTable = () => {
+    doc.addPage();
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(12);
+    doc.text(metadata?.reportBranding || 'KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT', 14, 20);
+
+    const excluded = metadata?.reportExcludedFields || [];
+    const visibleCols = getDynamicExportColumns(excluded, 'pdf');
+    const head = [visibleCols.map(c => c.label)];
+    const body = tasks.map(t => {
+      const links = getTaskLinks(t).map(l => l.label).join(' | ');
+      return visibleCols.map(c => {
+        if (c.id === 'id') return t.id.toUpperCase();
+        if (c.id === 'title') return t.title;
+        if (c.id === 'department') return t.department;
+        if (c.id === 'submitterName') return t.submitterName || '-';
+        if (c.id === 'submittingDate') return formatReportDate(t.submittingDate);
+        if (c.id === 'deliverableType') return Array.isArray(t.deliverableType) ? t.deliverableType.join(' | ') : (t.deliverableType || '-');
+        if (c.id === 'cde') return Array.isArray(t.cde) ? t.cde.join(' | ') : (t.cde || '-');
+        if (c.id === 'links') return links || '-';
+        return '-';
+      });
+    });
+
+    const lIdx = visibleCols.findIndex(cc => cc.id === 'links');
+    const titleIdx = visibleCols.findIndex(cc => cc.id === 'title');
+    const colsConfig: any = {};
+    
+    // Auto-fit all columns using 'wrap' (fits content) except Title which gets 'linebreak'
+    visibleCols.forEach((col, idx) => {
+      if (col.id === 'title') {
+        colsConfig[idx] = { cellWidth: 'auto', overflow: 'linebreak', halign: 'left' };
+      } else if (col.id === 'links') {
+        colsConfig[idx] = { cellWidth: 'wrap', textColor: [5, 99, 193] };
+      } else {
+        colsConfig[idx] = { cellWidth: 'wrap' };
+      }
+    });
+
+    autoTable(doc, {
+      startY: 30,
+      head,
+      body,
+      theme: 'grid',
+      headStyles: { 
+        fillColor: [30, 41, 59], // Slate 800 for high density headers
+        textColor: [255, 255, 255], 
+        fontSize: 8, 
+        fontStyle: 'bold', 
+        halign: 'center', 
+        cellPadding: 4,
+        overflow: 'linebreak' // ENABLE ULTRA PREMIUM WRAPPING
+      },
+      styles: { 
+        fontSize: 7.5, 
+        cellPadding: 4, 
+        overflow: 'visible', // Prevent truncation globally except where specified
+        halign: 'center', 
+        valign: 'middle' 
+      },
+      columnStyles: colsConfig,
+      didDrawCell: (data) => {
+        if (data.section === 'body' && data.column.index === lIdx && lIdx !== -1) {
+          const links = getTaskLinks(tasks[data.row.index]);
+          if (links.length > 0) {
+            const label = links.map(ll => ll.label).join(' | ');
+            const totalW = doc.getTextWidth(label);
+            let cX = data.cell.x + (data.cell.width - totalW) / 2;
+            links.forEach((ll, ii) => {
+              const w = doc.getTextWidth(ll.label);
+              doc.link(cX, data.cell.y, w, data.cell.height, { url: ll.url });
+              cX += w + doc.getTextWidth(' | ');
+            });
+          }
+        }
+      }
+    });
+  };
+
+  // Execution Flow
+  drawCover();
+  
+  if (perspective === 'dashboard' || perspective === 'both') {
+    drawDashboard();
+  }
+  
+  if (perspective === 'both') {
+    drawDivider('TASK REGISTRY TRANSCRIPT');
+  }
+  
+  if (perspective === 'table' || perspective === 'both') {
+    drawTable();
   }
 
-  const blob = new Blob([finalBuffer], { type: 'application/pdf' });
-  const filename = `${metadata?.projectName || 'Project'}_Comprehensive_Report_${new Date().toISOString().split('T')[0]}.pdf`;
-  
-  return { blob, filename };
+  const patched = doc.output().replace(/\/S\s*\/URI\s*\/URI\s*\((.*?)\)\s*>>/g, '/S /URI /URI ($1) /NewWindow true /Target (new) >>');
+  const buffer = new Uint8Array(patched.length).map((_, i) => patched.charCodeAt(i) & 0xFF);
+  return { blob: new Blob([buffer], { type: 'application/pdf' }), filename: `${metadata?.projectName || 'Project'}_${perspective === 'both' ? 'Consolidated' : (perspective === 'dashboard' ? 'Analytics' : 'Report')}_${new Date().toISOString().split('T')[0]}.pdf` };
 }
+

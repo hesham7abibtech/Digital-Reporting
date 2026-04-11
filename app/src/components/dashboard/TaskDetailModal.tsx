@@ -114,42 +114,50 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
             <div style={{ flex: 1, overflowY: 'auto', padding: '32px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 32, width: '100%', minWidth: 400 }}>
                 
-                {/* Assignee & Status Row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
-                      <p style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontWeight: 800 }}>Digital Lifecycle Status</p>
-                      <StatusBadge status={task.status} />
-                    </div>
-                  </div>
-                </div>
 
-                {/* Description */}
-                <section>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                    <FileText size={16} style={{ color: 'var(--text-dim)' }} />
-                    <h3 style={{ fontSize: 13, fontWeight: 800, color: 'white', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Description</h3>
-                  </div>
-                  <div style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.02)', padding: '16px 20px', borderRadius: 16, border: '1px solid rgba(255,255,255,0.04)' }}>
-                    {task.description || "No description provided for this task record."}
-                  </div>
-                </section>
 
-                {/* Timeline Section */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                      <Calendar size={16} style={{ color: '#D4AF37' }} />
-                      <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Submitting Date</span>
-                    </div>
-                    {task.submittingDate ? (
-                      <div>
-                        <p style={{ fontSize: 15, fontWeight: 700, color: 'white' }}>{formatDate(task.submittingDate)}</p>
+                {/* Timeline & Metadata Section */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+                  <div style={{ padding: '16px 20px', borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Submission Date</span>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: '#D4AF37' }}>{formatDate(task.submittingDate || (task as any).actualEndDate || (task as any).actualStartDate)}</span>
+                  </div>
+
+                  <div style={{ padding: '16px 20px', borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Task Category</span>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: getDepartmentColor(task.department) }}>{task.department}</span>
+                  </div>
+
+                  <div style={{ padding: '16px 20px', borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Submitter</span>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: 'white' }}>{task.submitterName || 'Unassigned'}</span>
+                  </div>
+                  
+                  {task.deliverableType && task.deliverableType.length > 0 && (
+                    <div style={{ padding: '16px 20px', borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Deliverable Type</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {task.deliverableType.map((type, i) => (
+                          <span key={i} style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }}>
+                            {type}
+                          </span>
+                        ))}
                       </div>
-                    ) : (
-                      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', fontWeight: 500 }}>Not synchronized</p>
-                    )}
-                  </div>
+                    </div>
+                  )}
+
+                  {task.cde && task.cde.length > 0 && (
+                    <div style={{ padding: '16px 20px', borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CDE Environment</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {task.cde.map((env, i) => (
+                          <span key={i} style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.2)', borderRadius: 8, color: '#D4AF37' }}>
+                            {env}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Deliverables Links Section */}
@@ -197,6 +205,16 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                   )}
                 </section>
 
+                {/* Notes */}
+                <section>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                    <FileText size={16} style={{ color: 'var(--text-dim)' }} />
+                    <h3 style={{ fontSize: 13, fontWeight: 800, color: 'white', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Notes</h3>
+                  </div>
+                  <div style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.02)', padding: '16px 20px', borderRadius: 16, border: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'pre-wrap' }}>
+                    {task.description || "No additional notes provided for this task record."}
+                  </div>
+                </section>
               </div>
             </div>
 

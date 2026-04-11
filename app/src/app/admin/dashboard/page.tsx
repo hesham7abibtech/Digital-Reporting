@@ -22,6 +22,7 @@ import {
   Loader2,
   Inbox,
   X,
+  Check,
   MapPin,
   Building2,
   Cpu,
@@ -50,7 +51,7 @@ import { doc, collection, query, orderBy, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import GlassCard from '@/components/shared/GlassCard';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { Task, TeamMember, DashboardNavItem, ProjectMetadata, Department, ReportSummaryField } from '@/lib/types';
+import { Task, TeamMember, DashboardNavItem, ProjectMetadata, Department, ReportSummaryField, HeaderBadge } from '@/lib/types';
 import TaskEditorModal from '@/components/admin/TaskEditorModal';
 import MemberEditorModal from '@/components/admin/MemberEditorModal';
 import RegistryEditorModal from '@/components/admin/RegistryEditorModal';
@@ -313,6 +314,7 @@ export default function AdminDashboardPage() {
   const [localTitle, setLocalTitle] = useState('');
   const [localProjectName, setLocalProjectName] = useState('wadi yemm');
   const [localLocation, setLocalLocation] = useState('');
+  const [localStatusLine, setLocalStatusLine] = useState('');
   const [localAllowedDomains, setLocalAllowedDomains] = useState<string[]>([]);
   const [initializedLocalFields, setInitializedLocalFields] = useState(false);
   const [initializedDomains, setInitializedDomains] = useState(false);
@@ -352,6 +354,8 @@ export default function AdminDashboardPage() {
   const [excelActiveTab, setExcelActiveTab] = useState<'summary' | 'matrix'>('summary');
   const pdfScrollRef = useRef<HTMLDivElement>(null);
   const [currentPdfPage, setCurrentPdfPage] = useState(0);
+  const [localHeaderBadges, setLocalHeaderBadges] = useState<HeaderBadge[]>([]);
+  const [initializedBadges, setInitializedBadges] = useState(false);
   const [broadcastToDelete, setBroadcastToDelete] = useState<{ id: string, title: string } | null>(null);
   const [isSavingReport, setIsSavingReport] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -394,6 +398,7 @@ export default function AdminDashboardPage() {
     setLocalTitle(projectData.title || '');
     setLocalProjectName(projectData.projectName || '');
     setLocalLocation(projectData.location || '');
+    setLocalStatusLine(projectData.statusLine || 'Digital Workflow Online');
     setLocalReportTitle(projectData.reportTitle || 'Executive Summary Report');
     setLocalReportSubtitle(projectData.reportSubtitle || 'Operational Performance & Deliverables');
     setLocalReportSummary(projectData.reportSummary || '');
@@ -411,6 +416,17 @@ export default function AdminDashboardPage() {
     setLocalExcludedFields(projectData.reportExcludedFields || []);
     setLocalSummaryFields(projectData.reportSummaryFields || DEFAULT_SUMMARY_FIELDS);
     setInitializedLocalFields(true);
+  }
+
+  // Sync header badges exactly once initially
+  if (projectData && !initializedBadges) {
+    const defaultBadges: HeaderBadge[] = [
+      { id: 'status-line', label: 'Protocol Status Line', color: projectData.statusColor || '#f59e0b', isVisible: true, isAutomated: true },
+      { id: 'date-range', label: 'Operational Period', color: '#D4AF37', isVisible: true, isAutomated: true },
+      { id: 'task-count', label: 'Deliverables Count', color: '#818cf8', isVisible: true, isAutomated: true }
+    ];
+    setLocalHeaderBadges(projectData.headerBadges || defaultBadges);
+    setInitializedBadges(true);
   }
 
   // Sync allowed domains exactly once initially
@@ -494,7 +510,8 @@ export default function AdminDashboardPage() {
         reportFooter: localReportFooter,
         reportExcludedFields: localExcludedFields,
         reportSummaryFields: localSummaryFields,
-        projectName: localProjectName
+        projectName: localProjectName,
+        statusLine: localStatusLine
       });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
@@ -567,7 +584,7 @@ export default function AdminDashboardPage() {
     try {
       if (format === 'excel') {
         const { exportToExcel } = await import('@/lib/exportUtils');
-        const { blob, filename } = await exportToExcel(memoizedTasks, localMetadata);
+        const { blob, filename } = await exportToExcel(memoizedTasks, localMetadata, undefined, 'table');
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -575,7 +592,7 @@ export default function AdminDashboardPage() {
         link.click();
       } else {
         const { exportToPDF } = await import('@/lib/exportUtils');
-        const { blob, filename } = await exportToPDF(memoizedTasks, localMetadata);
+        const { blob, filename } = await exportToPDF(memoizedTasks, localMetadata, undefined, 'table');
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -926,7 +943,7 @@ export default function AdminDashboardPage() {
                             onClick={() => setTeamActiveSubTab('departments')}
                             style={{ padding: '6px 16px', borderRadius: 8, background: teamActiveSubTab === 'departments' ? '#D4AF37' : 'transparent', color: teamActiveSubTab === 'departments' ? '#0a0a0f' : '#D4AF37', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
                           >
-                            DEPARTMENTS
+                            TASK CATEGORIES
                           </button>
                         </div>
                       )}
@@ -963,17 +980,22 @@ export default function AdminDashboardPage() {
                               />
                             </th>
                             <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                              {activeTab === 'users' ? 'Staff Identity' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Project Personnel' : 'Operational Department') : 'Task Definition / Asset'}
+                              {activeTab === 'users' ? 'Staff Identity' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Project Personnel' : 'Task Category') : 'Task Definition / Asset'}
                             </th>
                             <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                              {activeTab === 'users' ? 'Designation' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Job Title' : 'Abbreviation') : 'Department'}
+                              {activeTab === 'users' ? 'Designation' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Functional Category' : 'Abbreviation') : 'Task Category'}
                             </th>
                             <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                              {activeTab === 'users' ? 'Access Control' : activeTab === 'tasks' ? 'Submitting Date' : 'Action Hub'}
+                              {activeTab === 'users' ? 'Access Control' : activeTab === 'tasks' ? 'Submitter' : activeTab === 'team' && teamActiveSubTab === 'personnel' ? 'Email Interface' : 'Action Hub'}
                             </th>
                             <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                              {activeTab === 'users' ? 'Security Protocol' : 'Control'}
+                              {activeTab === 'users' ? 'Security Protocol' : activeTab === 'tasks' ? 'Submission Date' : 'Control'}
                             </th>
+                            {activeTab === 'users' && (
+                              <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                Digital Signature
+                              </th>
+                            )}
                           </tr>
                         </thead>
                       )}
@@ -999,9 +1021,19 @@ export default function AdminDashboardPage() {
                                 <span style={{ fontSize: 13, background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>{task.department}</span>
                               </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: task.status === 'COMPLETED' ? '#10b981' : '#f59e0b' }} />
-                                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{task.status.replace(/_/g, ' ')}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                  {task.submitterName && (
+                                    <div style={{
+                                      width: 28, height: 28, borderRadius: '50%',
+                                      background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.2)',
+                                      color: '#D4AF37', fontSize: 11, fontWeight: 700,
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      flexShrink: 0
+                                    }}>
+                                      {task.submitterName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{task.submitterName || '—'}</span>
                                 </div>
                               </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
@@ -1030,39 +1062,39 @@ export default function AdminDashboardPage() {
                           </tr>
                         )}
 
-                        {activeTab === 'team' && teamActiveSubTab === 'personnel' && membersSnapshot?.docs.map((doc: any) => {
-                          const member = { id: doc.id, ...doc.data() } as any;
-                          const isSelected = selectedIds.has(doc.id);
-                          return (
-                            <tr key={doc.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer', background: isSelected ? 'rgba(212, 175, 55, 0.05)' : 'transparent' }} onClick={() => handleEditRecord(member)}>
-                              <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={(e) => toggleSelect(doc.id, e as any)}
-                                  style={{ cursor: 'pointer', width: 16, height: 16 }}
-                                />
-                              </td>
-                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <div style={{ fontWeight: 600, fontSize: 15 }}>{member.name || member.email}</div>
-                              </td>
-                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <span style={{ fontSize: 13, background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>{member.department || 'Awaiting Assignment'}</span>
-                              </td>
-                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: member.status === 'ACTIVE' ? '#10b981' : '#f59e0b' }} />
-                                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{member.status === 'ACTIVE' ? 'Active Assignment' : 'Pending Verification'}</span>
-                                </div>
-                              </td>
-                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
-                                  <MoreVertical size={18} />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
+                         {activeTab === 'team' && teamActiveSubTab === 'personnel' && membersSnapshot?.docs.map((doc: any) => {
+                           const member = { id: doc.id, ...doc.data() } as any;
+                           const isSelected = selectedIds.has(doc.id);
+                           return (
+                             <tr key={doc.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer', background: isSelected ? 'rgba(212, 175, 55, 0.05)' : 'transparent' }} onClick={() => handleEditRecord(member)}>
+                               <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
+                                 <input
+                                   type="checkbox"
+                                   checked={isSelected}
+                                   onChange={(e) => toggleSelect(doc.id, e as any)}
+                                   style={{ cursor: 'pointer', width: 16, height: 16 }}
+                                 />
+                               </td>
+                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
+                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: member.status === 'ACTIVE' ? '#10b981' : '#f59e0b', flexShrink: 0 }} />
+                                   <div style={{ fontWeight: 600, fontSize: 15 }}>{member.name || 'Anonymous User'}</div>
+                                 </div>
+                               </td>
+                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
+                                 <span style={{ fontSize: 13, background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>{member.department || 'Awaiting Assignment'}</span>
+                               </td>
+                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
+                                 <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>{member.email}</div>
+                               </td>
+                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
+                                 <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
+                                   <MoreVertical size={18} />
+                                 </button>
+                               </td>
+                             </tr>
+                           );
+                         })}
 
                         {activeTab === 'team' && teamActiveSubTab === 'departments' && (departmentsSnapshot?.docs.length || 0) > 0 && departmentsSnapshot?.docs.map((doc: any) => {
                           const dept = { id: doc.id, ...doc.data() } as any;
@@ -1266,6 +1298,7 @@ export default function AdminDashboardPage() {
                                     updates.headerBgPositionY = bgPosY;
                                     updates.headerBgPositionX = bgPosX;
                                     updates.allowedDomains = localAllowedDomains;
+                                    updates.headerBadges = localHeaderBadges;
 
                                     await updateProjectMetadata(updates);
                                     showToast('Global branding synchronized across all terminals.', 'SUCCESS');
@@ -1302,91 +1335,85 @@ export default function AdminDashboardPage() {
                                   />
                                 </div>
 
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, gridColumn: 'span 2', padding: '24px', background: 'rgba(212, 175, 55, 0.05)', borderRadius: 20, border: '1px solid rgba(212, 175, 55, 0.1)', marginTop: 8 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                                    <div style={{ width: 32, height: 32, borderRadius: 10, background: '#D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                      <Database size={18} color="#0a0a0f" />
-                                    </div>
-                                    <h3 style={{ fontSize: 13, fontWeight: 900, color: 'white', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Report Export Configuration</h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 24, gridColumn: 'span 2', padding: 32, background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 28, marginTop: 12 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4AF37' }} />
+                                    <h3 style={{ fontSize: 13, fontWeight: 900, color: 'white', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Global Project Identity & Metadata</h3>
                                   </div>
 
-                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                      <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Export Report Title</label>
-                                      <input
-                                        value={localReportTitle}
-                                        onChange={(e) => setLocalReportTitle(e.target.value)}
-                                        placeholder="e.g. Executive Status Report"
-                                        style={{ padding: '14px 18px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }}
-                                      />
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                      <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Report Subtitle / Reference</label>
-                                      <input
-                                        value={localReportSubtitle}
-                                        onChange={(e) => setLocalReportSubtitle(e.target.value)}
-                                        placeholder="e.g. Q2 Performance Overview"
-                                        style={{ padding: '14px 18px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }}
-                                      />
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, gridColumn: 'span 2' }}>
-                                      <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Report Cover Summary / Disclaimer</label>
-                                      <textarea
-                                        value={localReportSummary}
-                                        onChange={(e) => setLocalReportSummary(e.target.value)}
-                                        placeholder="Detailed project summary for the cover page..."
-                                        rows={3}
-                                        style={{ padding: '14px 18px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none', resize: 'none' }}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, gridColumn: 'span 2' }}>
-                                  <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Dynamic Narrative Stack (Subtitles)</label>
-                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                    {subtitleList.map((sub, idx) => (
-                                      <div
-                                        key={sub.id}
-                                        style={{
-                                          display: 'flex', gap: 12, alignItems: 'center', padding: 12,
-                                          background: idx === 0 ? 'rgba(212, 175, 55, 0.05)' : 'rgba(255,255,255,0.02)',
-                                          border: idx === 0 ? '1px solid rgba(212, 175, 55, 0.2)' : '1px solid rgba(255,255,255,0.06)',
-                                          borderRadius: 16, transition: 'all 200ms'
-                                        }}
-                                      >
-                                        <div style={{ background: idx === 0 ? '#D4AF37' : 'rgba(255,255,255,0.05)', color: idx === 0 ? '#0a0a0f' : 'rgba(255,255,255,0.4)', width: 26, height: 26, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 11, flexShrink: 0 }}>
-                                          {idx + 1}
-                                        </div>
-                                        <input
-                                          value={sub.text}
-                                          onChange={(e) => {
-                                            const newList = [...subtitleList];
-                                            newList[idx].text = e.target.value;
-                                            setSubtitleList(newList);
-                                          }}
-                                          placeholder={idx === 0 ? "Primary descriptor..." : "Secondary focus..."}
-                                          style={{ flex: 1, background: 'none', border: 'none', color: 'white', fontSize: 13, outline: 'none', fontWeight: idx === 0 ? 600 : 400 }}
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() => setSubtitleList(prev => prev.filter((_, i) => i !== idx))}
-                                          style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: 'rgba(239, 68, 68, 0.05)', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: idx === 0 ? 0.3 : 1 }}
-                                          disabled={idx === 0}
-                                        >
-                                          <X size={14} />
-                                        </button>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                                    {/* Subtitles Section */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                                      <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Subtitles</label>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        {subtitleList.map((sub, idx) => (
+                                          <div key={sub.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12 }}>
+                                            <span style={{ fontSize: 10, fontWeight: 900, color: 'rgba(255,255,255,0.2)', width: 16 }}>{idx + 1}</span>
+                                            <input
+                                              value={sub.text}
+                                              onChange={(e) => {
+                                                const newList = [...subtitleList];
+                                                newList[idx].text = e.target.value;
+                                                setSubtitleList(newList);
+                                              }}
+                                              style={{ flex: 1, background: 'none', border: 'none', color: 'white', fontSize: 13, outline: 'none' }}
+                                            />
+                                            <button type="button" onClick={() => setSubtitleList(prev => prev.filter((_, i) => i !== idx))} disabled={idx === 0} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: idx === 0 ? 0 : 0.6 }}><X size={14} /></button>
+                                          </div>
+                                        ))}
+                                        <button type="button" onClick={() => setSubtitleList([...subtitleList, { id: `sub-${Date.now()}`, text: '' }])} style={{ padding: '8px 16px', borderRadius: 10, background: 'rgba(212, 175, 55, 0.05)', border: '1px dashed rgba(212, 175, 55, 0.2)', color: '#D4AF37', fontSize: 10, fontWeight: 800, cursor: 'pointer' }}>+ ADD SUBTITLE</button>
                                       </div>
-                                    ))}
+                                    </div>
 
-                                    <button
-                                      type="button"
-                                      onClick={() => setSubtitleList([...subtitleList, { id: `sub-new-${Date.now()}`, text: '' }])}
-                                      style={{ padding: '12px', borderRadius: 16, background: 'rgba(212, 175, 55, 0.05)', border: '1px dashed rgba(212, 175, 55, 0.3)', color: '#D4AF37', fontSize: 11, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                                    >
-                                      <Plus size={14} />
-                                      Append Narrative
-                                    </button>
+                                    {/* Region & Status Section */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Region</label>
+                                        <div style={{ position: 'relative' }}>
+                                          <MapPin size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.2)' }} />
+                                          <input value={localLocation} onChange={(e) => setLocalLocation(e.target.value)} style={{ width: '100%', padding: '12px 16px 12px 40px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }} />
+                                        </div>
+                                      </div>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Status Line</label>
+                                        <div style={{ position: 'relative' }}>
+                                          <Cpu size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.2)' }} />
+                                          <input value={localStatusLine} onChange={(e) => setLocalStatusLine(e.target.value)} style={{ width: '100%', padding: '12px 16px 12px 40px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }} />
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Badges Section */}
+                                    <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Insight Badges</label>
+                                        <button type="button" onClick={() => setLocalHeaderBadges([...localHeaderBadges, { id: `manual-${Date.now()}`, label: 'New Insight', color: '#D4AF37', isVisible: true }])} style={{ padding: '4px 12px', borderRadius: 8, background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.2)', color: '#D4AF37', fontSize: 10, fontWeight: 900, cursor: 'pointer' }}>+ ADD BADGE</button>
+                                      </div>
+                                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+                                        {localHeaderBadges.map((badge, idx) => (
+                                          <div key={badge.id} style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', gap: 12, alignItems: 'center' }}>
+                                            <input type="color" value={badge.color} onChange={(e) => {
+                                              const newList = [...localHeaderBadges];
+                                              newList[idx].color = e.target.value;
+                                              setLocalHeaderBadges(newList);
+                                            }} style={{ width: 24, height: 24, padding: 0, border: 'none', background: 'none', cursor: 'pointer', borderRadius: '50%' }} />
+                                            <input value={badge.label} onChange={(e) => {
+                                              const newList = [...localHeaderBadges];
+                                              newList[idx].label = e.target.value;
+                                              setLocalHeaderBadges(newList);
+                                            }} style={{ flex: 1, background: 'none', border: 'none', color: 'white', fontSize: 13, outline: 'none', fontWeight: 600 }} />
+                                            <button type="button" onClick={() => {
+                                              const newList = [...localHeaderBadges];
+                                              newList[idx].isVisible = !newList[idx].isVisible;
+                                              setLocalHeaderBadges(newList);
+                                            }} style={{ background: badge.isVisible ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.05)', color: badge.isVisible ? '#10b981' : 'rgba(255,255,255,0.3)', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 9, fontWeight: 900 }}>{badge.isVisible ? 'LIVE' : 'HID'} {badge.isVisible ? <Check size={10} /> : <X size={10} />}</button>
+                                            {!badge.isAutomated && (
+                                              <button type="button" onClick={() => setLocalHeaderBadges(localHeaderBadges.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.6 }}><X size={14} /></button>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
 
@@ -1439,203 +1466,6 @@ export default function AdminDashboardPage() {
                                     </div>
                                   </div>
                                   <p style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 4 }}>Press <span style={{ color: 'white' }}>Enter</span> to add a domain signature to the spectrum.</p>
-                                </div>
-
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, gridColumn: 'span 2' }}>
-                                  <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Operational Workflow Region</label>
-                                  <div style={{ position: 'relative' }}>
-                                    <MapPin size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#ef4444' }} />
-                                    <input
-                                      name="location"
-                                      value={localLocation}
-                                      onChange={(e) => setLocalLocation(e.target.value)}
-                                      placeholder="Workflow Region / Sector"
-                                      style={{ width: '100%', padding: '16px 20px 16px 48px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, color: 'white', fontSize: 15, outline: 'none', transition: 'all 200ms' }}
-                                    />
-                                  </div>
-                                </div>
-
-                                <div style={{ gridColumn: 'span 2', padding: 32, background: 'rgba(15, 15, 25, 0.4)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: 28, boxShadow: '0 20px 50px rgba(0,0,0,0.3)', marginTop: 12 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
-                                    <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(212, 175, 55, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(212, 175, 55, 0.3)', boxShadow: '0 0 20px rgba(212, 175, 55, 0.2)' }}>
-                                      <Settings size={22} color="#D4AF37" />
-                                    </div>
-                                    <div>
-                                      <label style={{ fontSize: 14, fontWeight: 900, color: 'white', textTransform: 'uppercase', letterSpacing: '0.12em', display: 'block' }}>Elite Environment Configuration Engine</label>
-                                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Atmosphere, Focal Calibration & Deep Integration</span>
-                                    </div>
-                                  </div>
-
-                                  <motion.div
-                                    initial={{ opacity: 0, scale: 0.98 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    style={{
-                                      width: '100%', minHeight: 180, borderRadius: 20, position: 'relative',
-                                      overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)',
-                                      background: '#0a0a0f', display: 'flex', alignItems: 'center', padding: '0 32px',
-                                      boxShadow: 'inset 0 0 40px rgba(0,0,0,0.8)', marginBottom: 32
-                                    }}
-                                  >
-                                    {(localBgUrl || projectData?.headerBgUrl) && (
-                                      <div
-                                        style={{
-                                          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0,
-                                          backgroundImage: `url(${localBgUrl || projectData?.headerBgUrl})`,
-                                          backgroundSize: 'cover',
-                                          backgroundPosition: `${bgPosX}% ${bgPosY}%`,
-                                          opacity: bgOpacity / 100,
-                                          filter: bgOpacity === 100 ? 'none' : 'brightness(0.7) contrast(1.1)',
-                                          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-                                        }}
-                                      />
-                                    )}
-                                    <div style={{
-                                      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1,
-                                      background: 'radial-gradient(circle at 20% 50%, rgba(10,10,15,0.4) 0%, rgba(10,10,15,0.9) 100%)',
-                                      opacity: bgOpacity === 100 ? 0 : 1,
-                                      transition: 'opacity 0.4s ease'
-                                    }} />
-
-                                    <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 24, width: '100%' }}>
-                                      <div style={{ flex: 1, minWidth: 0 }}>
-                                        <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.03em' }}>
-                                          {localTitle || 'Wadi Yemm'} - {localProjectName || 'Ras El Hekma'}
-                                        </h1>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14, marginTop: 8 }}>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#ffffff', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                            <Cpu size={14} style={{ color: '#D4AF37', filter: 'drop-shadow(0 0 5px rgba(212, 175, 55, 0.5))' }} />
-                                            {subtitleList[0]?.text || 'Digital Operations'}
-                                          </div>
-                                          <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 300 }}>|</span>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'rgba(255, 255, 255, 0.8)', fontWeight: 500 }}>
-                                            <MapPin size={14} style={{ color: '#ef4444', filter: 'drop-shadow(0 0 5px rgba(239, 68, 68, 0.3))' }} />
-                                            {localLocation || 'Workflow Region'}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </motion.div>
-
-                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                                      <div
-                                        onClick={() => document.getElementById('bg-upload-hidden')?.click()}
-                                        style={{
-                                          width: '100%', height: 180, borderRadius: 24, background: 'rgba(0,0,0,0.5)',
-                                          border: '1px solid rgba(212, 175, 55, 0.2)', display: 'flex', flexDirection: 'column',
-                                          alignItems: 'center', justifyContent: 'center', gap: 16, cursor: 'pointer',
-                                          transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)', position: 'relative', overflow: 'hidden',
-                                          boxShadow: 'inset 0 10px 30px rgba(0,0,0,0.5)'
-                                        }}
-                                      >
-                                        {headerBgFile || projectData?.headerBgUrl ? (
-                                          <div style={{ position: 'absolute', inset: 0, opacity: 0.3 }}>
-                                            <img src={localBgUrl || projectData?.headerBgUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                          </div>
-                                        ) : null}
-                                        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                                          <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px rgba(212, 175, 55, 0.1)' }}>
-                                            <ImageIcon size={28} color="#D4AF37" />
-                                          </div>
-                                          <div style={{ textAlign: 'center' }}>
-                                            <span style={{ fontSize: 11, fontWeight: 900, color: 'white', letterSpacing: '0.1em', display: 'block' }}>DEPLOY SOURCE ASSET</span>
-                                            <span style={{ fontSize: 9, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginTop: 4, display: 'block' }}>Support 4K High Dynamic Range</span>
-                                          </div>
-                                        </div>
-                                        <input
-                                          id="bg-upload-hidden"
-                                          type="file"
-                                          accept="image/*"
-                                          onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) {
-                                              setHeaderBgFile(file);
-                                              setLocalBgUrl(URL.createObjectURL(file));
-                                            }
-                                          }}
-                                          style={{ display: 'none' }}
-                                        />
-                                      </div>
-                                    </div>
-
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, justifyContent: 'center' }}>
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#D4AF37' }} />
-                                            <span style={{ fontSize: 10, color: 'white', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Atmospheric Density</span>
-                                          </div>
-                                          <span style={{ fontSize: 12, color: '#D4AF37', fontWeight: 900, background: 'rgba(212, 175, 55, 0.1)', padding: '2px 10px', borderRadius: 8, border: '1px solid rgba(212, 175, 55, 0.2)' }}>{bgOpacity}%</span>
-                                        </div>
-                                        <input type="range" min="0" max="100" value={bgOpacity} onChange={(e) => setBgOpacity(parseInt(e.target.value))} style={{ cursor: 'pointer', accentColor: '#D4AF37', height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }} />
-                                      </div>
-
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981' }} />
-                                            <span style={{ fontSize: 10, color: 'white', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Focal Calibration (Y-Axis)</span>
-                                          </div>
-                                          <span style={{ fontSize: 12, color: '#10b981', fontWeight: 900, background: 'rgba(16, 185, 129, 0.1)', padding: '2px 10px', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.2)' }}>{bgPosY}%</span>
-                                        </div>
-                                        <input type="range" min="0" max="100" value={bgPosY} onChange={(e) => setBgPosY(parseInt(e.target.value))} style={{ cursor: 'pointer', accentColor: '#10b981', height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }} />
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, gridColumn: 'span 2' }}>
-                                  <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    Project Brand Portfolio Gallery
-                                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', fontWeight: 600 }}>(Horizontal Scroller)</span>
-                                  </label>
-
-                                  <div style={{ display: 'flex', gap: 20, overflowX: 'auto', paddingBottom: 16, paddingTop: 4 }} className="custom-scrollbar">
-                                    {partnerLogosList.map((logo, idx) => (
-                                      <motion.div
-                                        key={logo.id}
-                                        whileHover={{ y: -6, scale: 1.02 }}
-                                        style={{
-                                          display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center',
-                                          padding: 20, borderRadius: 24, background: 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
-                                          border: '1px solid rgba(255,255,255,0.08)', minWidth: 160, position: 'relative',
-                                          boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
-                                        }}
-                                      >
-                                        <div style={{ width: '100%', height: 70, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                          <img src={logo.url} alt={`Partner Logo ${idx}`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                                        </div>
-                                        <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                                          <button type="button" onClick={() => movePartnerLogo(idx, 'up')} disabled={idx === 0} style={{ flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', background: idx === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(212, 175, 55, 0.1)', color: idx === 0 ? 'rgba(255,255,255,0.2)' : '#D4AF37', cursor: idx === 0 ? 'not-allowed' : 'pointer', transition: 'all 200ms' }}><ArrowLeft size={14} style={{ margin: 'auto' }} /></button>
-                                          <button type="button" onClick={() => removePartnerLogo(idx)} style={{ padding: '8px 12px', borderRadius: 10, border: 'none', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', cursor: 'pointer', transition: 'all 200ms' }}><X size={15} style={{ margin: 'auto' }} /></button>
-                                          <button type="button" onClick={() => movePartnerLogo(idx, 'down')} disabled={idx === partnerLogosList.length - 1} style={{ flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', background: idx === partnerLogosList.length - 1 ? 'rgba(255,255,255,0.02)' : 'rgba(212, 175, 55, 0.1)', color: idx === partnerLogosList.length - 1 ? 'rgba(255,255,255,0.2)' : '#D4AF37', cursor: idx === partnerLogosList.length - 1 ? 'not-allowed' : 'pointer', transition: 'all 200ms' }}><ArrowRight size={14} style={{ margin: 'auto' }} /></button>
-                                        </div>
-                                      </motion.div>
-                                    ))}
-
-                                    <motion.div
-                                      whileHover={{ scale: 1.05 }}
-                                      onClick={() => document.getElementById('logo-upload-hidden')?.click()}
-                                      style={{
-                                        minWidth: 160, height: 136, borderRadius: 24,
-                                        border: '2px dashed rgba(212, 175, 55, 0.3)',
-                                        display: 'flex', flexDirection: 'column', alignItems: 'center',
-                                        justifyContent: 'center', gap: 10, cursor: 'pointer', color: '#D4AF37',
-                                        background: 'rgba(212, 175, 55, 0.02)', transition: 'all 300ms'
-                                      }}
-                                    >
-                                      <Plus size={28} />
-                                      <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.08em' }}>ADD PARTNER</span>
-                                      <input
-                                        id="logo-upload-hidden"
-                                        type="file"
-                                        multiple
-                                        accept="image/*"
-                                        onChange={handlePartnerLogoSelect}
-                                        style={{ display: 'none' }}
-                                      />
-                                    </motion.div>
-                                  </div>
                                 </div>
 
                                 <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
@@ -1716,10 +1546,48 @@ export default function AdminDashboardPage() {
                                       </div>
                                     </div>
 
-                                    <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                    <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#D4AF37' }} />
+                                        <span style={{ fontSize: 10, fontWeight: 900, color: 'white', letterSpacing: '0.1em' }}>GLOBAL REPORT TEMPLATE CONFIGURATION</span>
+                                      </div>
+                                      
+                                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                          <label style={{ fontSize: 9, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Report Title</label>
+                                          <input
+                                            value={localReportTitle}
+                                            onChange={(e) => setLocalReportTitle(e.target.value)}
+                                            placeholder="e.g. Executive Status Report"
+                                            style={{ padding: '12px 14px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: 'white', fontSize: 13, outline: 'none' }}
+                                          />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                          <label style={{ fontSize: 9, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Subtitle / Reference</label>
+                                          <input
+                                            value={localReportSubtitle}
+                                            onChange={(e) => setLocalReportSubtitle(e.target.value)}
+                                            placeholder="e.g. Q2 Performance Overview"
+                                            style={{ padding: '12px 14px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: 'white', fontSize: 13, outline: 'none' }}
+                                          />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, gridColumn: 'span 2' }}>
+                                          <label style={{ fontSize: 9, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cover Summary / Disclaimer</label>
+                                          <textarea
+                                            value={localReportSummary}
+                                            onChange={(e) => setLocalReportSummary(e.target.value)}
+                                            placeholder="Detailed project summary for the cover page..."
+                                            rows={2}
+                                            style={{ padding: '12px 14px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: 'white', fontSize: 13, outline: 'none', resize: 'none' }}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      <div style={{ width: '100%', height: 1, background: 'rgba(255,255,255,0.04)', margin: '8px 0' }} />
+
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa' }} />
-                                        <span style={{ fontSize: 10, fontWeight: 900, color: 'white', letterSpacing: '0.1em' }}>DOCUMENT HEADER CONFIGURATION</span>
+                                        <span style={{ fontSize: 10, fontWeight: 900, color: 'white', letterSpacing: '0.1em' }}>DOCUMENT HEADER REGISTRY</span>
                                       </div>
                                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                                         {localSummaryFields.map((field, idx) => (

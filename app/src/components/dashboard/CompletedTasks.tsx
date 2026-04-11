@@ -49,7 +49,7 @@ export default function CompletedTasks({ onTaskClick, tasks: externalTasks }: { 
           <table style={{ width: '100%', fontSize: 14, borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                {['Task', 'Department', 'Completed', 'Files'].map((col, idx) => (
+                {['Task', 'Category', 'Completed', 'Files'].map((col, idx) => (
                   <th key={col} style={{ ...thStyle, textAlign: 'center', verticalAlign: 'middle' }}>{col}</th>
                 ))}
               </tr>

@@ -7,6 +7,9 @@ import { notifications } from '@/lib/data';
 import { useTimeZone } from '@/context/TimeZoneContext';
 import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/components/shared/EliteToast';
+import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
 import type { ProjectMetadata } from '@/lib/types';
 
 interface HeaderProps {
@@ -21,11 +24,47 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
   const [tzSearch, setTzSearch] = useState('');
   const [time, setTime] = useState('');
   const [date, setDate] = useState('');
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const { userProfile } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [lastBroadcastId, setLastBroadcastId] = useState<string | null>(null);
+  const [isReceiving, setIsReceiving] = useState(false);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    const q = query(collection(db, 'broadcasts'), orderBy('timestamp', 'desc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot: any) => {
+      const docs = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() }));
+      const currentUserId = auth.currentUser?.uid;
+      
+      const unreadAlerts = docs.filter((b: any) => 
+        b.type === 'NOTIF' && (!currentUserId || !b.readBy?.includes(currentUserId))
+      );
+      
+      const newCount = unreadAlerts.length;
+      
+      // Trigger Receiving Effect if new notification arrives
+      if (docs.length > 0) {
+        const latestId = docs[0].id;
+        if (lastBroadcastId && latestId !== lastBroadcastId) {
+          setIsReceiving(true);
+          setTimeout(() => setIsReceiving(false), 2000);
+          
+          if (docs[0].type === 'NOTIF') {
+            showToast(`DECRYPTED PACKET: ${docs[0].title}`, docs[0].severity === 'CRITICAL' ? 'ERROR' : 'INFO');
+          }
+        }
+        setLastBroadcastId(latestId);
+      }
+      
+      setUnreadCount(newCount);
+    });
+
+    return () => unsubscribe();
+  }, [lastBroadcastId, showToast]);
 
   const isAdminPage = pathname.startsWith('/admin');
   const isAuthPage = pathname === '/admin/login';
-  const { userProfile } = useAuth();
 
   useEffect(() => {
     function updateTime() {
@@ -66,7 +105,7 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
       style={{
         position: 'sticky',
         top: 0,
-        zIndex: 30,
+        zIndex: 2500,
         height: 64,
         display: 'flex',
         alignItems: 'center',
@@ -140,7 +179,7 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
                     background: 'rgba(12,12,20,0.98)', backdropFilter: 'blur(32px)',
                     border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16,
                     boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(212, 175, 55, 0.1)',
-                    overflow: 'hidden', zIndex: 50
+                    overflow: 'hidden', zIndex: 2600
                   }}
                 >
                   {/* Search Header */}
@@ -234,22 +273,80 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
         {/* Notifications & User */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {!isAuthPage && (
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05, background: 'rgba(255,255,255,0.08)' }}
+              whileTap={{ scale: 0.95 }}
               onClick={onNotificationClick}
               style={{
                 position: 'relative', padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)',
                 cursor: 'pointer', background: 'rgba(255,255,255,0.03)', transition: 'all 200ms',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: unreadCount > 0 ? '0 0 20px rgba(212, 175, 55, 0.15)' : 'none'
               }}
             >
-              <Bell size={20} color="white" />
+              {/* Resonant Receiving Rings */}
+              <AnimatePresence>
+                {isReceiving && (
+                  <>
+                    {[1, 2, 3].map((ring) => (
+                      <motion.div
+                        key={`ring-${ring}`}
+                        initial={{ scale: 0.8, opacity: 0.8 }}
+                        animate={{ scale: 2.5, opacity: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 1.2, delay: ring * 0.2, ease: "easeOut" }}
+                        style={{
+                          position: 'absolute', inset: 0, borderRadius: 12, border: '1px solid #D4AF37',
+                          pointerEvents: 'none', zIndex: -1
+                        }}
+                      />
+                    ))}
+                  </>
+                )}
+              </AnimatePresence>
+
+              {/* Status Indicator Glow */}
               {unreadCount > 0 && (
-                <span style={{ position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: 10, background: '#ef4444', border: '2px solid #0c0c14', color: 'white', fontSize: 11, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(239, 68, 68, 0.4)' }}>
-                  {unreadCount}
-                </span>
+                <div 
+                  style={{ position: 'absolute', inset: -4, borderRadius: 14, background: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.2)', opacity: 0.6 }} 
+                  className="notification-glow"
+                />
               )}
-            </button>
+
+              <motion.div
+                animate={isReceiving ? {
+                  rotate: [0, -20, 20, -15, 15, -10, 10, 0],
+                  scale: [1, 1.2, 1.1, 1.2, 1],
+                  transition: { duration: 0.8 }
+                } : {}}
+              >
+                <Bell size={20} color={unreadCount > 0 ? "#D4AF37" : "white"} />
+              </motion.div>
+
+              <AnimatePresence>
+                {unreadCount > 0 && (
+                  <motion.span 
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    style={{ position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: 10, background: '#ef4444', border: '2px solid #0c0c14', color: 'white', fontSize: 11, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(239, 68, 68, 0.4)' }}>
+                    {unreadCount}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
           )}
+          
+          <style jsx global>{`
+            @keyframes notifGlow {
+              0% { box-shadow: 0 0 5px rgba(212, 175, 55, 0.1); opacity: 0.4; }
+              50% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); opacity: 0.8; }
+              100% { box-shadow: 0 0 5px rgba(212, 175, 55, 0.1); opacity: 0.4; }
+            }
+            .notification-glow {
+              animation: notifGlow 2s infinite ease-in-out;
+            }
+          `}</style>
           
           {/* Elite User Card Trigger - Hidden during Auth - Dynamic after Login */}
           {isAdminPage && !isAuthPage && userProfile && (
