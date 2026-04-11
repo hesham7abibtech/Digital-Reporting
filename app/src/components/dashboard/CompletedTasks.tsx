@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Paperclip, ChevronDown, ChevronRight, Inbox } from 'lucide-react';
 import GlassCard from '@/components/shared/GlassCard';
-import PriorityBadge from '@/components/shared/PriorityBadge';
 import { tasks } from '@/lib/data';
 import type { Task } from '@/lib/types';
 import { getDepartmentColor } from '@/lib/utils';
@@ -26,7 +25,7 @@ export default function CompletedTasks({ onTaskClick, tasks: externalTasks }: { 
   const remainingRows = completedTasks.slice(PREVIEW_ROWS);
 
   const thStyle: React.CSSProperties = {
-    padding: '10px 14px', textAlign: 'left', fontSize: 12, fontWeight: 600,
+    padding: '10px 14px', textAlign: 'center', fontSize: 12, fontWeight: 600,
     color: '#c9a227', textTransform: 'uppercase', letterSpacing: '0.06em',
   };
 
@@ -50,8 +49,8 @@ export default function CompletedTasks({ onTaskClick, tasks: externalTasks }: { 
           <table style={{ width: '100%', fontSize: 14, borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                {['Task', 'Department', 'Priority', 'Completed', 'Files'].map((col, idx) => (
-                  <th key={col} style={{ ...thStyle, textAlign: idx === 0 ? 'left' : 'center' }}>{col}</th>
+                {['Task', 'Department', 'Completed', 'Files'].map((col, idx) => (
+                  <th key={col} style={{ ...thStyle, textAlign: 'center', verticalAlign: 'middle' }}>{col}</th>
                 ))}
               </tr>
             </thead>
@@ -78,7 +77,7 @@ export default function CompletedTasks({ onTaskClick, tasks: externalTasks }: { 
               <Inbox size={20} style={{ color: 'rgba(16, 185, 129, 0.4)' }} />
             </div>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>No current data available</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>No current data</p>
               <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Completed tasks will appear here</p>
             </div>
           </div>
@@ -105,7 +104,7 @@ export default function CompletedTasks({ onTaskClick, tasks: externalTasks }: { 
 }
 
 function Row({ task, index, onClick }: { task: Task; index: number; onClick?: (task: Task) => void }) {
-  const { formatDate, formatTime } = useTimeZone();
+  const { formatDate } = useTimeZone();
 
   return (
     <motion.tr
@@ -116,36 +115,22 @@ function Row({ task, index, onClick }: { task: Task; index: number; onClick?: (t
       style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer', transition: 'background 200ms' }}
       className="hover:bg-[rgba(255,255,255,0.02)]"
     >
-      <td style={{ padding: '10px 14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: '50%', background: getDepartmentColor(task.department), display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>
-            {task.assigneeName.split(' ').map(n => n[0]).join('')}
-          </div>
-          <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+          <div style={{ textAlign: 'left' }}>
             <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 5 }}>
               <CheckCircle size={13} color="#10b981" /> {task.title}
             </p>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>{task.assigneeName}</p>
           </div>
         </div>
-      </td>
-      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+      <td style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
         <span style={{ fontSize: 13, color: getDepartmentColor(task.department), fontWeight: 500 }}>{task.department}</span>
       </td>
-      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-        <PriorityBadge priority={task.priority} />
-      </td>
-      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+      <td style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
             {formatDate(task.updatedAt)}
           </span>
-          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>
-            {formatTime(task.updatedAt)}
-          </span>
-        </div>
       </td>
-      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+      <td style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: 'var(--text-dim)', fontSize: 13 }}>
           <Paperclip size={14} />
           {task.attachments || 0}

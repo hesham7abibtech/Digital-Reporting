@@ -91,15 +91,9 @@ function RegistryCard({ dash, idx }: { dash: DashboardNavItem, idx: number }) {
             
             <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ 
-                  width: 8, height: 8, borderRadius: '50%', 
-                  background: dash.status === 'LIVE' ? '#10b981' : dash.status === 'HOLD' ? '#f59e0b' : dash.status === 'BLOCKED' ? '#ef4444' : '#64748b',
-                  boxShadow: dash.status === 'LIVE' ? '0 0 12px rgba(16,185,129,0.8)' : 'none'
-                }} 
-                className={dash.status === 'LIVE' ? 'animate-pulse' : ''}
-                />
-                <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                  {dash.status}
+                <Building2 size={12} style={{ color: '#D4AF37' }} />
+                <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(212, 175, 55, 0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  {dash.department || 'GENERAL'}
                 </span>
               </div>
               
@@ -241,7 +235,7 @@ export default function DashboardRegistry({ items: externalItems }: { items?: Da
               <LayoutDashboard size={20} />
             </div>
             <div>
-              <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>Global Registry</h2>
+              <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>Digital Deliverables</h2>
               <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0, fontWeight: 500 }}>{registryToFilter.length} platforms connected</p>
             </div>
           </div>
@@ -277,8 +271,8 @@ export default function DashboardRegistry({ items: externalItems }: { items?: Da
                 <LayoutDashboard size={32} style={{ color: 'rgba(139, 92, 246, 0.35)' }} />
               </div>
               <div>
-                <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>No current data available</p>
-                <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>Registry platforms will appear here when connected</p>
+                <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>No current data</p>
+                <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>Registry nodes will appear here when connected</p>
               </div>
             </div>
           ) : categories.length > 0 ? categories.map((cat, catIdx) => (
@@ -317,7 +311,7 @@ export default function DashboardRegistry({ items: externalItems }: { items?: Da
           )) : (
             <div style={{ padding: '60px 24px', textAlign: 'center' }}>
               <div style={{ color: 'rgba(255,255,255,0.1)', marginBottom: 12 }}><Search size={40} style={{ margin: '0 auto' }} /></div>
-              <p style={{ color: 'var(--text-dim)', fontSize: 14 }}>Electronic platform "{search}" not found in current registry phase.</p>
+              <p style={{ color: 'var(--text-dim)', fontSize: 14 }}>No current data found for "{search}"</p>
             </div>
           )}
         </div>

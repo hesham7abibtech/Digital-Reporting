@@ -3,32 +3,26 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Cpu, MapPin, Users } from 'lucide-react';
-import ProgressRing from '@/components/shared/ProgressRing';
 import type { TeamMember, ProjectMetadata, Task } from '@/lib/types';
 
 interface ProjectHeaderProps {
   members?: TeamMember[];
-  progress?: number;
   project?: ProjectMetadata;
   tasks?: Task[];
 }
 
 export default function ProjectHeader({ 
   members, 
-  progress,
   project,
   tasks
 }: ProjectHeaderProps) {
   const onlineMembers = members?.filter(m => m.isOnline).length ?? 0;
-  const progressScore = progress ?? 0;
 
   // AI Status Intelligence
   const { statusLine, statusColor } = (() => {
     const delayedCount = tasks?.filter(t => t.status === 'DELAYED').length ?? 0;
     
     if (delayedCount > 0) return { statusLine: 'Critical Pipeline Blockage', statusColor: '#ef4444' };
-    if (progressScore >= 90) return { statusLine: 'Deployment / Finalization', statusColor: '#10b981' };
-    if (progressScore >= 50) return { statusLine: 'Digital Transformation / Sync', statusColor: '#D4AF37' };
     return { statusLine: project?.statusLine || 'Digital Workflow Online', statusColor: project?.statusColor || '#f59e0b' };
   })();
 
@@ -61,7 +55,7 @@ export default function ProjectHeader({
             backgroundSize: 'cover',
             backgroundPosition: `${project.headerBgPositionX || 50}% ${project.headerBgPositionY || 50}%`,
             opacity: (project.headerBgOpacity ?? 20) / 100,
-            filter: 'brightness(0.7) contrast(1.1)',
+            filter: project.headerBgOpacity === 100 ? 'none' : 'brightness(0.7) contrast(1.1)',
             transition: 'all 0.4s ease'
           }}
         />
@@ -77,6 +71,8 @@ export default function ProjectHeader({
           bottom: 0,
           zIndex: 1,
           background: 'radial-gradient(circle at 20% 50%, rgba(10,10,15,0.4) 0%, rgba(10,10,15,0.8) 100%)',
+          opacity: project?.headerBgOpacity === 100 ? 0 : 1,
+          transition: 'opacity 0.4s ease'
         }}
       />
 
@@ -97,24 +93,6 @@ export default function ProjectHeader({
             >
               {project?.title} - {project?.projectName}
             </h1>
-            {/* Members count — in title row */}
-            <span
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '4px 12px', borderRadius: 9999,
-                background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.2)',
-                fontSize: 14, fontWeight: 500, color: '#D4AF37', flexShrink: 0,
-              }}
-            >
-              <Users size={14} />
-              {(() => {
-                const totalMembers = members?.length || 0;
-                // Try to extract capacity from memberCount string (e.g. "10/15" or "15")
-                const capacityMatch = project?.memberCount?.match(/\/?(\d+)/);
-                const capacity = capacityMatch ? capacityMatch[capacityMatch.length - 1] : totalMembers;
-                return `${totalMembers} / ${capacity} Members`;
-              })()}
-            </span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
@@ -160,22 +138,36 @@ export default function ProjectHeader({
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: statusColor }} />
             <span style={{ fontSize: 14, fontWeight: 700, color: statusColor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{statusLine}</span>
           </span>
+
+          <span
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '6px 16px', borderRadius: 9999,
+              background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.3)',
+              marginLeft: 12
+            }}
+          >
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4AF37', boxShadow: '0 0 10px #D4AF37' }} className="animate-pulse" />
+            <span style={{ fontSize: 13, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.08em' }}>MONTHLY PERFORMANCE</span>
+          </span>
+
+          {/* Perfectly Aligned Integrated Tasks Count KPI */}
+          <span
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 10,
+              padding: '6px 18px', borderRadius: 9999,
+              background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)',
+              marginLeft: 12,
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <Cpu size={14} style={{ color: '#818cf8', filter: 'drop-shadow(0 0 5px rgba(99, 102, 241, 0.4))' }} />
+            <span style={{ fontSize: 13, fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Tasks Count: <span style={{ color: '#fff', marginLeft: 4, fontSize: 15, fontWeight: 900 }}>{tasks?.length || 0}</span>
+            </span>
+          </span>
         </div>
 
-        {/* Right - Progress Ring */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
-          style={{ flexShrink: 0 }}
-        >
-          <ProgressRing
-            score={progressScore}
-            size={120}
-            strokeWidth={9}
-            label="Overall Progress"
-          />
-        </motion.div>
       </div>
     </motion.div>
   );

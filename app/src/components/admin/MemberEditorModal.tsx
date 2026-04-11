@@ -4,10 +4,13 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Save, Trash2, User, Mail, Shield, Briefcase, Loader2 } from 'lucide-react';
 import { TeamMember } from '@/lib/types';
-import { upsertMember, deleteMember } from '@/services/FirebaseService';
+import { updateUserProfile, deleteUserProfile } from '@/services/FirebaseService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import { useToast } from '@/components/shared/EliteToast';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface MemberEditorProps {
   member: TeamMember | null;
@@ -28,6 +31,9 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const { showToast } = useToast();
+  
+  const [deptsSnapshot] = useCollection(query(collection(db, 'departments'), orderBy('name', 'asc')));
+  const departments = deptsSnapshot?.docs.map(d => (d.data() as any).name) || [];
 
   useEffect(() => {
     if (member) {
@@ -50,8 +56,14 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
     setIsSaving(true);
     setErrorMsg(null);
     try {
-      await upsertMember(formData as TeamMember);
-      showToast('Personnel record synchronized successfully.', 'SUCCESS');
+      if (!formData.id && !(formData as any).uid) throw new Error('No Identity Component Provided');
+      const uid = (formData as any).uid || formData.id;
+      
+      await updateUserProfile(uid, {
+        name: formData.name,
+        department: formData.department
+      });
+      showToast('Personnel registry synchronized successfully.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Failed to save member:', error);
@@ -65,8 +77,9 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
   const handleDelete = async () => {
     if (!member) return;
     try {
-      await deleteMember(member.id);
-      showToast('Identity purged from registry.', 'SUCCESS');
+      const uid = (member as any).uid || member.id;
+      await deleteUserProfile(uid);
+      showToast('Identity purged from global registry.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Failed to delete member:', error);
@@ -117,15 +130,21 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
             </div>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Job Title</label>
-            <input 
-              type="text" 
-              value={formData.department ?? ''} 
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Operational Department</label>
+            <select 
+              value={formData.department} 
               onChange={e => setFormData({ ...formData, department: e.target.value })} 
               disabled={readOnly}
-              placeholder="e.g. Senior Project Architect"
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.4)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text' }} 
-            />
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : '#1a1a24', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.4)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer' }}
+            >
+              {departments.length > 0 ? (
+                departments.map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))
+              ) : (
+                <option value="" disabled>No departments configured</option>
+              )}
+            </select>
           </div>
 
           {errorMsg && (

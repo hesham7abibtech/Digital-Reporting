@@ -22,6 +22,7 @@ export const metadata: Metadata = {
 
 import { TimeZoneProvider } from "@/context/TimeZoneContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { ToastProvider } from "@/components/shared/EliteToast";
 import { ServiceWorkerRegistry } from "@/components/ServiceWorkerRegistry";
 
 export default function RootLayout({
@@ -34,8 +35,10 @@ export default function RootLayout({
       <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
         <AuthProvider>
           <TimeZoneProvider>
-            <ServiceWorkerRegistry />
-            {children}
+            <ToastProvider>
+              <ServiceWorkerRegistry />
+              {children}
+            </ToastProvider>
           </TimeZoneProvider>
         </AuthProvider>
       </body>

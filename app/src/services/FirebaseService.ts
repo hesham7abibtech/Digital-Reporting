@@ -48,6 +48,7 @@ export const collections = {
   registry: collection(db, 'registry'),
   users: collection(db, 'users'),
   settings: collection(db, 'settings'),
+  departments: collection(db, 'departments'),
 };
 
 /**
@@ -130,6 +131,27 @@ export async function upsertRegistryItem(item: DashboardNavItem) {
 
 export async function deleteRegistryItem(id: string) {
   await deleteDoc(doc(db, 'registry', id));
+}
+
+// ─── Department Operations ────────────────────────────────────────
+
+export async function upsertDepartment(dept: { id: string, name: string, abbreviation: string }) {
+  const deptDoc = doc(db, 'departments', dept.id);
+  const cleanData = sanitizeData({
+    ...dept,
+    updatedAt: new Date().toISOString()
+  });
+  
+  // If it's a new department, set createdAt
+  if (dept.id.startsWith('new-')) {
+    (cleanData as any).createdAt = new Date().toISOString();
+  }
+
+  await setDoc(deptDoc, cleanData, { merge: true });
+}
+
+export async function deleteDepartment(id: string) {
+  await deleteDoc(doc(db, 'departments', id));
 }
 
 // ─── User Profile Helpers ──────────────────────────────────────────

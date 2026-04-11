@@ -1,45 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ClipboardList, CheckCircle, AlertTriangle,
-  TrendingUp, TrendingDown, Minus, Clock, AlertCircle, CircleOff, Inbox
+  BarChart3, CheckCircle2, AlertTriangle,
+  TrendingUp, TrendingDown, Minus, ShieldCheck, Inbox, Zap, Info
 } from 'lucide-react';
 import AnimatedCounter from '@/components/shared/AnimatedCounter';
 import MiniChart from '@/components/shared/MiniChart';
 import { tasks } from '@/lib/data';
 import type { Task } from '@/lib/types';
 
-// 6 essential KPIs — replaced NCR with Not Started
+// 5 High-Fidelity KPIs for Execution Phase
 const kpiData = [
-  { id: 'kpi1', label: 'Active Tasks', value: 0, prev: 0, icon: <ClipboardList size={18} />, color: '#D4AF37', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: false },
-  { id: 'kpi2', label: 'Completed', value: 0, prev: 0, icon: <CheckCircle size={18} />, color: '#10b981', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: false },
-  { id: 'kpi3', label: 'Pending Review', value: 0, prev: 0, icon: <Clock size={18} />, color: '#f59e0b', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true },
-  { id: 'kpi4', label: 'Critical', value: 0, prev: 0, icon: <AlertTriangle size={18} />, color: '#ef4444', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true },
-  { id: 'kpi5', label: 'Delayed', value: 0, prev: 0, icon: <AlertCircle size={18} />, color: '#ef4444', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true },
-  { id: 'kpi6', label: 'Not Started', value: 0, prev: 0, icon: <CircleOff size={18} />, color: '#94a3b8', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true },
+  { id: 'kpi1', label: 'Global Registry', value: 0, prev: 0, icon: <BarChart3 size={18} />, color: '#6366f1', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: false },
+  { id: 'kpi2', label: 'Execution Velocity', value: 0, prev: 0, icon: <Zap size={18} />, color: '#10b981', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: false, isPercent: true },
+  { id: 'kpi3', label: 'Critical Blockers', value: 0, prev: 0, icon: <AlertTriangle size={18} />, color: '#f43f5e', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true, isBadMetric: true },
+  { id: 'kpi4', label: 'Operational Risks', value: 0, prev: 0, icon: <AlertTriangle size={18} />, color: '#f59e0b', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true, isBadMetric: true },
+  { id: 'kpi5', label: 'Success Milestone', value: 0, prev: 0, icon: <CheckCircle2 size={18} />, color: '#06b6d4', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true },
 ];
 
 // Map KPI labels to task filter functions
 function getRelatedTasks(label: string, taskList: Task[]) {
   switch (label) {
-    case 'Pending Review': return taskList.filter((t: Task) => t.status === 'PENDING_REVIEW');
-    case 'Critical': return taskList.filter((t: Task) => t.priority === 'CRITICAL' && t.status !== 'COMPLETED');
-    case 'Delayed': return taskList.filter((t: Task) => t.status === 'DELAYED');
-    case 'Not Started': return taskList.filter((t: Task) => t.status === 'NOT_STARTED');
+    case 'Critical Blockers': return taskList.filter((t: Task) => t.status === 'BLOCKED');
+    case 'Operational Risks': return taskList.filter((t: Task) => t.status === 'DELAYED');
+    case 'Success Milestone': return taskList.filter((t: Task) => t.status === 'COMPLETED');
     default: return [];
   }
 }
 
-function getPriorityColor(p: string) {
-  switch (p) {
-    case 'CRITICAL': return '#ef4444';
-    case 'HIGH': return '#fbbf24';
-    case 'MEDIUM': return '#D4AF37';
-    default: return '#94a3b8';
-  }
-}
 
 function getStatusColor(s: string) {
   switch (s) {
@@ -51,35 +41,59 @@ function getStatusColor(s: string) {
   }
 }
 
-export default function KPICards({ tasks: externalTasks, onTaskClick }: { tasks?: Task[]; onTaskClick?: (task: Task) => void }) {
+export default function KPICards({ tasks: externalTasks, prevTasks = [], onTaskClick }: { tasks?: Task[]; prevTasks?: Task[]; onTaskClick?: (task: Task) => void }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // Use external tasks if provided, otherwise fallback to mock
   const dataToUse = externalTasks || tasks;
 
   // Dynamic values based on tasks data
-  const dynamicKpiData = kpiData.map(kpi => {
-    let value = kpi.value;
-    switch (kpi.label) {
-      case 'Active Tasks': value = dataToUse.filter((t: Task) => t.status !== 'COMPLETED').length; break;
-      case 'Completed': value = dataToUse.filter((t: Task) => t.status === 'COMPLETED').length; break;
-      case 'Pending Review': value = dataToUse.filter((t: Task) => t.status === 'PENDING_REVIEW').length; break;
-      case 'Critical': value = dataToUse.filter((t: Task) => t.priority === 'CRITICAL' && t.status !== 'COMPLETED').length; break;
-      case 'Delayed': value = dataToUse.filter((t: Task) => t.status === 'DELAYED').length; break;
-      case 'Not Started': value = dataToUse.filter((t: Task) => t.status === 'NOT_STARTED').length; break;
-    }
-    return { ...kpi, value };
-  });
+  const dynamicKpiData = useMemo(() => {
+    return kpiData.map(kpi => {
+      let value = 0;
+      let prevValue = 0;
+
+      switch (kpi.label) {
+        case 'Global Registry':
+          value = dataToUse.length;
+          prevValue = prevTasks.length;
+          break;
+        case 'Execution Velocity':
+          value = dataToUse.length > 0 
+            ? Math.round((dataToUse.filter(t => t.status === 'COMPLETED').length / dataToUse.length) * 100) 
+            : 0;
+          prevValue = prevTasks.length > 0 
+            ? Math.round((prevTasks.filter(t => t.status === 'COMPLETED').length / prevTasks.length) * 100) 
+            : 0;
+          break;
+        case 'Critical Blockers':
+          value = dataToUse.filter(t => t.status === 'BLOCKED').length;
+          prevValue = prevTasks.filter(t => t.status === 'BLOCKED').length;
+          break;
+        case 'Operational Risks':
+          value = dataToUse.filter(t => t.status === 'DELAYED').length;
+          prevValue = prevTasks.filter(t => t.status === 'DELAYED').length;
+          break;
+        case 'Success Milestone':
+          value = dataToUse.filter(t => t.status === 'COMPLETED').length;
+          prevValue = prevTasks.filter(t => t.status === 'COMPLETED').length;
+          break;
+      }
+
+      const trend = value > prevValue ? 'up' : value < prevValue ? 'down' : 'neutral';
+      return { ...kpi, value, prev: prevValue, trend };
+    });
+  }, [dataToUse, prevTasks]);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
       {dynamicKpiData.map((kpi, i) => {
         const pctChange = kpi.prev > 0 ? Math.abs(Math.round(((kpi.value - kpi.prev) / kpi.prev) * 100)) : 0;
         const TrendIcon = kpi.trend === 'up' ? TrendingUp : kpi.trend === 'down' ? TrendingDown : Minus;
-        const isBadMetric = ['Critical', 'Delayed'].includes(kpi.label);
+        const isBadMetric = (kpi as any).isBadMetric || false;
         const trendColor = isBadMetric
-          ? (kpi.trend === 'up' ? '#ef4444' : '#10b981')
-          : (kpi.trend === 'up' ? '#10b981' : '#ef4444');
+          ? (kpi.trend === 'up' ? '#f43f5e' : kpi.trend === 'down' ? '#10b981' : '#94a3b8')
+          : (kpi.trend === 'up' ? '#10b981' : kpi.trend === 'down' ? '#f43f5e' : '#94a3b8');
 
         const relatedTasks = kpi.hoverable ? getRelatedTasks(kpi.label, dataToUse) : [];
         const isHovered = hoveredId === kpi.id;
@@ -103,7 +117,11 @@ export default function KPICards({ tasks: externalTasks, onTaskClick }: { tasks?
               <div style={{ width: 32, height: 32, borderRadius: 10, background: `${kpi.color}15`, color: kpi.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {kpi.icon}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 3, color: trendColor }}>
+              <div style={{ 
+                display: 'flex', alignItems: 'center', gap: 3, 
+                color: trendColor,
+                visibility: kpi.label === 'Tasks Count' ? 'hidden' : 'visible'
+              }}>
                 <TrendIcon size={14} />
                 <span style={{ fontSize: 13, fontWeight: 600 }}>{pctChange}%</span>
               </div>
@@ -112,13 +130,15 @@ export default function KPICards({ tasks: externalTasks, onTaskClick }: { tasks?
             {/* Bottom row: Value+Label left, Sparkline right */}
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
               <div>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'baseline', gap: 4 }}>
                 <AnimatedCounter value={kpi.value} className="text-2xl font-bold text-[var(--text-primary)]" />
+                {(kpi as any).isPercent && <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-dim)' }}>%</span>}
                 <div 
                   style={{ 
                     width: 6, height: 6, borderRadius: '50%', background: '#10b981', 
                     boxShadow: '0 0 10px rgba(16,185,129,0.6)', 
-                    display: kpi.value > 0 ? 'block' : 'none'
+                    display: kpi.value > 0 ? 'block' : 'none',
+                    marginLeft: 4
                   }} 
                   className="pulse-dot" 
                 />
@@ -142,7 +162,7 @@ export default function KPICards({ tasks: externalTasks, onTaskClick }: { tasks?
                     left: '50%',
                     right: 'auto',
                     marginTop: 8,
-                    zIndex: 100,
+                    zIndex: 5000,
                     width: 340,
                     borderRadius: 14,
                     background: 'rgba(12, 12, 20, 0.96)',
@@ -195,14 +215,7 @@ export default function KPICards({ tasks: externalTasks, onTaskClick }: { tasks?
                               {task.title}
                             </p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{task.assigneeName}</span>
-                              <span style={{ color: 'var(--text-dim)' }}>•</span>
-                              <span style={{
-                                fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 4,
-                                color: getPriorityColor(task.priority), background: `${getPriorityColor(task.priority)}15`,
-                              }}>
-                                {task.priority}
-                              </span>
+                              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{task.department}</span>
                             </div>
                           </div>
                           <span style={{
@@ -223,7 +236,7 @@ export default function KPICards({ tasks: externalTasks, onTaskClick }: { tasks?
                   ) : (
                     <div style={{ padding: '20px 0', textAlign: 'center' }}>
                       <Inbox size={24} style={{ color: kpi.color, margin: '0 auto 10px', opacity: 0.5 }} />
-                      <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 2 }}>No current data available</p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 2 }}>No current data</p>
                       <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>Waiting for system activity</p>
                     </div>
                   )}

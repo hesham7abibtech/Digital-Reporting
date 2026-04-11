@@ -95,13 +95,13 @@ function ChartCard({ title, children, delay = 0, height = 160 }: { title: string
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.4 }}>
       <GlassCard padding="sm" hover={false}>
         <h3 style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', padding: '10px 14px 0', letterSpacing: '0.01em' }}>{title}</h3>
-        <div style={{ width: '100%', height, minHeight: height, padding: '4px 6px 12px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ width: '100%', height, minHeight: height, padding: '4px 6px 12px', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {mounted ? (
-            <div style={{ width: '100%', height: '100%', minWidth: 0, position: 'relative' }}>
+            <div style={{ flex: 1, width: '100%', minHeight: 140, position: 'relative' }}>
               {children}
             </div>
           ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', fontSize: 12 }}>Loading…</div>
+            <div style={{ flex: 1, width: '100%', minHeight: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', fontSize: 12 }}>Loading…</div>
           )}
         </div>
       </GlassCard>
@@ -166,11 +166,10 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
 
   const delayedData = useMemo(() => {
     const delayedCount = data.filter(t => t.status === 'DELAYED').length;
-    const criticalCount = data.filter(t => t.priority === 'CRITICAL' && t.status !== 'COMPLETED').length;
     
     // Reset to only show Live point from current Firestore data
     return [
-      { name: 'Live', value: delayedCount + criticalCount },
+      { name: 'Live', value: delayedCount },
     ];
   }, [data]);
 
@@ -179,7 +178,7 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
       <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
       </div>
-      <span style={{ fontSize: 12, fontWeight: 500 }}>No current data available</span>
+      <span style={{ fontSize: 12, fontWeight: 500 }}>No current data</span>
     </div>
   );
 

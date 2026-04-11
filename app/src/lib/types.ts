@@ -17,6 +17,7 @@ export interface TaskFile {
   updatedAt: string;
 }
 
+
 export interface RegistryLink {
   label: string;
   url: string;
@@ -29,6 +30,7 @@ export interface DashboardNavItem {
   name: string;
   description?: string;
   status: RegistryStatus;
+  department?: string;
   icon: string; // lucide icon name
   category: string;
   customCategory?: string;
@@ -45,26 +47,17 @@ export interface Task {
   id: string;
   title: string;
   description: string;
-  assigneeId: string;
-  assigneeName: string;
-  assigneeAvatar: string;
   department: string;
-  priority: Priority;
   status: TaskStatus;
-  dueDate: string;
   completion: number;
   attachments: number;
   files: TaskFile[];
   links: TaskLink[];
   tags: string[];
-  requestDate: string;
   fileZone: string; // Internal tracking
   timeZone: string;
   fileShareLink: string;
-  requesterName: string;
   pendingReviewDate?: string | null; // When task entered PENDING_REVIEW status
-  reviewingEntity?: string | null;
-  responsiblePerson?: string | null;
   actualStartDate?: string | null;
   actualEndDate?: string | null;
 
@@ -109,6 +102,7 @@ export interface GroupPolicy {
   id: string;
   name: string;
   description: string;
+  isTeammatePolicy?: boolean;
   modules: {
     tasks: PolicyActions;
     team: PolicyActions;
@@ -116,6 +110,8 @@ export interface GroupPolicy {
     registry: PolicyActions;
     users: PolicyActions;
     policies: PolicyActions;
+    broadcast: PolicyActions;
+    reports: PolicyActions;
   };
   createdAt: string;
   updatedAt: string;
@@ -209,6 +205,13 @@ export interface ChartDataPoint {
   [key: string]: string | number;
 }
 
+export interface ReportSummaryField {
+  id: string;
+  label: string;
+  value?: string;
+  isVisible: boolean;
+}
+
 // ─── Project Metadata Types ───────────────────────────────────────
 export interface ProjectMetadata {
   id: string; // usually 'project'
@@ -231,6 +234,23 @@ export interface ProjectMetadata {
   headerBgPositionY?: number;
   headerBgPositionX?: number;
   allowedDomains?: string[];
+  reportTitle?: string;
+  reportSubtitle?: string;
+  reportSummary?: string;
+  reportBgColor?: string;
+  reportAccentColor?: string;
+  reportHeaderTextColor?: string;
+  reportPdfBodyTextColor?: string;
+  reportExcelHeaderColor?: string;
+  reportExcelHeaderTextColor?: string;
+  reportExcelAccentColor?: string;
+  reportExcelBodyTextColor?: string;
+  reportPeriodReference?: string;
+  reportTemporalReference?: string;
+  reportBranding?: string;
+  reportFooter?: string;
+  reportExcludedFields?: string[];
+  reportSummaryFields?: ReportSummaryField[];
   updatedAt: string;
 }
 
@@ -240,4 +260,13 @@ export interface NavItem {
   label: string;
   icon: string;
   badge?: number;
+}
+
+// ─── Department Types ─────────────────────────────────────────────
+export interface Department {
+  id: string;
+  name: string;
+  abbreviation: string;
+  createdAt: string;
+  updatedAt: string;
 }

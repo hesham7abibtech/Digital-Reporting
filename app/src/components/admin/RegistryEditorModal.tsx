@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { X, Save, Trash2, Layout, Link as LinkIcon, Info, Loader2, Shield } from 'lucide-react';
 import { DashboardNavItem } from '@/lib/types';
@@ -8,6 +8,10 @@ import { upsertRegistryItem, deleteRegistryItem } from '@/services/FirebaseServi
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import { useToast } from '@/components/shared/EliteToast';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Department } from '@/lib/types';
 
 interface RegistryEditorProps {
   item: DashboardNavItem | null;
@@ -15,9 +19,15 @@ interface RegistryEditorProps {
   onClose: () => void;
   readOnly?: boolean;
   canDelete?: boolean;
+  departments?: Department[];
 }
 
-export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, canDelete }: RegistryEditorProps) {
+export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, canDelete, departments: propsDepts }: RegistryEditorProps) {
+  const [deptsSnapshot] = useCollection(query(collection(db, 'departments'), orderBy('name', 'asc')));
+  const availableDepartments = useMemo(() => 
+    propsDepts || deptsSnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as Department)) || [], 
+  [propsDepts, deptsSnapshot]);
+
   const [formData, setFormData] = useState<Partial<DashboardNavItem>>({
     name: '',
     category: 'DASHBOARD',
@@ -39,6 +49,7 @@ export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, c
         icon: 'LayoutDashboard',
         status: 'LIVE',
         category: 'DASHBOARD',
+        department: '',
         links: []
       });
     }
@@ -179,6 +190,20 @@ export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, c
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Department</label>
+              <select 
+                value={formData.department || ''} 
+                onChange={e => setFormData({ ...formData, department: e.target.value })} 
+                disabled={readOnly}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(20,20,30,1)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.3)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer' }}
+              >
+                <option value="">Select Department</option>
+                {availableDepartments?.map(dept => (
+                  <option key={dept.id} value={dept.name}>{dept.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Category</label>
               <select 
                 value={formData.category || 'DASHBOARD'} 
@@ -191,20 +216,21 @@ export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, c
                 <option value="OTHER">Other (Manual Input)</option>
               </select>
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Status</label>
-              <select 
-                value={formData.status} 
-                onChange={e => setFormData({ ...formData, status: e.target.value as any })} 
-                disabled={readOnly}
-                style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(20,20,30,1)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.3)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer' }}
-              >
-                <option value="LIVE">Live</option>
-                <option value="HOLD">Hold</option>
-                <option value="BLOCKED">Blocked</option>
-                <option value="MAINTENANCE">Maintenance</option>
-              </select>
-            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase' }}>Status</label>
+            <select 
+              value={formData.status} 
+              onChange={e => setFormData({ ...formData, status: e.target.value as any })} 
+              disabled={readOnly}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(20,20,30,1)', border: '1px solid rgba(255,255,255,0.06)', color: readOnly ? 'rgba(255,255,255,0.3)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer' }}
+            >
+              <option value="LIVE">Live</option>
+              <option value="HOLD">Hold</option>
+              <option value="BLOCKED">Blocked</option>
+              <option value="MAINTENANCE">Maintenance</option>
+            </select>
           </div>
 
           {formData.category === 'OTHER' && (

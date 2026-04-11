@@ -5,7 +5,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
-import { ToastProvider } from '@/components/shared/EliteToast';
 
 export default function AdminLayout({
   children,
@@ -56,7 +55,7 @@ export default function AdminLayout({
     return null;
   }
 
-  return <ToastProvider>{children}</ToastProvider>;
+  return <>{children}</>;
 }
 
 

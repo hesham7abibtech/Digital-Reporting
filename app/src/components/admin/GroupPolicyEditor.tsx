@@ -19,6 +19,7 @@ const MODULES = [
   { id: 'team', label: 'Team Orchestration', description: 'Personnel management & access' },
   { id: 'branding', label: 'Identity Designer', description: 'Global aesthetics & metadata' },
   { id: 'registry', label: 'Asset Registry', description: 'Digital resource management' },
+  { id: 'broadcast', label: 'Communications Hub', description: 'Real-time alert dispatch & transmission' },
   { id: 'users', label: 'Access Control', description: 'User account security' },
   { id: 'policies', label: 'Group Policy', description: 'Permission infrastructure' },
 ];
@@ -140,6 +141,29 @@ export default function GroupPolicyEditor({ policy, isOpen, onClose }: GroupPoli
                 placeholder="Brief description of authorization scope..."
               />
             </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 40, background: 'rgba(212, 175, 55, 0.05)', borderRadius: 16, border: '1px solid rgba(212, 175, 55, 0.1)', padding: 16 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#D4AF37' }}>TEAM MATE RESTRICTION PROTOCOL</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>When activated, subjects are restricted to viewing only their exclusively assigned Digital Deliverables.</div>
+            </div>
+            <button
+               type="button"
+               onClick={() => setFormData({ ...formData, isTeammatePolicy: !formData.isTeammatePolicy })}
+               style={{
+                 width: 50, height: 28, borderRadius: 14, border: 'none', position: 'relative', cursor: 'pointer', transition: 'all 200ms',
+                 background: formData.isTeammatePolicy ? '#D4AF37' : 'rgba(255,255,255,0.1)'
+               }}
+            >
+               <motion.div
+                 layout
+                 style={{
+                   width: 20, height: 20, borderRadius: '50%', background: formData.isTeammatePolicy ? '#0a0a0f' : 'white',
+                   position: 'absolute', top: 4, left: formData.isTeammatePolicy ? 26 : 4
+                 }}
+               />
+            </button>
           </div>
 
           <div style={{ background: 'rgba(255,255,255,0.01)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.03)', overflow: 'hidden' }}>

@@ -5,6 +5,7 @@ import { Bell, Search, Globe, ChevronDown, Loader2, X, Clock as ClockIcon } from
 import { usePathname } from 'next/navigation';
 import { notifications } from '@/lib/data';
 import { useTimeZone } from '@/context/TimeZoneContext';
+import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ProjectMetadata } from '@/lib/types';
 
@@ -23,6 +24,8 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const isAdminPage = pathname.startsWith('/admin');
+  const isAuthPage = pathname === '/admin/login';
+  const { userProfile } = useAuth();
 
   useEffect(() => {
     function updateTime() {
@@ -88,24 +91,6 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
         {(!project?.partnerLogos || project.partnerLogos.length === 0) && (
           <span style={{ fontSize: 16, fontWeight: 900, letterSpacing: '0.1em', color: 'white' }}>COMMAND CENTER</span>
         )}
-      </div>
-
-      {/* Search hub network... - Centered Absolutely */}
-      <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 400 }}>
-        <div style={{ position: 'relative', width: '100%' }}>
-          <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input
-            type="text"
-            placeholder="Search hub network..."
-            style={{
-              width: '100%', paddingLeft: 40, paddingRight: 50, paddingTop: 8, paddingBottom: 8,
-              borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-              fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'all 200ms'
-            }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.4)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
-          />
-        </div>
       </div>
 
       {/* Right */}
@@ -248,24 +233,26 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
 
         {/* Notifications & User */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button
-            onClick={onNotificationClick}
-            style={{
-              position: 'relative', padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)',
-              cursor: 'pointer', background: 'rgba(255,255,255,0.03)', transition: 'all 200ms',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}
-          >
-            <Bell size={20} color="white" />
-            {unreadCount > 0 && (
-              <span style={{ position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: 10, background: '#ef4444', border: '2px solid #0c0c14', color: 'white', fontSize: 11, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(239, 68, 68, 0.4)' }}>
-                {unreadCount}
-              </span>
-            )}
-          </button>
+          {!isAuthPage && (
+            <button
+              onClick={onNotificationClick}
+              style={{
+                position: 'relative', padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)',
+                cursor: 'pointer', background: 'rgba(255,255,255,0.03)', transition: 'all 200ms',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+              <Bell size={20} color="white" />
+              {unreadCount > 0 && (
+                <span style={{ position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: 10, background: '#ef4444', border: '2px solid #0c0c14', color: 'white', fontSize: 11, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(239, 68, 68, 0.4)' }}>
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+          )}
           
-          {/* Elite User Card Trigger - Only in Admin Portal */}
-          {isAdminPage && (
+          {/* Elite User Card Trigger - Hidden during Auth - Dynamic after Login */}
+          {isAdminPage && !isAuthPage && userProfile && (
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -278,11 +265,11 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
               boxShadow: '0 0 15px rgba(212, 175, 55, 0.15)'
             }}>
               <div style={{ width: 32, height: 32, borderRadius: 10, overflow: 'hidden', background: '#D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0a0a0f', fontWeight: 900, fontSize: 13, boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
-                AR
+                {userProfile.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'AD'}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: 13, fontWeight: 800, color: 'white', lineHeight: 1 }}>Hesham Habib</span>
-                <span style={{ fontSize: 10, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 1 }}>OWNER ACCESS</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: 'white', lineHeight: 1 }}>{userProfile.name}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 1 }}>{userProfile.role || 'ADMIN'}</span>
               </div>
             </div>
           )}

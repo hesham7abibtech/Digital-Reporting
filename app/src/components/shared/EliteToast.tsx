@@ -10,10 +10,11 @@ interface Toast {
   id: string;
   message: string;
   type: ToastType;
+  progress?: number; // Optional percentage (0-100)
 }
 
 interface ToastContextType {
-  showToast: (message: string, type?: ToastType) => void;
+  showToast: (message: string, type?: ToastType, progress?: number) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -27,12 +28,30 @@ export function useToast() {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = useCallback((message: string, type: ToastType = 'SUCCESS') => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 5000);
+  const showToast = useCallback((message: string, type: ToastType = 'SUCCESS', progress?: number) => {
+    let targetId = Math.random().toString(36).substring(2, 9);
+    
+    setToasts((prev) => {
+      // Check if we are updating an existing progress toast
+      const existing = prev.find(t => t.message === message && t.progress !== undefined);
+      
+      if (existing) {
+        // Use the existing ID so the update and timeout are synchronized
+        targetId = existing.id;
+        if (progress !== undefined) {
+          return prev.map(t => t.id === existing.id ? { ...t, progress } : t);
+        }
+      }
+      
+      return [...prev, { id: targetId, message, type, progress }];
+    });
+
+    // Only auto-dismiss if it's a standard toast or a progress toast that reached completion
+    if (progress === undefined || progress === 100) {
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== targetId));
+      }, 5000);
+    }
   }, []);
 
   const removeToast = (id: string) => {
@@ -110,6 +129,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 }}>
                   <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'currentColor' }} />
                   {toast.type === 'SUCCESS' ? 'Protocol Executed' : toast.type === 'ERROR' ? 'System Breach' : 'Data Beacon'}
+                  {toast.progress !== undefined && (
+                    <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 10, opacity: 0.8 }}>
+                      {toast.progress}%
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {toast.message}
@@ -139,11 +163,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 </button>
               </div>
 
-              {/* Progress Bar */}
+              {/* Progress Bar (Left to Right) */}
               <motion.div
-                initial={{ scaleX: 1 }}
-                animate={{ scaleX: 0 }}
-                transition={{ duration: 5, ease: 'linear' }}
+                initial={toast.progress === undefined ? { scaleX: 0 } : false}
+                animate={toast.progress === undefined ? { scaleX: 1 } : { scaleX: toast.progress / 100 }}
+                transition={toast.progress === undefined ? { duration: 5, ease: 'linear' } : { duration: 0.3 }}
                 style={{
                   position: 'absolute', bottom: 0, left: 0, right: 0, height: 2,
                   background: toast.type === 'SUCCESS' ? '#10b981' : toast.type === 'ERROR' ? '#ef4444' : '#D4AF37',

@@ -81,6 +81,12 @@ service cloud.firestore {
       allow create, update: if hasPermission('registry', 'edit');
       allow delete: if hasPermission('registry', 'delete');
     }
+
+    match /departments/{deptId} {
+      allow read: if true;
+      allow create, update: if hasPermission('team', 'edit');
+      allow delete: if hasPermission('team', 'delete');
+    }
     
     match /settings/{docId} {
       allow read: if true;
@@ -91,7 +97,7 @@ service cloud.firestore {
     // ─── Administrative Broadcasts ───────────────────────────────────
     
     match /broadcasts/{broadcastId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create: if hasPermission('branding', 'edit');
       allow update: if isAuthenticated() && (
         hasPermission('branding', 'edit') || 
