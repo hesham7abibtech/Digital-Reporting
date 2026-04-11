@@ -98,9 +98,9 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
     return b.type === 'NEWS';
   });
 
-  const unreadCount = broadcasts.filter(b => (!userId || !b.readBy?.includes(userId))).length;
-  const unreadAlerts = broadcasts.filter(b => b.type === 'NOTIF' && (!userId || !b.readBy?.includes(userId))).length;
-  const unreadNews = broadcasts.filter(b => b.type === 'NEWS' && (!userId || !b.readBy?.includes(userId))).length;
+  const unreadCount = userId ? broadcasts.filter(b => (!b.readBy?.includes(userId))).length : 0;
+  const unreadAlerts = userId ? broadcasts.filter(b => b.type === 'NOTIF' && (!b.readBy?.includes(userId))).length : 0;
+  const unreadNews = userId ? broadcasts.filter(b => b.type === 'NEWS' && (!b.readBy?.includes(userId))).length : 0;
 
   async function handleConfirmReceipt(id: string) {
     if (!userId) return;
@@ -113,6 +113,41 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
       console.error('Error confirming receipt:', error);
     }
   }
+
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Automatically mark all as read when opening
+  useEffect(() => {
+    let active = true;
+    if (isOpen && userId && broadcasts.length > 0 && !isProcessing) {
+      const unread = broadcasts.filter(b => {
+        const readList = b.readBy || [];
+        return Array.isArray(readList) && !readList.includes(userId);
+      });
+      
+      if (unread.length > 0) {
+        // Execute batched receipt for architectural clean-sweep
+        const markAll = async () => {
+          setIsProcessing(true);
+          try {
+            const { writeBatch, doc } = await import('firebase/firestore');
+            const batch = writeBatch(db);
+            unread.forEach(b => {
+              const ref = doc(db, 'broadcasts', b.id);
+              batch.update(ref, { readBy: arrayUnion(userId) });
+            });
+            if (active) await batch.commit();
+          } catch (e) {
+            console.error("Batch Acknowledgment Protocol Failed:", e);
+          } finally {
+            if (active) setIsProcessing(false);
+          }
+        };
+        markAll();
+      }
+    }
+    return () => { active = false; };
+  }, [isOpen, userId, broadcasts, isProcessing]);
 
   return (
     <AnimatePresence>
@@ -215,7 +250,9 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
               {filtered.map((item, i) => {
                 const config = severityConfig[item.severity] || severityConfig.INFO;
                 const Icon = config.icon;
-                const isRead = userId && item.readBy?.includes(userId);
+                // Explicit unread check: Only true if we have a user and they are NOT in the readBy list
+                const isUnread = !!(userId && !item.readBy?.includes(userId));
+                const isRead = !isUnread;
 
                 return (
                   <motion.div

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Bell, Search, Globe, ChevronDown, Loader2, X, Clock as ClockIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { notifications } from '@/lib/data';
@@ -14,10 +14,11 @@ import type { ProjectMetadata } from '@/lib/types';
 
 interface HeaderProps {
   onNotificationClick: () => void;
+  isNotificationOpen?: boolean;
   project?: ProjectMetadata;
 }
 
-export default function Header({ onNotificationClick, project }: HeaderProps) {
+export default function Header({ onNotificationClick, isNotificationOpen = false, project }: HeaderProps) {
   const pathname = usePathname();
   const { selectedTimeZone, setTimeZone, isUpdating, timeZones } = useTimeZone();
   const [showTZMenu, setShowTZMenu] = useState(false);
@@ -26,7 +27,7 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
   const [date, setDate] = useState('');
   const { userProfile } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [lastBroadcastId, setLastBroadcastId] = useState<string | null>(null);
+  const lastBroadcastIdRef = useRef<string | null>(null);
   const [isReceiving, setIsReceiving] = useState(false);
   const { showToast } = useToast();
 
@@ -35,33 +36,44 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
     
     const unsubscribe = onSnapshot(q, (snapshot: any) => {
       const docs = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() }));
-      const currentUserId = auth.currentUser?.uid;
+      const currentUserId = userProfile?.uid;
       
-      const unreadBroadcasts = docs.filter((b: any) => 
-        (!currentUserId || !b.readBy?.includes(currentUserId))
-      );
+      // Surgical filter: Only count if user ID is definitively resolved and matches
+      const unreadBroadcasts = docs.filter((b: any) => {
+        if (!currentUserId) return false; // Prevent logic forcing during auth hydration
+        return !b.readBy?.includes(currentUserId);
+      });
       
       const newCount = unreadBroadcasts.length;
       
       // Trigger Receiving Effect if new notification arrives
       if (docs.length > 0) {
         const latestId = docs[0].id;
-        if (lastBroadcastId && latestId !== lastBroadcastId) {
-          setIsReceiving(true);
-          setTimeout(() => setIsReceiving(false), 2000);
-          
-          if (docs[0].type === 'NOTIF') {
-            showToast(`DECRYPTED PACKET: ${docs[0].title}`, docs[0].severity === 'CRITICAL' ? 'ERROR' : 'INFO');
+        // Compare with ref to avoid dependency cycle
+        if (lastBroadcastIdRef.current && latestId !== lastBroadcastIdRef.current && !isNotificationOpen) {
+          // Only pulse if it's genuinely new and unread
+          const isActuallyNew = !docs[0].readBy?.includes(currentUserId);
+          if (isActuallyNew) {
+            setIsReceiving(true);
+            setTimeout(() => setIsReceiving(false), 2000);
+            
+            if (docs[0].type === 'NOTIF') {
+              showToast(`DECRYPTED PACKET: ${docs[0].title}`, docs[0].severity === 'CRITICAL' ? 'ERROR' : 'INFO');
+            }
           }
         }
-        setLastBroadcastId(latestId);
+        lastBroadcastIdRef.current = latestId;
       }
       
       setUnreadCount(newCount);
     });
 
     return () => unsubscribe();
-  }, [lastBroadcastId, showToast]);
+  }, [showToast, userProfile?.uid]);
+
+  // Optimistic UI: Hide badge/glow if the panel is currently open
+  const effectiveUnreadCount = isNotificationOpen ? 0 : unreadCount;
+  const showEffects = effectiveUnreadCount > 0;
 
   const isAdminPage = pathname.startsWith('/admin');
   const isAuthPage = pathname === '/admin/login';
@@ -296,7 +308,7 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
                         exit={{ opacity: 0 }}
                         transition={{ duration: 1.2, delay: ring * 0.2, ease: "easeOut" }}
                         style={{
-                          position: 'absolute', inset: 0, borderRadius: 12, border: '1px solid #D4AF37',
+                          position: 'absolute', inset: 0, borderRadius: 12, border: '1px solid #3b82f6',
                           pointerEvents: 'none', zIndex: -1
                         }}
                       />
@@ -306,9 +318,9 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
               </AnimatePresence>
 
               {/* Status Indicator Glow */}
-              {unreadCount > 0 && (
+              {showEffects && (
                 <div 
-                  style={{ position: 'absolute', inset: -4, borderRadius: 14, background: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.2)', opacity: 0.6 }} 
+                  style={{ position: 'absolute', inset: -4, borderRadius: 14, background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)', opacity: 0.6 }} 
                   className="notification-glow"
                 />
               )}
@@ -320,17 +332,24 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
                   transition: { duration: 0.8 }
                 } : {}}
               >
-                <Bell size={20} color={unreadCount > 0 ? "#D4AF37" : "white"} />
+                <Bell size={20} color={showEffects ? "#3b82f6" : "white"} />
               </motion.div>
 
               <AnimatePresence>
-                {unreadCount > 0 && (
+                {showEffects && (
                   <motion.span 
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0, opacity: 0 }}
-                    style={{ position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: 10, background: '#ef4444', border: '2px solid #0c0c14', color: 'white', fontSize: 11, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(239, 68, 68, 0.4)' }}>
-                    {unreadCount}
+                    style={{ 
+                      position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, 
+                      borderRadius: 10, background: '#3b82f6', 
+                      border: '2px solid #0c0c14', color: 'white', 
+                      fontSize: 11, fontWeight: 900, 
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                      boxShadow: '0 0 10px rgba(59, 130, 246, 0.4)' 
+                    }}>
+                    {effectiveUnreadCount}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -339,9 +358,9 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
           
           <style jsx global>{`
             @keyframes notifGlow {
-              0% { box-shadow: 0 0 5px rgba(212, 175, 55, 0.1); opacity: 0.4; }
-              50% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); opacity: 0.8; }
-              100% { box-shadow: 0 0 5px rgba(212, 175, 55, 0.1); opacity: 0.4; }
+              0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.1); opacity: 0.4; }
+              50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); opacity: 0.8; }
+              100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.1); opacity: 0.4; }
             }
             .notification-glow {
               animation: notifGlow 2s infinite ease-in-out;
