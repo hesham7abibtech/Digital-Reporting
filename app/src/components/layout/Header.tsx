@@ -37,11 +37,11 @@ export default function Header({ onNotificationClick, project }: HeaderProps) {
       const docs = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() }));
       const currentUserId = auth.currentUser?.uid;
       
-      const unreadAlerts = docs.filter((b: any) => 
-        b.type === 'NOTIF' && (!currentUserId || !b.readBy?.includes(currentUserId))
+      const unreadBroadcasts = docs.filter((b: any) => 
+        (!currentUserId || !b.readBy?.includes(currentUserId))
       );
       
-      const newCount = unreadAlerts.length;
+      const newCount = unreadBroadcasts.length;
       
       // Trigger Receiving Effect if new notification arrives
       if (docs.length > 0) {

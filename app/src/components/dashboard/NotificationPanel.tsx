@@ -98,7 +98,9 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
     return b.type === 'NEWS';
   });
 
+  const unreadCount = broadcasts.filter(b => (!userId || !b.readBy?.includes(userId))).length;
   const unreadAlerts = broadcasts.filter(b => b.type === 'NOTIF' && (!userId || !b.readBy?.includes(userId))).length;
+  const unreadNews = broadcasts.filter(b => b.type === 'NEWS' && (!userId || !b.readBy?.includes(userId))).length;
 
   async function handleConfirmReceipt(id: string) {
     if (!userId) return;
@@ -182,7 +184,7 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
                   <span className="leading-none" style={{ paddingTop: '1.5px' }}>Operational Alerts</span>
                   {unreadAlerts > 0 && (
                     <span className="ml-1.5 w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[9px] font-black shadow-lg shadow-blue-500/20">
-                      {unreadAlerts}
+                      {activeTab === 'ALERTS' ? unreadAlerts : unreadNews}
                     </span>
                   )}
                 </button>
@@ -223,13 +225,13 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
                     transition={{ delay: i * 0.05 + 0.1 }}
                     onClick={() => !isRead && handleConfirmReceipt(item.id)}
                     className={`group relative border transition-all duration-500 cursor-pointer
-                      ${!isRead && item.type === 'NOTIF' ? 'shadow-[0_10px_20px_-10px_rgba(0,0,0,0.5)]' : 'hover:opacity-100'}`}
+                      ${!isRead ? 'shadow-[0_10px_20px_-10px_rgba(0,0,0,0.5)]' : 'hover:opacity-100'}`}
                     style={{
                       padding: '10px 16px',
                       borderRadius: '20px',
-                      backgroundColor: !isRead && item.type === 'NOTIF' ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.01)',
-                      borderColor: !isRead && item.type === 'NOTIF' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)',
-                      opacity: !isRead && item.type === 'NOTIF' ? 1 : 0.8,
+                      backgroundColor: !isRead ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.01)',
+                      borderColor: !isRead ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)',
+                      opacity: !isRead ? 1 : 0.8,
                       transform: 'translateZ(0)'
                     }}
                   >
