@@ -11,7 +11,7 @@ import { getDepartmentColor } from '@/lib/utils';
 import { useTimeZone } from '@/context/TimeZoneContext';
 import EliteDropdown from '@/components/dashboard/EliteDropdown';
 
-type SortField = 'title' | 'status' | 'completion' | 'actualStartDate' | 'actualEndDate' | 'id' | 'department';
+type SortField = 'title' | 'status' | 'completion' | 'submittingDate' | 'id' | 'department';
 type SortDir = 'asc' | 'desc';
 
 
@@ -54,20 +54,11 @@ function TaskRow({ task, index, onClick }: { task: Task; index: number; onClick?
         </div>
       </td>
 
-      {/* 5. Start Date */}
+      {/* 5. Submitting Date */}
       <td style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', opacity: task.actualStartDate ? 1 : 0.4 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: task.actualStartDate ? '#D4AF37' : 'inherit' }}>
-            {task.actualStartDate ? formatDate(task.actualStartDate) : '—'}
-          </span>
-        </div>
-      </td>
-
-      {/* 6. Finish Date */}
-      <td style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', opacity: (task.actualEndDate && task.status === 'COMPLETED') ? 1 : 0.4 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: (task.actualEndDate && task.status === 'COMPLETED') ? '#10b981' : 'inherit' }}>
-            {(task.actualEndDate && task.status === 'COMPLETED') ? formatDate(task.actualEndDate) : '—'}
+        <div style={{ display: 'flex', flexDirection: 'column', opacity: task.submittingDate ? 1 : 0.4 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: task.submittingDate ? '#D4AF37' : 'inherit' }}>
+            {task.submittingDate ? formatDate(task.submittingDate) : '—'}
           </span>
         </div>
       </td>
@@ -164,8 +155,7 @@ export default function ActiveTasks({
       if (sortField === 'title') cmp = a.title.localeCompare(b.title);
       else if (sortField === 'id') cmp = a.id.localeCompare(b.id);
       else if (sortField === 'status') cmp = a.status.localeCompare(b.status);
-      else if (sortField === 'actualStartDate') cmp = new Date(a.actualStartDate || 0).getTime() - new Date(b.actualStartDate || 0).getTime();
-      else if (sortField === 'actualEndDate') cmp = new Date(a.actualEndDate || 0).getTime() - new Date(b.actualEndDate || 0).getTime();
+      else if (sortField === 'submittingDate') cmp = new Date(a.submittingDate || 0).getTime() - new Date(b.submittingDate || 0).getTime();
       else if (sortField === 'department') cmp = a.department.localeCompare(b.department);
       return sortDir === 'asc' ? cmp : -cmp;
     });
@@ -185,8 +175,7 @@ export default function ActiveTasks({
     { label: 'Task Name', field: 'title' as SortField, align: 'center' },
     { label: 'Department Name', field: 'department' as SortField, align: 'center' },
     { label: 'Task Status', field: 'status' as SortField, align: 'center' },
-    { label: 'Start Date', field: 'actualStartDate' as SortField, align: 'center' },
-    { label: 'Finish Date', field: 'actualEndDate' as SortField, align: 'center' },
+    { label: 'Submitting Date', field: 'submittingDate' as SortField, align: 'center' },
     { label: 'Deliverables Links', field: 'id' as SortField, align: 'center' }
   ];
 

@@ -34,6 +34,41 @@ function formatReportDate(dateStr: string | null | undefined): string {
 }
 
 /**
+ * Format date/time to DD-MMM-YYYY HH:MM:SS AM/PM
+ */
+function formatGeneratedOn(): string {
+  const now = new Date();
+  return now.toLocaleString('en-US', { 
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric', 
+    minute: '2-digit', 
+    second: '2-digit', 
+    hour12: true 
+  });
+}
+
+/**
+ * Loads a local image and converts it to base64 for embedding
+ */
+async function loadLogoBase64(path: string): Promise<string> {
+  try {
+    const response = await fetch(path);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    console.error(`Failed to load logo: ${path}`, e);
+    return '';
+  }
+}
+
+/**
  * Helper to consolidate all available links for a task
  */
 function getTaskLinks(t: Task) {
@@ -51,13 +86,20 @@ function getTaskLinks(t: Task) {
  * Convert Hex Color to RGB Array for jsPDF
  */
 function hexToRgb(hex: string): [number, number, number] {
-  if (!hex || typeof hex !== 'string') return [10, 10, 15];
+  if (!hex || typeof hex !== 'string') return [180, 180, 180]; // Default light grey fallback
+
+  // Handle rgba(r,g,b,a)
+  if (hex.startsWith('rgba')) {
+    const match = hex.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) return [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])];
+  }
+
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? [
     parseInt(result[1], 16),
     parseInt(result[2], 16),
     parseInt(result[3], 16)
-  ] : [10, 10, 15];
+  ] : [180, 180, 180];
 }
 
 /**
@@ -75,9 +117,9 @@ export async function exportToExcel(tasks: Task[], metadata: ProjectMetadata | u
   const summarySheet = workbook.addWorksheet('Executive Summary');
   summarySheet.columns = [{ width: 25 }, { width: 50 }];
 
-  summarySheet.addRow(['PROJECT EXECUTIVE SUMMARY']).font = { bold: true, size: 14, color: { argb: 'FFD4AF37' } };
+  summarySheet.addRow(['PROJECT EXECUTIVE SUMMARY']).font = { bold: true, size: 12 };
   summarySheet.addRow([]);
-  
+
   const defaultSummaryFields = [
     { id: 'projectName', label: 'Project Name', value: '', isVisible: true },
     { id: 'reportTitle', label: 'Report Title', value: '', isVisible: true },
@@ -94,11 +136,11 @@ export async function exportToExcel(tasks: Task[], metadata: ProjectMetadata | u
 
     let rowValue = field.value || '';
     if (!rowValue) {
-      if (field.id === 'projectName') rowValue = metadata?.projectName || 'Digital Reporting Hub';
+      if (field.id === 'projectName') rowValue = metadata?.projectName || 'RHK - Wadi Yemm';
       if (field.id === 'reportTitle') rowValue = metadata?.reportTitle || 'Executive Summary Report';
-      if (field.id === 'periodReference') rowValue = metadata?.reportSubtitle || 'Operational Overview';
-      if (field.id === 'activeDate') rowValue = dateRangeText || 'All Temporal Data';
-      if (field.id === 'generatedOn') rowValue = new Date().toLocaleString();
+      if (field.id === 'periodReference') rowValue = metadata?.reportSubtitle || 'Operational Performance & Deliverables';
+      if (field.id === 'activeDate') rowValue = dateRangeText || 'April 2026';
+      if (field.id === 'generatedOn') rowValue = formatGeneratedOn();
       if (field.id === 'totalTasks') rowValue = tasks.length.toString();
     }
 
@@ -106,7 +148,9 @@ export async function exportToExcel(tasks: Task[], metadata: ProjectMetadata | u
       summarySheet.addRow([]);
     }
 
-    summarySheet.addRow([field.label, rowValue]);
+    const row = summarySheet.addRow([field.label, rowValue]);
+    row.getCell(1).font = { bold: true, size: 11 };
+    row.getCell(2).font = { size: 11 };
   });
 
   // Apply basic styling to summary
@@ -125,8 +169,7 @@ export async function exportToExcel(tasks: Task[], metadata: ProjectMetadata | u
     { id: 'title', label: 'Asset / Task Title', width: 45 },
     { id: 'dept', label: 'Department', width: 20 },
     { id: 'status', label: 'Status', width: 20 },
-    { id: 'start', label: 'Start Date (Actual)', width: 20 },
-    { id: 'finish', label: 'Finish Date (Actual)', width: 20 },
+    { id: 'submittingDate', label: 'Submitting Date', width: 20 },
     { id: 'links', label: 'LinksPlaceholder', width: 30 }
   ];
 
@@ -173,8 +216,7 @@ export async function exportToExcel(tasks: Task[], metadata: ProjectMetadata | u
       if (c.id === 'title') rowData.push(t.title);
       if (c.id === 'dept') rowData.push(t.department);
       if (c.id === 'status') rowData.push(t.status.replace(/_/g, ' '));
-      if (c.id === 'start') rowData.push(formatReportDate(t.actualStartDate));
-      if (c.id === 'finish') rowData.push(formatReportDate(t.actualEndDate));
+      if (c.id === 'submittingDate') rowData.push(formatReportDate(t.submittingDate));
       if (c.id === 'links') {
         for (let i = 0; i < maxLinks; i++) {
           rowData.push(taskLinks[i]?.label || '');
@@ -187,19 +229,17 @@ export async function exportToExcel(tasks: Task[], metadata: ProjectMetadata | u
 
     // Style the deliverable links
     if (!excluded.includes('links')) {
-      let excelColIndex = 1;
-      for (const c of visibleColumns) {
-        if (c.id === 'links') break;
-        excelColIndex++;
+      const linksColIndex = visibleColumns.findIndex(c => c.id === 'links');
+      if (linksColIndex !== -1) {
+        // exceljs is 1-indexed for cells
+        taskLinks.slice(0, maxLinks).forEach((link, idx) => {
+          const cell = row.getCell(linksColIndex + 1 + idx);
+          if (link.url) {
+            cell.value = { text: link.label || 'View Deliverable', hyperlink: link.url };
+            cell.font = { color: { argb: 'FF0563C1' }, underline: true };
+          }
+        });
       }
-      
-      taskLinks.slice(0, maxLinks).forEach((link, idx) => {
-        const cell = row.getCell(excelColIndex + idx);
-        if (link.url) {
-          cell.value = { text: link.label || 'View Deliverable', hyperlink: link.url };
-          cell.font = { color: { argb: 'FF0563C1' }, underline: true };
-        }
-      });
     }
 
     // General row alignment
@@ -248,16 +288,35 @@ export async function exportToPDF(tasks: Task[], metadata: ProjectMetadata | und
   doc.setFillColor(...accentColor);
   doc.rect(0, 0, 5, pageHeight, 'F');
 
-  let logoY = 60;
+  // Insert Brand Logos (Symmetrical Placement - Aspect Ratio Preserved)
+  const modonBase64 = await loadLogoBase64('/logos/modon_logo.png');
+  const insiteBase64 = await loadLogoBase64('/logos/insite_logo.png');
+  
+  if (insiteBase64) {
+    const props = doc.getImageProperties(insiteBase64);
+    const h = 20; // Targeted Height
+    const w = (props.width * h) / props.height;
+    doc.addImage(insiteBase64, 'PNG', 20, 15, w, h);
+  }
+  
+  if (modonBase64) {
+    const props = doc.getImageProperties(modonBase64);
+    const h = 11; // Targeted Height (Reduced for balance)
+    const w = (props.width * h) / props.height;
+    doc.addImage(modonBase64, 'PNG', pageWidth - 20 - w, 16, w, h);
+  }
+
+  let logoY = 42; // Professional Padding Alignment to avoid logo overlap
   doc.setTextColor(...headerTextColor);
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text(metadata?.reportBranding || 'KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT', 30, logoY);
+  doc.text(metadata?.reportBranding || 'KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT', 20, logoY);
 
   const defaultSummaryFields = [
     { id: 'projectName', label: 'Project Name', value: '', isVisible: true },
     { id: 'reportTitle', label: 'Report Title', value: '', isVisible: true },
     { id: 'periodReference', label: 'Period Reference', value: '', isVisible: true },
+    { id: 'temporalReference', label: 'Temporal Period', value: '', isVisible: true },
     { id: 'activeDate', label: 'Active Date Range', value: '', isVisible: true },
     { id: 'generatedOn', label: 'Generated On', value: '', isVisible: true },
     { id: 'totalTasks', label: 'Total Tasks Count', value: '', isVisible: true }
@@ -269,48 +328,58 @@ export async function exportToPDF(tasks: Task[], metadata: ProjectMetadata | und
 
   if (reportTitleField && reportTitleField.isVisible) {
     doc.setTextColor(...headerTextColor);
-    doc.setFontSize(48);
+    doc.setFontSize(48); // High Density Elevation
     let val = reportTitleField.value || metadata?.reportTitle || 'EXECUTIVE SUMMARY';
-    doc.text(val, 30, logoY + 25);
+    doc.text(val, 20, logoY + 20);
   }
   
   if (periodRefField && periodRefField.isVisible) {
-    doc.setFontSize(18);
-    doc.setTextColor(...bodyTextColor);
+    doc.setFontSize(18); // Scaled
+    doc.setTextColor(255, 255, 255); // Explicit White for contrast
     let val = periodRefField.value || 'OPERATIONAL PERFORMANCE & DELIVERABLES';
-    doc.text(val, 30, logoY + 40);
+    doc.text(val, 20, logoY + 32);
   }
 
-  let currentY = logoY + 70;
-  doc.setTextColor(...bodyTextColor);
-  doc.setFontSize(14);
+  let currentY = logoY + 60;
+  doc.setFontSize(15); // Increased for full-page fill
 
   fieldsToRender.forEach(field => {
     if (!field.isVisible) return;
-    if (field.id === 'reportTitle' || field.id === 'periodReference') return; // Handled as prominent headers above
+    if (field.id === 'reportTitle' || field.id === 'periodReference') return; 
     
     let rowValue = field.value || '';
     if (!rowValue) {
-      if (field.id === 'projectName') rowValue = metadata?.projectName || 'Digital Reporting Hub';
-      if (field.id === 'activeDate') rowValue = dateRangeText || 'All Temporal Data';
-      if (field.id === 'generatedOn') rowValue = new Date().toLocaleString();
+      if (field.id === 'projectName') rowValue = metadata?.projectName || 'RHK - Wadi Yemm';
+      if (field.id === 'temporalReference') rowValue = metadata?.reportTemporalReference || 'MAY 2026 HUB RECAP';
+      if (field.id === 'activeDate') rowValue = dateRangeText || 'MAY 01 - MAY 31, 2026';
+      if (field.id === 'generatedOn') rowValue = formatGeneratedOn();
       if (field.id === 'totalTasks') rowValue = tasks.length.toString();
     }
     
-    doc.text(`${field.label}: ${rowValue}`, 30, currentY);
-    currentY += 10;
+    // Elite Dual-Tone Typography
+    doc.setTextColor(...accentColor); // GOLD Label
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${field.label}:`, 20, currentY);
+    
+    const labelWidth = doc.getTextWidth(`${field.label}: `);
+    doc.setTextColor(255, 255, 255); // WHITE Value
+    doc.setFont('helvetica', 'normal');
+    doc.text(rowValue, 20 + labelWidth, currentY);
+    
+    currentY += 16; // Increased Vertical Leading for full height utilization
   });
 
   if (metadata?.reportSummary) {
-    doc.setFontSize(11);
-    doc.setTextColor(180, 180, 180);
+    doc.setFontSize(10);
+    doc.setTextColor(160, 160, 160);
     const splitSummary = doc.splitTextToSize(metadata.reportSummary, pageWidth - 100);
-    doc.text(splitSummary, 30, currentY + 20);
+    doc.text(splitSummary, 20, currentY + 15);
   }
 
-  doc.setTextColor(...bodyTextColor);
-  doc.setFontSize(10);
-  doc.text(metadata?.reportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM', 30, pageHeight - 30);
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(12); // Slightly larger footer
+  doc.setFont('helvetica', 'bold');
+  doc.text(metadata?.reportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM', 20, pageHeight - 15);
 
   // ─── PAGE 2+: COMPREHENSIVE DATA TABLE ───
   doc.addPage();
@@ -328,8 +397,7 @@ export async function exportToPDF(tasks: Task[], metadata: ProjectMetadata | und
     { id: 'title', label: 'ASSET TITLE' },
     { id: 'dept', label: 'DEPT' },
     { id: 'status', label: 'STATUS' },
-    { id: 'start', label: 'START (ACTUAL)' },
-    { id: 'finish', label: 'FINISH (ACTUAL)' },
+    { id: 'submittingDate', label: 'SUBMITTING DATE' },
     { id: 'links', label: 'DELIVERABLES LINKS' }
   ];
 
@@ -345,12 +413,13 @@ export async function exportToPDF(tasks: Task[], metadata: ProjectMetadata | und
     if (!excluded.includes('title')) row.push(t.title);
     if (!excluded.includes('dept')) row.push(t.department);
     if (!excluded.includes('status')) row.push(t.status.replace(/_/g, ' '));
-    if (!excluded.includes('start')) row.push(formatReportDate(t.actualStartDate));
-    if (!excluded.includes('finish')) row.push(formatReportDate(t.actualEndDate));
+    if (!excluded.includes('submittingDate')) row.push(formatReportDate(t.submittingDate));
     if (!excluded.includes('links')) row.push(labelString || '-');
     
     return row;
   });
+
+  const linksColIndex = visibleHeaders.findIndex(h => h.id === 'links');
 
   autoTable(doc, {
     startY: 30,
@@ -375,10 +444,10 @@ export async function exportToPDF(tasks: Task[], metadata: ProjectMetadata | und
     columnStyles: {
       0: { cellWidth: 35, halign: 'center' },
       1: { cellWidth: 'auto', halign: 'center' },
-      6: { cellWidth: 80, textColor: [5, 99, 193], fontStyle: 'bold', halign: 'center' } 
+      ...(linksColIndex !== -1 ? { [linksColIndex]: { cellWidth: 80, textColor: [5, 99, 193], fontStyle: 'bold', halign: 'center' } } : {})
     },
     didDrawCell: (data: any) => {
-      if (data.section === 'body' && data.column.index === 6) {
+      if (data.section === 'body' && data.column.index === linksColIndex && linksColIndex !== -1) {
         const task = tasks[data.row.index];
         const taskLinks = getTaskLinks(task);
         if (taskLinks.length > 0) {
@@ -395,6 +464,10 @@ export async function exportToPDF(tasks: Task[], metadata: ProjectMetadata | und
           
           taskLinks.forEach((link, idx) => {
             const labelWidth = doc.getTextWidth(link.label);
+            // Draw a subtle underline manually to ensure it's visible in PDF
+            doc.setDrawColor(5, 99, 193);
+            doc.line(currentX, data.cell.y + data.cell.height / 2 + 2, currentX + labelWidth, data.cell.y + data.cell.height / 2 + 2);
+            
             doc.link(currentX, data.cell.y, labelWidth, data.cell.height, { 
               url: link.url,
               target: '_blank' 

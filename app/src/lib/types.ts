@@ -58,8 +58,7 @@ export interface Task {
   timeZone: string;
   fileShareLink: string;
   pendingReviewDate?: string | null; // When task entered PENDING_REVIEW status
-  actualStartDate?: string | null;
-  actualEndDate?: string | null;
+  submittingDate?: string | null;
 
   createdAt: string;
   updatedAt: string;

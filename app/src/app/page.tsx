@@ -32,7 +32,7 @@ export default function Dashboard() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [filterMode, setFilterMode] = useState<'monthly' | 'custom' | 'all'>('monthly');
+  const [filterMode, setFilterMode] = useState<'monthly' | 'custom' | 'all'>('all');
   const [filterDept, setFilterDept] = useState<string[]>(['All Departments']);
   const [search, setSearch] = useState('');
 
@@ -42,11 +42,10 @@ export default function Dashboard() {
   ];
 
   const getTaskRange = (t: Task) => {
-    const start = new Date(t.actualStartDate || t.createdAt);
-    // Boundary is actual finish date, OR if in progress, the current date (to prevent future month clutter)
-    const end = t.actualEndDate ? new Date(t.actualEndDate) : new Date();
-
-    return { start, end };
+    // Migrate: Use actualEndDate first, then actualStartDate, then submittingDate or createdAt
+    const dateStr = t.submittingDate || (t as any).actualEndDate || (t as any).actualStartDate || t.createdAt;
+    const date = new Date(dateStr);
+    return { start: date, end: date };
   };
 
   const availableYears = useMemo(() => {
@@ -115,8 +114,8 @@ export default function Dashboard() {
     rangeEnd.setHours(23, 59, 59, 999);
 
     return syncedTasks.filter(t => {
-      const { start, end } = getTaskRange(t);
-      return start <= rangeEnd && end >= rangeStart;
+      const { start } = getTaskRange(t);
+      return start >= rangeStart && start <= rangeEnd;
     });
   }, [syncedTasks, selectedMonth, selectedYear, startDate, endDate, filterMode]);
 
@@ -167,8 +166,8 @@ export default function Dashboard() {
     prevEnd.setHours(23, 59, 59, 999);
 
     return syncedTasks.filter(t => {
-      const { start, end } = getTaskRange(t);
-      return start <= prevEnd && end >= prevStart;
+      const { start } = getTaskRange(t);
+      return start >= prevStart && start <= prevEnd;
     });
   }, [syncedTasks, selectedMonth, selectedYear, startDate, endDate, filterMode]);
 
@@ -197,7 +196,7 @@ export default function Dashboard() {
   };
 
   const filterDateText = useMemo(() => {
-    if (filterMode === 'all') return 'all historical tasks';
+    if (filterMode === 'all') return 'All Time';
     if (filterMode === 'monthly') return `${months[selectedMonth]} ${selectedYear}`;
     return (startDate || endDate ? `${startDate || 'Start'} to ${endDate || 'Present'}` : 'Custom Range');
   }, [filterMode, selectedMonth, selectedYear, startDate, endDate, months]);
@@ -217,7 +216,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <>
-              <ProjectHeader project={syncedProject || undefined} members={syncedMembers} tasks={filteredTasks} />
+              <ProjectHeader project={syncedProject || undefined} members={syncedMembers} tasks={filteredTasks} dateRangeText={filterDateText} />
 
               <div style={{
                 padding: '12px 24px',

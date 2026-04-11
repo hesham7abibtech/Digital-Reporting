@@ -36,7 +36,9 @@ import {
   Newspaper,
   Save,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Table,
+  FileText
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -70,6 +72,13 @@ const DEFAULT_SUMMARY_FIELDS: ReportSummaryField[] = [
   { id: 'generatedOn', label: 'Generated On', value: '', isVisible: true },
   { id: 'totalTasks', label: 'Total Tasks Count', value: '', isVisible: true }
 ];
+
+function formatDate(dateStr: string | null | undefined) {
+  if (!dateStr) return '—';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-').toUpperCase();
+}
 
 function BroadcastSender({ showToast }: { showToast: any }) {
   const [loading, setLoading] = useState(false);
@@ -521,16 +530,63 @@ export default function AdminDashboardPage() {
         reportSummaryFields: localSummaryFields,
         projectName: localProjectName
       }).catch(console.error);
-    }, 800);
+    }, 1000);
     return () => clearTimeout(timer);
   }, [
-    localReportTitle, localReportSubtitle, localReportSummary,
-    localReportBgColor, localReportAccentColor, localReportHeaderTextColor,
-    localReportPdfBodyTextColor,
-    localReportExcelHeaderColor, localReportExcelHeaderTextColor,
-    localReportExcelAccentColor, localReportExcelBodyTextColor,
-    localPeriodReference, localTemporalReference, localReportBranding, localReportFooter, localExcludedFields, localSummaryFields, localProjectName, initializedLocalFields
+    localReportTitle, localReportSubtitle, localReportSummary, localReportBgColor,
+    localReportAccentColor, localReportHeaderTextColor, localReportPdfBodyTextColor,
+    localReportExcelHeaderColor, localReportExcelHeaderTextColor, localReportExcelAccentColor,
+    localReportExcelBodyTextColor, localPeriodReference, localTemporalReference,
+    localReportBranding, localReportFooter, localExcludedFields, localSummaryFields,
+    localProjectName, initializedLocalFields
   ]);
+
+  const handleLiveTestExport = async (format: 'pdf' | 'excel') => {
+    const localMetadata: ProjectMetadata = {
+      ...projectData,
+      reportTitle: localReportTitle,
+      reportSubtitle: localReportSubtitle,
+      reportSummary: localReportSummary,
+      reportBgColor: localReportBgColor,
+      reportAccentColor: localReportAccentColor,
+      reportHeaderTextColor: localReportHeaderTextColor,
+      reportPdfBodyTextColor: localReportPdfBodyTextColor,
+      reportExcelHeaderColor: localReportExcelHeaderColor,
+      reportExcelHeaderTextColor: localReportExcelHeaderTextColor,
+      reportExcelAccentColor: localReportExcelAccentColor,
+      reportExcelBodyTextColor: localReportExcelBodyTextColor,
+      reportBranding: localReportBranding,
+      reportFooter: localReportFooter,
+      reportSummaryFields: localSummaryFields,
+      reportExcludedFields: localExcludedFields,
+      reportPeriodReference: localPeriodReference,
+      reportTemporalReference: localTemporalReference,
+      projectName: localProjectName,
+    } as any;
+
+    try {
+      if (format === 'excel') {
+        const { exportToExcel } = await import('@/lib/exportUtils');
+        const { blob, filename } = await exportToExcel(memoizedTasks, localMetadata);
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+      } else {
+        const { exportToPDF } = await import('@/lib/exportUtils');
+        const { blob, filename } = await exportToPDF(memoizedTasks, localMetadata);
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+      }
+      showToast('Live Test Report Generated', 'SUCCESS');
+    } catch (e) {
+      showToast('Live Test Failed', 'ERROR');
+    }
+  };
 
 
   // Reset selection when tab changes
@@ -553,7 +609,6 @@ export default function AdminDashboardPage() {
         return;
       }
     }
-    if (activeTab === 'registry') setSelectedRegistry(null);
     if (activeTab === 'users') {
       setEliteAlert({
         isOpen: true,
@@ -574,7 +629,6 @@ export default function AdminDashboardPage() {
     }
     if (activeTab === 'tasks') setSelectedTask(item);
     if (activeTab === 'team') setSelectedMember(item);
-    if (activeTab === 'registry') setSelectedRegistry(item);
     if (activeTab === 'users') setSelectedUser(item);
     if (activeTab === 'team') {
       if (teamActiveSubTab === 'personnel') setSelectedMember(item);
@@ -732,7 +786,6 @@ export default function AdminDashboardPage() {
               { id: 'tasks', label: 'Deliverable Matrix', icon: BarChart3, permission: 'tasks' },
               { id: 'team', label: 'Project Team', icon: Users, permission: 'team' },
               { id: 'branding', label: 'Identity & Branding', icon: Database, permission: 'branding' },
-              { id: 'registry', label: 'Asset Registry', icon: LayoutDashboard, permission: 'registry' },
               { id: 'reports', label: 'Report Settings', icon: Settings, permission: 'reports' },
               { id: 'broadcast', label: 'Communications', icon: Megaphone, permission: 'broadcast' },
               { id: 'users', label: 'Access Control', icon: Shield, permission: 'users' },
@@ -916,7 +969,10 @@ export default function AdminDashboardPage() {
                               {activeTab === 'users' ? 'Designation' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Job Title' : 'Abbreviation') : 'Department'}
                             </th>
                             <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                              {activeTab === 'users' ? 'Access Control' : 'Action Hub'}
+                              {activeTab === 'users' ? 'Access Control' : activeTab === 'tasks' ? 'Submitting Date' : 'Action Hub'}
+                            </th>
+                            <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                              {activeTab === 'users' ? 'Security Protocol' : 'Control'}
                             </th>
                           </tr>
                         </thead>
@@ -947,6 +1003,9 @@ export default function AdminDashboardPage() {
                                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: task.status === 'COMPLETED' ? '#10b981' : '#f59e0b' }} />
                                   <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{task.status.replace(/_/g, ' ')}</span>
                                 </div>
+                              </td>
+                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
+                                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>{formatDate(task.submittingDate || (task as any).actualEndDate || (task as any).actualStartDate)}</span>
                               </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
                                 <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
@@ -1625,21 +1684,36 @@ export default function AdminDashboardPage() {
                                         </div>
                                         <h3 style={{ fontSize: 18, fontWeight: 900, color: 'white', margin: 0 }}>Reporting Engine Command Center</h3>
                                       </div>
-                                      <button
-                                        onClick={handleManualSync}
-                                        disabled={isSavingReport}
-                                        style={{
-                                          padding: '10px 24px', borderRadius: 12, border: 'none',
-                                          background: saveSuccess ? '#10b981' : '#D4AF37',
-                                          color: '#0a0a0f', fontSize: 11, fontWeight: 900,
-                                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-                                          transition: 'all 200ms', opacity: isSavingReport ? 0.7 : 1,
-                                          boxShadow: saveSuccess ? '0 0 20px rgba(16, 185, 129, 0.2)' : '0 10px 20px rgba(212, 175, 55, 0.1)'
-                                        }}
-                                      >
-                                        {isSavingReport ? <Loader2 size={14} className="animate-spin" /> : (saveSuccess ? <CheckCircle2 size={14} /> : <Save size={14} />)}
-                                        {isSavingReport ? 'SYNCHRONIZING...' : (saveSuccess ? 'CONFIG SAVED ✓' : 'SAVE CONFIGURATION')}
-                                      </button>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        <button
+                                          onClick={() => handleLiveTestExport('excel')}
+                                          style={{ padding: '10px 18px', borderRadius: 12, border: '1px solid rgba(16, 185, 129, 0.2)', background: 'rgba(16, 185, 129, 0.05)', color: '#10b981', fontSize: 11, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                                        >
+                                          <Table size={14} /> TEST EXCEL
+                                        </button>
+                                        <button
+                                          onClick={() => handleLiveTestExport('pdf')}
+                                          style={{ padding: '10px 18px', borderRadius: 12, border: '1px solid rgba(239, 68, 68, 0.2)', background: 'rgba(239, 68, 68, 0.05)', color: '#ef4444', fontSize: 11, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                                        >
+                                          <FileText size={14} /> TEST PDF
+                                        </button>
+                                        <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.06)', margin: '0 8px' }} />
+                                        <button
+                                          onClick={handleManualSync}
+                                          disabled={isSavingReport}
+                                          style={{
+                                            padding: '10px 24px', borderRadius: 12, border: 'none',
+                                            background: saveSuccess ? '#10b981' : '#D4AF37',
+                                            color: '#0a0a0f', fontSize: 11, fontWeight: 900,
+                                            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                                            transition: 'all 200ms', opacity: isSavingReport ? 0.7 : 1,
+                                            boxShadow: saveSuccess ? '0 0 20px rgba(16, 185, 129, 0.2)' : '0 10px 20px rgba(212, 175, 55, 0.1)'
+                                          }}
+                                        >
+                                          {saveSuccess ? <CheckCircle2 size={14} /> : <Save size={14} />}
+                                          {saveSuccess ? 'CONFIG SAVED' : 'SAVE CHANGES'}
+                                        </button>
+                                      </div>
                                     </div>
 
                                     <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -1849,38 +1923,65 @@ export default function AdminDashboardPage() {
                                               {/* PDF Page 1: Cover */}
                                               <div style={{
                                                 width: 842, height: 595, background: localReportBgColor, borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)',
-                                                display: 'flex', flexDirection: 'column', padding: '64px 80px 48px 100px', position: 'relative', flexShrink: 0, overflow: 'hidden',
+                                                display: 'flex', flexDirection: 'column', padding: 0, position: 'relative', flexShrink: 0, overflow: 'hidden',
                                                 boxShadow: '0 40px 80px rgba(0,0,0,0.6)', textAlign: 'left'
                                               }}>
                                                 {/* Gold Vertical Accent Bar */}
-                                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 12, background: localReportAccentColor }} />
+                                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 14, background: localReportAccentColor }} />
 
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 48 }}>
-                                                  <div style={{ fontSize: 10, fontWeight: 900, color: localReportAccentColor, letterSpacing: '0.15em' }}>
+                                                {/* Brand Logos (Symmetrical Placement - Swapped) */}
+                                                <div style={{ position: 'absolute', top: 35, left: 57, height: 55, display: 'flex', alignItems: 'center' }}>
+                                                  <img src="/logos/insite_logo.png" style={{ height: '100%', width: 'auto', filter: 'brightness(0) invert(1)' }} alt="InSite" />
+                                                </div>
+                                                <div style={{ position: 'absolute', top: 40, right: 57, height: 32, display: 'flex', alignItems: 'center' }}>
+                                                  <img src="/logos/modon_logo.png" style={{ height: '100%', width: 'auto', filter: 'brightness(0) invert(1)' }} alt="Modon" />
+                                                </div>
+
+                                                {/* Branding Line (Exactly 35mm from top, 20mm from left) */}
+                                                <div style={{ position: 'absolute', top: 99, left: 57 }}>
+                                                  <div style={{ fontSize: 11, fontWeight: 900, color: localReportHeaderTextColor, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                                                     {localReportBranding || 'KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT'}
                                                   </div>
                                                 </div>
 
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 24 }}>
-                                                  <div style={{ fontSize: 36, fontWeight: 900, color: localReportHeaderTextColor, lineHeight: 1.1 }}>{localReportTitle || 'Digital Team Report'}</div>
-                                                  <div style={{ fontSize: 12, fontWeight: 800, color: localReportPdfBodyTextColor, letterSpacing: '0.05em', textTransform: 'uppercase', opacity: 0.6 }}>{localReportSubtitle || 'OPERATIONAL PERFORMANCE & DELIVERABLES'}</div>
+                                                {/* Title & Subtitle (Matched vertical offsets) */}
+                                                <div style={{ position: 'absolute', top: 156, left: 57, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                                  <div style={{ fontSize: 48, fontWeight: 900, color: localReportHeaderTextColor, lineHeight: 1 }}>{localReportTitle || 'Digital Team Report'}</div>
+                                                  <div style={{ fontSize: 18, fontWeight: 800, color: 'white', letterSpacing: '0.05em', textTransform: 'uppercase', opacity: 0.9 }}>{localReportSubtitle || 'OPERATIONAL PERFORMANCE & DELIVERABLES'}</div>
                                                 </div>
 
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 80 }}>
-                                                  {[
-                                                    { label: 'Project Name', value: localProjectName || 'RHK - Wadi Yemm' },
-                                                    { label: 'Active Date Range', value: localTemporalReference || 'April 2026' },
-                                                    { label: 'Generated On', value: new Date().toLocaleString('en-US', { day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true }) },
-                                                    { label: 'Total Tasks Count', value: memoizedTasks.length }
-                                                  ].map((meta, i) => (
-                                                    <div key={i} style={{ display: 'flex', gap: 6, fontSize: 12, fontWeight: 700 }}>
-                                                      <span style={{ color: localReportHeaderTextColor }}>{meta.label}:</span>
-                                                      <span style={{ color: localReportPdfBodyTextColor, opacity: 0.9 }}>{meta.value}</span>
-                                                    </div>
-                                                  ))}
+                                                {/* Data Fields Registry (Scaled for full height utilization) */}
+                                                <div style={{ position: 'absolute', top: 269, left: 57, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                                  {localSummaryFields.map((field) => {
+                                                    if (!field.isVisible || field.id === 'reportTitle' || field.id === 'periodReference') return null;
+                                                    
+                                                    let val = field.value || '';
+                                                    if (!val) {
+                                                      if (field.id === 'projectName') val = localProjectName || 'RHK - Wadi Yemm';
+                                                      if (field.id === 'temporalReference') val = localTemporalReference || 'MAY 2026 HUB RECAP';
+                                                      if (field.id === 'activeDate') val = 'MAY 01 - MAY 31, 2026';
+                                                      if (field.id === 'generatedOn') {
+                                                        const now = new Date();
+                                                        const day = String(now.getDate()).padStart(2, '0');
+                                                        const month = now.toLocaleString('en-GB', { month: 'short' }).toUpperCase();
+                                                        const year = now.getFullYear();
+                                                        const time = now.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).toUpperCase();
+                                                        val = `${day}-${month}-${year} ${time}`;
+                                                      }
+                                                      if (field.id === 'totalTasks') val = memoizedTasks.length.toString();
+                                                    }
+                                                    
+                                                    return (
+                                                      <div key={field.id} style={{ display: 'flex', gap: 10, fontSize: 15, fontWeight: 700 }}>
+                                                        <span style={{ color: localReportAccentColor }}>{field.label}:</span>
+                                                        <span style={{ color: 'white', opacity: 0.95 }}>{val}</span>
+                                                      </div>
+                                                    );
+                                                  })}
                                                 </div>
 
-                                                <div style={{ marginTop: 'auto', fontSize: 9, color: localReportPdfBodyTextColor, opacity: 0.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                                                {/* Security Footer Protocol (Narrow bottom margin) */}
+                                                <div style={{ position: 'absolute', bottom: 42, left: 57, fontSize: 12, color: 'white', opacity: 0.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                                                   {localReportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM'}
                                                 </div>
                                               </div>
@@ -1978,7 +2079,13 @@ export default function AdminDashboardPage() {
                                         </div>
 
                                         {/* Excel Workspace */}
-                                        <div style={{ flex: 1, background: 'white', overflowX: 'auto', position: 'relative' }} className="custom-scrollbar">
+                                        <div style={{ flex: 1, background: 'white', overflowX: 'auto', position: 'relative', padding: 20 }} className="custom-scrollbar">
+                                          {excelActiveTab === 'summary' && (
+                                            <div style={{ display: 'flex', gap: 40, marginBottom: 20, paddingLeft: 10 }}>
+                                              <img src="/logos/modon_logo.png" style={{ height: 45, opacity: 0.9 }} alt="Modon" />
+                                              <img src="/logos/insite_logo.png" style={{ height: 45, opacity: 0.9 }} alt="InSite" />
+                                            </div>
+                                          )}
                                           <style>{`
                                             .custom-scrollbar::-webkit-scrollbar { height: 8px; }
                                             .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
@@ -2010,7 +2117,14 @@ export default function AdminDashboardPage() {
                                                     <td style={{ fontSize: 9, fontWeight: 800, color: '#0f172a', borderRight: '1px solid #e2e8f0' }}>{f.label}</td>
                                                     <td style={{ fontSize: 9, color: localReportExcelBodyTextColor }}>
                                                       {f.value || (f.id === 'reportTitle' ? localReportTitle : f.id === 'projectName' ? localProjectName : f.id === 'periodReference' ? localReportSubtitle : f.id === 'temporalReference' ? localTemporalReference :
-                                                        f.id === 'activeDate' ? 'May 01 - May 31, 2026' : f.id === 'generatedOn' ? new Date().toLocaleDateString() : f.id === 'totalTasks' ? memoizedTasks.length : '')}
+                                                        f.id === 'activeDate' ? 'May 01 - May 31, 2026' : f.id === 'generatedOn' ? (() => {
+                                                        const now = new Date();
+                                                        const day = String(now.getDate()).padStart(2, '0');
+                                                        const month = now.toLocaleString('en-GB', { month: 'short' }).toUpperCase();
+                                                        const year = now.getFullYear();
+                                                        const time = now.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).toUpperCase();
+                                                        return `${day}-${month}-${year} ${time}`;
+                                                      })() : f.id === 'totalTasks' ? memoizedTasks.length : '')}
                                                     </td>
                                                   </tr>
                                                 ))}

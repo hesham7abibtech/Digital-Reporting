@@ -9,12 +9,14 @@ interface ProjectHeaderProps {
   members?: TeamMember[];
   project?: ProjectMetadata;
   tasks?: Task[];
+  dateRangeText?: string;
 }
 
 export default function ProjectHeader({ 
   members, 
   project,
-  tasks
+  tasks,
+  dateRangeText
 }: ProjectHeaderProps) {
   const onlineMembers = members?.filter(m => m.isOnline).length ?? 0;
 
@@ -148,7 +150,7 @@ export default function ProjectHeader({
             }}
           >
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4AF37', boxShadow: '0 0 10px #D4AF37' }} className="animate-pulse" />
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.08em' }}>MONTHLY PERFORMANCE</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{dateRangeText || 'MONTHLY PERFORMANCE'}</span>
           </span>
 
           {/* Perfectly Aligned Integrated Tasks Count KPI */}

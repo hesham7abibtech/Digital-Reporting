@@ -136,32 +136,18 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                 </section>
 
                 {/* Timeline Section */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
                   <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.04)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                      <Timer size={16} style={{ color: '#D4AF37' }} />
-                      <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Start Date</span>
+                      <Calendar size={16} style={{ color: '#D4AF37' }} />
+                      <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Submitting Date</span>
                     </div>
-                    {task.actualStartDate ? (
+                    {task.submittingDate ? (
                       <div>
-                        <p style={{ fontSize: 15, fontWeight: 700, color: 'white' }}>{formatDate(task.actualStartDate)}</p>
+                        <p style={{ fontSize: 15, fontWeight: 700, color: 'white' }}>{formatDate(task.submittingDate)}</p>
                       </div>
                     ) : (
                       <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', fontWeight: 500 }}>Not synchronized</p>
-                    )}
-                  </div>
-
-                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                      <CheckCircle2 size={16} style={{ color: '#10b981' }} />
-                      <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Finish Date</span>
-                    </div>
-                    {task.actualEndDate && task.status === 'COMPLETED' ? (
-                      <div>
-                        <p style={{ fontSize: 15, fontWeight: 700, color: 'white' }}>{formatDate(task.actualEndDate)}</p>
-                      </div>
-                    ) : (
-                      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', fontWeight: 500 }}>Awaiting completion</p>
                     )}
                   </div>
                 </div>

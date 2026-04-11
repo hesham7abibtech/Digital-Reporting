@@ -66,8 +66,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
     completion: 0,
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     fileShareLink: '',
-    actualStartDate: new Date().toISOString(),
-    actualEndDate: new Date().toISOString(),
+    submittingDate: new Date().toISOString(),
     pendingReviewDate: null,
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -111,8 +110,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         completion: task.completion || 0,
         timeZone: task.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone,
         fileShareLink: task.fileShareLink || '',
-        actualStartDate: task.actualStartDate || new Date().toISOString(),
-        actualEndDate: task.actualEndDate || new Date().toISOString(),
+        submittingDate: task.submittingDate || (task as any).actualEndDate || (task as any).actualStartDate || new Date().toISOString(),
       });
     } else if (isOpen) {
       originalIdRef.current = null;
@@ -131,8 +129,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         tags: [],
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         fileShareLink: '',
-        actualStartDate: new Date().toISOString(),
-        actualEndDate: new Date().toISOString(),
+        submittingDate: new Date().toISOString(),
         pendingReviewDate: null,
         updatedAt: new Date().toISOString(),
       });
@@ -207,18 +204,11 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Description</label>
             <textarea value={formData.description ?? ''} onChange={e => setFormData({ ...formData, description: e.target.value })} disabled={isActuallyReadOnly} rows={4} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: isActuallyReadOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: isActuallyReadOnly ? '1px solid rgba(255,255,255,0.02)' : '1px solid rgba(255,255,255,0.06)', color: isActuallyReadOnly ? 'rgba(255,255,255,0.4)' : 'white', fontSize: 15, outline: 'none', cursor: isActuallyReadOnly ? 'not-allowed' : 'text', resize: 'vertical' }} placeholder="Detailed task mission parameters..." />
           </div>
-          <div style={{ gridColumn: 'span 1' }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Start Date</label>
-            <div style={{ position: 'relative' }}>
-              <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
-              <input type="date" value={toLocalISO(formData.actualStartDate || '', formData.timeZone || '')} onChange={e => setFormData({ ...formData, actualStartDate: fromLocalISO(e.target.value, formData.timeZone || '') })} style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }} />
-            </div>
-          </div>
-          <div style={{ gridColumn: 'span 1' }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Finish Date</label>
+          <div style={{ gridColumn: 'span 2' }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Submitting Date</label>
             <div style={{ position: 'relative' }}>
               <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
-              <input type="date" value={toLocalISO(formData.actualEndDate || '', formData.timeZone || '')} onChange={e => setFormData({ ...formData, actualEndDate: fromLocalISO(e.target.value, formData.timeZone || '') })} style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }} />
+              <input type="date" value={toLocalISO(formData.submittingDate || '', formData.timeZone || '')} onChange={e => setFormData({ ...formData, submittingDate: fromLocalISO(e.target.value, formData.timeZone || '') })} style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }} />
             </div>
           </div>
           <div>
