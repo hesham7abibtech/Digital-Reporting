@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Cpu, MapPin, Users } from 'lucide-react';
+import { Cpu, MapPin, Users, Wifi, WifiOff, Activity } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import type { TeamMember, ProjectMetadata, Task } from '@/lib/types';
 
 interface ProjectHeaderProps {
@@ -25,7 +26,19 @@ export default function ProjectHeader({
   onReportChange,
   bimReviewsCount = 0
 }: ProjectHeaderProps) {
+  const [isOnline, setIsOnline] = useState(true);
 
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const onlineMembers = members?.filter(m => m.isOnline).length ?? 0;
 
@@ -129,6 +142,7 @@ export default function ProjectHeader({
                 <MapPin size={14} style={{ color: '#ef4444', filter: 'drop-shadow(0 0 5px rgba(239, 68, 68, 0.3))' }} />
                 {project?.location || 'Digital Sector'}
               </span>
+
             </div>
           </div>
 

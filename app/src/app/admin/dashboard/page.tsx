@@ -68,6 +68,7 @@ import GroupPolicyList from '@/components/admin/GroupPolicyList';
 import GroupPolicyEditor from '@/components/admin/GroupPolicyEditor';
 import BulkActionConfirmModal from '@/components/admin/BulkActionConfirmModal';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
+import HeaderBgCropper from '@/components/admin/HeaderBgCropper';
 
 const DEFAULT_ALLOWED_DOMAINS = ['modon.com', 'insiteinternational.com'];
 
@@ -317,6 +318,8 @@ export default function AdminDashboardPage() {
   const [bgPosX, setBgPosX] = useState(50);
   const [initializedBg, setInitializedBg] = useState(false);
   const [localBgUrl, setLocalBgUrl] = useState<string | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
+  const [cropperSource, setCropperSource] = useState<string | null>(null);
 
   // Elite Subtitles Manager state sync
   const [localTitle, setLocalTitle] = useState('');
@@ -1576,8 +1579,125 @@ export default function AdminDashboardPage() {
                                           <input value={localLocation} onChange={(e) => setLocalLocation(e.target.value)} style={{ width: '100%', padding: '12px 16px 12px 40px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }} />
                                         </div>
                                       </div>
-
                                     </div>
+
+                                    {/* Atmospheric Branding Section */}
+                                      <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 24, padding: 32, background: 'rgba(212, 175, 55, 0.03)', border: '1px solid rgba(212, 175, 55, 0.1)', borderRadius: 28, marginTop: 12 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4AF37' }} />
+                                            <h3 style={{ fontSize: 13, fontWeight: 900, color: 'white', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Atmospheric Branding (Header Banner)</h3>
+                                          </div>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(212, 175, 55, 0.1)', padding: '6px 14px', borderRadius: 10, border: '1px solid rgba(212, 175, 55, 0.2)' }}>
+                                            <ImageIcon size={14} color="#D4AF37" />
+                                            <span style={{ fontSize: 10, fontWeight: 900, color: '#D4AF37' }}>REQUIRED SIZE: 2400 X 200 PX</span>
+                                          </div>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1.2fr) 1fr', gap: 32 }}>
+                                          {/* Banner Management */}
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                            <div 
+                                              style={{ 
+                                                width: '100%', minHeight: 140, borderRadius: 16, border: '1px dashed rgba(212, 175, 55, 0.3)', 
+                                                background: 'rgba(0,0,0,0.2)', overflow: 'hidden', position: 'relative',
+                                                display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start',
+                                                padding: '24px 32px'
+                                              }}
+                                            >
+                                              {headerBgFile || localBgUrl || projectData?.headerBgUrl ? (
+                                                <>
+                                                  <img 
+                                                    src={localBgUrl || projectData?.headerBgUrl} 
+                                                    style={{ 
+                                                      position: 'absolute',
+                                                      inset: 0,
+                                                      width: '100%', 
+                                                      height: '100%', 
+                                                      objectFit: 'cover', 
+                                                      objectPosition: `${bgPosX}% ${bgPosY}%`,
+                                                      opacity: bgOpacity / 100 
+                                                    }} 
+                                                    alt="Header Preview" 
+                                                  />
+                                                  {/* Dashboard Simulation Overlay */}
+                                                  <div style={{ position: 'relative', zIndex: 1, pointerEvents: 'none' }}>
+                                                    <div style={{ fontSize: 18, fontWeight: 900, color: 'white', opacity: 0.6 }}>{localProjectName || projectData?.projectName}</div>
+                                                    <div style={{ fontSize: 10, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginTop: 4, letterSpacing: '0.1em' }}>PROJECT TERMINAL PREVIEW</div>
+                                                  </div>
+                                                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', display: 'flex', alignItems: 'flex-end', padding: 16 }}>
+                                                    <button 
+                                                      type="button" 
+                                                      onClick={() => document.getElementById('header-bg-input')?.click()}
+                                                      style={{ background: '#D4AF37', border: 'none', color: '#0a0a0f', padding: '8px 16px', borderRadius: 8, fontSize: 11, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                                                    >
+                                                      <ImageIcon size={14} /> REPLACE ASSET
+                                                    </button>
+                                                  </div>
+                                                </>
+                                              ) : (
+                                                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                                                  <ImageIcon size={32} color="rgba(212, 175, 55, 0.2)" />
+                                                  <button 
+                                                    type="button" 
+                                                    onClick={() => document.getElementById('header-bg-input')?.click()}
+                                                    style={{ background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.2)', color: '#D4AF37', padding: '10px 24px', borderRadius: 10, fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
+                                                  >
+                                                    UPLOAD BANNER
+                                                  </button>
+                                                </div>
+                                              )}
+                                              <input 
+                                                id="header-bg-input" 
+                                                type="file" 
+                                                accept="image/*" 
+                                                onChange={(e) => {
+                                                  const file = e.target.files?.[0];
+                                                  if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onload = () => {
+                                                      setCropperSource(reader.result as string);
+                                                      setShowCropper(true);
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                  }
+                                                }}
+                                                style={{ display: 'none' }} 
+                                              />
+                                            </div>
+                                            <p style={{ fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.5 }}>
+                                              Select a high-resolution panorama. The system will initiate a precision crop to ensure technical aspect ratio alignment.
+                                            </p>
+                                          </div>
+
+                                          {/* Sliders */}
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: '12px 24px', background: 'rgba(0,0,0,0.2)', borderRadius: 20 }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <label style={{ fontSize: 10, fontWeight: 900, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Atmospheric Opacity</label>
+                                                <span style={{ fontSize: 10, fontWeight: 900, color: '#D4AF37' }}>{bgOpacity}%</span>
+                                              </div>
+                                              <input type="range" min="0" max="100" value={bgOpacity} onChange={(e) => setBgOpacity(Number(e.target.value))} style={{ width: '100%', accentColor: '#D4AF37' }} />
+                                            </div>
+
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <label style={{ fontSize: 10, fontWeight: 900, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Vertical Focus Offset (Y)</label>
+                                                <span style={{ fontSize: 10, fontWeight: 900, color: '#D4AF37' }}>{bgPosY}%</span>
+                                              </div>
+                                              <input type="range" min="0" max="100" value={bgPosY} onChange={(e) => setBgPosY(Number(e.target.value))} style={{ width: '100%', accentColor: '#D4AF37' }} />
+                                            </div>
+
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <label style={{ fontSize: 10, fontWeight: 900, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Horizontal Alignment (X)</label>
+                                                <span style={{ fontSize: 10, fontWeight: 900, color: '#D4AF37' }}>{bgPosX}%</span>
+                                              </div>
+                                              <input type="range" min="0" max="100" value={bgPosX} onChange={(e) => setBgPosX(Number(e.target.value))} style={{ width: '100%', accentColor: '#D4AF37' }} />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
 
                                     {/* Badges Section */}
                                     <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
@@ -2464,6 +2584,27 @@ export default function AdminDashboardPage() {
         records={bimImportConfirm.records}
       />
           </AnimatePresence>
+
+          {/* Header Background Cropper Protocol */}
+          {showCropper && cropperSource && (
+            <HeaderBgCropper 
+              image={cropperSource} 
+              onCropComplete={(blob) => {
+                const file = new File([blob], `header-bg-${Date.now()}.jpg`, { type: 'image/jpeg' });
+                setHeaderBgFile(file);
+                // Create a local preview URL
+                const previewUrl = URL.createObjectURL(blob);
+                setLocalBgUrl(previewUrl);
+                setShowCropper(false);
+                setCropperSource(null);
+                showToast('Banner optimization complete. Ready for synchronization.', 'SUCCESS');
+              }}
+              onCancel={() => {
+                setShowCropper(false);
+                setCropperSource(null);
+              }}
+            />
+          )}
 
         </div>
       </div>
