@@ -10,25 +10,28 @@ interface ProjectHeaderProps {
   project?: ProjectMetadata;
   tasks?: Task[];
   dateRangeText?: string;
+  activeReport?: 'DELIVERABLES' | 'BIM_REVIEWS';
+  onReportChange?: (report: 'DELIVERABLES' | 'BIM_REVIEWS') => void;
+  bimReviewsCount?: number;
 }
+
 
 export default function ProjectHeader({
   members,
   project,
   tasks,
-  dateRangeText
+  dateRangeText,
+  activeReport = 'DELIVERABLES',
+  onReportChange,
+  bimReviewsCount = 0
 }: ProjectHeaderProps) {
+
+
   const onlineMembers = members?.filter(m => m.isOnline).length ?? 0;
 
-  // AI Status Intelligence
-  const { statusLine, statusColor } = (() => {
-    const delayedCount = tasks?.filter(t => t.status === 'DELAYED').length ?? 0;
-
-    if (delayedCount > 0) return { statusLine: 'Critical Pipeline Blockage', statusColor: '#ef4444' };
-    return { statusLine: project?.statusLine || 'Digital Workflow Online', statusColor: project?.statusColor || '#f59e0b' };
-  })();
-
   return (
+
+
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -82,19 +85,19 @@ export default function ProjectHeader({
         {/* Left - Project Info */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 4 }}>
-            <h1
-              style={{
-                fontSize: 28,
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                background: 'linear-gradient(to right, #fff, #e2e8f0, #94a3b8)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                margin: 0,
-              }}
-            >
-              {project?.title} - {project?.projectName}
-            </h1>
+              <h1
+                style={{
+                  fontSize: 28,
+                  fontWeight: 700,
+                  letterSpacing: '-0.02em',
+                  background: 'linear-gradient(to right, #fff, #e2e8f0, #94a3b8)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  margin: 0,
+                }}
+              >
+                {project?.title || 'Digital'} — {project?.projectName || 'Command Center'}
+              </h1>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
@@ -129,18 +132,87 @@ export default function ProjectHeader({
             </div>
           </div>
 
-          {/* Dynamic Insight Badges */}
+          {/* Dynamic Report Navigation Badges */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-            {project?.headerBadges?.filter(b => b.isVisible).map((badge) => {
+            <button
+              onClick={() => onReportChange?.('DELIVERABLES')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '6px 16px', borderRadius: 9999,
+                background: activeReport === 'DELIVERABLES' ? 'rgba(212, 175, 55, 0.2)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${activeReport === 'DELIVERABLES' ? '#D4AF37' : 'rgba(255,255,255,0.1)'}`,
+                backdropFilter: 'blur(10px)',
+                cursor: 'pointer',
+                transition: 'all 300ms'
+              }}
+            >
+              <div style={{ 
+                width: 7, height: 7, borderRadius: '50%', 
+                background: activeReport === 'DELIVERABLES' ? '#D4AF37' : 'rgba(255,255,255,0.3)',
+                boxShadow: activeReport === 'DELIVERABLES' ? '0 0 8px #D4AF37' : 'none'
+              }} className={activeReport === 'DELIVERABLES' ? "animate-pulse" : ""} />
+              <span style={{ 
+                fontSize: 13, fontWeight: 800, 
+                color: activeReport === 'DELIVERABLES' ? '#D4AF37' : 'rgba(255,255,255,0.4)', 
+                textTransform: 'uppercase', letterSpacing: '0.06em' 
+              }}>
+                Deliverables Report
+              </span>
+            </button>
+
+            <button
+              onClick={() => onReportChange?.('BIM_REVIEWS')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '6px 16px', borderRadius: 9999,
+                background: activeReport === 'BIM_REVIEWS' ? 'rgba(212, 175, 55, 0.2)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${activeReport === 'BIM_REVIEWS' ? '#D4AF37' : 'rgba(255,255,255,0.1)'}`,
+                backdropFilter: 'blur(10px)',
+                cursor: 'pointer',
+                transition: 'all 300ms'
+              }}
+            >
+              <div style={{ 
+                width: 7, height: 7, borderRadius: '50%', 
+                background: activeReport === 'BIM_REVIEWS' ? '#D4AF37' : 'rgba(255,255,255,0.3)',
+                boxShadow: activeReport === 'BIM_REVIEWS' ? '0 0 8px #D4AF37' : 'none'
+              }} className={activeReport === 'BIM_REVIEWS' ? "animate-pulse" : ""} />
+              <span style={{ 
+                fontSize: 13, fontWeight: 800, 
+                color: activeReport === 'BIM_REVIEWS' ? '#D4AF37' : 'rgba(255,255,255,0.4)', 
+                textTransform: 'uppercase', letterSpacing: '0.06em' 
+              }}>
+                BIM Reviews
+              </span>
+            </button>
+
+            {project?.headerBadges?.filter(b => {
+              if (!b.isVisible) return false;
+              if (b.isAutomated) return true; // Always show automated badges
+              
+              const label = (b.label || '').toUpperCase();
+              // Exclude manual duplicates that match our primary navigation buttons or contain common typos
+              if (label.includes('DELIVERABLE') || label.includes('DEILVAR') || label.includes('BIM')) return false;
+              if (b.id === 'report-type') return false;
+              return true;
+            }).map((badge) => {
+
+
               let displayText = badge.label;
               const color = badge.color || '#D4AF37';
 
+
               // Handle Automated Data Injection
               if (badge.isAutomated) {
-                if (badge.id === 'status-line') displayText = statusLine;
                 if (badge.id === 'date-range') displayText = dateRangeText || 'MONTHLY PERFORMANCE';
-                if (badge.id === 'task-count') displayText = `Deliverables Count: ${tasks?.length || 0}`;
+
+                if (badge.id === 'task-count') {
+                  const label = activeReport === 'DELIVERABLES' ? 'Deliverables' : 'BIM Reviews';
+                  const count = activeReport === 'DELIVERABLES' ? (tasks?.length || 0) : bimReviewsCount;
+                  displayText = `${label} Count: ${count}`;
+                }
               }
+
 
               return (
                 <span
@@ -170,20 +242,18 @@ export default function ProjectHeader({
             {/* Legacy Fallback if no badges defined */}
             {(!project?.headerBadges || project.headerBadges.length === 0) && (
               <>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 9999, background: `${statusColor}15`, border: `1px solid ${statusColor}40` }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: statusColor }} />
-                  <span style={{ fontSize: 14, fontWeight: 700, color: statusColor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{statusLine}</span>
-                </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 9999, background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.3)', marginLeft: 0 }}>
+
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4AF37', boxShadow: '0 0 10px #D4AF37' }} className="animate-pulse" />
                   <span style={{ fontSize: 13, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{dateRangeText || 'MONTHLY PERFORMANCE'}</span>
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '6px 18px', borderRadius: 9999, background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)', marginLeft: 0, backdropFilter: 'blur(10px)' }}>
                   <Cpu size={14} style={{ color: '#818cf8', filter: 'drop-shadow(0 0 5px rgba(99, 102, 241, 0.4))' }} />
                   <span style={{ fontSize: 13, fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    Deliverables Count: <span style={{ color: '#fff', marginLeft: 4, fontSize: 15, fontWeight: 900 }}>{tasks?.length || 0}</span>
+                    {activeReport === 'DELIVERABLES' ? 'Deliverables' : 'BIM Reviews'} Count: <span style={{ color: '#fff', marginLeft: 4, fontSize: 15, fontWeight: 900 }}>{activeReport === 'DELIVERABLES' ? (tasks?.length || 0) : bimReviewsCount}</span>
                   </span>
                 </span>
+
               </>
             )}
           </div>

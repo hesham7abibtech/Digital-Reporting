@@ -275,6 +275,27 @@ export interface NavItem {
 }
 
 // ─── Department Types ─────────────────────────────────────────────
+// ─── BIM Review Types ─────────────────────────────────────────────
+export interface BIMReview {
+  id: string;
+  submissionDescription: string;
+  comments: string;
+  designStage: string;
+  insiteBimReviewStatus: string;
+  insiteReviewDueDate?: string | null;
+  insiteReviewOutputUrl?: string;
+  insiteReviewer: string;
+  modonHillFinalReviewStatus: string;
+  onAcc: string; // "SHARED" | "NOT SHARED" 
+  project: string;
+  reviewNumber?: string;
+  stakeholder: string;
+  submissionCategory: string[]; // array of categories
+  submissionDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Department {
   id: string;
   name: string;
@@ -282,3 +303,4 @@ export interface Department {
   createdAt: string;
   updatedAt: string;
 }
+

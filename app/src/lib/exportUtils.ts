@@ -725,3 +725,181 @@ export async function exportToPDF(
   return { blob: new Blob([buffer], { type: 'application/pdf' }), filename: `${metadata?.projectName || 'Project'}_${perspective === 'both' ? 'Consolidated' : (perspective === 'dashboard' ? 'Analytics' : 'Report')}_${new Date().toISOString().split('T')[0]}.pdf` };
 }
 
+/**
+ * Gets BIM column configuration
+ */
+export function getBimExportColumns(metadataExcluded: string[], format: 'excel' | 'pdf' = 'excel') {
+  const baseColumns = [
+    { id: 'project', excelLabel: 'Project', pdfLabel: 'PROJECT', width: 30 },
+    { id: 'stakeholder', excelLabel: 'Stakeholder', pdfLabel: 'STAKEHOLDER', width: 25 },
+    { id: 'reviewNumber', excelLabel: 'Review No.', pdfLabel: 'REV NO', width: 15 },
+    { id: 'submissionDescription', excelLabel: 'Submission Description', pdfLabel: 'DESCRIPTION', width: 50 },
+    { id: 'designStage', excelLabel: 'Design Stage', pdfLabel: 'STAGE', width: 20 },
+    { id: 'submissionDate', excelLabel: 'Submission Date', pdfLabel: 'SUBMISSION DATE', width: 20 },
+    { id: 'submissionCategory', excelLabel: 'Category', pdfLabel: 'CATEGORY', width: 25 },
+    { id: 'onAcc', excelLabel: 'On ACC', pdfLabel: 'ACC', width: 15 },
+    { id: 'insiteReviewer', excelLabel: 'InSite Reviewer', pdfLabel: 'REVIEWER', width: 25 },
+    { id: 'insiteReviewDueDate', excelLabel: 'Due Date', pdfLabel: 'DUE DATE', width: 20 },
+    { id: 'insiteBimReviewStatus', excelLabel: 'InSite Status', pdfLabel: 'INSITE STATUS', width: 20 },
+    { id: 'modonHillFinalReviewStatus', excelLabel: 'Modon/Hill Status', pdfLabel: 'MODON STATUS', width: 20 },
+    { id: 'comments', excelLabel: 'Comments', pdfLabel: 'COMMENTS', width: 40 },
+    { id: 'insiteReviewOutputUrl', excelLabel: 'Output Link', pdfLabel: 'LINK', width: 20 }
+  ];
+
+  return baseColumns.map((col, idx) => ({
+    id: col.id,
+    label: format === 'pdf' ? col.pdfLabel : col.excelLabel,
+    width: col.width,
+    visible: !metadataExcluded.includes(col.id),
+    order: idx
+  })).filter(c => c.visible);
+}
+
+/**
+ * BIM Analytics for Dashboard
+ */
+function getBimDashboardAnalytics(reviews: BIMReview[]) {
+  const modonStatuses: Record<string, number> = {};
+  const insiteStatuses: Record<string, number> = {};
+  const stakeholders: Record<string, number> = {};
+  
+  reviews.forEach(r => {
+    modonStatuses[r.modonHillFinalReviewStatus || 'Awaiting'] = (modonStatuses[r.modonHillFinalReviewStatus || 'Awaiting'] || 0) + 1;
+    insiteStatuses[r.insiteBimReviewStatus || 'Pending'] = (insiteStatuses[r.insiteBimReviewStatus || 'Pending'] || 0) + 1;
+    stakeholders[r.stakeholder || 'N/A'] = (stakeholders[r.stakeholder || 'N/A'] || 0) + 1;
+  });
+
+  return {
+    total: reviews.length,
+    modon: Object.entries(modonStatuses).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value),
+    insite: Object.entries(insiteStatuses).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value),
+    stakeholders: Object.entries(stakeholders).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value),
+    approvedCount: modonStatuses['Approved'] || 0
+  };
+}
+
+/**
+ * BIM Excel Export
+ */
+export async function exportBimToExcel(
+  reviews: BIMReview[],
+  metadata: ProjectMetadata | undefined,
+  dateRangeText: string | undefined,
+  perspective: 'table' | 'dashboard' | 'both' = 'table'
+) {
+  const workbook = new ExcelJS.Workbook();
+  const headerColors = { bg: metadata?.reportExcelHeaderColor || '0A0A0F', text: metadata?.reportExcelHeaderTextColor || 'FFFFFF' };
+
+  const addRegistrySheet = (name: string) => {
+    const sheet = workbook.addWorksheet(name);
+    const cols = getBimExportColumns([], 'excel');
+    
+    const headers = cols.map(c => c.label);
+    const hRow = sheet.addRow(headers);
+    hRow.font = { bold: true, color: { argb: 'FF' + headerColors.text.replace('#', '') } };
+    hRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + headerColors.bg.replace('#', '') } };
+    hRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    reviews.forEach(r => {
+      const rowData = cols.map(c => {
+        const val = (r as any)[c.id];
+        if (Array.isArray(val)) return val.join(', ');
+        return val || '-';
+      });
+      const row = sheet.addRow(rowData);
+      row.alignment = { vertical: 'middle', horizontal: 'center' };
+      
+      const linkIdx = cols.findIndex(c => c.id === 'insiteReviewOutputUrl');
+      if (linkIdx !== -1 && r.insiteReviewOutputUrl) {
+        const cell = row.getCell(linkIdx + 1);
+        cell.value = { text: 'View Output', hyperlink: r.insiteReviewOutputUrl };
+        cell.font = { color: { argb: 'FF0563C1' }, underline: true };
+      }
+    });
+
+    sheet.columns.forEach(col => {
+      let maxLen = 0;
+      col.eachCell?.({ includeEmpty: true }, cell => {
+        const l = cell.value ? cell.value.toString().length : 10;
+        if (l > maxLen) maxLen = l;
+      });
+      col.width = Math.min(maxLen + 5, 50);
+    });
+    sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: headers.length } };
+  };
+
+  if (perspective === 'dashboard' || perspective === 'both') {
+    const analytics = getBimDashboardAnalytics(reviews);
+    const sheet = workbook.addWorksheet('BIM Insights');
+    sheet.addRow(['BIM REVIEW EXECUTIVE SUMMARY']).font = { bold: true, size: 14, color: { argb: 'FFD4AF37' } };
+    sheet.addRow([]);
+    sheet.addRow(['Total Reviews', analytics.total]);
+    sheet.addRow(['Approved (Modon)', analytics.approvedCount]);
+    sheet.addRow(['Active Stakeholders', analytics.stakeholders.length]);
+    sheet.addRow(['Period', dateRangeText || 'All Time']);
+    sheet.addRow(['Generated On', formatGeneratedOn()]);
+  }
+
+  if (perspective === 'table' || perspective === 'both') {
+    addRegistrySheet('BIM Review Matrix');
+  }
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return { blob: new Blob([buffer]), filename: `BIM_Reviews_${new Date().toISOString().split('T')[0]}.xlsx` };
+}
+
+/**
+ * BIM PDF Export
+ */
+export async function exportBimToPDF(
+  reviews: BIMReview[],
+  metadata: ProjectMetadata | undefined,
+  dateRangeText: string | undefined,
+  perspective: 'table' | 'dashboard' | 'both' = 'table'
+) {
+  const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const bgColor = hexToRgb(metadata?.reportBgColor || '#0a0a0f');
+  const accentColor = hexToRgb(metadata?.reportAccentColor || '#D4AF37');
+
+  const drawCover = () => {
+    doc.setFillColor(...bgColor);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    doc.setTextColor(...accentColor);
+    doc.setFontSize(40);
+    doc.setFont('helvetica', 'bold');
+    doc.text('BIM REVIEW MATRIX', 20, 60);
+    doc.setFontSize(18);
+    doc.setTextColor(255,255,255);
+    doc.text(metadata?.projectName || 'Project Master Registry', 20, 75);
+    doc.setFontSize(12);
+    doc.text(`Period: ${dateRangeText || 'All Time'}`, 20, 90);
+    doc.text(`Generated: ${formatGeneratedOn()}`, 20, 100);
+  };
+
+  const drawTable = () => {
+    doc.addPage();
+    const cols = getBimExportColumns([], 'pdf');
+    const head = [cols.map(c => c.label)];
+    const body = reviews.map(r => cols.map(c => {
+      const val = (r as any)[c.id];
+      return Array.isArray(val) ? val.join(', ') : (val || '-');
+    }));
+
+    autoTable(doc, {
+      head, body, theme: 'grid',
+      headStyles: { fillColor: [30, 41, 59], fontSize: 7 },
+      styles: { fontSize: 6.5, halign: 'center' },
+      columnStyles: { 3: { halign: 'left', cellWidth: 40 } }
+    });
+  };
+
+  drawCover();
+  if (perspective === 'table' || perspective === 'both') drawTable();
+  
+  return { blob: new Blob([doc.output('blob')], { type: 'application/pdf' }), filename: `BIM_Report_${new Date().toISOString().split('T')[0]}.pdf` };
+}
+
+
+import { BIMReview } from './types';

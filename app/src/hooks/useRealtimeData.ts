@@ -12,6 +12,7 @@ export function useRealtimeData() {
   const [membersSnapshot, membersLoading] = useCollection(collections.members);
   const [registrySnapshot, registryLoading] = useCollection(collections.registry);
   const [departmentsSnapshot, departmentsLoading] = useCollection(collections.departments);
+  const [bimReviewsSnapshot, bimReviewsLoading] = useCollection(collections.bimReviews);
   
   // Also sync global project settings
   const [projectSnapshot, projectLoading] = useDocument(doc(db, 'settings', 'project'));
@@ -20,20 +21,23 @@ export function useRealtimeData() {
   const members = membersSnapshot ? membersSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as TeamMember)) : [];
   const registry = registrySnapshot ? registrySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as DashboardNavItem)) : [];
   const departments = departmentsSnapshot ? departmentsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Department)) : [];
+  const bimReviews = bimReviewsSnapshot ? bimReviewsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as any)) : [];
   const project = projectSnapshot?.exists() ? ({ id: projectSnapshot.id, ...projectSnapshot.data() } as ProjectMetadata) : null;
 
   useEffect(() => {
-    if (!tasksLoading && !membersLoading && !registryLoading && !projectLoading && !departmentsLoading) {
+    if (!tasksLoading && !membersLoading && !registryLoading && !projectLoading && !departmentsLoading && !bimReviewsLoading) {
       console.log('[REALTIME_SYNC] Bridge established. Data hydrated.');
     }
-  }, [tasksLoading, membersLoading, registryLoading, projectLoading, departmentsLoading]);
+  }, [tasksLoading, membersLoading, registryLoading, projectLoading, departmentsLoading, bimReviewsLoading]);
 
   return {
     tasks,
     members,
     registry,
     departments,
+    bimReviews,
     project,
-    isLoading: tasksLoading || membersLoading || registryLoading || projectLoading || departmentsLoading
+    isLoading: tasksLoading || membersLoading || registryLoading || projectLoading || departmentsLoading || bimReviewsLoading
   };
-}
+};
+

@@ -39,8 +39,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Table,
-  FileText
+  FileText,
+  Layers,
+  FileSpreadsheet
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
+
 import { useAuth } from '@/context/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { collections, bulkDelete, getProjectMetadata, updateProjectMetadata, uploadFile } from '@/services/FirebaseService';
@@ -51,13 +55,16 @@ import { doc, collection, query, orderBy, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import GlassCard from '@/components/shared/GlassCard';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { Task, TeamMember, DashboardNavItem, ProjectMetadata, Department, ReportSummaryField, HeaderBadge } from '@/lib/types';
+import { Task, TeamMember, DashboardNavItem, ProjectMetadata, Department, ReportSummaryField, HeaderBadge, BIMReview } from '@/lib/types';
 import TaskEditorModal from '@/components/admin/TaskEditorModal';
 import MemberEditorModal from '@/components/admin/MemberEditorModal';
 import RegistryEditorModal from '@/components/admin/RegistryEditorModal';
 import UserEditorModal from '@/components/admin/UserEditorModal';
 import DepartmentEditorModal from '@/components/admin/DepartmentEditorModal';
+import BIMReviewEditorModal from '@/components/admin/BIMReviewEditorModal';
+import BIMImportConfirmModal from '@/components/admin/BIMImportConfirmModal';
 import GroupPolicyList from '@/components/admin/GroupPolicyList';
+
 import GroupPolicyEditor from '@/components/admin/GroupPolicyEditor';
 import BulkActionConfirmModal from '@/components/admin/BulkActionConfirmModal';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
@@ -288,7 +295,8 @@ export default function AdminDashboardPage() {
     }
   }, [userProfile, router]);
 
-  const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'branding' | 'registry' | 'users' | 'policies' | 'broadcast' | 'reports'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'branding' | 'registry' | 'users' | 'policies' | 'broadcast' | 'reports' | 'bim-reviews'>('tasks');
+
   const [activeSubTab, setActiveSubTab] = useState<'users' | 'policies'>('users');
   const [teamActiveSubTab, setTeamActiveSubTab] = useState<'personnel' | 'departments'>('personnel');
   const [selectedPolicy, setSelectedPolicy] = useState<any>(null);
@@ -359,6 +367,10 @@ export default function AdminDashboardPage() {
   const [broadcastToDelete, setBroadcastToDelete] = useState<{ id: string, title: string } | null>(null);
   const [isSavingReport, setIsSavingReport] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isBimImportLoading, setIsBimImportLoading] = useState(false);
+  const [bimImportConfirm, setBimImportConfirm] = useState<{ isOpen: boolean, records: any[] }>({ isOpen: false, records: [] });
+  const bimFileInputRef = useRef<HTMLInputElement>(null);
+
 
   // Real-time metadata for Main Data tab
   const [projectSnapshot, projectLoading] = useDocument(doc(db, 'settings', 'project'));
@@ -371,7 +383,9 @@ export default function AdminDashboardPage() {
   const [selectedRegistry, setSelectedRegistry] = useState<DashboardNavItem | null>(null);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [selectedDepartment, setSelectedDepartment] = useState<any | null>(null);
+  const [selectedBimReview, setSelectedBimReview] = useState<BIMReview | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
 
   // Sync projectData partnerLogos exactly once initially
   if (projectData?.partnerLogos && !initializedLogos) {
@@ -464,6 +478,8 @@ export default function AdminDashboardPage() {
   const [tasksSnapshot, tasksLoading] = useCollection(collections.tasks);
   const [registrySnapshot, registryLoading] = useCollection(collections.registry);
   const [usersSnapshot, usersLoading] = useCollection(collections.users);
+  const [bimReviewsSnapshot, bimReviewsLoading] = useCollection(collections.bimReviews);
+
 
   // Dynamic linking: Team Members are now explicitly fueled by the registered Users registry
   const membersSnapshot = usersSnapshot;
@@ -606,6 +622,89 @@ export default function AdminDashboardPage() {
   };
 
 
+  const handleBimExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet);
+
+        if (json.length === 0) {
+          showToast('Packet analysis failure: Data stream is empty.', 'INFO');
+          return;
+        }
+
+        const normalizeExcelDate = (val: any) => {
+          if (!val) return null;
+          if (typeof val === 'number') {
+            const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+            return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+          }
+          return String(val);
+        };
+
+        const sanitizeProjectName = (name: any) => {
+          if (!name || typeof name !== 'string') return name || '';
+          return name.replace(/\s*\(https?:\/\/[^\)]+\)/g, '').trim();
+        };
+
+        let lastProject = '';
+        const mappedRecords = json.map((row: any) => {
+          const currentProject = row['Project'] ? sanitizeProjectName(row['Project']) : '';
+          if (currentProject) lastProject = currentProject;
+          
+          return {
+            submissionDescription: row['Submission Description'] || '',
+            comments: row['Comments'] || '',
+            designStage: row['Design Stage'] || '',
+            insiteBimReviewStatus: row['InSite BIM Review Status'] || '',
+            insiteReviewDueDate: normalizeExcelDate(row['InSite Review Due Date']),
+            insiteReviewOutputUrl: row['InSite Review Output URL'] || '',
+            insiteReviewer: row['InSite Reviewer'] || '',
+            modonHillFinalReviewStatus: row['Modon/Hill Final Review Status'] || '',
+            onAcc: row['On ACC'] || 'NOT SHARED',
+            project: lastProject,
+            reviewNumber: row['Review Number'] ? String(row['Review Number']) : '',
+            stakeholder: row['Stakeholder'] || '',
+            submissionCategory: row['Submission Category'] 
+              ? String(row['Submission Category']).split(',').map((s: string) => s.trim()) 
+              : [],
+            submissionDate: normalizeExcelDate(row['Submission Date'])
+          };
+        });
+
+        setBimImportConfirm({ isOpen: true, records: mappedRecords });
+      } catch (err) {
+        console.error('BIM Import Failure:', err);
+        showToast('Digital transport integrity error: Ingestion failed.', 'ERROR');
+      } finally {
+        if (bimFileInputRef.current) bimFileInputRef.current.value = '';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleImportConfirm = async (strategy: 'APPEND' | 'OVERWRITE') => {
+    setIsBimImportLoading(true);
+    try {
+      const { bulkUpsertBimReviews } = await import('@/services/FirebaseService');
+      await bulkUpsertBimReviews(bimImportConfirm.records, strategy as any);
+      showToast(`Intelligence Matrix synchronized: ${bimImportConfirm.records.length} records ingested in ${strategy} mode.`, 'SUCCESS');
+      setBimImportConfirm({ isOpen: false, records: [] });
+    } catch (err) {
+      console.error('Import Commit Failure:', err);
+      showToast('Administrative protocol failure: Batch commit interrupted.', 'ERROR');
+    } finally {
+      setIsBimImportLoading(false);
+    }
+  };
+
   // Reset selection when tab changes
   const handleTabChange = (tab: any) => {
     setActiveTab(tab);
@@ -679,12 +778,13 @@ export default function AdminDashboardPage() {
     }
     if (activeTab === 'registry') return registrySnapshot?.docs.map(d => ({ id: d.id, ...d.data() })) || [];
     if (activeTab === 'users') return usersSnapshot?.docs.map(d => ({ id: d.id, ...d.data() })) || [];
+    if (activeTab === 'bim-reviews') return bimReviewsSnapshot?.docs.map(d => ({ id: d.id, ...d.data() })) || [];
     return [];
   };
 
   const handleBulkDelete = async () => {
     try {
-      const colName = activeTab === 'team' ? 'users' : activeTab;
+      const colName = activeTab === 'team' ? 'users' : (activeTab === 'bim-reviews' ? 'bimReviews' : activeTab);
       await bulkDelete(colName, Array.from(selectedIds));
       showToast(`${selectedIds.size} records successfully purged from production.`, 'SUCCESS');
       setSelectedIds(new Set());
@@ -801,12 +901,14 @@ export default function AdminDashboardPage() {
           <nav className="custom-scrollbar" style={{ flex: 1, padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
             {[
               { id: 'tasks', label: 'Deliverable Matrix', icon: BarChart3, permission: 'tasks' },
+              { id: 'bim-reviews', label: 'BIM Review Matrix', icon: Layers, permission: 'tasks' },
               { id: 'team', label: 'Project Team', icon: Users, permission: 'team' },
               { id: 'branding', label: 'Identity & Branding', icon: Database, permission: 'branding' },
               { id: 'reports', label: 'Report Settings', icon: Settings, permission: 'reports' },
               { id: 'broadcast', label: 'Communications', icon: Megaphone, permission: 'broadcast' },
               { id: 'users', label: 'Access Control', icon: Shield, permission: 'users' },
             ].filter(tab => tab.id === 'reports' || isVisible(tab.permission as any)).map((tab) => (
+
               <button
                 key={tab.id}
                 onClick={() => { setActiveTab(tab.id as any); setSelectedIds(new Set()); }}
@@ -875,8 +977,9 @@ export default function AdminDashboardPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: 'white', letterSpacing: '-0.01em' }}>
-                  {activeTab === 'tasks' ? 'Deliverable Registry' : activeTab === 'reports' ? 'Report Configuration' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1) + ' Management'}
+                  {activeTab === 'tasks' ? 'Deliverable Registry' : activeTab === 'bim-reviews' ? 'BIM Review Matrix' : activeTab === 'reports' ? 'Report Configuration' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1) + ' Management'}
                 </h2>
+
               </div>
             </div>
 
@@ -907,11 +1010,13 @@ export default function AdminDashboardPage() {
                   <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>
-                        {activeTab === 'tasks' ? 'Digital Deliverable Matrix' : activeTab === 'team' ? 'Active Digital Project Team' : activeTab === 'registry' ? 'Digital Asset Registry Index' : activeTab === 'branding' ? 'Project Identity & Branding' : activeTab === 'broadcast' ? 'Elite Broadcast Command' : 'Security Access Registry'}
+                        {activeTab === 'tasks' ? 'Digital Deliverable Matrix' : activeTab === 'bim-reviews' ? 'BIM Review Intelligence Matrix' : activeTab === 'team' ? 'Active Digital Project Team' : activeTab === 'registry' ? 'Digital Asset Registry Index' : activeTab === 'branding' ? 'Project Identity & Branding' : activeTab === 'broadcast' ? 'Elite Broadcast Command' : 'Security Access Registry'}
                       </h2>
+
                       <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 4 }}>
-                        {activeTab === 'users' ? 'Management of security clearances and administrative roles' : activeTab === 'branding' ? 'Configuration of project branding and site-wide metadata' : activeTab === 'broadcast' ? 'Dispatch real-time classified notifications and news updates' : 'Real-time synchronization with Digital Workflow Systems'}
+                        {activeTab === 'bim-reviews' ? 'Strategic oversight of cross-project BIM submission reviews and status tracking' : activeTab === 'users' ? 'Management of security clearances and administrative roles' : activeTab === 'branding' ? 'Configuration of project branding and site-wide metadata' : activeTab === 'broadcast' ? 'Dispatch real-time classified notifications and news updates' : 'Real-time synchronization with Digital Workflow Systems'}
                       </p>
+
                     </div>
 
                     <div style={{ display: 'flex', gap: 12 }}>
@@ -957,6 +1062,29 @@ export default function AdminDashboardPage() {
                           />
                         </div>
                       )}
+                      {activeTab === 'bim-reviews' && can('tasks', 'edit') && (
+                        <>
+                          <input 
+                            type="file" 
+                            ref={bimFileInputRef} 
+                            onChange={handleBimExcelImport} 
+                            accept=".xlsx, .xls, .csv" 
+                            style={{ display: 'none' }} 
+                          />
+                          <button 
+                            onClick={() => bimFileInputRef.current?.click()} 
+                            style={{ 
+                              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', 
+                              borderRadius: 10, background: 'rgba(16, 185, 129, 0.1)', 
+                              color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', 
+                              cursor: 'pointer', fontSize: 13, fontWeight: 800 
+                            }}
+                          >
+                            <FileSpreadsheet size={18} />
+                            Import Matrix
+                          </button>
+                        </>
+                      )}
                       {activeTab !== 'users' && activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'broadcast' && can(activeTab as any, 'edit') && (
                         <button onClick={handleNewRecord} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, background: '#D4AF37', color: '#0a0a0f', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>
                           <Plus size={18} />
@@ -979,32 +1107,47 @@ export default function AdminDashboardPage() {
                                 style={{ cursor: 'pointer', width: 18, height: 18 }}
                               />
                             </th>
-                            <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                              {activeTab === 'users' ? 'Staff Identity' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Project Personnel' : 'Task Category') : 'Task Definition / Asset'}
-                            </th>
-                            <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                              {activeTab === 'users' ? 'Designation' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Functional Category' : 'Abbreviation') : 'Task Category'}
-                            </th>
-                            <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                              {activeTab === 'users' ? 'Access Control' : activeTab === 'tasks' ? 'Submitter' : activeTab === 'team' && teamActiveSubTab === 'personnel' ? 'Email Interface' : 'Action Hub'}
-                            </th>
-                            <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                              {activeTab === 'users' ? 'Security Protocol' : activeTab === 'tasks' ? 'Submission Date' : 'Control'}
-                            </th>
-                            {activeTab === 'users' && (
-                              <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                                Digital Signature
-                              </th>
+                            {activeTab === 'bim-reviews' ? (
+                              <>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Project Identity</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Stage</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Status (InSite)</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Status (Modon/Hill)</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Reviewer</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Due Date</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Submission</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Control</th>
+                              </>
+                            ) : (
+                              <>
+                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                  {activeTab === 'users' ? 'Staff Identity' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Project Personnel' : 'Task Category') : 'Task Definition / Asset'}
+                                </th>
+                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                  {activeTab === 'users' ? 'Designation' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Functional Category' : 'Abbreviation') : 'Task Category'}
+                                </th>
+                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                  {activeTab === 'users' ? 'Access Control' : activeTab === 'tasks' ? 'Submitter' : activeTab === 'team' && teamActiveSubTab === 'personnel' ? 'Email Interface' : 'Action Hub'}
+                                </th>
+                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                  {activeTab === 'users' ? 'Security Protocol' : activeTab === 'tasks' ? 'Submission Date' : 'Control'}
+                                </th>
+                                {activeTab === 'users' && (
+                                  <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                    Digital Signature
+                                  </th>
+                                )}
+                              </>
                             )}
                           </tr>
                         </thead>
                       )}
                       <tbody>
-                        {activeTab === 'tasks' && tasksSnapshot?.docs.map((doc: any) => {
+                        {activeTab === 'tasks' && tasksSnapshot?.docs.map((doc: any, i: number) => {
                           const task = doc.data() as Task;
                           const isSelected = selectedIds.has(doc.id);
                           return (
-                            <tr key={doc.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer', background: isSelected ? 'rgba(212, 175, 55, 0.05)' : 'transparent' }} onClick={() => handleEditRecord(task)}>
+                            <tr key={doc.id || `task-${i}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer', background: isSelected ? 'rgba(212, 175, 55, 0.05)' : 'transparent' }} onClick={() => handleEditRecord(task)}>
                               <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
@@ -1061,20 +1204,19 @@ export default function AdminDashboardPage() {
                             </td>
                           </tr>
                         )}
-
-                         {activeTab === 'team' && teamActiveSubTab === 'personnel' && membersSnapshot?.docs.map((doc: any) => {
-                           const member = { id: doc.id, ...doc.data() } as any;
-                           const isSelected = selectedIds.has(doc.id);
-                           return (
-                             <tr key={doc.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer', background: isSelected ? 'rgba(212, 175, 55, 0.05)' : 'transparent' }} onClick={() => handleEditRecord(member)}>
-                               <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
-                                 <input
-                                   type="checkbox"
-                                   checked={isSelected}
-                                   onChange={(e) => toggleSelect(doc.id, e as any)}
-                                   style={{ cursor: 'pointer', width: 16, height: 16 }}
-                                 />
-                               </td>
+                         {activeTab === 'team' && teamActiveSubTab === 'personnel' && membersSnapshot?.docs.map((doc: any, i: number) => {
+                            const member = { id: doc.id, ...doc.data() } as any;
+                            const isSelected = selectedIds.has(doc.id);
+                            return (
+                              <tr key={doc.id || `member-${i}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer', background: isSelected ? 'rgba(212, 175, 55, 0.05)' : 'transparent' }} onClick={() => handleEditRecord(member)}>
+                                <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => toggleSelect(doc.id, e as any)}
+                                    style={{ cursor: 'pointer', width: 16, height: 16 }}
+                                  />
+                                </td>
                                <td style={{ padding: '12px 32px', textAlign: 'center' }}>
                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: member.status === 'ACTIVE' ? '#10b981' : '#f59e0b', flexShrink: 0 }} />
@@ -1152,6 +1294,66 @@ export default function AdminDashboardPage() {
                                 </div>
                                 <div>
                                   <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>No current data</p>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                        {activeTab === 'bim-reviews' && bimReviewsSnapshot?.docs.map((doc: any, i: number) => {
+                          const review = { id: doc.id, ...doc.data() } as BIMReview;
+                          const isSelected = selectedIds.has(doc.id);
+                          return (
+                            <tr key={doc.id || `bim-${i}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer', background: isSelected ? 'rgba(212, 175, 55, 0.05)' : 'transparent' }} onClick={() => { setSelectedBimReview(review); setIsModalOpen(true); }}>
+                              <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => toggleSelect(doc.id, e as any)}
+                                  style={{ cursor: 'pointer', width: 16, height: 16 }}
+                                />
+                              </td>
+                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
+                                <div style={{ fontWeight: 700, fontSize: 13, color: 'white' }}>{review.project}</div>
+                                <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{review.submissionDescription}</div>
+                              </td>
+                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
+                                <span style={{ fontSize: 10, background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', padding: '4px 8px', borderRadius: 6, fontWeight: 900, letterSpacing: '0.05em' }}>{review.designStage}</span>
+                              </td>
+                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 700 }}>{review.insiteBimReviewStatus || '—'}</div>
+                                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{review.stakeholder}</div>
+                              </td>
+                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 12, color: '#10b981', fontWeight: 800 }}>{review.modonHillFinalReviewStatus || '—'}</div>
+                              </td>
+                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{review.insiteReviewer || '—'}</div>
+                              </td>
+                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 12, color: '#f59e0b', fontWeight: 800 }}>{review.insiteReviewDueDate || '—'}</div>
+                              </td>
+                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>{review.submissionDate || '—'}</div>
+                                <div style={{ fontSize: 10, color: review.onAcc === 'SHARED' ? '#10b981' : '#ef4444', fontWeight: 900, marginTop: 4 }}>{review.onAcc}</div>
+                              </td>
+                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
+                                <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
+                                  <MoreVertical size={18} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {activeTab === 'bim-reviews' && bimReviewsSnapshot?.docs.length === 0 && (
+                          <tr>
+                            <td colSpan={9} style={{ padding: '60px 40px', textAlign: 'center' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(212, 175, 55, 0.06)', border: '1px solid rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Layers size={24} style={{ color: 'rgba(212, 175, 55, 0.4)' }} />
+                                </div>
+                                <div>
+                                  <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>No intelligence records found</p>
+                                  <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: 0 }}>The repository contains no active records for the Matrix.</p>
                                 </div>
                               </div>
                             </td>
@@ -1374,13 +1576,7 @@ export default function AdminDashboardPage() {
                                           <input value={localLocation} onChange={(e) => setLocalLocation(e.target.value)} style={{ width: '100%', padding: '12px 16px 12px 40px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }} />
                                         </div>
                                       </div>
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                        <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Status Line</label>
-                                        <div style={{ position: 'relative' }}>
-                                          <Cpu size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.2)' }} />
-                                          <input value={localStatusLine} onChange={(e) => setLocalStatusLine(e.target.value)} style={{ width: '100%', padding: '12px 16px 12px 40px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }} />
-                                        </div>
-                                      </div>
+
                                     </div>
 
                                     {/* Badges Section */}
@@ -2250,7 +2446,25 @@ export default function AdminDashboardPage() {
                 severity="DANGER"
               />
             )}
+            {isModalOpen && activeTab === 'bim-reviews' && (
+              <BIMReviewEditorModal
+                isOpen={isModalOpen}
+                onClose={() => { setIsModalOpen(false); setSelectedBimReview(null); }}
+                review={selectedBimReview}
+                onSuccess={(msg) => showToast(msg, 'SUCCESS')}
+                onError={(msg) => showToast(msg, 'ERROR')}
+              />
+            )}
+
+      <BIMImportConfirmModal
+        isOpen={bimImportConfirm.isOpen}
+        onClose={() => setBimImportConfirm({ isOpen: false, records: [] })}
+        onConfirm={handleImportConfirm}
+        isLoading={isBimImportLoading}
+        records={bimImportConfirm.records}
+      />
           </AnimatePresence>
+
         </div>
       </div>
     </div>

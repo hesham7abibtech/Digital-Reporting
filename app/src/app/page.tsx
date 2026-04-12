@@ -9,10 +9,14 @@ import ActiveTasks from '@/components/dashboard/ActiveTasks';
 import AnalyticsDashboardView from '@/components/dashboard/AnalyticsDashboardView';
 import DashboardRegistry from '@/components/dashboard/DashboardRegistry';
 import ChartsSection from '@/components/dashboard/ChartsSection';
+import ExportMenu from '@/components/dashboard/ExportMenu';
+import BimExportMenu from '@/components/dashboard/BimExportMenu';
+import BIMReviewsTable from '@/components/dashboard/BIMReviewsTable';
 import NotificationPanel from '@/components/dashboard/NotificationPanel';
+import BIMAnalyticsView from '@/components/dashboard/BIMAnalyticsView';
+
 import TaskDetailModal from '@/components/dashboard/TaskDetailModal';
 import EliteDropdown from '@/components/dashboard/EliteDropdown';
-import ExportMenu from '@/components/dashboard/ExportMenu';
 import type { Task } from '@/lib/types';
 import { useTimeZone } from '@/context/TimeZoneContext';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
@@ -24,7 +28,8 @@ import { useEffect } from 'react';
 
 export default function Dashboard() {
   const { isUpdating, selectedTimeZone } = useTimeZone();
-  const { tasks: syncedTasks, members: syncedMembers, registry: syncedRegistry, departments: syncedDepartments, project: syncedProject, isLoading } = useRealtimeData();
+  const { tasks: syncedTasks, members: syncedMembers, registry: syncedRegistry, departments: syncedDepartments, bimReviews: syncedBimReviews, project: syncedProject, isLoading } = useRealtimeData();
+
   const { userProfile } = useAuth();
   const [notifOpen, setNotifOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -40,6 +45,16 @@ export default function Dashboard() {
   const [filterCDE, setFilterCDE] = useState<string[]>(['All Environments']);
   const [search, setSearch] = useState('');
   const { activeView, setActiveView } = useRegistryView('table');
+  const [activeReport, setActiveReport] = useState<'DELIVERABLES' | 'BIM_REVIEWS'>('DELIVERABLES');
+
+  // BIM Matrix Filters
+  const [bimSearch, setBimSearch] = useState('');
+  const [bimFilterStage, setBimFilterStage] = useState<string[]>([]);
+  const [bimFilterStatus, setBimFilterStatus] = useState<string[]>([]);
+  const [bimFilterStakeholder, setBimFilterStakeholder] = useState<string[]>([]);
+  const [bimFilterReviewer, setBimFilterReviewer] = useState<string[]>([]);
+
+
 
   const months = [
     "January", "February", "March", "April", "May", "June",
@@ -224,7 +239,98 @@ export default function Dashboard() {
       );
     }
     return result;
-  }, [dateFilteredTasks, filterDept, search]);
+  }, [dateFilteredTasks, filterDept, filterType, filterCDE, search]);
+
+  const parseBimDate = (d: string) => {
+    if (!d || d === '—') return null;
+    const parts = d.split('-');
+    if (parts.length !== 3) return null;
+    const months: Record<string, number> = {
+      JAN:0, FEB:1, MAR:2, APR:3, MAY:4, JUN:5, JUL:6, AUG:7, SEP:8, OCT:9, NOV:10, DEC:11
+    };
+    const month = months[parts[1].toUpperCase()];
+    if (month === undefined) return null;
+    return new Date(parseInt(parts[2]), month, parseInt(parts[0]));
+  };
+
+  const filteredBimReviews = useMemo(() => {
+    let result = syncedBimReviews;
+
+    // Apply Date Filter
+    if (filterMode !== 'all') {
+      let rangeStart: Date;
+      let rangeEnd: Date;
+
+      if (filterMode === 'custom') {
+        rangeStart = startDate ? new Date(startDate) : new Date('1970-01-01');
+        rangeEnd = endDate ? new Date(endDate) : new Date('2099-12-31');
+      } else {
+        rangeStart = new Date(selectedYear, selectedMonth, 1);
+        rangeEnd = new Date(selectedYear, selectedMonth + 1, 0);
+      }
+      rangeStart.setHours(0, 0, 0, 0);
+      rangeEnd.setHours(23, 59, 59, 999);
+
+      result = result.filter(review => {
+        const d = parseBimDate(review.submissionDate);
+        if (!d) return false;
+        return d >= rangeStart && d <= rangeEnd;
+      });
+    }
+
+    return result.filter(review => {
+      const searchStr = bimSearch.toLowerCase();
+      const matchesSearch = !bimSearch || 
+        review.submissionDescription.toLowerCase().includes(searchStr) ||
+        review.project.toLowerCase().includes(searchStr) ||
+        review.stakeholder.toLowerCase().includes(searchStr) ||
+        review.insiteReviewer.toLowerCase().includes(searchStr);
+
+      const matchesStage = bimFilterStage.length === 0 || bimFilterStage.includes(review.designStage);
+      const matchesStatus = bimFilterStatus.length === 0 || bimFilterStatus.includes(review.insiteBimReviewStatus);
+      const matchesStakeholder = bimFilterStakeholder.length === 0 || bimFilterStakeholder.includes(review.stakeholder);
+      const matchesReviewer = bimFilterReviewer.length === 0 || bimFilterReviewer.includes(review.insiteReviewer);
+
+      return matchesSearch && matchesStage && matchesStatus && matchesStakeholder && matchesReviewer;
+    });
+  }, [syncedBimReviews, bimSearch, bimFilterStage, bimFilterStatus, bimFilterStakeholder, bimFilterReviewer, filterMode, selectedMonth, selectedYear, startDate, endDate]);
+
+  // Snapshot for previous period to calculate growth
+  const previousPeriodBimReviews = useMemo(() => {
+    if (filterMode === 'all') return [];
+
+    let prevStart: Date;
+    let prevEnd: Date;
+
+    if (filterMode === 'monthly') {
+      const prevM = selectedMonth === 0 ? 11 : selectedMonth - 1;
+      const prevY = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+      prevStart = new Date(prevY, prevM, 1);
+      prevEnd = new Date(prevY, prevM + 1, 0);
+    } else {
+      const currentStart = startDate ? new Date(startDate) : new Date();
+      const currentEnd = endDate ? new Date(endDate) : new Date();
+      const diff = currentEnd.getTime() - currentStart.getTime();
+      const duration = diff > 0 ? diff : 86400000 * 30;
+      prevStart = new Date(currentStart.getTime() - duration);
+      prevEnd = new Date(currentStart.getTime());
+    }
+    prevStart.setHours(0, 0, 0, 0);
+    prevEnd.setHours(23, 59, 59, 999);
+
+    return syncedBimReviews.filter(review => {
+      const d = parseBimDate(review.submissionDate);
+      if (!d) return false;
+      return d >= prevStart && d <= prevEnd;
+    });
+  }, [syncedBimReviews, selectedMonth, selectedYear, startDate, endDate, filterMode]);
+
+  // Available BIM Filter Options
+  const availableBimStages = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.designStage))).filter(Boolean).sort(), [syncedBimReviews]);
+  const availableBimStatuses = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.insiteBimReviewStatus))).filter(Boolean).sort(), [syncedBimReviews]);
+  const availableBimStakeholders = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.stakeholder))).filter(Boolean).sort(), [syncedBimReviews]);
+  const availableBimReviewers = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.insiteReviewer))).filter(Boolean).sort(), [syncedBimReviews]);
+
 
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
@@ -248,14 +354,24 @@ export default function Dashboard() {
         />
 
         <main style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 'calc(100vh - 100px)' }}>
-          {isLoading && syncedTasks.length === 0 && !syncedProject ? (
+          {isLoading ? (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', flexDirection: 'column', gap: 16 }}>
               <div style={{ width: 40, height: 40, border: '2px solid rgba(212, 175, 55, 0.1)', borderTopColor: '#D4AF37', borderRadius: '50%' }} className="animate-spin" />
               <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.05em' }}>ESTABLISHING SECURE CONNECTION...</p>
             </div>
           ) : (
             <>
-              <ProjectHeader project={syncedProject || undefined} members={syncedMembers} tasks={filteredTasks} dateRangeText={filterDateText} />
+              <ProjectHeader 
+                project={syncedProject || undefined} 
+                members={syncedMembers} 
+                tasks={filteredTasks} 
+                dateRangeText={filterDateText} 
+                activeReport={activeReport}
+                onReportChange={setActiveReport}
+                bimReviewsCount={syncedBimReviews.length}
+              />
+
+
 
               <div style={{
                 padding: '12px 24px',
@@ -269,7 +385,7 @@ export default function Dashboard() {
                 flexWrap: 'nowrap',
                 overflow: 'visible',
                 position: 'relative',
-                zIndex: 200,
+                zIndex: 3000,
                 boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -282,11 +398,15 @@ export default function Dashboard() {
                     <CalendarRange size={16} color="#D4AF37" />
                   </div>
                   <h2 style={{ fontSize: 13, fontWeight: 900, color: 'white', letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-                    Dashboard Overview — <span style={{ color: '#D4AF37' }}>
+                    {activeReport === 'DELIVERABLES' ? 'Deliverable Matrix' : 'BIM Review Matrix'} — <span style={{ color: '#D4AF37' }}>
                       {filterDateText}
                     </span>
                   </h2>
                 </div>
+
+
+
+
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 'auto', flexShrink: 0 }}>
                   {/* Mode Switcher */}
@@ -390,32 +510,55 @@ export default function Dashboard() {
                   <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.06)' }} />
 
                   {/* Elite Export System */}
-                  <ExportMenu
-                    tasks={filteredTasks}
-                    projectMetadata={syncedProject || undefined}
-                    dateRangeText={filterDateText}
-                    filterMode={filterMode}
-                    setFilterMode={setFilterMode}
-                    filterDept={filterDept}
-                    setFilterDept={setFilterDept}
-                    availableDepts={availableDepts}
-                    selectedYear={selectedYear}
-                    setSelectedYear={setSelectedYear}
-                    yearOptions={yearOptions}
-                    selectedMonth={selectedMonth}
-                    setSelectedMonth={setSelectedMonth}
-                    monthOptions={monthOptions}
-                    startDate={startDate}
-                    setStartDate={setStartDate}
-                    endDate={endDate}
-                    setEndDate={setEndDate}
-                    filterType={filterType}
-                    setFilterType={setFilterType}
-                    availableTypes={availableTypes}
-                    filterCDE={filterCDE}
-                    setFilterCDE={setFilterCDE}
-                    availableCDEs={availableCDEs}
-                  />
+                  {activeReport === 'DELIVERABLES' ? (
+                    <ExportMenu
+                      tasks={filteredTasks}
+                      projectMetadata={syncedProject || undefined}
+                      dateRangeText={filterDateText}
+                      filterMode={filterMode}
+                      setFilterMode={setFilterMode}
+                      filterDept={filterDept}
+                      setFilterDept={setFilterDept}
+                      availableDepts={availableDepts}
+                      selectedYear={selectedYear}
+                      setSelectedYear={setSelectedYear}
+                      yearOptions={yearOptions}
+                      selectedMonth={selectedMonth}
+                      setSelectedMonth={setSelectedMonth}
+                      monthOptions={monthOptions}
+                      startDate={startDate}
+                      setStartDate={setStartDate}
+                      endDate={endDate}
+                      setEndDate={setEndDate}
+                      filterType={filterType}
+                      setFilterType={setFilterType}
+                      availableTypes={availableTypes}
+                      filterCDE={filterCDE}
+                      setFilterCDE={setFilterCDE}
+                      availableCDEs={availableCDEs}
+                    />
+                  ) : (
+                    <BimExportMenu
+                      bimReviews={filteredBimReviews}
+                      projectMetadata={syncedProject || undefined}
+                      dateRangeText={filterDateText}
+                      filterStage={bimFilterStage}
+                      setFilterStage={setBimFilterStage}
+                      availableStages={availableBimStages}
+                      filterStatus={bimFilterStatus}
+                      setFilterStatus={setBimFilterStatus}
+                      availableStatuses={availableBimStatuses}
+                      filterStakeholder={bimFilterStakeholder}
+                      setFilterStakeholder={setBimFilterStakeholder}
+                      availableStakeholders={availableBimStakeholders}
+                      filterReviewer={bimFilterReviewer}
+                      setFilterReviewer={setBimFilterReviewer}
+                      availableReviewers={availableBimReviewers}
+                      filterMode={filterMode}
+                      selectedYear={selectedYear}
+                      selectedMonth={selectedMonth}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -494,21 +637,42 @@ export default function Dashboard() {
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.25 }}
                     >
-                      <ActiveTasks
-                        tasks={filteredTasks}
-                        onTaskClick={handleTaskClick}
-                        search={search}
-                        setSearch={setSearch}
-                        filterDept={filterDept}
-                        setFilterDept={setFilterDept}
-                        availableDepts={availableDepts}
-                        filterType={filterType}
-                        setFilterType={setFilterType}
-                        availableTypes={availableTypes}
-                        filterCDE={filterCDE}
-                        setFilterCDE={setFilterCDE}
-                        availableCDEs={availableCDEs}
-                      />
+                      {activeReport === 'BIM_REVIEWS' ? (
+                        <BIMReviewsTable 
+                          data={filteredBimReviews} 
+                          isLoading={isLoading}
+                          search={bimSearch}
+                          setSearch={setBimSearch}
+                          filterStage={bimFilterStage}
+                          setFilterStage={setBimFilterStage}
+                          availableStages={availableBimStages}
+                          filterStatus={bimFilterStatus}
+                          setFilterStatus={setBimFilterStatus}
+                          availableStatuses={availableBimStatuses}
+                          filterStakeholder={bimFilterStakeholder}
+                          setFilterStakeholder={setBimFilterStakeholder}
+                          availableStakeholders={availableBimStakeholders}
+                          filterReviewer={bimFilterReviewer}
+                          setFilterReviewer={setBimFilterReviewer}
+                          availableReviewers={availableBimReviewers}
+                        />
+                      ) : (
+                        <ActiveTasks
+                          tasks={filteredTasks}
+                          onTaskClick={handleTaskClick}
+                          search={search}
+                          setSearch={setSearch}
+                          filterDept={filterDept}
+                          setFilterDept={setFilterDept}
+                          availableDepts={availableDepts}
+                          filterType={filterType}
+                          setFilterType={setFilterType}
+                          availableTypes={availableTypes}
+                          filterCDE={filterCDE}
+                          setFilterCDE={setFilterCDE}
+                          availableCDEs={availableCDEs}
+                        />
+                      )}
                     </motion.div>
                   ) : (
                     <motion.div
@@ -518,26 +682,45 @@ export default function Dashboard() {
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.25 }}
                     >
-                      <AnalyticsDashboardView
-                        tasks={filteredTasks}
-                        previousPeriodTasks={previousPeriodTasks}
-                        search={search}
-                        setSearch={setSearch}
-                        filterDept={filterDept}
-                        setFilterDept={setFilterDept}
-                        availableDepts={availableDepts}
-                        filterType={filterType}
-                        setFilterType={setFilterType}
-                        availableTypes={availableTypes}
-                        filterCDE={filterCDE}
-                        setFilterCDE={setFilterCDE}
-                        availableCDEs={availableCDEs}
-                        onTaskClick={handleTaskClick}
-                      />
+                      {activeReport === 'BIM_REVIEWS' ? (
+                        <BIMAnalyticsView 
+                          data={filteredBimReviews}
+                          previousPeriodData={previousPeriodBimReviews}
+                          search={bimSearch}
+                          setSearch={setBimSearch}
+                          filterStage={bimFilterStage}
+                          setFilterStage={setBimFilterStage}
+                          availableStages={availableBimStages}
+                          filterStatus={bimFilterStatus}
+                          setFilterStatus={setBimFilterStatus}
+                          availableStatuses={availableBimStatuses}
+                          filterStakeholder={bimFilterStakeholder}
+                          setFilterStakeholder={setBimFilterStakeholder}
+                          availableStakeholders={availableBimStakeholders}
+                        />
+                      ) : (
+                        <AnalyticsDashboardView
+                          tasks={filteredTasks}
+                          previousPeriodTasks={previousPeriodTasks}
+                          search={search}
+                          setSearch={setSearch}
+                          filterDept={filterDept}
+                          setFilterDept={setFilterDept}
+                          availableDepts={availableDepts}
+                          filterType={filterType}
+                          setFilterType={setFilterType}
+                          availableTypes={availableTypes}
+                          filterCDE={filterCDE}
+                          setFilterCDE={setFilterCDE}
+                          availableCDEs={availableCDEs}
+                          onTaskClick={handleTaskClick}
+                        />
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
+
             </>
           )}
         </main>

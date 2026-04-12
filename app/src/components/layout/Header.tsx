@@ -27,6 +27,7 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
   const [date, setDate] = useState('');
   const { userProfile } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const lastBroadcastIdRef = useRef<string | null>(null);
   const [isReceiving, setIsReceiving] = useState(false);
   const { showToast } = useToast();
@@ -79,6 +80,10 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
   const isAuthPage = pathname === '/admin/login';
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     function updateTime() {
       const now = new Date();
       setTime(new Intl.DateTimeFormat('en-US', {
@@ -117,7 +122,7 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
       style={{
         position: 'sticky',
         top: 0,
-        zIndex: 2500,
+        zIndex: 5000,
         height: 64,
         display: 'flex',
         alignItems: 'center',
@@ -266,18 +271,27 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
           </AnimatePresence>
         </div>
 
-        {/* Live Clock Display */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.4)' }} className="pulse-dot" />
-            <span className="font-mono-data" style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
-              {time.split(' ')[0]}
-              <span style={{ fontSize: 11, marginLeft: 4, fontWeight: 500, color: 'var(--text-dim)', textTransform: 'uppercase' }}>{time.split(' ')[1]}</span>
-            </span>
-          </div>
-          <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', textAlign: 'right', whiteSpace: 'nowrap', opacity: 0.8 }}>
-            {date}
-          </span>
+          {mounted ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.4)' }} className="pulse-dot" />
+                <span className="font-mono-data" style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
+                  {time.split(' ')[0]}
+                  <span style={{ fontSize: 11, marginLeft: 4, fontWeight: 500, color: 'var(--text-dim)', textTransform: 'uppercase' }}>{time.split(' ')[1]}</span>
+                </span>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', textAlign: 'right', whiteSpace: 'nowrap', opacity: 0.8 }}>
+                {date}
+              </span>
+            </>
+          ) : (
+            <motion.div 
+              animate={{ opacity: [0.3, 0.6, 0.3] }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+              style={{ height: 32, width: 120, background: 'rgba(255,255,255,0.03)', borderRadius: 8 }} 
+            />
+          )}
         </div>
 
         <div style={{ width: 1, height: 32, background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.1), transparent)' }} />

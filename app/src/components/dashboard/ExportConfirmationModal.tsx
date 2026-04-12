@@ -306,7 +306,9 @@ export default function ExportConfirmationModal({
                         <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', fontWeight: 900, textTransform: 'uppercase' }}>Active Records</span>
-                            <span style={{ fontSize: 14, fontWeight: 900, color: 'white' }}>{tasks.length} Vectors</span>
+                            <span style={{ fontSize: 14, fontWeight: 900, color: 'white' }}>
+                              {tasks.length} Vectors
+                            </span>
                           </div>
                           <div style={{ textAlign: 'right' }}>
                             <span style={{ fontSize: 10, color: '#D4AF37', fontWeight: 800, textTransform: 'uppercase' }}>{dateRangeText}</span>

@@ -17,14 +17,14 @@ type SortField = 'title' | 'status' | 'completion' | 'submittingDate' | 'id' | '
 type SortDir = 'asc' | 'desc';
 
 const INITIAL_COLUMNS: ColumnDef<SortField>[] = [
-  { id: 'id', field: 'id', label: 'ID', align: 'left', priority: 'high', defaultWidth: 110, alwaysVisible: true },
-  { id: 'title', field: 'title', label: 'Task Name', align: 'center', priority: 'high', defaultWidth: 130, alwaysVisible: true },
-  { id: 'department', field: 'department', label: 'Task Category', align: 'center', priority: 'medium', defaultWidth: 150 },
-  { id: 'submitterName', field: 'submitterName', label: 'Submitter', align: 'center', priority: 'medium', defaultWidth: 150 },
-  { id: 'submittingDate', field: 'submittingDate', label: 'Submission Date', align: 'center', priority: 'medium', defaultWidth: 150 },
-  { id: 'deliverableType', field: 'deliverableType', label: 'Deliverable Type', align: 'center', priority: 'medium', defaultWidth: 170 },
-  { id: 'cde', field: 'cde', label: 'CDE', align: 'center', priority: 'low', defaultWidth: 120 },
-  { id: 'links', field: 'id', label: 'Deliverables Links', align: 'center', priority: 'low', defaultWidth: 180 }
+  { id: 'id', field: 'id', label: 'ID', align: 'center', priority: 'high', defaultWidth: 100, alwaysVisible: true },
+  { id: 'title', field: 'title', label: 'Task Name', align: 'center', priority: 'high', defaultWidth: 160, alwaysVisible: true },
+  { id: 'department', field: 'department', label: 'Task Category', align: 'center', priority: 'medium', defaultWidth: 190 },
+  { id: 'submitterName', field: 'submitterName', label: 'Submitter', align: 'center', priority: 'medium', defaultWidth: 180 },
+  { id: 'submittingDate', field: 'submittingDate', label: 'Submission Date', align: 'center', priority: 'medium', defaultWidth: 180 },
+  { id: 'deliverableType', field: 'deliverableType', label: 'Deliverable Type', align: 'center', priority: 'medium', defaultWidth: 210 },
+  { id: 'cde', field: 'cde', label: 'CDE', align: 'center', priority: 'low', defaultWidth: 150 },
+  { id: 'links', field: 'id', label: 'Deliverables Links', align: 'center', priority: 'low', defaultWidth: 220 }
 ];
 
 function ResizeHandle({ columnWidth, onWidthChange }: { columnWidth: number, onWidthChange: (w: number) => void }) {
@@ -111,7 +111,7 @@ function TaskRow({ task, index, onClick, visibleColumns, isCustomized }: { task:
       {visibleColumns.map(col => {
         if (col.id === 'id') return (
           <td key={col.id} style={{ 
-            padding: '12px 14px', fontSize: 13, color: 'var(--text-dim)', fontWeight: 500, textAlign: 'left', verticalAlign: 'middle', 
+            padding: '12px 14px', fontSize: 13, color: 'var(--text-dim)', fontWeight: 500, textAlign: 'center', verticalAlign: 'middle', 
             whiteSpace: isCustomized ? 'normal' : 'nowrap', 
             wordBreak: isCustomized ? 'break-all' : 'normal' 
           }}>
@@ -212,7 +212,7 @@ function TaskRow({ task, index, onClick, visibleColumns, isCustomized }: { task:
 }
 
 const thStyle: React.CSSProperties = {
-  padding: '10px 14px', textAlign: 'left', fontSize: 12, fontWeight: 600,
+  padding: '10px 16px', textAlign: 'center', fontSize: 12, fontWeight: 600,
   color: '#c9a227', textTransform: 'uppercase', letterSpacing: '0.06em',
   cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap',
 };
@@ -278,7 +278,7 @@ export default function ActiveTasks({
     resetSettings,
     reorderColumn,
     isCustomized
-  } = useTableColumns('active-tasks', INITIAL_COLUMNS);
+  } = useTableColumns('active-tasks-v3', INITIAL_COLUMNS);
 
   // Since filtering is handled by parent, result is just activeTasksInitial + sorting
   const filtered = useMemo(() => {
@@ -510,10 +510,10 @@ export default function ActiveTasks({
                         reorderColumn(sourceId, col.id);
                       }
                     }}
-                    style={{ ...thStyle, textAlign: col.align as any, position: 'sticky', top: 0, zIndex: 50, background: 'rgba(15, 15, 20, 0.95)', backdropFilter: 'blur(16px)', transition: 'background 0.2s' }}
+                    style={{ ...thStyle, textAlign: 'center', position: 'sticky', top: 0, zIndex: 50, background: 'rgba(15, 15, 20, 0.95)', backdropFilter: 'blur(16px)', transition: 'background 0.2s' }}
                   >
-                    <div onClick={() => toggleSort(col.field)} style={{ display: 'flex', alignItems: 'center', justifyContent: col.align === 'center' ? 'center' : 'flex-start', gap: 6, width: '100%', overflow: 'hidden' }}>
-                      <span style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>{col.label}</span>
+                    <div onClick={() => toggleSort(col.field)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' }}>
+                      <span style={{ whiteSpace: 'nowrap' }}>{col.label}</span>
                       <ArrowUpDown size={10} style={{ color: sortField === col.field ? '#3b82f6' : 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
                     </div>
                     <ResizeHandle columnWidth={col.width || 120} onWidthChange={(w) => updateColumnWidth(col.id, w)} />

@@ -20,9 +20,11 @@ interface EliteConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm?: () => Promise<void>;
+  onSecondaryConfirm?: () => Promise<void>;
   title: string;
   message: string;
   confirmLabel?: string;
+  secondaryLabel?: string;
   cancelLabel?: string;
   severity?: ModalSeverity;
   isReadOnly?: boolean;
@@ -32,13 +34,16 @@ export default function EliteConfirmModal({
   isOpen, 
   onClose, 
   onConfirm, 
+  onSecondaryConfirm,
   title, 
   message, 
   confirmLabel = 'Authorize',
+  secondaryLabel,
   cancelLabel = 'Abort',
   severity = 'WARNING',
   isReadOnly = false
 }: EliteConfirmModalProps) {
+
   const [isExecuting, setIsExecuting] = useState(false);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
@@ -60,6 +65,23 @@ export default function EliteConfirmModal({
       setIsExecuting(false);
     }
   };
+
+  const handleSecondaryConfirm = async () => {
+    if (!onSecondaryConfirm) return;
+    
+    setIsExecuting(true);
+    setErrorDetails(null);
+    try {
+      await onSecondaryConfirm();
+      onClose();
+    } catch (error: any) {
+      console.error('[TERMINAL_MODAL_FAILURE]', error);
+      setErrorDetails(getFirebaseErrorMessage(error));
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
 
   const getSeverityColor = () => {
     switch(severity) {
@@ -96,7 +118,7 @@ export default function EliteConfirmModal({
             exit={{ scale: 0.95, opacity: 0, y: 30 }}
             style={{
               width: '100%', 
-              maxWidth: 500, 
+              maxWidth: onSecondaryConfirm ? 600 : 500, 
               background: '#0a0a0f', 
               border: `1px solid ${errorDetails ? '#ef4444' : 'rgba(255, 255, 255, 0.08)'}`, 
               borderRadius: 28, 
@@ -149,47 +171,70 @@ export default function EliteConfirmModal({
                 )}
               </AnimatePresence>
 
-              <div style={{ display: 'flex', gap: 16 }}>
-                {!isReadOnly && (
+              <div style={{ display: 'flex', flexDirection: onSecondaryConfirm ? 'column' : 'row', gap: 16 }}>
+                <div style={{ display: 'flex', gap: 16, width: '100%' }}>
+                  {!isReadOnly && (
+                    <button 
+                      onClick={onClose} 
+                      disabled={isExecuting}
+                      style={{ 
+                        flex: 1, padding: '16px', borderRadius: 16, 
+                        background: 'rgba(255,255,255,0.03)', color: 'white', 
+                        border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', 
+                        fontSize: 15, fontWeight: 700, transition: 'all 200ms' 
+                      }}
+                    >
+                      {cancelLabel}
+                    </button>
+                  )}
                   <button 
-                    onClick={onClose} 
+                    onClick={handleConfirm} 
                     disabled={isExecuting}
                     style={{ 
-                      flex: 1, padding: '16px', borderRadius: 16, 
-                      background: 'rgba(255,255,255,0.03)', color: 'white', 
-                      border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', 
-                      fontSize: 15, fontWeight: 700, transition: 'all 200ms' 
+                      flex: isReadOnly ? 1 : 2, padding: '16px', borderRadius: 16, 
+                      background: color, color: textColorOnAccent, 
+                      border: 'none', cursor: 'pointer', 
+                      fontSize: 15, fontWeight: 800,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                      boxShadow: `0 10px 20px ${color}30`
                     }}
                   >
-                    {cancelLabel}
+                    {isExecuting ? (
+                      <>
+                        <Loader2 size={20} className="animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 size={20} />
+                        {confirmLabel}
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {onSecondaryConfirm && secondaryLabel && (
+                  <button 
+                    onClick={handleSecondaryConfirm} 
+                    disabled={isExecuting}
+                    style={{ 
+                      width: '100%', padding: '16px', borderRadius: 16, 
+                      background: 'rgba(255,255,255,0.05)', color: color, 
+                      border: `1px solid ${color}40`, cursor: 'pointer', 
+                      fontSize: 15, fontWeight: 800,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                      transition: 'all 300ms'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(212, 175, 55, 0.1)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                  >
+                    <AlertTriangle size={20} />
+                    {secondaryLabel}
                   </button>
                 )}
-                <button 
-                  onClick={handleConfirm} 
-                  disabled={isExecuting}
-                  style={{ 
-                    flex: isReadOnly ? 1 : 2, padding: '16px', borderRadius: 16, 
-                    background: color, color: textColorOnAccent, 
-                    border: 'none', cursor: 'pointer', 
-                    fontSize: 15, fontWeight: 800,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                    boxShadow: `0 10px 20px ${color}30`
-                  }}
-                >
-                  {isExecuting ? (
-                    <>
-                      <Loader2 size={20} className="animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      {isReadOnly ? <CheckCircle2 size={20} /> : <CheckCircle2 size={20} />}
-                      {confirmLabel}
-                    </>
-                  )}
-                </button>
               </div>
             </div>
+
 
             {/* Footer Status */}
             <div style={{ 

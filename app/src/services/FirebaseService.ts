@@ -50,7 +50,9 @@ export const collections = {
   settings: collection(db, 'settings'),
   departments: collection(db, 'departments'),
   broadcasts: collection(db, 'broadcasts'),
+  bimReviews: collection(db, 'bimReviews'),
 };
+
 
 /**
  * Seed the database with initial mock data
@@ -133,6 +135,56 @@ export async function upsertRegistryItem(item: DashboardNavItem) {
 export async function deleteRegistryItem(id: string) {
   await deleteDoc(doc(db, 'registry', id));
 }
+
+// ─── BIM Review Operations ────────────────────────────────────────
+
+export async function upsertBimReview(review: any) {
+  const reviewDoc = doc(collections.bimReviews, review.id);
+  const cleanData = sanitizeData({
+    ...review,
+    updatedAt: new Date().toISOString()
+  });
+  
+  if (!review.createdAt) {
+    (cleanData as any).createdAt = new Date().toISOString();
+  }
+
+  await setDoc(reviewDoc, cleanData, { merge: true });
+}
+
+export async function deleteBimReview(id: string) {
+  await deleteDoc(doc(db, 'bimReviews', id));
+}
+
+/**
+ * Bulk Upsert BIM Reviews with Overwrite or Merge strategy
+ */
+export async function bulkUpsertBimReviews(reviews: any[], strategy: 'OVERWRITE' | 'MERGE') {
+  const batch = writeBatch(db);
+
+  if (strategy === 'OVERWRITE') {
+    const { getDocs } = await import('firebase/firestore');
+    const snapshot = await getDocs(collections.bimReviews);
+    snapshot.docs.forEach(d => batch.delete(d.ref));
+  }
+
+  reviews.forEach((review) => {
+    // Generate an ID if missing (for new imports)
+    const reviewId = review.id || `bim-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const reviewDoc = doc(collections.bimReviews, reviewId);
+    
+    const cleanData = sanitizeData({
+      ...review,
+      id: reviewId,
+      updatedAt: new Date().toISOString(),
+      createdAt: review.createdAt || new Date().toISOString()
+    });
+    batch.set(reviewDoc, cleanData, { merge: true });
+  });
+
+  await batch.commit();
+}
+
 
 // ─── Department Operations ────────────────────────────────────────
 

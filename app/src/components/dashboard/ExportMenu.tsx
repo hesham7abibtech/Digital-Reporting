@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Download, FileText, Table, ChevronDown, Loader2 } from 'lucide-react';
+import { Download, FileText, Table, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Task, ProjectMetadata } from '@/lib/types';
-import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
+import { Task, ProjectMetadata, BIMReview } from '@/lib/types';
+import { exportToExcel, exportToPDF, exportBimToExcel, exportBimToPDF } from '@/lib/exportUtils';
 import { useToast } from '@/components/shared/EliteToast';
 import ExportConfirmationModal from './ExportConfirmationModal';
 
@@ -36,10 +36,13 @@ interface ExportMenuProps {
   setStartDate: (s: string) => void;
   endDate: string;
   setEndDate: (s: string) => void;
+  // BIM synchronization
+  bimReviews?: BIMReview[];
+  activeReport?: 'DELIVERABLES' | 'BIM_REVIEWS';
 }
 
 export default function ExportMenu({ 
-  tasks, projectMetadata, dateRangeText,
+  tasks, bimReviews = [], activeReport = 'DELIVERABLES', projectMetadata, dateRangeText,
   filterMode, setFilterMode, filterDept, setFilterDept, availableDepts,
   filterType, setFilterType, availableTypes,
   filterCDE, setFilterCDE, availableCDEs,
@@ -73,7 +76,6 @@ export default function ExportMenu({
   };
 
   const handleConfirmGeneration = async (type: 'pdf' | 'excel', perspective: 'table' | 'dashboard' | 'both', onProgress: (p: number) => void) => {
-    // Phase 1: Preparation (0-20%)
     onProgress(10);
     await new Promise(r => setTimeout(r, 400));
     onProgress(25);
@@ -81,16 +83,22 @@ export default function ExportMenu({
     try {
       let result;
       if (type === 'excel') {
-        // Excel generation (Simulate heavy lifting)
         await new Promise(r => setTimeout(r, 600));
         onProgress(60);
-        result = await exportToExcel(tasks, projectMetadata, dateRangeText, perspective);
+        if (activeReport === 'BIM_REVIEWS') {
+          result = await exportBimToExcel(bimReviews, projectMetadata, dateRangeText, perspective);
+        } else {
+          result = await exportToExcel(tasks, projectMetadata, dateRangeText, perspective);
+        }
         onProgress(90);
       } else {
-        // PDF generation
         await new Promise(r => setTimeout(r, 800));
         onProgress(55);
-        result = await exportToPDF(tasks, projectMetadata, dateRangeText, perspective);
+        if (activeReport === 'BIM_REVIEWS') {
+          result = await exportBimToPDF(bimReviews, projectMetadata, dateRangeText, perspective);
+        } else {
+          result = await exportToPDF(tasks, projectMetadata, dateRangeText, perspective);
+        }
         onProgress(85);
       }
       

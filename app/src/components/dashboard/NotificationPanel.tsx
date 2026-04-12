@@ -158,7 +158,7 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[4000] bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 z-[6000] bg-black/60 backdrop-blur-md"
             onClick={onClose}
           />
 
@@ -168,7 +168,7 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-[500px] z-[4001] bg-[#050508] border-l border-white/5 flex flex-col shadow-[-40px_0_100px_rgba(0,0,0,0.9)]"
+            className="fixed right-0 top-0 bottom-0 w-full max-w-[500px] z-[6001] bg-[#050508] border-l border-white/5 flex flex-col shadow-[-40px_0_100px_rgba(0,0,0,0.9)]"
           >
             <div 
               className="relative overflow-hidden border-b border-white/[0.03] bg-gradient-to-b from-white/[0.02] to-transparent"
