@@ -72,7 +72,34 @@ function DonutTooltip({ active, payload, total }: any) {
       <div style={{ width: '100%', height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 4 }}>
         <div style={{ height: '100%', width: `${pct}%`, borderRadius: 2, background: d.payload.color || CHART_COLORS[0] }} />
       </div>
-      <span style={{ fontSize: 12, color: '#64748b' }}>{pct}% of total</span>
+      <span style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>{pct}% of total</span>
+    </div>
+  );
+}
+
+function PremiumLegend({ payload }: any) {
+  if (!payload) return null;
+  return (
+    <div style={{ 
+      display: 'flex', 
+      flexWrap: 'wrap', 
+      justifyContent: 'center', 
+      gap: 16, 
+      marginTop: 4,
+      padding: '4px 20px' 
+    }}>
+      {payload.map((entry: any, index: number) => (
+        <div key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ 
+            width: 8, height: 8, borderRadius: '2px', 
+            background: entry.color || entry.payload?.fill || GOLD, 
+            boxShadow: `0 0 8px ${entry.color || entry.payload?.fill || GOLD}40` 
+          }} />
+          <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {entry.value}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -84,7 +111,11 @@ function renderDonutLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent 
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   if (percent < 0.05) return null;
   return (
-    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={800} style={{ pointerEvents: 'none' }}>
+    <text 
+      x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" 
+      fontSize={10} fontWeight={900} 
+      style={{ pointerEvents: 'none', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))' }}
+    >
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   );
@@ -106,9 +137,18 @@ function KPICard({ label, value, icon, color, trend, pctChange, suffix, delay, d
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -5, scale: 1.02, boxShadow: `0 15px 35px rgba(0,0,0,0.4), 0 0 20px ${color}15` }}
       transition={{ delay, duration: 0.4 }}
       className="glass-card"
-      style={{ padding: '14px 16px', position: 'relative', overflow: 'visible', cursor: 'pointer' }}
+      style={{ 
+        padding: '14px 16px', 
+        position: 'relative', 
+        overflow: 'visible', 
+        cursor: 'pointer',
+        border: isHovered ? `1px solid ${color}40` : '1px solid rgba(255,255,255,0.08)',
+        transition: 'border 0.3s ease',
+        zIndex: isHovered ? 1000 : 1
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -179,6 +219,9 @@ interface BIMAnalyticsViewProps {
   filterStakeholder?: string[];
   setFilterStakeholder?: (v: string[]) => void;
   availableStakeholders?: string[];
+  filterReviewer?: string[];
+  setFilterReviewer?: (v: string[]) => void;
+  availableReviewers?: string[];
 }
 
 export default function BIMAnalyticsView({
@@ -194,7 +237,10 @@ export default function BIMAnalyticsView({
   availableStatuses = [],
   filterStakeholder = [],
   setFilterStakeholder,
-  availableStakeholders = []
+  availableStakeholders = [],
+  filterReviewer = [],
+  setFilterReviewer,
+  availableReviewers = []
 }: BIMAnalyticsViewProps) {
   const { formatDate } = useTimeZone();
 
@@ -224,12 +270,28 @@ export default function BIMAnalyticsView({
       const rev = r.insiteReviewer || 'Unassigned';
       reviewerCounts[rev] = (reviewerCounts[rev] || 0) + 1;
 
-      // Timeline processing (DD-MMM-YYYY)
+      // Timeline processing - Robust Date Parsing
       if (r.submissionDate) {
-        const parts = r.submissionDate.split('-');
-        if (parts.length === 3) {
-          const monthYear = `${parts[1]} ${parts[2]}`;
-          timelineRaw[monthYear] = (timelineRaw[monthYear] || 0) + 1;
+        let d = new Date(r.submissionDate);
+        
+        // Handle custom DD-MMM-YYYY if native parsing fails or is ambiguous
+        if (isNaN(d.getTime()) && r.submissionDate.includes('-')) {
+          const parts = r.submissionDate.split('-');
+          if (parts.length === 3) {
+            const months: Record<string, number> = {
+              JAN:0, FEB:1, MAR:2, APR:3, MAY:4, JUN:5, JUL:6, AUG:7, SEP:8, OCT:9, NOV:10, DEC:11
+            };
+            const m = months[parts[1].toUpperCase()];
+            if (m !== undefined) d = new Date(parseInt(parts[2]), m, parseInt(parts[0]));
+          }
+        }
+
+        if (!isNaN(d.getTime())) {
+          const monthYear = d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+          if (!timelineRaw[monthYear]) {
+            (timelineRaw as any)[monthYear] = { count: 0, date: new Date(d.getFullYear(), d.getMonth(), 1) };
+          }
+          (timelineRaw as any)[monthYear].count++;
         }
       }
     });
@@ -246,7 +308,10 @@ export default function BIMAnalyticsView({
     const stakeholderSet = new Set(data.map(r => r.stakeholder));
     const activeStakeholders = stakeholderSet.size;
 
-    const calcPct = (curr: number, prev: number) => prev > 0 ? Math.abs(Math.round(((curr - prev) / prev) * 100)) : 0;
+    const calcPct = (curr: number, prev: number) => {
+      if (prev === 0) return curr > 0 ? 100 : 0;
+      return Math.abs(Math.round(((curr - prev) / prev) * 100));
+    };
     const calcTrend = (curr: number, prev: number): 'up' | 'down' | 'neutral' => curr > prev ? 'up' : curr < prev ? 'down' : 'neutral';
 
     const stageData = Object.entries(stageCounts).map(([name, value], i) => ({
@@ -257,9 +322,11 @@ export default function BIMAnalyticsView({
       name, value, color: CHART_COLORS[(i + 4) % CHART_COLORS.length]
     })).sort((a,b) => b.value - a.value).slice(0, 6);
 
-    const timelineData = Object.entries(timelineRaw).map(([name, value]) => ({
-      name, value
-    }));
+    const timelineData = Object.entries(timelineRaw).map(([name, data]: [string, any]) => ({
+      name, 
+      value: data.count,
+      sortDate: data.date.getTime()
+    })).sort((a, b) => a.sortDate - b.sortDate);
 
     return {
       total, prevTotal, totalPct: calcPct(total, prevTotal), totalTrend: calcTrend(total, prevTotal),
@@ -298,19 +365,41 @@ export default function BIMAnalyticsView({
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}>
             {setSearch && (
-              <div style={{ position: 'relative', maxWidth: 220 }}>
-                <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(212, 175, 55, 0.4)' }} />
+              <motion.div 
+                whileHover={{ scale: 1.02 }}
+                style={{ position: 'relative', maxWidth: 220 }}
+              >
+                <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(212, 175, 55, 0.6)' }} />
                 <input
                   type="text"
-                  placeholder="Query Matrix..."
+                  placeholder="Matrix Intelligence Search..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  style={{ padding: '8px 14px 8px 34px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(212, 175, 55, 0.1)', fontSize: 13, color: 'white', outline: 'none', width: 220 }}
+                  style={{ 
+                    padding: '10px 14px 10px 38px', borderRadius: 12, 
+                    background: 'rgba(0,0,0,0.2)', 
+                    border: '1px solid rgba(212, 175, 55, 0.2)', 
+                    fontSize: 12, color: 'white', outline: 'none', width: 220,
+                    fontWeight: 600,
+                    transition: 'all 0.3s ease',
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = GOLD}
+                  onBlur={(e) => e.target.style.borderColor = 'rgba(212, 175, 55, 0.2)'}
                 />
-              </div>
+              </motion.div>
             )}
             {setFilterStage && (
-              <EliteDropdown value={filterStage} options={availableStages.map(s => ({ label: s, value: s }))} onChange={setFilterStage} menuLabel="Design Stage" isMulti allLabel="All Stages" />
+              <EliteDropdown value={filterStage} options={availableStages.map(s => ({ label: s, value: s }))} onChange={setFilterStage} menuLabel="Stage" isMulti allLabel="All Stages" />
+            )}
+            {setFilterStatus && (
+              <EliteDropdown value={filterStatus} options={availableStatuses.map(s => ({ label: s, value: s }))} onChange={setFilterStatus} menuLabel="Status" isMulti allLabel="All Statuses" />
+            )}
+            {setFilterStakeholder && (
+              <EliteDropdown value={filterStakeholder} options={availableStakeholders.map(s => ({ label: s, value: s }))} onChange={setFilterStakeholder} menuLabel="Stakeholder" isMulti allLabel="All Stakeholders" />
+            )}
+            {setFilterReviewer && (
+              <EliteDropdown value={filterReviewer} options={availableReviewers.map(s => ({ label: s, value: s }))} onChange={setFilterReviewer} menuLabel="Reviewer" isMulti allLabel="All Reviewers" />
             )}
           </div>
         </div>
@@ -363,7 +452,8 @@ export default function BIMAnalyticsView({
                 <XAxis type="number" hide />
                 <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }} width={120} />
                 <Tooltip content={<PremiumTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 800 }}>
+                <Legend content={<PremiumLegend />} verticalAlign="bottom" />
+                <Bar name="Review Volume" dataKey="value" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: '#D4AF37', fontSize: 11, fontWeight: 900 }}>
                   {stakeholderData.map((entry, index) => (
                     <Cell key={index} fill={entry.color} fillOpacity={0.8} />
                   ))}
@@ -387,10 +477,20 @@ export default function BIMAnalyticsView({
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 600 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 600 }} dx={-10} />
                 <Tooltip content={<PremiumTooltip />} />
-                <Area type="monotone" dataKey="value" stroke={GOLD} fillOpacity={1} fill="url(#colorVal)" strokeWidth={2} />
+                <Legend content={<PremiumLegend />} verticalAlign="bottom" />
+                <Area 
+                  name="Submission Trend"
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke={GOLD} 
+                  fillOpacity={1} 
+                  fill="url(#colorVal)" 
+                  strokeWidth={3}
+                  activeDot={{ r: 6, strokeWidth: 0, fill: GOLD }}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -411,6 +511,7 @@ export default function BIMAnalyticsView({
                   ))}
                 </Pie>
                 <Tooltip content={<DonutTooltip total={total} />} />
+                <Legend content={<PremiumLegend />} verticalAlign="bottom" />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -429,6 +530,7 @@ export default function BIMAnalyticsView({
                   ))}
                 </Pie>
                 <Tooltip content={<DonutTooltip total={total} />} />
+                <Legend content={<PremiumLegend />} verticalAlign="bottom" />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -444,9 +546,10 @@ export default function BIMAnalyticsView({
                 <XAxis type="number" hide />
                 <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 9 }} width={80} />
                 <Tooltip content={<PremiumTooltip />} />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={12} label={{ position: 'right', fill: 'rgba(255,255,255,0.3)', fontSize: 9, fontWeight: 800 }}>
+                <Legend content={<PremiumLegend />} verticalAlign="bottom" />
+                <Bar name="Reviewer Load" dataKey="value" radius={[0, 4, 4, 0]} barSize={12} label={{ position: 'right', fill: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: 900 }}>
                   {reviewerData.map((entry, index) => (
-                    <Cell key={index} fill={entry.color} />
+                    <Cell key={index} fill={entry.color} fillOpacity={0.8} />
                   ))}
                 </Bar>
               </BarChart>

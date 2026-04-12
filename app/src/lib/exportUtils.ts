@@ -889,9 +889,37 @@ export async function exportBimToPDF(
 
     autoTable(doc, {
       head, body, theme: 'grid',
-      headStyles: { fillColor: [30, 41, 59], fontSize: 7 },
-      styles: { fontSize: 6.5, halign: 'center' },
-      columnStyles: { 3: { halign: 'left', cellWidth: 40 } }
+      headStyles: { 
+        fillColor: [30, 41, 59], 
+        fontSize: 5.5, 
+        halign: 'center', 
+        valign: 'middle',
+        overflow: 'linebreak',
+        cellPadding: 1
+      },
+      styles: { 
+        fontSize: 5, 
+        halign: 'center', 
+        valign: 'middle',
+        cellPadding: 1,
+        overflow: 'linebreak'
+      },
+      columnStyles: {
+        0: { cellWidth: 20 }, // PROJECT
+        1: { cellWidth: 18 }, // STAKEHOLDER
+        2: { cellWidth: 10 }, // REV NO
+        3: { cellWidth: 45, halign: 'left' }, // DESCRIPTION
+        4: { cellWidth: 12 }, // STAGE
+        5: { cellWidth: 20 }, // SUBMISSION DATE
+        6: { cellWidth: 20 }, // CATEGORY
+        7: { cellWidth: 10 }, // ACC
+        8: { cellWidth: 18 }, // REVIEWER
+        9: { cellWidth: 20 }, // DUE DATE
+        10: { cellWidth: 15 }, // INSITE STATUS
+        11: { cellWidth: 15 }, // MODON STATUS
+        12: { cellWidth: 40, halign: 'left' }, // COMMENTS
+        13: { cellWidth: 10 }  // LINK
+      }
     });
   };
 

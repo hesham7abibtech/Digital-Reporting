@@ -14,6 +14,7 @@ import BimExportMenu from '@/components/dashboard/BimExportMenu';
 import BIMReviewsTable from '@/components/dashboard/BIMReviewsTable';
 import NotificationPanel from '@/components/dashboard/NotificationPanel';
 import BIMAnalyticsView from '@/components/dashboard/BIMAnalyticsView';
+import BrandedLoader from '@/components/layout/BrandedLoader';
 
 import TaskDetailModal from '@/components/dashboard/TaskDetailModal';
 import EliteDropdown from '@/components/dashboard/EliteDropdown';
@@ -25,6 +26,33 @@ import { useRegistryView } from '@/hooks/useRegistryView';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Globe, CalendarRange, X, Calendar, Database, TableProperties, BarChart3 } from 'lucide-react';
 import { useEffect } from 'react';
+
+const getTaskRange = (t: Task) => {
+  // Migrate: Use actualEndDate first, then actualStartDate, then submittingDate or createdAt
+  const dateStr = t.submittingDate || (t as any).actualEndDate || (t as any).actualStartDate || t.createdAt;
+  const date = new Date(dateStr);
+  return { start: date, end: date };
+};
+
+const parseBimDate = (d: string) => {
+  if (!d || d === '—') return null;
+  let date = new Date(d);
+  
+  // Fallback for DD-MMM-YYYY if native parsing fails
+  if (isNaN(date.getTime()) && d.includes('-')) {
+    const parts = d.split('-');
+    if (parts.length === 3) {
+      const months: Record<string, number> = {
+        JAN:0, FEB:1, MAR:2, APR:3, MAY:4, JUN:5, JUL:6, AUG:7, SEP:8, OCT:9, NOV:10, DEC:11
+      };
+      const month = months[parts[1].toUpperCase()];
+      if (month !== undefined) {
+        date = new Date(parseInt(parts[2]), month, parseInt(parts[0]));
+      }
+    }
+  }
+  return isNaN(date.getTime()) ? null : date;
+};
 
 export default function Dashboard() {
   const { isUpdating, selectedTimeZone } = useTimeZone();
@@ -46,6 +74,12 @@ export default function Dashboard() {
   const [search, setSearch] = useState('');
   const { activeView, setActiveView } = useRegistryView('table');
   const [activeReport, setActiveReport] = useState<'DELIVERABLES' | 'BIM_REVIEWS'>('DELIVERABLES');
+  const [minLoadingComplete, setMinLoadingComplete] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMinLoadingComplete(true), 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // BIM Matrix Filters
   const [bimSearch, setBimSearch] = useState('');
@@ -61,15 +95,12 @@ export default function Dashboard() {
     "July", "August", "September", "October", "November", "December"
   ];
 
-  const getTaskRange = (t: Task) => {
-    // Migrate: Use actualEndDate first, then actualStartDate, then submittingDate or createdAt
-    const dateStr = t.submittingDate || (t as any).actualEndDate || (t as any).actualStartDate || t.createdAt;
-    const date = new Date(dateStr);
-    return { start: date, end: date };
-  };
+
 
   const availableYears = useMemo(() => {
     const yearsSet = new Set<number>();
+    
+    // Dates from Deliverables
     syncedTasks.forEach(t => {
       const { start, end } = getTaskRange(t);
       const startYear = start.getFullYear();
@@ -80,14 +111,22 @@ export default function Dashboard() {
       }
     });
 
+    // Dates from BIM Reviews
+    syncedBimReviews.forEach(r => {
+      const d = parseBimDate(r.submissionDate);
+      if (d) yearsSet.add(d.getFullYear());
+    });
+
     if (yearsSet.size === 0) yearsSet.add(now.getFullYear());
     return Array.from(yearsSet).sort((a, b) => b - a);
-  }, [syncedTasks]);
+  }, [syncedTasks, syncedBimReviews]);
 
   const yearOptions = availableYears.map(y => ({ label: y.toString(), value: y }));
 
   const availableMonths = useMemo(() => {
     const monthsSet = new Set<number>();
+
+    // Months from Deliverables for selected year
     syncedTasks.forEach(t => {
       const { start, end } = getTaskRange(t);
       const startYear = start.getFullYear();
@@ -103,9 +142,16 @@ export default function Dashboard() {
       }
     });
 
-    if (monthsSet.size === 0) monthsSet.add(now.getMonth());
+    // Months from BIM Reviews for selected year
+    syncedBimReviews.forEach(r => {
+      const d = parseBimDate(r.submissionDate);
+      if (d && d.getFullYear() === selectedYear) {
+        monthsSet.add(d.getMonth());
+      }
+    });
+
     return Array.from(monthsSet).sort((a, b) => a - b);
-  }, [syncedTasks, selectedYear]);
+  }, [syncedTasks, syncedBimReviews, selectedYear]);
 
   const monthOptions = availableMonths.map(m => ({ label: months[m], value: m }));
 
@@ -241,17 +287,7 @@ export default function Dashboard() {
     return result;
   }, [dateFilteredTasks, filterDept, filterType, filterCDE, search]);
 
-  const parseBimDate = (d: string) => {
-    if (!d || d === '—') return null;
-    const parts = d.split('-');
-    if (parts.length !== 3) return null;
-    const months: Record<string, number> = {
-      JAN:0, FEB:1, MAR:2, APR:3, MAY:4, JUN:5, JUL:6, AUG:7, SEP:8, OCT:9, NOV:10, DEC:11
-    };
-    const month = months[parts[1].toUpperCase()];
-    if (month === undefined) return null;
-    return new Date(parseInt(parts[2]), month, parseInt(parts[0]));
-  };
+
 
   const filteredBimReviews = useMemo(() => {
     let result = syncedBimReviews;
@@ -344,9 +380,19 @@ export default function Dashboard() {
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative' }}>
+      <BrandedLoader isLoading={!minLoadingComplete || isLoading} />
+      
       <ParticleBackground />
 
-      <div style={{ position: 'relative', zIndex: 1000, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ 
+        position: 'relative', 
+        zIndex: 1000, 
+        minHeight: '100vh', 
+        display: 'flex', 
+        flexDirection: 'column',
+        opacity: (!minLoadingComplete || isLoading) ? 0 : 1,
+        transition: 'opacity 0.8s ease-in-out'
+      }}>
         <Header 
           project={syncedProject || undefined} 
           onNotificationClick={() => setNotifOpen(true)} 
@@ -354,12 +400,7 @@ export default function Dashboard() {
         />
 
         <main style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 'calc(100vh - 100px)' }}>
-          {isLoading ? (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', flexDirection: 'column', gap: 16 }}>
-              <div style={{ width: 40, height: 40, border: '2px solid rgba(212, 175, 55, 0.1)', borderTopColor: '#D4AF37', borderRadius: '50%' }} className="animate-spin" />
-              <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.05em' }}>ESTABLISHING SECURE CONNECTION...</p>
-            </div>
-          ) : (
+          {!isLoading && (
             <>
               <ProjectHeader 
                 project={syncedProject || undefined} 
@@ -697,6 +738,9 @@ export default function Dashboard() {
                           filterStakeholder={bimFilterStakeholder}
                           setFilterStakeholder={setBimFilterStakeholder}
                           availableStakeholders={availableBimStakeholders}
+                          filterReviewer={bimFilterReviewer}
+                          setFilterReviewer={setBimFilterReviewer}
+                          availableReviewers={availableBimReviewers}
                         />
                       ) : (
                         <AnalyticsDashboardView
