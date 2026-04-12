@@ -76,6 +76,12 @@ export default function Dashboard() {
   const [activeReport, setActiveReport] = useState<'DELIVERABLES' | 'BIM_REVIEWS'>('DELIVERABLES');
   const [minLoadingComplete, setMinLoadingComplete] = useState(false);
 
+  // Atomic report switch to prevent invalid transient states (fixes Recharts warnings)
+  const handleReportChange = (report: 'DELIVERABLES' | 'BIM_REVIEWS') => {
+    setActiveReport(report);
+    setActiveView('table');
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => setMinLoadingComplete(true), 1500);
     return () => clearTimeout(timer);
@@ -100,60 +106,59 @@ export default function Dashboard() {
   const availableYears = useMemo(() => {
     const yearsSet = new Set<number>();
     
-    // Dates from Deliverables
-    syncedTasks.forEach(t => {
-      const { start, end } = getTaskRange(t);
-      const startYear = start.getFullYear();
-      const endYear = end.getFullYear();
-
-      for (let y = startYear; y <= endYear; y++) {
-        yearsSet.add(y);
-      }
-    });
-
-    // Dates from BIM Reviews
-    syncedBimReviews.forEach(r => {
-      const d = parseBimDate(r.submissionDate);
-      if (d) yearsSet.add(d.getFullYear());
-    });
+    if (activeReport === 'DELIVERABLES') {
+      syncedTasks.forEach(t => {
+        const { start, end } = getTaskRange(t);
+        const startYear = start.getFullYear();
+        const endYear = end.getFullYear();
+        for (let y = startYear; y <= endYear; y++) yearsSet.add(y);
+      });
+    } else {
+      syncedBimReviews.forEach(r => {
+        const d = parseBimDate(r.submissionDate);
+        if (d) yearsSet.add(d.getFullYear());
+      });
+    }
 
     if (yearsSet.size === 0) yearsSet.add(now.getFullYear());
     return Array.from(yearsSet).sort((a, b) => b - a);
-  }, [syncedTasks, syncedBimReviews]);
+  }, [syncedTasks, syncedBimReviews, activeReport]);
 
   const yearOptions = availableYears.map(y => ({ label: y.toString(), value: y }));
 
   const availableMonths = useMemo(() => {
     const monthsSet = new Set<number>();
 
-    // Months from Deliverables for selected year
-    syncedTasks.forEach(t => {
-      const { start, end } = getTaskRange(t);
-      const startYear = start.getFullYear();
-      const endYear = end.getFullYear();
-
-      if (selectedYear >= startYear && selectedYear <= endYear) {
-        let mStart = selectedYear === startYear ? start.getMonth() : 0;
-        let mEnd = selectedYear === endYear ? end.getMonth() : 11;
-
-        for (let m = mStart; m <= mEnd; m++) {
-          monthsSet.add(m);
+    if (activeReport === 'DELIVERABLES') {
+      syncedTasks.forEach(t => {
+        const { start, end } = getTaskRange(t);
+        const startYear = start.getFullYear();
+        const endYear = end.getFullYear();
+        if (selectedYear >= startYear && selectedYear <= endYear) {
+          let mStart = selectedYear === startYear ? start.getMonth() : 0;
+          let mEnd = selectedYear === endYear ? end.getMonth() : 11;
+          for (let m = mStart; m <= mEnd; m++) monthsSet.add(m);
         }
-      }
-    });
-
-    // Months from BIM Reviews for selected year
-    syncedBimReviews.forEach(r => {
-      const d = parseBimDate(r.submissionDate);
-      if (d && d.getFullYear() === selectedYear) {
-        monthsSet.add(d.getMonth());
-      }
-    });
+      });
+    } else {
+      syncedBimReviews.forEach(r => {
+        const d = parseBimDate(r.submissionDate);
+        if (d && d.getFullYear() === selectedYear) {
+          monthsSet.add(d.getMonth());
+        }
+      });
+    }
 
     return Array.from(monthsSet).sort((a, b) => a - b);
-  }, [syncedTasks, syncedBimReviews, selectedYear]);
+  }, [syncedTasks, syncedBimReviews, selectedYear, activeReport]);
 
   const monthOptions = availableMonths.map(m => ({ label: months[m], value: m }));
+
+  useEffect(() => {
+    if (!availableYears.includes(selectedYear)) {
+      setSelectedYear(availableYears[0] || now.getFullYear());
+    }
+  }, [availableYears, selectedYear]);
 
   useEffect(() => {
     if (!availableMonths.includes(selectedMonth)) {
@@ -408,7 +413,7 @@ export default function Dashboard() {
                 tasks={filteredTasks} 
                 dateRangeText={filterDateText} 
                 activeReport={activeReport}
-                onReportChange={setActiveReport}
+                onReportChange={handleReportChange}
                 bimReviewsCount={syncedBimReviews.length}
               />
 

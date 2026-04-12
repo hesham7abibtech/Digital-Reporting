@@ -445,8 +445,8 @@ export default function BIMAnalyticsView({
             <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Stakeholder Submission Volume</h3>
             <span style={{ fontSize: 10, color: '#D4AF37', fontWeight: 900, textTransform: 'uppercase' }}>Volume Distribution</span>
           </div>
-          <div style={{ height: 300, padding: 20 }}>
-            <ResponsiveContainer width="100%" height="100%">
+          <div style={{ height: 300, padding: 20, minWidth: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" debounce={100}>
               <BarChart data={stakeholderData} layout="vertical" margin={{ left: 40, right: 30 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                 <XAxis type="number" hide />
@@ -467,8 +467,8 @@ export default function BIMAnalyticsView({
           <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
             <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Review Progression Timeline</h3>
           </div>
-          <div style={{ height: 300, padding: 20 }}>
-            <ResponsiveContainer width="100%" height="100%">
+          <div style={{ height: 300, padding: 20, minWidth: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" debounce={100}>
               <AreaChart data={timelineData}>
                 <defs>
                   <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">

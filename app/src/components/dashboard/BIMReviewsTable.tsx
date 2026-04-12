@@ -171,14 +171,14 @@ function ReviewRow({
         );
 
         if (col.id === 'submissionDescription') return (
-          <td key={col.id} style={{ ...cellStyle, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', fontSize: 11 }}>
+          <td key={col.id} style={{ ...cellStyle, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>
             {item.submissionDescription}
           </td>
         );
 
         if (col.id === 'reviewNumber') return (
           <td key={col.id} style={{ ...cellStyle }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 10, fontWeight: 900, color: 'rgba(255,255,255,0.5)' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.5)' }}>
               <Hash size={10} /> {item.reviewNumber || '—'}
             </div>
           </td>
@@ -186,14 +186,14 @@ function ReviewRow({
 
         if (col.id === 'designStage') return (
           <td key={col.id} style={{ ...cellStyle }}>
-            <div style={{ display: 'inline-flex', padding: '3px 10px', borderRadius: 6, background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.2)', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase' }}>
+            <div style={{ display: 'inline-flex', padding: '3px 10px', borderRadius: 6, background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.2)', fontSize: 11, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase' }}>
               {item.designStage}
             </div>
           </td>
         );
 
         if (col.id === 'stakeholder') return (
-          <td key={col.id} style={{ ...cellStyle, textTransform: 'uppercase', letterSpacing: '0.02em', fontSize: 11 }}>
+          <td key={col.id} style={{ ...cellStyle, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
             {item.stakeholder}
           </td>
         );
@@ -202,7 +202,7 @@ function ReviewRow({
           <td key={col.id} style={{ ...cellStyle }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: getStatusColor(item.insiteBimReviewStatus) }} />
-              <span style={{ fontWeight: 700, fontSize: 11, color: 'rgba(255,255,255,0.9)' }}>{(item.insiteBimReviewStatus || 'PENDING').toUpperCase()}</span>
+              <span style={{ fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>{(item.insiteBimReviewStatus || 'PENDING').toUpperCase()}</span>
             </div>
           </td>
         );
@@ -226,7 +226,7 @@ function ReviewRow({
 
         if (col.id === 'modonHillFinalReviewStatus') return (
           <td key={col.id} style={{ ...cellStyle }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 10, fontWeight: 700 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 11, fontWeight: 700 }}>
               {item.modonHillFinalReviewStatus || 'AWAITING'}
             </div>
           </td>
@@ -240,12 +240,12 @@ function ReviewRow({
 
         if (col.id === 'onAcc') return (
           <td key={col.id} style={{ ...cellStyle }}>
-             <span style={{ fontSize: 10, fontWeight: 900, color: item.onAcc === 'SHARED' ? '#10b981' : 'rgba(255,255,255,0.15)' }}>{item.onAcc}</span>
+             <span style={{ fontWeight: 900, color: item.onAcc === 'SHARED' ? '#10b981' : 'rgba(255,255,255,0.15)' }}>{item.onAcc}</span>
           </td>
         );
 
         if (col.id === 'comments') return (
-          <td key={col.id} style={{ ...cellStyle, color: 'rgba(255,255,255,0.5)', fontSize: 11, maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <td key={col.id} style={{ ...cellStyle, color: 'rgba(255,255,255,0.5)', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {item.comments || '—'}
           </td>
         );
@@ -254,7 +254,7 @@ function ReviewRow({
           <td key={col.id} style={{ ...cellStyle }}>
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
               {(item.submissionCategory || []).map(cat => (
-                <span key={cat} style={{ fontSize: 8, padding: '1px 6px', borderRadius: 4, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)' }}>{cat}</span>
+                <span key={cat} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)' }}>{cat}</span>
               ))}
             </div>
           </td>
@@ -263,8 +263,72 @@ function ReviewRow({
         if (col.id === 'output') return (
           <td key={col.id} style={{ ...cellStyle }}>
             {item.insiteReviewOutputUrl ? (
-              <a href={item.insiteReviewOutputUrl} target="_blank" rel="noopener noreferrer" style={{ width: 26, height: 26, borderRadius: 6, background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.2)' }} className="hover:scale-110 transition-transform"><ExternalLink size={12} /></a>
-            ) : '—'}
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+                <motion.a 
+                  href={item.insiteReviewOutputUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  whileHover={{ scale: 1.1, backgroundColor: 'rgba(212, 175, 55, 0.2)' }}
+                  style={{ 
+                    width: 28, 
+                    height: 28, 
+                    borderRadius: 8, 
+                    background: 'rgba(212, 175, 55, 0.1)', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    color: '#D4AF37', 
+                    border: '1px solid rgba(212, 175, 55, 0.2)',
+                    textDecoration: 'none',
+                    position: 'relative',
+                    overflow: 'visible'
+                  }}
+                  className="group"
+                >
+                  <ExternalLink size={14} />
+                  
+                  {/* Ultra Professional Link Tooltip */}
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '100%',
+                    left: '50%',
+                    transform: 'translateX(-50%) translateY(-10px)',
+                    padding: '8px 12px',
+                    background: 'rgba(10, 10, 18, 0.95)',
+                    border: '1px solid rgba(212, 175, 55, 0.3)',
+                    borderRadius: 8,
+                    fontSize: 10,
+                    fontWeight: 800,
+                    color: 'white',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                    opacity: 0,
+                    pointerEvents: 'none',
+                    transition: 'all 0.3s cubic-bezier(0.19, 1, 0.22, 1)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                    zIndex: 1000
+                  }} className="group-hover:opacity-100 group-hover:translate-y-[-14px]">
+                    <span style={{ color: '#D4AF37', letterSpacing: '0.1em' }}>OUTPUT HUB</span>
+                    <span style={{ opacity: 0.5, fontWeight: 400, fontSize: 9 }}>OPEN REPOSITORY</span>
+                    
+                    {/* Tooltip Arrow */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: '50%',
+                      marginLeft: -4,
+                      borderWidth: 4,
+                      borderStyle: 'solid',
+                      borderColor: 'rgba(212, 175, 55, 0.3) transparent transparent transparent'
+                    }} />
+                  </div>
+                </motion.a>
+              </div>
+            ) : (
+              <div style={{ opacity: 0.2 }}>—</div>
+            )}
           </td>
         );
 

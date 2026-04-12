@@ -136,12 +136,13 @@ export default function EliteDropdown({
             <motion.div
               key={option.value}
               whileHover={{ 
-                background: 'linear-gradient(90deg, rgba(212, 175, 55, 0.12) 0%, transparent 100%)',
-                paddingLeft: 18
+                backgroundColor: 'rgba(212, 175, 55, 0.12)',
+                paddingLeft: 20
               }}
               onClick={() => handleOptionClick(option.value)}
               style={{
                 padding: '12px 14px',
+                paddingLeft: 14,
                 borderRadius: 12,
                 fontSize: 12,
                 fontWeight: 700,
@@ -149,7 +150,7 @@ export default function EliteDropdown({
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                background: isSelected(option.value) ? 'rgba(212, 175, 55, 0.08)' : 'transparent',
+                backgroundColor: isSelected(option.value) ? 'rgba(212, 175, 55, 0.08)' : 'rgba(212, 175, 55, 0)',
                 transition: 'all 0.3s ease',
                 textTransform: 'uppercase',
                 letterSpacing: '0.04em',
