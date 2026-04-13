@@ -128,7 +128,7 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0 24px',
-        background: 'rgba(10,10,15,0.8)',
+        background: 'rgba(5, 10, 20, 0.98)',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
         borderBottom: '1px solid rgba(255,255,255,0.04)',

@@ -5,11 +5,11 @@
 :root {
   --font-inter: 'Inter';
   --font-mono: 'JetBrains Mono';
-  --background: #0a0a0f;
-  --background-secondary: #0e0e15;
-  --card: #12121a;
-  --card-hover: #1a1a2e;
-  --card-elevated: #16162a;
+  --background: #0a1220;
+  --background-secondary: #0f1a2a;
+  --card: #152132;
+  --card-hover: #1e2d42;
+  --card-elevated: #1a2536;
   --border: rgba(255, 255, 255, 0.04);
   --border-hover: rgba(255, 255, 255, 0.08);
   --border-glow: rgba(212, 175, 55, 0.15);
