@@ -88,7 +88,7 @@ export default function ProjectHeader({
           right: 0,
           bottom: 0,
           zIndex: 1,
-          background: 'radial-gradient(circle at 20% 50%, rgba(10,10,15,0.4) 0%, rgba(10,10,15,0.8) 100%)',
+          background: 'radial-gradient(circle at 20% 50%, rgba(10, 18, 32, 0.3) 0%, rgba(5, 7, 10, 0.95) 100%)',
           opacity: project?.headerBgOpacity === 100 ? 0 : 1,
           transition: 'opacity 0.4s ease'
         }}
