@@ -7,10 +7,10 @@ interface PriorityBadgeProps {
 }
 
 const config: Record<Priority, { label: string; color: string; dot: string }> = {
-  LOW: { label: 'Low', color: '#94a3b8', dot: '#94a3b8' },
-  MEDIUM: { label: 'Medium', color: '#D4AF37', dot: '#D4AF37' },
-  HIGH: { label: 'High', color: '#fbbf24', dot: '#fbbf24' },
-  CRITICAL: { label: 'Critical', color: '#fca5a5', dot: '#fca5a5' },
+  LOW: { label: 'Low', color: 'rgba(249, 248, 242, 0.5)', dot: 'rgba(249, 248, 242, 0.3)' },
+  MEDIUM: { label: 'Medium', color: 'var(--aqua)', dot: 'var(--aqua)' },
+  HIGH: { label: 'High', color: '#FF7908', dot: '#FF7908' },
+  CRITICAL: { label: 'Critical', color: '#FF4C4F', dot: '#FF4C4F' },
 };
 
 export default function PriorityBadge({ priority }: PriorityBadgeProps) {

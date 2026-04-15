@@ -56,7 +56,10 @@ export default function ProjectHeader({
         overflow: 'hidden',
         minHeight: 140,
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
+        borderRadius: 24, // Hardened corners
+        border: '1px solid rgba(0, 63, 73, 0.15)',
+        boxShadow: '0 8px 32px rgba(0, 63, 73, 0.08)'
       }}
     >
       {/* Dynamic Site Background Asset */}
@@ -79,7 +82,7 @@ export default function ProjectHeader({
         />
       )}
 
-      {/* Glass Overlay for Depth */}
+      {/* Gradient Overlay for Depth */}
       <div
         style={{
           position: 'absolute',
@@ -88,7 +91,7 @@ export default function ProjectHeader({
           right: 0,
           bottom: 0,
           zIndex: 1,
-          background: 'radial-gradient(circle at 20% 50%, rgba(10, 18, 32, 0.3) 0%, rgba(5, 7, 10, 0.95) 100%)',
+          background: 'radial-gradient(circle at 20% 50%, rgba(198, 224, 224, 0.08) 0%, var(--background) 100%)',
           opacity: project?.headerBgOpacity === 100 ? 0 : 1,
           transition: 'opacity 0.4s ease'
         }}
@@ -101,15 +104,16 @@ export default function ProjectHeader({
               <h1
                 style={{
                   fontSize: 28,
-                  fontWeight: 700,
-                  letterSpacing: '-0.02em',
-                  background: 'linear-gradient(to right, #fff, #e2e8f0, #94a3b8)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 900, // Maximum authority
+                  letterSpacing: '0.04em',
+                  color: '#FFFFFF', // High-contrast White
                   margin: 0,
+                  fontFamily: 'var(--font-primary)',
+                  textTransform: 'uppercase',
+                  textShadow: '0 2px 12px rgba(0,0,0,0.6)'
                 }}
               >
-                {project?.title || 'Digital'} — {project?.projectName || 'Command Center'}
+                {project?.title || 'Digital'} — <span style={{ color: '#FFFFFF', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>{project?.projectName || 'Command Center'}</span>
               </h1>
           </div>
 
@@ -118,28 +122,29 @@ export default function ProjectHeader({
               {(project?.subtitles && project.subtitles.length > 0) ? (
                 project.subtitles.map((sub, idx) => (
                   <React.Fragment key={`sub-${idx}`}>
-                    {idx > 0 && <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 300 }}>|</span>}
-                    <span style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      color: idx === 0 ? '#ffffff' : 'rgba(255, 255, 255, 0.8)',
-                      textTransform: idx === 0 ? 'uppercase' : 'none',
-                      fontSize: idx === 0 ? 13 : 13,
-                      letterSpacing: idx === 0 ? '0.05em' : 'normal'
-                    }}>
-                      {idx === 0 && <Cpu size={14} style={{ color: '#D4AF37', filter: 'drop-shadow(0 0 5px rgba(212, 175, 55, 0.5))' }} />}
-                      {sub}
-                    </span>
+                    {idx > 0 && <span style={{ color: 'var(--text-dim)', fontWeight: 300 }}>|</span>}
+                      <span style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        color: idx === 0 ? '#FFFFFF' : 'rgba(255, 255, 255, 0.9)',
+                        textTransform: idx === 0 ? 'uppercase' : 'none',
+                        fontSize: 13,
+                        letterSpacing: idx === 0 ? '0.05em' : 'normal',
+                        fontWeight: idx === 0 ? 800 : 600,
+                        textShadow: '0 1px 4px rgba(0,0,0,0.4)'
+                      }}>
+                        {idx === 0 && <Activity size={14} style={{ color: 'var(--accent)' }} />}
+                        {sub}
+                      </span>
                   </React.Fragment>
                 ))
               ) : (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  <Cpu size={14} style={{ color: '#D4AF37', filter: 'drop-shadow(0 0 5px rgba(212, 175, 55, 0.5))' }} />
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#F8F9FA', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
+                  <Activity size={14} style={{ color: 'var(--accent)' }} />
                   Digital Project Hub
                 </span>
               )}
-              <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 300 }}>|</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255, 255, 255, 0.8)' }}>
-                <MapPin size={14} style={{ color: '#ef4444', filter: 'drop-shadow(0 0 5px rgba(239, 68, 68, 0.3))' }} />
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#FFFFFF', fontWeight: 800, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
+                <MapPin size={14} style={{ color: '#FF4C4F' }} />
                 {project?.location || 'Digital Sector'}
               </span>
 
@@ -147,30 +152,29 @@ export default function ProjectHeader({
           </div>
 
           {/* Dynamic Report Navigation Badges */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', marginTop: 8 }}>
             <button
               onClick={() => onReportChange?.('DELIVERABLES')}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '6px 16px', borderRadius: 9999,
-                background: activeReport === 'DELIVERABLES' ? 'rgba(212, 175, 55, 0.2)' : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${activeReport === 'DELIVERABLES' ? '#D4AF37' : 'rgba(255,255,255,0.1)'}`,
-                backdropFilter: 'blur(10px)',
+                padding: '8px 20px', borderRadius: 10,
+                background: activeReport === 'DELIVERABLES' ? '#d0ab82' : 'rgba(0, 63, 73, 0.4)',
+                border: `1px solid ${activeReport === 'DELIVERABLES' ? '#d0ab82' : 'rgba(255, 255, 255, 0.2)'}`,
                 cursor: 'pointer',
-                transition: 'all 300ms'
+                transition: 'all 300ms',
+                boxShadow: activeReport === 'DELIVERABLES' ? '0 0 15px rgba(208, 171, 130, 0.3)' : 'none'
               }}
             >
               <div style={{ 
-                width: 7, height: 7, borderRadius: '50%', 
-                background: activeReport === 'DELIVERABLES' ? '#D4AF37' : 'rgba(255,255,255,0.3)',
-                boxShadow: activeReport === 'DELIVERABLES' ? '0 0 8px #D4AF37' : 'none'
+                width: 6, height: 6, borderRadius: '50%', 
+                background: activeReport === 'DELIVERABLES' ? '#003f49' : '#FFFFFF',
               }} className={activeReport === 'DELIVERABLES' ? "animate-pulse" : ""} />
               <span style={{ 
-                fontSize: 13, fontWeight: 800, 
-                color: activeReport === 'DELIVERABLES' ? '#D4AF37' : 'rgba(255,255,255,0.4)', 
-                textTransform: 'uppercase', letterSpacing: '0.06em' 
+                fontSize: 12, fontWeight: 950, 
+                color: activeReport === 'DELIVERABLES' ? '#000000' : '#FFFFFF', 
+                textTransform: 'uppercase', letterSpacing: '0.08em' 
               }}>
-                Deliverables Report
+                Deliverables Registry
               </span>
             </button>
 
@@ -178,23 +182,22 @@ export default function ProjectHeader({
               onClick={() => onReportChange?.('BIM_REVIEWS')}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '6px 16px', borderRadius: 9999,
-                background: activeReport === 'BIM_REVIEWS' ? 'rgba(212, 175, 55, 0.2)' : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${activeReport === 'BIM_REVIEWS' ? '#D4AF37' : 'rgba(255,255,255,0.1)'}`,
-                backdropFilter: 'blur(10px)',
+                padding: '8px 20px', borderRadius: 10,
+                background: activeReport === 'BIM_REVIEWS' ? '#d0ab82' : 'rgba(0, 63, 73, 0.4)',
+                border: `1px solid ${activeReport === 'BIM_REVIEWS' ? '#d0ab82' : 'rgba(255, 255, 255, 0.2)'}`,
                 cursor: 'pointer',
-                transition: 'all 300ms'
+                transition: 'all 300ms',
+                boxShadow: activeReport === 'BIM_REVIEWS' ? '0 0 15px rgba(208, 171, 130, 0.3)' : 'none'
               }}
             >
               <div style={{ 
-                width: 7, height: 7, borderRadius: '50%', 
-                background: activeReport === 'BIM_REVIEWS' ? '#D4AF37' : 'rgba(255,255,255,0.3)',
-                boxShadow: activeReport === 'BIM_REVIEWS' ? '0 0 8px #D4AF37' : 'none'
+                width: 6, height: 6, borderRadius: '50%', 
+                background: activeReport === 'BIM_REVIEWS' ? '#003f49' : '#FFFFFF',
               }} className={activeReport === 'BIM_REVIEWS' ? "animate-pulse" : ""} />
               <span style={{ 
-                fontSize: 13, fontWeight: 800, 
-                color: activeReport === 'BIM_REVIEWS' ? '#D4AF37' : 'rgba(255,255,255,0.4)', 
-                textTransform: 'uppercase', letterSpacing: '0.06em' 
+                fontSize: 12, fontWeight: 950, 
+                color: activeReport === 'BIM_REVIEWS' ? '#000000' : '#FFFFFF', 
+                textTransform: 'uppercase', letterSpacing: '0.08em' 
               }}>
                 BIM Reviews
               </span>
@@ -233,19 +236,20 @@ export default function ProjectHeader({
                   key={badge.id}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 8,
-                    padding: '6px 16px', borderRadius: 9999,
-                    background: `${color}15`, border: `1px solid ${color}40`,
+                    padding: '8px 20px', borderRadius: 10,
+                    background: badge.id === 'task-count' ? 'var(--teal)' : 'rgba(0, 63, 73, 0.6)', 
+                    border: `1px solid rgba(255, 255, 255, 0.2)`,
                     backdropFilter: 'blur(10px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                   }}
                 >
                   <div style={{ 
-                    width: 7, height: 7, borderRadius: '50%', 
+                    width: 6, height: 6, borderRadius: '50%', 
                     background: color,
-                    boxShadow: badge.id === 'task-count' || badge.id === 'date-range' ? `0 0 8px ${color}` : 'none'
                   }} className={badge.id === 'date-range' ? "animate-pulse" : ""} />
                   <span style={{ 
-                    fontSize: 13, fontWeight: 800, color, 
-                    textTransform: 'uppercase', letterSpacing: '0.06em' 
+                    fontSize: 12, fontWeight: 950, color: badge.id === 'task-count' ? 'var(--aqua)' : '#FFFFFF', 
+                    textTransform: 'uppercase', letterSpacing: '0.08em' 
                   }}>
                     {displayText}
                   </span>

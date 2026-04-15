@@ -12,7 +12,7 @@ interface MiniChartProps {
 
 export default function MiniChart({
   data,
-  color = '#D4AF37',
+  color = '#C5A059',
   width = 80,
   height = 32,
   className = '',

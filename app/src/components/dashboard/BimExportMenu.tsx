@@ -101,17 +101,19 @@ export default function BimExportMenu({
           display: 'flex',
           alignItems: 'center',
           gap: 10,
-          padding: '10px 18px',
-          background: 'rgba(212, 175, 55, 0.1)',
-          border: '1px solid rgba(212, 175, 55, 0.3)',
-          borderRadius: 12,
-          color: '#D4AF37',
-          fontSize: 13,
-          fontWeight: 700,
+          padding: '10px 20px',
+          background: '#003f49',
+          border: '1.5px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: 14,
+          color: '#FFFFFF',
+          fontSize: 12,
+          fontWeight: 950,
           cursor: isExporting ? 'not-allowed' : 'pointer',
           transition: 'all 200ms',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-          outline: 'none'
+          boxShadow: '0 8px 30px rgba(0, 63, 73, 0.2)',
+          outline: 'none',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em'
         }}
       >
         <Download size={16} />
@@ -131,10 +133,10 @@ export default function BimExportMenu({
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, zIndex: 1000, width: 240, background: 'rgba(15, 15, 25, 0.95)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, boxShadow: '0 20px 50px rgba(0,0,0,0.5)', padding: 6, overflow: 'hidden' }}
+            style={{ position: 'absolute', top: '100%', right: 0, marginTop: 10, zIndex: 1000, width: 280, background: '#003f49', backdropFilter: 'blur(32px)', border: '1.5px solid rgba(255, 255, 255, 0.1)', borderRadius: 24, boxShadow: '0 25px 60px rgba(0, 0, 0, 0.4)', padding: 12, overflow: 'hidden' }}
           >
-            <div style={{ padding: '8px 12px 4px 12px', fontSize: 10, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              Select BIM Format
+            <div style={{ padding: '8px 12px 4px 12px', fontSize: 10, fontWeight: 900, color: 'rgba(255, 255, 255, 0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Select Output Format
             </div>
             
             <button
@@ -143,12 +145,12 @@ export default function BimExportMenu({
               onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FileText size={18} />
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <FileText size={20} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: 13, fontWeight: 700 }}>Signature BIM PDF</span>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>High-fidelity landscape</span>
+                <span style={{ fontSize: 13, fontWeight: 700 }}>Signature PDF Portfolio</span>
+                <span style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.4)' }}>Elite branded document</span>
               </div>
             </button>
 
@@ -158,12 +160,12 @@ export default function BimExportMenu({
               onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Table size={18} />
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                <Table size={20} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: 13, fontWeight: 700 }}>BIM Technical Matrix</span>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>14-field raw data</span>
+                <span style={{ fontSize: 13, fontWeight: 700 }}>Master Excel Registry</span>
+                <span style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.4)' }}>Technical data matrix</span>
               </div>
             </button>
           </motion.div>

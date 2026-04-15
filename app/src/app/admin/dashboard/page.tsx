@@ -1112,31 +1112,31 @@ export default function AdminDashboardPage() {
                             </th>
                             {activeTab === 'bim-reviews' ? (
                               <>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Project Identity</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Stage</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Status (InSite)</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Status (Modon/Hill)</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Reviewer</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Due Date</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Submission</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Control</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Project Identity</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Stage</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Status (InSite)</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Status (Modon/Hill)</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Reviewer</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Due Date</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Submission</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Control</th>
                               </>
                             ) : (
                               <>
-                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
                                   {activeTab === 'users' ? 'Staff Identity' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Project Personnel' : 'Task Category') : 'Task Definition / Asset'}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
                                   {activeTab === 'users' ? 'Designation' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Functional Category' : 'Abbreviation') : 'Task Category'}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
                                   {activeTab === 'users' ? 'Access Control' : activeTab === 'tasks' ? 'Submitter' : activeTab === 'team' && teamActiveSubTab === 'personnel' ? 'Email Interface' : 'Action Hub'}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
                                   {activeTab === 'users' ? 'Security Protocol' : activeTab === 'tasks' ? 'Submission Date' : 'Control'}
                                 </th>
                                 {activeTab === 'users' && (
-                                  <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                  <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
                                     Digital Signature
                                   </th>
                                 )}
@@ -1698,6 +1698,68 @@ export default function AdminDashboardPage() {
                                           </div>
                                         </div>
                                       </div>
+
+                                    {/* Partner Logo Registry Section (Elite Vector Hub) */}
+                                    <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 24, padding: 32, background: 'rgba(212, 175, 55, 0.03)', border: '1px solid rgba(212, 175, 55, 0.1)', borderRadius: 28, marginTop: 12 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4AF37' }} />
+                                          <h3 style={{ fontSize: 13, fontWeight: 900, color: 'white', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Partner Logo Registry (Top Bar Display)</h3>
+                                        </div>
+                                        <button 
+                                          type="button" 
+                                          onClick={() => document.getElementById('partner-logo-input')?.click()} 
+                                          style={{ 
+                                            padding: '8px 16px', borderRadius: 10, background: '#D4AF37', 
+                                            border: 'none', color: '#0a0a0f', fontSize: 11, fontWeight: 900, 
+                                            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 
+                                          }}
+                                        >
+                                          <Plus size={14} /> ADD PARTNER LOGO
+                                        </button>
+                                        <input 
+                                          id="partner-logo-input" 
+                                          type="file" 
+                                          multiple 
+                                          accept="image/*" 
+                                          onChange={handlePartnerLogoSelect} 
+                                          style={{ display: 'none' }} 
+                                        />
+                                      </div>
+
+                                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+                                        {partnerLogosList.map((logo, idx) => (
+                                          <motion.div 
+                                            key={logo.id} 
+                                            layout 
+                                            initial={{ opacity: 0, scale: 0.9 }} 
+                                            animate={{ opacity: 1, scale: 1 }} 
+                                            style={{ 
+                                              padding: 20, background: 'rgba(255,255,255,0.02)', 
+                                              border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, 
+                                              position: 'relative', display: 'flex', flexDirection: 'column', 
+                                              alignItems: 'center', gap: 20,
+                                              boxShadow: '0 10px 20px rgba(0,0,0,0.2)'
+                                            }}
+                                          >
+                                            <div style={{ width: '100%', height: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', borderRadius: 16, padding: 16, border: '1px solid rgba(212, 175, 55, 0.05)' }}>
+                                              <img src={logo.url} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', filter: 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.2))' }} alt="Partner" />
+                                            </div>
+                                            <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                                              <button type="button" onClick={() => movePartnerLogo(idx, 'up')} disabled={idx === 0} style={{ flex: 1, padding: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, color: '#D4AF37', cursor: 'pointer', opacity: idx === 0 ? 0.2 : 0.8 }} title="Move Left"><ChevronLeft size={16} /></button>
+                                              <button type="button" onClick={() => movePartnerLogo(idx, 'down')} disabled={idx === partnerLogosList.length - 1} style={{ flex: 1, padding: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, color: '#D4AF37', cursor: 'pointer', opacity: idx === partnerLogosList.length - 1 ? 0.2 : 0.8 }} title="Move Right"><ChevronRight size={16} /></button>
+                                              <button type="button" onClick={() => removePartnerLogo(idx)} style={{ flex: 1, padding: '8px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', borderRadius: 10, color: '#ef4444', cursor: 'pointer' }} title="Purge Logo"><Trash2 size={16} /></button>
+                                            </div>
+                                          </motion.div>
+                                        ))}
+                                        {partnerLogosList.length === 0 && (
+                                          <div style={{ gridColumn: 'span 4', padding: '40px', textAlign: 'center', background: 'rgba(255,255,255,0.01)', border: '1px dashed rgba(255,255,255,0.05)', borderRadius: 20 }}>
+                                            <ImageIcon size={32} style={{ color: 'rgba(255,255,255,0.1)', marginBottom: 12 }} />
+                                            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', margin: 0 }}>No partner identity vectors registered. Upload logos to populate the Top Bar.</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
 
                                     {/* Badges Section */}
                                     <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>

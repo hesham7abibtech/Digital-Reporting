@@ -38,12 +38,11 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
         zIndex: 40,
         display: 'flex',
         flexDirection: 'column',
-        background: 'rgba(10,10,15,0.95)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-        borderRight: '1px solid rgba(255,255,255,0.04)',
+        background: 'var(--primary)',
+        borderRight: '1px solid rgba(249, 248, 242, 0.1)',
         transition: 'width 300ms ease-out',
         overflow: 'hidden',
+        boxShadow: '4px 0 20px rgba(0, 63, 73, 0.1)',
       }}
     >
       {/* Logo */}
@@ -54,7 +53,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
           gap: 12,
           padding: '0 16px',
           height: 64,
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          borderBottom: '1px solid rgba(249, 248, 242, 0.08)',
           justifyContent: collapsed ? 'center' : 'flex-start',
         }}
       >
@@ -63,20 +62,19 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
             width: 36,
             height: 36,
             borderRadius: 12,
-            background: 'linear-gradient(135deg, #D4AF37, #B8860B)',
+            background: 'var(--accent)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
-            boxShadow: '0 0 15px rgba(212, 175, 55, 0.3)'
           }}
         >
-          <Hexagon size={18} color="#0a0a0f" />
+          <Hexagon size={18} color="var(--primary)" />
         </div>
         {!collapsed && (
           <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>REH</div>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>COMMAND CENTER</div>
+            <div className="brand-heading" style={{ fontSize: 13, color: 'var(--text-on-primary)' }}>ROH</div>
+            <div style={{ fontSize: 9, color: 'rgba(249, 248, 242, 0.6)', fontWeight: 600, letterSpacing: '0.05em' }}>COMMAND CENTER</div>
           </div>
         )}
       </div>
@@ -103,9 +101,8 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
                 cursor: 'pointer',
                 transition: 'all 200ms',
                 justifyContent: collapsed ? 'center' : 'flex-start',
-                background: isActive ? 'rgba(212, 175, 55, 0.12)' : 'transparent',
-                color: isActive ? '#D4AF37' : 'var(--text-muted)',
-                boxShadow: isActive ? '0 0 12px rgba(212, 175, 55, 0.1)' : 'none',
+                background: isActive ? 'rgba(249, 248, 242, 0.1)' : 'transparent',
+                color: isActive ? 'var(--secondary)' : 'rgba(249, 248, 242, 0.6)',
               }}
             >
               <span style={{ flexShrink: 0, position: 'relative', display: 'flex' }}>
@@ -119,7 +116,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
                       width: 16,
                       height: 16,
                       borderRadius: '50%',
-                      background: '#ef4444',
+                      background: '#FF4C4F',
                       color: 'white',
                       fontSize: 9,
                       fontWeight: 700,
@@ -139,7 +136,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
       </nav>
 
       {/* Collapse Toggle */}
-      <div style={{ padding: 12, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <div style={{ padding: 12, borderTop: '1px solid rgba(249, 248, 242, 0.08)' }}>
         <button
           onClick={() => setCollapsed(!collapsed)}
           style={{
@@ -153,7 +150,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
             border: 'none',
             cursor: 'pointer',
             background: 'transparent',
-            color: 'var(--text-muted)',
+            color: 'rgba(249, 248, 242, 0.4)',
             fontSize: 12,
             transition: 'all 200ms',
           }}
@@ -167,7 +164,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
       <div
         style={{
           padding: 16,
-          borderTop: '1px solid rgba(255,255,255,0.04)',
+          borderTop: '1px solid rgba(249, 248, 242, 0.08)',
           display: 'flex',
           justifyContent: collapsed ? 'center' : 'flex-start',
           alignItems: 'center',
@@ -179,13 +176,13 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
             width: 32,
             height: 32,
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #D4AF37, #B8860B)',
+            background: 'var(--accent)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#0a0a0f',
+            color: 'var(--primary)',
             fontSize: 11,
-            fontWeight: 700,
+            fontWeight: 800,
             flexShrink: 0,
           }}
         >
@@ -193,8 +190,8 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
         </div>
         {!collapsed && (
           <div style={{ overflow: 'hidden' }}>
-            <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Ahmed Al-Rashid</div>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Super Admin</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-on-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Ahmed Al-Rashid</div>
+            <div style={{ fontSize: 10, color: 'rgba(249, 248, 242, 0.5)', fontWeight: 600 }}>Super Admin</div>
           </div>
         )}
       </div>

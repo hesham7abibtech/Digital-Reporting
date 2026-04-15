@@ -72,13 +72,13 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
             style={{
               position: 'relative',
               width: 'fit-content',
-              minWidth: 480,
+              minWidth: 520,
               maxWidth: '95vw',
               maxHeight: '90vh',
-              background: 'linear-gradient(135deg, rgba(23, 23, 23, 0.8) 0%, rgba(10, 10, 10, 0.9) 100%)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 24,
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+              background: 'var(--background)',
+              border: '1px solid var(--border)',
+              borderRadius: 20,
+              boxShadow: '0 25px 80px rgba(0, 0, 0, 0.5)',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
@@ -86,25 +86,25 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
             }}
           >
             {/* Header */}
-            <header style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+            <header style={{ padding: '24px 32px', background: 'var(--primary)', borderBottom: '1px solid rgba(249, 248, 242, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 14, background: getDepartmentColor(task.department), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(249, 248, 242, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-on-primary)' }}>
                   <Building2 size={24} />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>{task.title}</h2>
+                  <h2 className="brand-heading" style={{ fontSize: 20, color: 'var(--text-on-primary)', margin: 0 }}>{task.title}</h2>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{task.id}</span>
-                    <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
-                    <span style={{ fontSize: 13, color: getDepartmentColor(task.department), fontWeight: 600 }}>{task.department}</span>
+                    <span style={{ fontSize: 13, color: 'rgba(249, 248, 242, 0.6)', fontWeight: 600 }}>{task.id}</span>
+                    <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(249, 248, 242, 0.2)' }} />
+                    <span style={{ fontSize: 13, color: 'var(--secondary)', fontWeight: 700 }}>{task.department}</span>
                   </div>
                 </div>
               </div>
               <button 
                 onClick={onClose}
-                style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms', flexShrink: 0 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(249, 248, 242, 0.08)', border: 'none', color: 'var(--text-on-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms', flexShrink: 0 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(249, 248, 242, 0.15)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(249, 248, 242, 0.08)'}
               >
                 <X size={20} />
               </button>
@@ -117,28 +117,33 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
 
 
                 {/* Timeline & Metadata Section */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
-                  <div style={{ padding: '16px 20px', borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Submission Date</span>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: '#D4AF37' }}>{formatDate(task.submittingDate || (task as any).actualEndDate || (task as any).actualStartDate)}</span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20 }}>
+                  <div style={{ padding: '16px 20px', borderRadius: 12, background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 900, color: '#C5A059', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Submission Date</span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>{formatDate(task.submittingDate || (task as any).actualEndDate || (task as any).actualStartDate)}</span>
                   </div>
-
-                  <div style={{ padding: '16px 20px', borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Task Category</span>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: getDepartmentColor(task.department) }}>{task.department}</span>
+ 
+                  <div style={{ padding: '16px 20px', borderRadius: 12, background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 900, color: '#C5A059', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Task Category</span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: getDepartmentColor(task.department) }}>{task.department}</span>
                   </div>
-
-                  <div style={{ padding: '16px 20px', borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Submitter</span>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: 'white' }}>{task.submitterName || 'Unassigned'}</span>
+ 
+                  <div style={{ padding: '16px 20px', borderRadius: 12, background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 900, color: '#C5A059', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Submitter</span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>{task.submitterName || 'Unassigned'}</span>
                   </div>
                   
                   {task.deliverableType && task.deliverableType.length > 0 && (
-                    <div style={{ padding: '16px 20px', borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Deliverable Type</span>
+                    <div style={{ padding: '16px 20px', borderRadius: 12, background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <span style={{ fontSize: 11, fontWeight: 900, color: '#C5A059', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Deliverable Type</span>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                         {task.deliverableType.map((type, i) => (
-                          <span key={i} style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }}>
+                          <span key={i} style={{ 
+                            fontSize: 10, fontWeight: 950, padding: '4px 12px', 
+                            background: 'linear-gradient(135deg, rgba(198, 224, 224, 0.15) 0%, rgba(0, 63, 73, 0.7) 100%)', 
+                            border: '1px solid rgba(198, 224, 224, 0.4)', borderRadius: 20, color: '#FFFFFF',
+                            textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 0 10px rgba(198, 224, 224, 0.1)'
+                          }}>
                             {type}
                           </span>
                         ))}
@@ -147,11 +152,16 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                   )}
 
                   {task.cde && task.cde.length > 0 && (
-                    <div style={{ padding: '16px 20px', borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CDE Environment</span>
+                    <div style={{ padding: '16px 20px', borderRadius: 12, background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <span style={{ fontSize: 11, fontWeight: 900, color: '#C5A059', textTransform: 'uppercase', letterSpacing: '0.1em' }}>CDE Environment</span>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                         {task.cde.map((env, i) => (
-                          <span key={i} style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.2)', borderRadius: 8, color: '#D4AF37' }}>
+                          <span key={i} style={{ 
+                            fontSize: 10, fontWeight: 950, padding: '4px 12px', 
+                            background: 'linear-gradient(135deg, rgba(249, 248, 242, 0.15) 0%, rgba(0, 63, 73, 0.7) 100%)', 
+                            border: '1px solid rgba(249, 248, 242, 0.3)', borderRadius: 20, color: '#FFFFFF',
+                            textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 0 10px rgba(249, 248, 242, 0.08)'
+                          }}>
                             {env}
                           </span>
                         ))}
@@ -163,8 +173,8 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                 {/* Deliverables Links Section */}
                 <section>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                    <ExternalLink size={18} style={{ color: '#D4AF37' }} />
-                    <h3 style={{ fontSize: 13, fontWeight: 800, color: 'white', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Deliverables Links ({task.links.length})</h3>
+                    <ExternalLink size={18} style={{ color: 'var(--accent)' }} />
+                    <h3 className="brand-heading" style={{ fontSize: 14, color: '#C5A059', margin: 0 }}>Deliverables Links ({task.links.length})</h3>
                   </div>
                   
                   {task.links.length > 0 ? (
@@ -175,22 +185,24 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                           href={link.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          whileHover={{ scale: 1.02, background: 'rgba(212, 175, 55, 0.15)' }}
+                          whileHover={{ scale: 1.02, background: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-primary)' }}
                           whileTap={{ scale: 0.98 }}
                           style={{ 
-                            padding: '10px 14px', 
+                            padding: '12px 14px', 
                             borderRadius: 12, 
-                            background: 'rgba(212, 175, 55, 0.08)', 
-                            border: '1px solid rgba(212, 175, 55, 0.15)',
-                            color: '#D4AF37',
+                            background: 'rgba(255, 255, 255, 0.05)', 
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            color: 'var(--text-primary)',
                             fontSize: 12,
-                            fontWeight: 600,
+                            fontWeight: 800,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: 8,
                             textDecoration: 'none',
-                            transition: 'all 200ms'
+                            transition: 'all 200ms',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
                           }}
                         >
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{link.label}</span>
@@ -208,10 +220,10 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
                 {/* Notes */}
                 <section>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                    <FileText size={16} style={{ color: 'var(--text-dim)' }} />
-                    <h3 style={{ fontSize: 13, fontWeight: 800, color: 'white', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Notes</h3>
+                    <FileText size={16} style={{ color: 'var(--text-muted)' }} />
+                    <h3 className="brand-heading" style={{ fontSize: 13, color: '#C5A059', margin: 0 }}>Notes</h3>
                   </div>
-                  <div style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.02)', padding: '16px 20px', borderRadius: 16, border: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'pre-wrap' }}>
+                  <div style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-secondary)', background: 'rgba(255, 255, 255, 0.04)', padding: '20px', borderRadius: 12, border: '1px solid rgba(255, 255, 255, 0.12)', whiteSpace: 'pre-wrap', fontWeight: 500 }}>
                     {task.description || "No additional notes provided for this task record."}
                   </div>
                 </section>
@@ -219,14 +231,14 @@ export default function TaskDetailModal({ task, isOpen, onClose }: TaskDetailMod
             </div>
 
             {/* Sticky Footer */}
-            <footer style={{ padding: '20px 32px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'center' }}>
+            <footer style={{ padding: '24px 32px', background: 'var(--section-bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'center' }}>
               <button 
                 onClick={onClose}
-                style={{ padding: '10px 48px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', cursor: 'pointer', fontSize: 14, fontWeight: 700, transition: 'all 200ms' }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                style={{ padding: '12px 64px', borderRadius: 10, background: 'var(--primary)', border: 'none', color: 'var(--text-on-primary)', cursor: 'pointer', fontSize: 14, fontWeight: 700, transition: 'all 200ms', textTransform: 'uppercase', letterSpacing: '0.1em' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--primary-light)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'var(--primary)'}
               >
-                CLOSE TERMINAL
+                Close Record
               </button>
             </footer>
           </motion.div>

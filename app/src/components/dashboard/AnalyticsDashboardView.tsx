@@ -17,32 +17,37 @@ import EliteDropdown from '@/components/dashboard/EliteDropdown';
 import type { Task } from '@/lib/types';
 import { useTimeZone } from '@/context/TimeZoneContext';
 
-/* ── Color Palette ── */
+/* ── Color Palette (Strictly Brand Aligned) ── */
 const CHART_COLORS = [
-  '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ec4899',
-  '#6366f1', '#f43f5e', '#14b8a6', '#a855f7', '#eab308',
-  '#3b82f6', '#ef4444', '#84cc16', '#d946ef', '#0ea5e9'
+  '#C5A059', /* Sunlit Rock Gold */
+  '#70ADC4', /* Mid Blue */
+  '#B0B540', /* Mid Green */
+  '#FF7908', /* Dark Orange */
+  '#984495', /* Dark Purple */
+  '#526136', /* Dark Green */
+  '#FF4C4F'  /* Dark Pink */
 ];
 
-const GOLD = '#D4AF37';
+const ACCENT = '#C5A059'; /* Sunlit Rock */
+const PRIMARY_TEAL = '#003F49';
 
 /* ── Shared Chart Helpers ── */
 function PremiumTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      padding: '10px 14px', borderRadius: 12, fontSize: 13,
-      background: 'rgba(10, 10, 18, 0.95)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      backdropFilter: 'blur(20px)',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+      padding: '12px 16px', borderRadius: 12, fontSize: 13,
+      background: '#ffffff',
+      border: '1.5px solid rgba(0, 63, 73, 0.2)',
+      boxShadow: '0 15px 35px rgba(0, 63, 73, 0.08)',
+      zIndex: 10000
     }}>
-      {label && <p style={{ fontWeight: 600, color: '#e2e8f0', marginBottom: 4, fontSize: 12 }}>{label}</p>}
+      {label && <p style={{ fontWeight: 950, color: '#003f49', marginBottom: 6, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>}
       {payload.map((p: any, i: number) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color || p.fill, boxShadow: `0 0 6px ${p.color || p.fill}80` }} />
-          <span style={{ color: '#94a3b8', fontSize: 12 }}>{p.name}:</span>
-          <span style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 13 }}>{p.value}</span>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '2px', background: p.color || p.fill, boxShadow: `0 0 8px ${p.color || p.fill}40` }} />
+          <span style={{ color: 'rgba(0, 63, 73, 0.6)', fontSize: 12, fontWeight: 700 }}>{p.name}:</span>
+          <span style={{ color: p.color || p.fill, fontWeight: 950, fontSize: 13 }}>{p.value}</span>
         </div>
       ))}
     </div>
@@ -55,25 +60,25 @@ function DonutTooltip({ active, payload, total }: any) {
   const pct = total > 0 ? ((d.value / total) * 100).toFixed(1) : '0';
   return (
     <div style={{
-      padding: '12px 16px', borderRadius: 14, minWidth: 160,
-      background: 'rgba(8, 8, 16, 0.97)',
-      border: `1px solid ${d.payload.color || CHART_COLORS[0]}40`,
-      backdropFilter: 'blur(20px)',
-      boxShadow: `0 12px 40px rgba(0,0,0,0.5)`,
+      padding: '14px 18px', borderRadius: 14, minWidth: 180,
+      background: '#ffffff',
+      border: `1.5px solid ${d.payload.color || CHART_COLORS[0]}`,
+      boxShadow: '0 15px 35px rgba(0, 63, 73, 0.08)',
       pointerEvents: 'none',
+      zIndex: 10000
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <span style={{ width: 10, height: 10, borderRadius: '50%', background: d.payload.color || CHART_COLORS[0], boxShadow: `0 0 8px ${d.payload.color || CHART_COLORS[0]}80` }} />
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9' }}>{d.name}</span>
+        <span style={{ width: 10, height: 10, borderRadius: '2px', background: d.payload.color || CHART_COLORS[0], boxShadow: `0 0 8px ${d.payload.color || CHART_COLORS[0]}40` }} />
+        <span style={{ fontSize: 12, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{d.name}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
-        <span style={{ fontSize: 22, fontWeight: 700, color: d.payload.color || CHART_COLORS[0] }}>{d.value}</span>
-        <span style={{ fontSize: 13, color: '#94a3b8' }}>deliverables</span>
+        <span style={{ fontSize: 24, fontWeight: 950, color: '#003f49' }}>{d.value}</span>
+        <span style={{ fontSize: 11, color: 'rgba(0, 63, 73, 0.5)', fontWeight: 800 }}>DELIVERABLES</span>
       </div>
-      <div style={{ width: '100%', height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 4 }}>
-        <div style={{ height: '100%', width: `${pct}%`, borderRadius: 2, background: d.payload.color || CHART_COLORS[0] }} />
+      <div style={{ width: '100%', height: 6, borderRadius: 3, background: 'rgba(0, 63, 73, 0.05)', overflow: 'hidden', marginBottom: 6 }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: d.payload.color || CHART_COLORS[0] }} />
       </div>
-      <span style={{ fontSize: 12, color: '#64748b' }}>{pct}% of total</span>
+      <span style={{ fontSize: 11, color: 'rgba(0, 63, 73, 0.4)', fontWeight: 700 }}>{pct}% OF TOTAL</span>
     </div>
   );
 }
@@ -85,16 +90,16 @@ function renderDonutLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent 
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   if (percent < 0.05) return null;
   return (
-    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={800} style={{ pointerEvents: 'none' }}>
+    <text x={x} y={y} fill="var(--text-on-primary)" textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight={800} style={{ pointerEvents: 'none' }}>
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   );
 }
 
 const axisProps = {
-  tick: { fill: '#64748b', fontSize: 10 },
-  axisLine: false,
-  tickLine: false,
+  tick: { fill: '#003f49', fontSize: 13, fontWeight: 950 },
+  axisLine: { stroke: '#003f49', strokeWidth: 2.5, opacity: 0.3 },
+  tickLine: { stroke: '#003f49', strokeWidth: 2, opacity: 0.2 },
 };
 
 /* ── Interactive Pie Chart Component ── */
@@ -180,12 +185,13 @@ function InteractivePieChart({ data, total, onClick }: { data: any[], total: num
             const isHovered = activeIndex === index;
             return (
               <span style={{ 
-                color: isHovered ? '#fff' : '#cbd5e1', 
-                fontSize: 11, 
-                fontWeight: isHovered ? 700 : 500,
+                color: '#003f49', 
+                fontSize: 12, 
+                fontWeight: isHovered ? 950 : 800,
                 transition: 'all 0.2s ease',
                 display: 'inline-block',
-                transform: isHovered ? 'translateX(4px)' : 'none'
+                transform: isHovered ? 'translateX(4px)' : 'none',
+                opacity: isHovered ? 1 : 0.8
               }}>
                 {value}
               </span>
@@ -200,9 +206,16 @@ function InteractivePieChart({ data, total, onClick }: { data: any[], total: num
 }
 
 /* ── Chart Card Wrapper ── */
-function ChartCard({ title, subtitle, children, delay = 0, height = 200 }: {
-  title: string; subtitle?: string; children: React.ReactNode; delay?: number; height?: number;
-}) {
+interface ChartCardProps {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  delay?: number;
+  height?: number;
+  titleColor?: string;
+}
+
+function ChartCard({ title, subtitle, children, delay = 0, height = 200, titleColor = PRIMARY_TEAL }: ChartCardProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 150);
@@ -221,8 +234,8 @@ function ChartCard({ title, subtitle, children, delay = 0, height = 200 }: {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between'
         }}>
           <div>
-            <h3 style={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0', letterSpacing: '-0.01em', margin: 0 }}>{title}</h3>
-            {subtitle && <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '2px 0 0', fontWeight: 500 }}>{subtitle}</p>}
+            <h3 className="brand-heading" style={{ fontSize: 13, color: titleColor, margin: 0, fontWeight: 950, letterSpacing: '0.08em' }}>{title}</h3>
+            {subtitle && <p style={{ fontSize: 10, color: 'rgba(0, 63, 73, 0.8)', margin: '4px 0 0', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{subtitle}</p>}
           </div>
         </div>
         <div style={{ 
@@ -234,7 +247,7 @@ function ChartCard({ title, subtitle, children, delay = 0, height = 200 }: {
           overflow: 'hidden' 
         }}>
           {mounted ? children : (
-            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', fontSize: 12 }}>Loading…</div>
+            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#003f49', fontSize: 12, fontWeight: 800 }}>Loading Registry Data…</div>
           )}
         </div>
       </GlassCard>
@@ -260,7 +273,13 @@ function KPICard({ label, value, icon, color, trend, pctChange, suffix, delay, d
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4 }}
       className="glass-card"
-      style={{ padding: '14px 16px', position: 'relative', overflow: 'visible', cursor: 'pointer' }}
+      style={{ 
+        padding: '14px 16px', 
+        position: 'relative', 
+        overflow: 'visible', 
+        cursor: 'pointer',
+        zIndex: isHovered ? 10001 : 1 // Dynamically elevate card on hover
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -293,11 +312,11 @@ function KPICard({ label, value, icon, color, trend, pctChange, suffix, delay, d
           {displayValue ? (
             <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>{displayValue}</span>
           ) : (
-            <AnimatedCounter value={value} className="text-xl font-bold text-[var(--text-primary)]" />
+            <AnimatedCounter value={value} className="text-xl font-black text-[#003f49]" />
           )}
           {suffix && <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-dim)' }}>{suffix}</span>}
         </div>
-        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, fontWeight: 500 }}>{label}</p>
+        <p style={{ fontSize: 11, color: '#003f49', marginTop: 3, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
       </div>
 
       {/* ── Hover Tooltip ── */}
@@ -310,17 +329,16 @@ function KPICard({ label, value, icon, color, trend, pctChange, suffix, delay, d
             transition={{ duration: 0.18 }}
             style={{
               position: 'absolute',
-              top: '100%',
+              top: 'calc(100% + 8px)',
               left: '50%',
-              marginTop: 8,
-              zIndex: 5000,
+              zIndex: 9999,
               width: 280,
               borderRadius: 14,
-              background: 'rgba(12, 12, 20, 0.97)',
-              backdropFilter: 'blur(24px)',
-              border: `1px solid ${color}30`,
-              boxShadow: `0 20px 50px rgba(0,0,0,0.5), 0 0 30px ${color}10`,
-              padding: '14px 16px',
+              background: 'rgba(255, 255, 255, 0.98)',
+              backdropFilter: 'blur(32px)',
+              border: `1.5px solid ${color}`,
+              boxShadow: `0 20px 50px rgba(0,0,0,0.1), 0 0 30px ${color}15`,
+              padding: '16px 20px',
             }}
           >
             {/* Arrow */}
@@ -329,28 +347,28 @@ function KPICard({ label, value, icon, color, trend, pctChange, suffix, delay, d
               left: '50%',
               marginLeft: -6, // Center half of 12px width
               width: 12, height: 12, borderRadius: 2, rotate: '45deg',
-              background: 'rgba(12, 12, 20, 0.97)',
-              borderLeft: `1px solid ${color}30`,
-              borderTop: `1px solid ${color}30`,
+              background: 'rgba(255, 255, 255, 0.98)',
+              borderLeft: `1.5px solid ${color}`,
+              borderTop: `1.5px solid ${color}`,
             }} />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <div style={{ width: 26, height: 26, borderRadius: 8, background: `${color}20`, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {icon}
               </div>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{tooltipTitle || label}</span>
+              <span style={{ fontSize: 14, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{tooltipTitle || label}</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {tooltipDetails.map((d, i) => (
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '6px 10px', borderRadius: 8,
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.04)',
+                  padding: '8px 12px', borderRadius: 10,
+                  background: 'rgba(0, 63, 73, 0.03)',
+                  border: '1px solid rgba(0, 63, 73, 0.08)',
                 }}>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>{d.label}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: d.color || 'var(--text-primary)' }}>{d.value}</span>
+                  <span style={{ fontSize: 12, color: 'rgba(0, 63, 73, 0.6)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{d.label}</span>
+                  <span style={{ fontSize: 13, fontWeight: 950, color: d.color || '#003f49' }}>{d.value}</span>
                 </div>
               ))}
             </div>
@@ -549,7 +567,7 @@ export default function AnalyticsDashboardView({
     }
     if (submitterData.length > 0) {
       const top = submitterData[0];
-      result.push({ icon: <Crown size={16} />, text: `Top performer: ${top.name} with ${top.value} submissions`, color: GOLD, type: 'info' });
+      result.push({ icon: <Crown size={16} />, text: `Top performer: ${top.name} with ${top.value} submissions`, color: '#C5A059', type: 'info' });
     }
     if (categoryData.length > 1) {
       const least = categoryData[categoryData.length - 1];
@@ -599,7 +617,7 @@ export default function AnalyticsDashboardView({
 
   const submitterDetails = useMemo(() =>
     kpiStats.topSubmitters.map(([name, count]) => ({
-      label: name, value: `${count} submissions`, color: GOLD
+      label: name, value: `${count} submissions`, color: '#C5A059'
     })), [kpiStats.topSubmitters]);
 
   const cdeDetails = useMemo(() =>
@@ -610,7 +628,7 @@ export default function AnalyticsDashboardView({
   const latestDetails = useMemo(() => {
     if (!kpiStats.latestDate) return [{ label: 'No submissions', value: '—' }];
     return [
-      { label: 'Date', value: formatDate(kpiStats.latestDate), color: GOLD },
+      { label: 'Date', value: formatDate(kpiStats.latestDate), color: '#C5A059' },
       { label: 'Task', value: kpiStats.latestTask.length > 30 ? kpiStats.latestTask.slice(0, 30) + '…' : kpiStats.latestTask },
     ];
   }, [kpiStats, formatDate]);
@@ -624,10 +642,10 @@ export default function AnalyticsDashboardView({
   const headerInputStyle: React.CSSProperties = {
     padding: '8px 14px 8px 38px',
     borderRadius: 10,
-    background: 'rgba(255,255,255,0.03)',
-    border: '1px solid rgba(212, 175, 55, 0.1)',
+    background: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
     fontSize: 13,
-    color: 'white',
+    color: 'var(--text-primary)',
     outline: 'none',
     transition: 'all 0.2s ease',
     width: 220,
@@ -642,9 +660,8 @@ export default function AnalyticsDashboardView({
       style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
     >
       {/* ══════════ DASHBOARD FILTER BAR ══════════ */}
-      <GlassCard style={{ padding: 0, overflow: 'visible' }}>
         <div style={{
-          padding: '14px 20px',
+          padding: '12px 24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -652,30 +669,51 @@ export default function AnalyticsDashboardView({
           gap: 12,
           position: 'relative',
           zIndex: 100,
-          overflow: 'visible',
+          background: 'rgba(255, 255, 255, 0.4)',
+          backdropFilter: 'blur(24px)',
+          border: '1px solid rgba(0, 63, 73, 0.12)',
+          borderRadius: 20,
+          boxShadow: '0 4px 20px rgba(0, 63, 73, 0.05)',
+          marginBottom: 8
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(59,130,246,0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(208, 171, 130, 0.1)', color: '#d0ab82', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <CircleDot size={18} />
             </div>
             <div>
-              <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Analytics Dashboard</h2>
-              <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0, fontWeight: 500 }}>{tasks.length} deliverables in scope</p>
+              <h2 className="brand-heading" style={{ fontSize: 16, color: '#003f49', margin: 0, fontWeight: 900 }}>Analytics Command Center</h2>
+              <p style={{ fontSize: 11, color: 'rgba(0, 63, 73, 0.7)', margin: 0, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{tasks.length} deliverables in scope</p>
             </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginLeft: 'auto' }}>
             {setSearch && (
               <div style={{ position: 'relative', flex: 1, maxWidth: 240 }}>
-                <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(212, 175, 55, 0.4)' }} />
+                <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#003f49' }} />
                 <input
                   type="text"
                   placeholder="Search Deliverables..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  style={headerInputStyle}
-                  onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.3)'}
-                  onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.1)'}
+                  style={{
+                    padding: '10px 14px 10px 38px', borderRadius: 10,
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    border: '1px solid rgba(0, 63, 73, 0.2)',
+                    color: '#003f49',
+                    fontWeight: 600,
+                    fontSize: 13,
+                    outline: 'none',
+                    transition: 'all 0.2s ease',
+                    width: 320,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#003f49';
+                    e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 63, 73, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(0, 63, 73, 0.2)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
                 />
               </div>
             )}
@@ -738,7 +776,6 @@ export default function AnalyticsDashboardView({
             )}
           </div>
         </div>
-      </GlassCard>
 
       {/* ══════════ KPI SUMMARY CARDS ══════════ */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10 }}>
@@ -792,7 +829,7 @@ export default function AnalyticsDashboardView({
           value={0}
           displayValue={kpiStats.latestDate ? formatDate(kpiStats.latestDate) : '—'}
           icon={<CalendarClock size={16} />}
-          color={GOLD}
+          color="#C5A059"
           trend="neutral"
           pctChange={0}
           delay={0.25}
@@ -817,15 +854,15 @@ export default function AnalyticsDashboardView({
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
 
         {/* Category Performance Bar Chart */}
-        <ChartCard title="Category Performance" subtitle={`${categoryData.length} categories tracked`} delay={0.1} height={200}>
+        <ChartCard title="Category Performance" subtitle={`${categoryData.length} categories tracked`} delay={0.1} height={200} titleColor="#C5A059">
           {categoryData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={50}>
               <BarChart data={categoryData} barSize={16} margin={{ top: 4, right: 8, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                <XAxis dataKey="name" {...axisProps} interval={0} angle={-25} textAnchor="end" height={45} tick={{ fill: '#64748b', fontSize: 9 }} />
-                <YAxis {...axisProps} tick={{ fill: '#64748b', fontSize: 9 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(198, 224, 224, 0.12)" />
+                <XAxis dataKey="name" tick={{ fill: '#003f49', fontSize: 13, fontWeight: 950 }} axisLine={{ stroke: '#003f49', strokeWidth: 2.5, opacity: 0.3 }} tickLine={{ stroke: '#003f49', strokeWidth: 2, opacity: 0.2 }} interval={0} angle={-25} textAnchor="end" height={60} />
+                <YAxis tick={{ fill: '#003f49', fontSize: 13, fontWeight: 950 }} axisLine={{ stroke: '#003f49', strokeWidth: 2.5, opacity: 0.3 }} tickLine={{ stroke: '#003f49', strokeWidth: 2, opacity: 0.2 }} />
                 <Tooltip content={<PremiumTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                <Bar dataKey="value" name="Deliverables" radius={[4, 4, 0, 0]} onClick={handleCategoryClick} cursor="pointer">
+                <Bar dataKey="value" name="Deliverables" radius={[4, 4, 0, 0]} onClick={handleCategoryClick} cursor="pointer" label={{ position: 'top', fill: '#d0ab82', fontSize: 11, fontWeight: 950 }}>
                   {categoryData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Bar>
               </BarChart>
@@ -834,23 +871,23 @@ export default function AnalyticsDashboardView({
         </ChartCard>
 
         {/* Submission Timeline */}
-        <ChartCard title="Submission Timeline" subtitle={`${timelineData.length} months of data`} delay={0.15} height={200}>
+        <ChartCard title="Submission Timeline" subtitle={`${timelineData.length} months of data`} delay={0.15} height={200} titleColor="#C5A059">
           {timelineData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={50}>
               <AreaChart data={timelineData} margin={{ top: 4, right: 8, bottom: 0, left: -10 }}>
                 <defs>
                   <linearGradient id="timelineGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={GOLD} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={GOLD} stopOpacity={0.02} />
+                    <stop offset="5%" stopColor="#C5A059" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#C5A059" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                <XAxis dataKey="name" {...axisProps} tick={{ fill: '#64748b', fontSize: 9 }} />
-                <YAxis {...axisProps} tick={{ fill: '#64748b', fontSize: 9 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(198, 224, 224, 0.12)" />
+                <XAxis dataKey="name" tick={{ fill: '#003f49', fontSize: 13, fontWeight: 950 }} axisLine={{ stroke: '#003f49', strokeWidth: 2.5, opacity: 0.3 }} tickLine={{ stroke: '#003f49', strokeWidth: 2, opacity: 0.2 }} />
+                <YAxis tick={{ fill: '#003f49', fontSize: 13, fontWeight: 950 }} axisLine={{ stroke: '#003f49', strokeWidth: 2.5, opacity: 0.3 }} tickLine={{ stroke: '#003f49', strokeWidth: 2, opacity: 0.2 }} />
                 <Tooltip content={<PremiumTooltip />} />
-                <Area type="monotone" dataKey="value" stroke={GOLD} fill="url(#timelineGrad)" strokeWidth={2} name="Submissions"
-                  dot={{ fill: GOLD, r: 3, stroke: 'rgba(10,10,15,0.8)', strokeWidth: 1.5 }}
-                  activeDot={{ r: 5, fill: GOLD, stroke: '#fff', strokeWidth: 2 }}
+                <Area type="monotone" dataKey="value" stroke="#C5A059" fill="url(#timelineGrad)" strokeWidth={2} name="Submissions"
+                  dot={{ fill: '#C5A059', r: 3, stroke: 'rgba(10,10,15,0.8)', strokeWidth: 1.5 }}
+                  activeDot={{ r: 5, fill: '#C5A059', stroke: '#fff', strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -858,15 +895,15 @@ export default function AnalyticsDashboardView({
         </ChartCard>
 
         {/* Top Submitters */}
-        <ChartCard title="Top Submitters" subtitle={`${submitterData.length} active contributors`} delay={0.2} height={200}>
+        <ChartCard title="Top Submitters" subtitle={`${submitterData.length} active contributors`} delay={0.2} height={200} titleColor="#C5A059">
           {submitterData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={50}>
               <BarChart data={submitterData} layout="vertical" barSize={12} margin={{ top: 0, right: 8, bottom: 0, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" horizontal={false} />
-                <XAxis type="number" {...axisProps} tick={{ fill: '#64748b', fontSize: 9 }} />
-                <YAxis type="category" dataKey="name" {...axisProps} width={80} tick={{ fill: '#94a3b8', fontSize: 9 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(198, 224, 224, 0.12)" horizontal={false} />
+                <XAxis type="number" tick={{ fill: '#003f49', fontSize: 11, fontWeight: 950 }} axisLine={{ stroke: '#003f49', strokeWidth: 2.5, opacity: 0.3 }} tickLine={{ stroke: '#003f49', strokeWidth: 2, opacity: 0.2 }} />
+                <YAxis type="category" dataKey="name" tick={{ fill: '#003f49', fontSize: 11, fontWeight: 950 }} axisLine={{ stroke: '#003f49', strokeWidth: 2.5, opacity: 0.3 }} tickLine={{ stroke: '#003f49', strokeWidth: 2, opacity: 0.2 }} width={80} />
                 <Tooltip content={<PremiumTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                <Bar dataKey="value" name="Submissions" radius={[0, 4, 4, 0]}>
+                <Bar dataKey="value" name="Submissions" radius={[0, 4, 4, 0]} label={{ position: 'right', fill: '#d0ab82', fontSize: 11, fontWeight: 950, offset: 10 }}>
                   {submitterData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Bar>
               </BarChart>
@@ -879,7 +916,7 @@ export default function AnalyticsDashboardView({
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
 
         {/* Deliverable Types Donut */}
-        <ChartCard title="Deliverable Types" subtitle={`${typeData.length} types identified`} delay={0.25} height={190}>
+        <ChartCard title="Deliverable Types" subtitle={`${typeData.length} types identified`} delay={0.25} height={190} titleColor="#C5A059">
           {typeData.length > 0 ? (
             <InteractivePieChart
               data={typeData}
@@ -890,7 +927,7 @@ export default function AnalyticsDashboardView({
         </ChartCard>
 
         {/* CDE Usage Donut */}
-        <ChartCard title="CDE Environment Usage" subtitle={`${cdeData.length} environments in use`} delay={0.3} height={190}>
+        <ChartCard title="CDE Environment Usage" subtitle={`${cdeData.length} environments in use`} delay={0.3} height={190} titleColor="#C5A059">
           {cdeData.length > 0 ? (
             <InteractivePieChart
               data={cdeData}
@@ -907,20 +944,12 @@ export default function AnalyticsDashboardView({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 0.4 }}
           >
-            <GlassCard padding="none" hover={false} style={{ height: '100%' }}>
-              <div style={{
-                padding: '12px 16px 4px',
-                display: 'flex', alignItems: 'center', gap: 8
-              }}>
-                <div style={{
-                  width: 26, height: 26, borderRadius: 7,
-                  background: 'rgba(245, 158, 11, 0.1)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#f59e0b'
-                }}>
-                  <Lightbulb size={14} />
+            <GlassCard padding="none" hover={false} style={{ height: 294 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, padding: '12px 16px 0' }}>
+                <div style={{ width: 30, height: 30, borderRadius: 10, background: 'rgba(208, 171, 130, 0.15)', color: '#d0ab82', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Lightbulb size={18} />
                 </div>
-                <h3 style={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0', margin: 0 }}>Smart Insights</h3>
+                <h3 className="brand-heading" style={{ fontSize: 14, color: '#d0ab82', margin: 0, fontWeight: 950, letterSpacing: '0.1em' }}>AI STRATEGY INSIGHTS</h3>
               </div>
               <div style={{ padding: '8px 14px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {insights.map((insight, i) => (
@@ -931,9 +960,10 @@ export default function AnalyticsDashboardView({
                     transition={{ delay: 0.4 + i * 0.05 }}
                     style={{
                       display: 'flex', alignItems: 'flex-start', gap: 10,
-                      padding: '8px 12px', borderRadius: 10,
-                      background: `${insight.color}08`,
-                      border: `1px solid ${insight.color}15`,
+                      padding: '10px 14px', borderRadius: 12,
+                      background: 'rgba(255, 255, 255, 0.7)',
+                      border: `1px solid rgba(0, 63, 73, 0.1)`,
+                      boxShadow: '0 2px 8px rgba(0, 63, 73, 0.05)'
                     }}
                   >
                     <div style={{
@@ -943,7 +973,7 @@ export default function AnalyticsDashboardView({
                     }}>
                       {insight.icon}
                     </div>
-                    <p style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.7)', lineHeight: 1.45, margin: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 900, color: '#003f49', lineHeight: 1.5, margin: 0 }}>
                       {insight.text}
                     </p>
                   </motion.div>

@@ -1,0 +1,16 @@
+Brand Identity Reference
+Color Palette
+Teal (Primary): rgb(0, 63, 73) (#003f49)
+Aqua (Secondary): rgb(198, 224, 224) (#c6e0e0)
+Haze (Backgrounds): rgb(228, 239, 238) (#e4efee)
+Cotton (Main Background): rgb(249, 248, 242) (#f9f8f2)
+Sunlit Rock (Accent): #C5A059 (Premium Brass/Gold)
+Typography (Google Font Alternatives)
+Arizona Flare alternative: Marcellus (Refined, flared-serif aesthetic)
+Koufiya alternative: Kufam or Noto Sans Arabic
+Fallback EN: Georgia
+Fallback AR: Nanum Myeongjo
+UI Rules
+Headings: Marcellus, UPPERCASE, Letter spacing +50, leading 120%
+Buttons: Teal background, Cotton text, UPPERCASE
+Layout: High whitespace, medium radius (12px), subtle shadows.

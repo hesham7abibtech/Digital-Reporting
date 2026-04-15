@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings2, RotateCcw, Check, CheckSquare, Square } from 'lucide-react';
+import { SlidersHorizontal, RotateCcw, Check, CheckSquare, Square } from 'lucide-react';
 import { ColumnDef, ColumnSettings } from '@/hooks/useTableColumns';
 
 interface ColumnSettingsDropdownProps {
@@ -44,27 +44,30 @@ export default function ColumnSettingsDropdown({
           justifyContent: 'center',
           width: 36,
           height: 36,
-          borderRadius: 10,
-          background: isOpen ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255,255,255,0.03)',
-          border: `1px solid ${isOpen ? 'rgba(212, 175, 55, 0.3)' : 'rgba(255,255,255,0.06)'}`,
-          color: isOpen ? '#D4AF37' : 'rgba(255,255,255,0.6)',
+          borderRadius: 12,
+          background: isOpen ? 'rgba(208, 171, 130, 0.12)' : 'rgba(255, 255, 255, 0.8)',
+          border: `1px solid ${isOpen ? '#d0ab82' : 'rgba(0, 63, 73, 0.25)'}`,
+          color: isOpen ? '#d0ab82' : '#003f49',
           cursor: 'pointer',
-          transition: 'all 200ms ease',
+          transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: isOpen ? '0 0 15px rgba(208, 171, 130, 0.2)' : '0 2px 10px rgba(0, 0, 0, 0.05)'
         }}
         onMouseEnter={(e) => {
           if (!isOpen) {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-            e.currentTarget.style.color = '#fff';
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 1)';
+            e.currentTarget.style.color = '#d0ab82';
+            e.currentTarget.style.borderColor = '#d0ab82';
           }
         }}
         onMouseLeave={(e) => {
           if (!isOpen) {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-            e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.8)';
+            e.currentTarget.style.color = '#003f49';
+            e.currentTarget.style.borderColor = 'rgba(0, 63, 73, 0.25)';
           }
         }}
       >
-        <Settings2 size={18} />
+        <SlidersHorizontal size={18} />
       </button>
 
       <AnimatePresence>
@@ -79,24 +82,24 @@ export default function ColumnSettingsDropdown({
               top: 'calc(100% + 8px)',
               right: 0,
               width: 240,
-              background: 'rgba(15, 15, 20, 0.95)',
-              backdropFilter: 'blur(16px)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(12, 12, 20, 0.98)',
+              backdropFilter: 'blur(32px)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
               borderRadius: 12,
               padding: 12,
               zIndex: 1000,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.6)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Columns</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <span className="brand-heading" style={{ fontSize: 11, fontWeight: 950, color: '#d0ab82', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Columns</span>
               <button
                 onClick={onReset}
                 style={{
-                  background: 'none', border: 'none', color: '#3b82f6', fontSize: 11, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 4
+                  background: 'none', border: 'none', color: '#FF4C4F', fontSize: 11, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 4, fontWeight: 700
                 }}
-                className="hover:bg-[rgba(59,130,246,0.1)]"
+                className="hover:bg-[rgba(255,76,79,0.1)]"
               >
                 <RotateCcw size={12} /> Reset
               </button>
@@ -119,18 +122,19 @@ export default function ColumnSettingsDropdown({
                       padding: '8px 10px',
                       background: 'transparent',
                       border: 'none',
-                      borderRadius: 6,
-                      color: isDisabled ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.8)',
-                      fontSize: 13,
-                      fontWeight: 500,
+                      borderRadius: 8,
+                      color: isDisabled ? 'rgba(255, 255, 255, 0.3)' : isVisible ? '#d0ab82' : 'rgba(255, 255, 255, 0.65)',
+                      fontSize: 12,
+                      fontWeight: 800,
                       cursor: isDisabled ? 'not-allowed' : 'pointer',
                       textAlign: 'left',
-                      transition: 'background 150ms ease'
+                      transition: 'all 150ms ease'
                     }}
-                    className={!isDisabled ? "hover:bg-[rgba(255,255,255,0.04)]" : ""}
+                    onMouseEnter={e => { if (!isDisabled) e.currentTarget.style.background = 'rgba(208, 171, 130, 0.08)'; }}
+                    onMouseLeave={e => { if (!isDisabled) e.currentTarget.style.background = 'transparent'; }}
                   >
-                    <div style={{ color: isVisible ? '#D4AF37' : 'rgba(255,255,255,0.2)' }}>
-                      {isVisible ? <CheckSquare size={16} /> : <Square size={16} />}
+                    <div style={{ color: isVisible ? '#d0ab82' : 'rgba(255, 255, 255, 0.2)' }}>
+                      {isVisible ? <CheckSquare size={16} strokeWidth={2.5} /> : <Square size={16} strokeWidth={2.5} />}
                     </div>
                     {col.label}
                   </button>

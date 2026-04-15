@@ -56,11 +56,11 @@ export function getHealthColor(score: number): string {
 
 export function getDepartmentColor(dept: string): string {
   const colors: Record<string, string> = {
-    'BIM': '#8b5cf6',
-    'GIS': '#06b6d4',
-    'Digital Team': '#f59e0b',
-    'SPA': '#ec4899',
-    'Digital Reporting': '#3b82f6',
+    'BIM': '#BF70C1',               // Mid Purple
+    'GIS': '#A0BC57',               // Mid Green
+    'Digital Team': '#B59572',      // Mid Brown
+    'SPA': '#F7A0A0',               // Mid Pink
+    'Digital Reporting': '#62A0B8', // Mid Blue
   };
-  return colors[dept] || '#64748b';
+  return colors[dept] || '#003f49';
 }

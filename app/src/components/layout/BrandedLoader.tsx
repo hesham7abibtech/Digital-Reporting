@@ -51,7 +51,7 @@ export default function BrandedLoader({ isLoading, onFinished }: BrandedLoaderPr
             position: 'fixed',
             inset: 0,
             zIndex: 9999,
-            backgroundColor: '#050508',
+            backgroundColor: 'var(--background)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -63,14 +63,14 @@ export default function BrandedLoader({ isLoading, onFinished }: BrandedLoaderPr
           <motion.div
             animate={{
               scale: [1, 1.2, 1],
-              opacity: [0.3, 0.5, 0.3],
+              opacity: [0.3, 0.6, 0.3],
             }}
             transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
             style={{
               position: 'absolute',
               width: '100vw',
               height: '100vh',
-              background: 'radial-gradient(circle at center, rgba(212, 175, 55, 0.08) 0%, transparent 70%)',
+              background: 'radial-gradient(circle at center, rgba(198, 224, 224, 0.3) 0%, transparent 70%)',
               pointerEvents: 'none'
             }}
           />
@@ -99,14 +99,11 @@ export default function BrandedLoader({ isLoading, onFinished }: BrandedLoaderPr
                   hidden: { y: 20, opacity: 0 },
                   visible: { y: 0, opacity: 1, transition: { duration: 0.8, ease: "easeOut" } }
                 }}
+                className="brand-heading"
                 style={{
-                  fontSize: 36,
-                  fontWeight: 900,
-                  letterSpacing: '0.15em',
-                  color: 'white',
+                  color: 'var(--text-primary)',
                   margin: 0,
-                  textShadow: '0 0 40px rgba(212, 175, 55, 0.3)',
-                  fontFamily: 'system-ui, -apple-system, sans-serif'
+                  textShadow: '0 4px 15px rgba(0,0,0,0.3)',
                 }}
               >
                 InSite
@@ -115,11 +112,11 @@ export default function BrandedLoader({ isLoading, onFinished }: BrandedLoaderPr
               <motion.div
                 variants={{
                   hidden: { width: 0, opacity: 0 },
-                  visible: { width: 80, opacity: 1, transition: { duration: 1, ease: "easeInOut" } }
+                  visible: { width: 100, opacity: 1, transition: { duration: 1, ease: "easeInOut" } }
                 }}
                 style={{
                   height: 1,
-                  background: 'linear-gradient(90deg, transparent, #D4AF37, transparent)'
+                  background: 'linear-gradient(90deg, transparent, var(--accent), transparent)'
                 }}
               />
               
@@ -129,14 +126,14 @@ export default function BrandedLoader({ isLoading, onFinished }: BrandedLoaderPr
                   visible: { y: 0, opacity: 0.7, transition: { duration: 0.8, ease: "easeOut" } }
                 }}
                 style={{
-                  fontSize: 10,
-                  fontWeight: 500,
-                  letterSpacing: '0.3em',
-                  color: 'white',
+                  fontSize: 11,
+                  fontWeight: 800,
+                  letterSpacing: '0.2em',
+                  color: 'var(--text-primary)',
                   margin: 0,
                   textTransform: 'uppercase',
                   textAlign: 'center',
-                  maxWidth: 300,
+                  maxWidth: 320,
                   lineHeight: 1.6
                 }}
               >
@@ -154,9 +151,9 @@ export default function BrandedLoader({ isLoading, onFinished }: BrandedLoaderPr
                 width: '100%',
                 height: '100%',
                 borderRadius: '50%',
-                border: '1px solid rgba(212, 175, 55, 0.1)',
-                borderTopColor: '#D4AF37',
-                borderBottomColor: '#D4AF37',
+                border: '2px solid rgba(255, 255, 255, 0.05)',
+                borderTopColor: 'var(--secondary)',
+                borderBottomColor: 'var(--secondary)',
                 position: 'relative'
               }}
             />
@@ -167,9 +164,9 @@ export default function BrandedLoader({ isLoading, onFinished }: BrandedLoaderPr
                 position: 'absolute',
                 top: 20, left: 20, right: 20, bottom: 20,
                 borderRadius: '50%',
-                border: '1px solid rgba(212, 175, 55, 0.05)',
-                borderLeftColor: '#D4AF37',
-                borderRightColor: '#D4AF37'
+                border: '1px solid rgba(255, 255, 255, 0.03)',
+                borderLeftColor: 'var(--accent)',
+                borderRightColor: 'var(--accent)'
               }}
             />
           </div>
@@ -187,8 +184,8 @@ export default function BrandedLoader({ isLoading, onFinished }: BrandedLoaderPr
                   style={{
                     fontSize: 11,
                     fontWeight: 800,
-                    letterSpacing: '0.25em',
-                    color: statusIndex === statuses.length - 1 ? '#D4AF37' : 'rgba(255,255,255,0.4)',
+                    letterSpacing: '0.2em',
+                    color: statusIndex === statuses.length - 1 ? 'var(--text-primary)' : 'var(--text-muted)',
                     margin: 0,
                     textAlign: 'center'
                   }}
@@ -221,7 +218,7 @@ export default function BrandedLoader({ isLoading, onFinished }: BrandedLoaderPr
               style={{
                 width: '60%',
                 height: '100%',
-                background: 'linear-gradient(90deg, transparent, #D4AF37, transparent)'
+                background: 'linear-gradient(90deg, transparent, var(--primary), transparent)'
               }}
             />
           </div>

@@ -7,12 +7,12 @@ interface StatusBadgeProps {
 }
 
 const statusConfig: Record<TaskStatus, { label: string; color: string; bg: string }> = {
-  NOT_STARTED: { label: 'Not Started', color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
-  IN_PROGRESS: { label: 'In Progress', color: '#D4AF37', bg: 'rgba(212,175,55,0.12)' },
-  PENDING_REVIEW: { label: 'Pending Review', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-  COMPLETED: { label: 'Completed', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
-  DELAYED: { label: 'Delayed', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
-  BLOCKED: { label: 'Blocked', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+  NOT_STARTED: { label: 'Not Started', color: 'rgba(255, 255, 255, 0.4)', bg: 'rgba(255, 255, 255, 0.05)' },
+  IN_PROGRESS: { label: 'In Progress', color: 'rgb(198, 224, 224)', bg: 'rgba(198, 224, 224, 0.15)' },
+  PENDING_REVIEW: { label: 'Pending Review', color: '#FF7908', bg: 'rgba(255, 121, 8, 0.1)' },
+  COMPLETED: { label: 'Completed', color: '#B0B540', bg: 'rgba(176, 181, 64, 0.1)' },
+  DELAYED: { label: 'Delayed', color: '#FF4C4F', bg: 'rgba(255, 76, 79, 0.1)' },
+  BLOCKED: { label: 'Blocked', color: '#FF4C4F', bg: 'rgba(255, 76, 79, 0.2)' },
 };
 
 export default function StatusBadge({ status }: StatusBadgeProps) {

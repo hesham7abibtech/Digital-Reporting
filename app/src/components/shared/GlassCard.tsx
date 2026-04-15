@@ -29,11 +29,11 @@ export default function GlassCard({
 
   const glowClasses = {
     none: '',
-    blue: 'hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]',
-    cyan: 'hover:shadow-[0_0_20px_rgba(6,182,212,0.15)]',
-    emerald: 'hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]',
-    amber: 'hover:shadow-[0_0_20px_rgba(245,158,11,0.15)]',
-    red: 'hover:shadow-[0_0_20px_rgba(239,68,68,0.15)]',
+    blue: 'hover:shadow-[0_0_20px_rgba(0,63,73,0.08)]',
+    cyan: 'hover:shadow-[0_0_20px_rgba(198,224,224,0.2)]',
+    emerald: 'hover:shadow-[0_0_20px_rgba(82,97,54,0.1)]',
+    amber: 'hover:shadow-[0_0_20px_rgba(255,121,8,0.1)]',
+    red: 'hover:shadow-[0_0_20px_rgba(255,76,79,0.1)]',
   };
 
   return (

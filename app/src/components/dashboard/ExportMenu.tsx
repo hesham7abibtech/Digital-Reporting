@@ -124,16 +124,18 @@ export default function ExportMenu({
           alignItems: 'center',
           gap: 10,
           padding: '10px 18px',
-          background: 'rgba(212, 175, 55, 0.1)',
-          border: '1px solid rgba(212, 175, 55, 0.3)',
+          background: 'var(--teal)',
+          border: '1px solid rgba(0, 63, 73, 0.2)',
           borderRadius: 12,
-          color: '#D4AF37',
-          fontSize: 13,
-          fontWeight: 700,
+          color: 'var(--aqua)',
+          fontSize: 12,
+          fontWeight: 800,
           cursor: isExporting ? 'not-allowed' : 'pointer',
           transition: 'all 200ms',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-          outline: 'none'
+          boxShadow: '0 4px 15px rgba(0, 63, 73, 0.15)',
+          outline: 'none',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em'
         }}
       >
         <Download size={16} />
@@ -161,16 +163,16 @@ export default function ExportMenu({
               marginTop: 8,
               zIndex: 1000,
               width: 240,
-              background: 'rgba(15, 15, 25, 0.95)',
+              background: '#003f49',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid rgba(198, 224, 224, 0.2)',
               borderRadius: 16,
-              boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+              boxShadow: '0 20px 50px rgba(0,63,73,0.3)',
               padding: 6,
               overflow: 'hidden'
             }}
           >
-            <div style={{ padding: '8px 12px 4px 12px', fontSize: 10, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            <div style={{ padding: '8px 12px 4px 12px', fontSize: 10, fontWeight: 900, color: 'rgba(198, 224, 224, 0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               Select Output Format
             </div>
             
@@ -178,18 +180,18 @@ export default function ExportMenu({
               onClick={() => triggerConfirmation('pdf')}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px',
-                background: 'transparent', border: 'none', borderRadius: 10, color: 'white',
+                background: 'transparent', border: 'none', borderRadius: 10, color: 'var(--aqua)',
                 cursor: 'pointer', transition: 'background 200ms', textAlign: 'left'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(198, 224, 224, 0.05)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(239, 68, 68, 0.15)', color: '#FF4C4F', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
                 <FileText size={18} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: 13, fontWeight: 700 }}>Signature PDF Portfolio</span>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Elite branded document</span>
+                <span style={{ fontSize: 10, color: 'rgba(198, 224, 224, 0.5)' }}>Elite branded document</span>
               </div>
             </button>
 
@@ -197,18 +199,18 @@ export default function ExportMenu({
               onClick={() => triggerConfirmation('excel')}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px',
-                background: 'transparent', border: 'none', borderRadius: 10, color: 'white',
+                background: 'transparent', border: 'none', borderRadius: 10, color: 'var(--aqua)',
                 cursor: 'pointer', transition: 'background 200ms', textAlign: 'left'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(198, 224, 224, 0.05)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
                 <Table size={18} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: 13, fontWeight: 700 }}>Master Excel Registry</span>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Technical data matrix</span>
+                <span style={{ fontSize: 10, color: 'rgba(198, 224, 224, 0.5)' }}>Technical data matrix</span>
               </div>
             </button>
           </motion.div>

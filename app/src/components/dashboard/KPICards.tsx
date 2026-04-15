@@ -13,11 +13,11 @@ import type { Task } from '@/lib/types';
 
 // 5 High-Fidelity KPIs for Execution Phase
 const kpiData = [
-  { id: 'kpi1', label: 'Global Registry', value: 0, prev: 0, icon: <BarChart3 size={18} />, color: '#6366f1', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: false },
-  { id: 'kpi2', label: 'Execution Velocity', value: 0, prev: 0, icon: <Zap size={18} />, color: '#10b981', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: false, isPercent: true },
+  { id: 'kpi1', label: 'Global Registry', value: 0, prev: 0, icon: <BarChart3 size={18} />, color: 'var(--aqua)', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: false },
+  { id: 'kpi2', label: 'Execution Velocity', value: 0, prev: 0, icon: <Zap size={18} />, color: 'var(--haze)', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: false, isPercent: true },
   { id: 'kpi3', label: 'Critical Blockers', value: 0, prev: 0, icon: <AlertTriangle size={18} />, color: '#f43f5e', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true, isBadMetric: true },
-  { id: 'kpi4', label: 'Operational Risks', value: 0, prev: 0, icon: <AlertTriangle size={18} />, color: '#f59e0b', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true, isBadMetric: true },
-  { id: 'kpi5', label: 'Success Milestone', value: 0, prev: 0, icon: <CheckCircle2 size={18} />, color: '#06b6d4', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true },
+  { id: 'kpi4', label: 'Operational Risks', value: 0, prev: 0, icon: <AlertTriangle size={18} />, color: 'var(--sunlit-rock)', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true, isBadMetric: true },
+  { id: 'kpi5', label: 'Success Milestone', value: 0, prev: 0, icon: <CheckCircle2 size={18} />, color: '#B0B540', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true },
 ];
 
 // Map KPI labels to task filter functions
@@ -33,11 +33,12 @@ function getRelatedTasks(label: string, taskList: Task[]) {
 
 function getStatusColor(s: string) {
   switch (s) {
-    case 'DELAYED': return '#ef4444';
-    case 'BLOCKED': return '#ef4444';
-    case 'PENDING_REVIEW': return '#f59e0b';
-    case 'IN_PROGRESS': return '#D4AF37';
-    default: return '#94a3b8';
+    case 'DELAYED': return '#FF4C4F';
+    case 'BLOCKED': return '#FF4C4F';
+    case 'PENDING_REVIEW': return '#FF7908';
+    case 'IN_PROGRESS': return 'rgb(198, 224, 224)';
+    case 'COMPLETED': return '#B0B540';
+    default: return 'rgba(255, 255, 255, 0.4)';
   }
 }
 
@@ -105,12 +106,12 @@ export default function KPICards({ tasks: externalTasks, prevTasks = [], onTaskC
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 + i * 0.05, duration: 0.4 }}
             className="glass-card"
-            style={{ padding: '14px 16px', position: 'relative', overflow: 'visible', cursor: kpi.hoverable ? 'pointer' : 'default' }}
+            style={{ padding: '16px 20px', position: 'relative', overflow: 'visible', cursor: kpi.hoverable ? 'pointer' : 'default', border: '1px solid rgba(0, 63, 73, 0.15)', background: 'rgba(255, 255, 255, 0.4)' }}
             onMouseEnter={() => kpi.hoverable && setHoveredId(kpi.id)}
             onMouseLeave={() => setHoveredId(null)}
           >
             {/* Left accent */}
-            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: kpi.color, borderRadius: '12px 0 0 12px' }} />
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: kpi.color, borderRadius: '4px 0 0 4px' }} />
 
             {/* Top row: Icon + Trend */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -131,27 +132,26 @@ export default function KPICards({ tasks: externalTasks, prevTasks = [], onTaskC
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
               <div>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                <AnimatedCounter value={kpi.value} className="text-2xl font-bold text-[var(--text-primary)]" />
-                {(kpi as any).isPercent && <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-dim)' }}>%</span>}
+                <AnimatedCounter value={kpi.value} className="text-2xl font-black text-[#003f49]" />
+                {(kpi as any).isPercent && <span style={{ fontSize: 16, fontWeight: 900, color: 'var(--teal)' }}>%</span>}
                 <div 
                   style={{ 
-                    width: 6, height: 6, borderRadius: '50%', background: '#10b981', 
-                    boxShadow: '0 0 10px rgba(16,185,129,0.6)', 
+                    width: 6, height: 6, borderRadius: '50%', background: 'var(--sunlit-rock)', 
+                    boxShadow: '0 0 10px rgba(197, 160, 89, 0.4)', 
                     display: kpi.value > 0 ? 'block' : 'none',
                     marginLeft: 4
                   }} 
                   className="pulse-dot" 
                 />
               </div>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2, marginBottom: 0 }}>{kpi.label}</p>
+              <p style={{ fontSize: 11, color: '#003f49', marginTop: 3, marginBottom: 0, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{kpi.label}</p>
               </div>
               <MiniChart data={kpi.spark} color={kpi.color} width={80} height={32} />
             </div>
 
             {/* Hover Tooltip — premium floating card */}
             <AnimatePresence>
-              {isHovered && (
-                <motion.div
+              {isHovered && (                <motion.div
                   initial={{ opacity: 0, y: 8, x: '-50%', scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, x: '-50%', scale: 1 }}
                   exit={{ opacity: 0, y: 6, x: '-50%', scale: 0.97 }}
@@ -161,35 +161,34 @@ export default function KPICards({ tasks: externalTasks, prevTasks = [], onTaskC
                     top: '100%',
                     left: '50%',
                     right: 'auto',
-                    marginTop: 8,
+                    marginTop: 12,
                     zIndex: 5000,
                     width: 340,
-                    borderRadius: 14,
-                    background: 'rgba(12, 12, 20, 0.96)',
-                    backdropFilter: 'blur(24px)',
-                    border: `1px solid ${kpi.color}30`,
-                    boxShadow: `0 20px 50px rgba(0,0,0,0.5), 0 0 30px ${kpi.color}15`,
-                    padding: '14px 16px',
+                    borderRadius: 16,
+                    background: '#ffffff',
+                    border: `1.5px solid ${kpi.color}`,
+                    boxShadow: '0 15px 35px rgba(0, 63, 73, 0.08)',
+                    padding: '16px',
                   }}
                 >
                   {/* Arrow */}
                   <div style={{
-                    position: 'absolute', top: -6, 
+                    position: 'absolute', top: -7, 
                     left: '50%', 
                     transform: 'translateX(-50%)',
-                    width: 12, height: 12, borderRadius: 2, rotate: '45deg',
-                    background: 'rgba(12, 12, 20, 0.96)',
-                    borderLeft: `1px solid ${kpi.color}30`,
-                    borderTop: `1px solid ${kpi.color}30`,
+                    width: 14, height: 14, borderRadius: 2, rotate: '45deg',
+                    background: '#ffffff',
+                    borderLeft: `1.5px solid ${kpi.color}`,
+                    borderTop: `1.5px solid ${kpi.color}`,
                   }} />
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <div style={{ width: 28, height: 28, borderRadius: 8, background: `${kpi.color}20`, color: kpi.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: `${kpi.color}15`, color: kpi.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {kpi.icon}
                     </div>
                     <div>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{kpi.label} Tasks</span>
-                      <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 6 }}>({relatedTasks.length})</span>
+                      <span className="brand-heading" style={{ fontSize: 13, color: '#003f49', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{kpi.label} Breakdown</span>
+                      <span style={{ fontSize: 11, color: 'rgba(0, 63, 73, 0.5)', marginLeft: 6, fontWeight: 800 }}>({relatedTasks.length})</span>
                     </div>
                   </div>
 
@@ -201,43 +200,44 @@ export default function KPICards({ tasks: externalTasks, prevTasks = [], onTaskC
                           onClick={() => onTaskClick?.(task)}
                           style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            padding: '8px 10px', borderRadius: 8,
-                            background: 'rgba(255,255,255,0.03)',
-                            border: '1px solid rgba(255,255,255,0.04)',
+                            padding: '10px 12px', borderRadius: 10,
+                            background: 'rgba(0, 63, 73, 0.02)',
+                            border: '1px solid rgba(0, 63, 73, 0.05)',
                             cursor: 'pointer',
-                            transition: 'background 200ms',
+                            transition: 'all 200ms',
                           }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(0, 63, 73, 0.05)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'rgba(0, 63, 73, 0.02)'}
                         >
                           <div style={{ minWidth: 0, flex: 1 }}>
-                            <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <p style={{ fontSize: 12, fontWeight: 950, color: 'rgba(0, 63, 73, 0.8)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
                               {task.title}
                             </p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{task.department}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                              <span style={{ fontSize: 10, color: 'rgba(0, 63, 73, 0.4)', fontWeight: 800 }}>{task.department}</span>
                             </div>
                           </div>
                           <span style={{
-                            fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap',
+                            fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap',
                             color: getStatusColor(task.status), background: `${getStatusColor(task.status)}15`,
                             marginLeft: 8,
+                            textTransform: 'uppercase'
                           }}>
                             {task.status.replace(/_/g, ' ')}
                           </span>
                         </div>
                       ))}
                       {relatedTasks.length > 5 && (
-                        <p style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2 }}>
-                          +{relatedTasks.length - 5} more
+                        <p style={{ fontSize: 11, color: 'rgba(0, 63, 73, 0.4)', textAlign: 'center', marginTop: 2, fontWeight: 700 }}>
+                          +{relatedTasks.length - 5} MORE RECORDS
                         </p>
                       )}
                     </div>
                   ) : (
                     <div style={{ padding: '20px 0', textAlign: 'center' }}>
                       <Inbox size={24} style={{ color: kpi.color, margin: '0 auto 10px', opacity: 0.5 }} />
-                      <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 2 }}>No current data</p>
-                      <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>Waiting for system activity</p>
+                      <p style={{ fontSize: 13, fontWeight: 950, color: '#003f49', marginBottom: 2 }}>NO CURRENT DATA</p>
+                      <p style={{ fontSize: 11, color: 'rgba(0, 63, 73, 0.4)', fontWeight: 700 }}>Waiting for system activity</p>
                     </div>
                   )}
                 </motion.div>

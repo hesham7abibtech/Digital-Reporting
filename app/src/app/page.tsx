@@ -421,30 +421,31 @@ export default function Dashboard() {
 
               <div style={{
                 padding: '12px 24px',
-                background: 'linear-gradient(90deg, rgba(255,255,255,0.012) 0%, rgba(212, 175, 55, 0.03) 50%, rgba(255,255,255,0.012) 100%)',
-                borderTop: '1px solid rgba(255,255,255,0.04)',
-                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                background: 'rgba(255, 255, 255, 0.4)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(0, 63, 73, 0.12)',
+                borderRadius: 20,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 20,
-                marginBottom: 12,
+                marginBottom: 16,
                 flexWrap: 'nowrap',
                 overflow: 'visible',
                 position: 'relative',
                 zIndex: 3000,
-                boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)'
+                boxShadow: '0 4px 20px rgba(0, 63, 73, 0.05)'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{
-                    width: 32, height: 32, borderRadius: 10,
-                    background: 'rgba(212, 175, 55, 0.1)',
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div style={{ 
+                    width: 38, height: 38, borderRadius: 12, 
+                    background: 'rgba(0, 63, 73, 0.08)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: '1px solid rgba(212, 175, 55, 0.2)'
+                    border: '1px solid rgba(0, 63, 73, 0.2)'
                   }}>
-                    <CalendarRange size={16} color="#D4AF37" />
+                    <CalendarRange size={16} color="var(--teal)" />
                   </div>
-                  <h2 style={{ fontSize: 13, fontWeight: 900, color: 'white', letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-                    {activeReport === 'DELIVERABLES' ? 'Deliverable Matrix' : 'BIM Review Matrix'} — <span style={{ color: '#D4AF37' }}>
+                  <h2 style={{ fontSize: 13, fontWeight: 900, color: '#003f49', letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>
+                    {activeReport === 'DELIVERABLES' ? 'Deliverables Registry' : 'BIM Review Matrix'} — <span style={{ color: 'var(--teal)' }}>
                       {filterDateText}
                     </span>
                   </h2>
@@ -457,27 +458,28 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 'auto', flexShrink: 0 }}>
                   {/* Mode Switcher */}
                   <div style={{
-                    display: 'flex', background: 'rgba(0,0,0,0.3)', borderRadius: 12, padding: 3,
-                    border: '1px solid rgba(255,255,255,0.06)', position: 'relative'
+                    display: 'flex', background: 'rgba(255, 255, 255, 0.7)', padding: 3, borderRadius: 12,
+                    border: '1px solid rgba(0, 63, 73, 0.2)', position: 'relative'
                   }}>
                     {['all', 'monthly', 'custom'].map((mode) => (
                       <button
                         key={mode}
                         onClick={() => setFilterMode(mode as any)}
                         style={{
-                          padding: '6px 16px', borderRadius: 9, fontSize: 10, fontWeight: 800,
+                          padding: '6px 16px', borderRadius: 10, fontSize: 10, fontWeight: 900,
                           textTransform: 'uppercase', letterSpacing: '0.05em', border: 'none',
                           cursor: 'pointer', position: 'relative', zIndex: 1,
-                          background: 'transparent',
-                          color: filterMode === mode ? '#D4AF37' : 'rgba(255,255,255,0.4)',
-                          transition: 'color 0.3s ease'
+                          background: filterMode === mode ? 'var(--teal)' : 'transparent',
+                          color: filterMode === mode ? 'white' : '#003f49',
+                          transition: 'all 0.3s ease',
+                          opacity: filterMode === mode ? 1 : 0.7
                         }}
                       >
                         {filterMode === mode && (
                           <motion.div
                             layoutId="mode-bg"
                             style={{
-                              position: 'absolute', inset: 0, background: 'rgba(212, 175, 55, 0.1)',
+                              position: 'absolute', inset: 0, background: 'var(--teal)',
                               borderRadius: 9, border: '1px solid rgba(212, 175, 55, 0.2)',
                               zIndex: -1
                             }}
@@ -518,27 +520,27 @@ export default function Dashboard() {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 12px', background: 'rgba(212, 175, 55, 0.05)', borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.1)' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 12px', background: 'rgba(0, 63, 73, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.1)' }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <Calendar size={12} color="#D4AF37" />
-                          <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(212, 175, 55, 0.6)', textTransform: 'uppercase' }}>From</span>
+                          <Calendar size={12} color="var(--teal)" />
+                          <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>From</span>
                           <input
                             type="date"
                             value={startDate}
                             onChange={e => setStartDate(e.target.value)}
-                            style={{ background: 'none', border: 'none', color: '#D4AF37', fontSize: 11, fontWeight: 700, outline: 'none', cursor: 'pointer' }}
+                            style={{ background: 'none', border: 'none', color: 'var(--teal)', fontSize: 11, fontWeight: 700, outline: 'none', cursor: 'pointer' }}
                           />
                         </div>
-                        <div style={{ width: 1, height: 16, background: 'rgba(212, 175, 55, 0.2)' }} />
+                        <div style={{ width: 1, height: 16, background: 'rgba(0, 63, 73, 0.1)' }} />
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <Calendar size={12} color="#D4AF37" />
-                          <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(212, 175, 55, 0.6)', textTransform: 'uppercase' }}>To</span>
+                          <Calendar size={12} color="var(--teal)" />
+                          <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>To</span>
                           <input
                             type="date"
                             value={endDate}
                             onChange={e => setEndDate(e.target.value)}
-                            style={{ background: 'none', border: 'none', color: '#D4AF37', fontSize: 11, fontWeight: 700, outline: 'none', cursor: 'pointer' }}
+                            style={{ background: 'none', border: 'none', color: 'var(--teal)', fontSize: 11, fontWeight: 700, outline: 'none', cursor: 'pointer' }}
                           />
                         </div>
                         {(startDate || endDate) && (
@@ -553,7 +555,42 @@ export default function Dashboard() {
                     ) : null}
                   </AnimatePresence>
 
-                  <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.06)' }} />
+                  <div style={{ width: 1, height: 24, background: 'rgba(0, 63, 73, 0.1)' }} />
+
+                  {/* Integrated View Navigator */}
+                  <div style={{
+                    display: 'flex', background: 'rgba(255, 255, 255, 0.7)', padding: 3, borderRadius: 10, border: '1px solid rgba(0, 63, 73, 0.2)'
+                  }}>
+                    {[
+                      { key: 'table' as const, label: 'Table View', icon: <TableProperties size={13} /> },
+                      { key: 'dashboard' as const, label: 'Dashboard', icon: <BarChart3 size={13} /> },
+                    ].map((tab) => (
+                      <button
+                        key={tab.key}
+                        onClick={() => setActiveView(tab.key)}
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: 8,
+                          fontSize: 10,
+                          fontWeight: 900,
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: activeView === tab.key ? 'var(--teal)' : 'transparent',
+                          color: activeView === tab.key ? 'var(--aqua)' : '#003f49',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          transition: 'all 0.3s ease',
+                          opacity: activeView === tab.key ? 1 : 0.7
+                        }}
+                      >
+                        {tab.icon}
+                        {tab.label.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ width: 1, height: 24, background: 'rgba(0, 63, 73, 0.1)' }} />
 
                   {/* Elite Export System */}
                   {activeReport === 'DELIVERABLES' ? (
@@ -609,68 +646,7 @@ export default function Dashboard() {
               </div>
 
 
-              {/* ══════════ VIEW TOGGLE ══════════ */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '0 4px',
-                marginTop: 8,
-                marginBottom: -4,
-              }}>
-                <div style={{
-                  display: 'flex',
-                  background: 'rgba(0,0,0,0.35)',
-                  borderRadius: 12,
-                  padding: 3,
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  position: 'relative',
-                }}>
-                  {[
-                    { key: 'table' as const, label: 'Table View', icon: <TableProperties size={14} /> },
-                    { key: 'dashboard' as const, label: 'Dashboard', icon: <BarChart3 size={14} /> },
-                  ].map((tab) => (
-                    <button
-                      key={tab.key}
-                      onClick={() => setActiveView(tab.key)}
-                      style={{
-                        padding: '7px 18px',
-                        borderRadius: 9,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        border: 'none',
-                        cursor: 'pointer',
-                        position: 'relative',
-                        zIndex: 1,
-                        background: 'transparent',
-                        color: activeView === tab.key ? '#D4AF37' : 'rgba(255,255,255,0.4)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 7,
-                        transition: 'color 0.3s ease',
-                        letterSpacing: '0.02em',
-                      }}
-                    >
-                      {activeView === tab.key && (
-                        <motion.div
-                          layoutId="view-toggle-bg"
-                          style={{
-                            position: 'absolute',
-                            inset: 0,
-                            background: 'rgba(212, 175, 55, 0.1)',
-                            borderRadius: 9,
-                            border: '1px solid rgba(212, 175, 55, 0.2)',
-                            zIndex: -1,
-                          }}
-                          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                        />
-                      )}
-                      {tab.icon}
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+
 
               {/* ══════════ CONDITIONAL VIEW RENDERING ══════════ */}
               <div style={{ marginTop: 12 }}>

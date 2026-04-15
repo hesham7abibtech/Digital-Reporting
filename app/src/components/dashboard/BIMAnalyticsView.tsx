@@ -23,25 +23,25 @@ const CHART_COLORS = [
   '#6366f1', '#06b6d4', '#ec4899', '#8b5cf6', '#a855f7'
 ];
 
-const GOLD = '#D4AF37';
+const GOLD = '#d0ab82';
 
 /* ── Shared Chart Helpers ── */
 function PremiumTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      padding: '10px 14px', borderRadius: 12, fontSize: 13,
-      background: 'rgba(10, 10, 18, 0.95)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      backdropFilter: 'blur(20px)',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+      padding: '12px 16px', borderRadius: 12, fontSize: 13,
+      background: '#ffffff',
+      border: '1.5px solid rgba(0, 63, 73, 0.2)',
+      boxShadow: '0 15px 35px rgba(0, 63, 73, 0.08)',
+      zIndex: 10000
     }}>
-      {label && <p style={{ fontWeight: 600, color: '#e2e8f0', marginBottom: 4, fontSize: 12 }}>{label}</p>}
+      {label && <p style={{ fontWeight: 950, color: '#003f49', marginBottom: 6, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>}
       {payload.map((p: any, i: number) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color || p.fill, boxShadow: `0 0 6px ${p.color || p.fill}80` }} />
-          <span style={{ color: '#94a3b8', fontSize: 12 }}>{p.name}:</span>
-          <span style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 13 }}>{p.value}</span>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color || p.fill, boxShadow: `0 0 8px ${p.color || p.fill}40` }} />
+          <span style={{ color: 'rgba(0, 63, 73, 0.6)', fontSize: 12, fontWeight: 700 }}>{p.name}:</span>
+          <span style={{ color: p.color || p.fill, fontWeight: 950, fontSize: 13 }}>{p.value}</span>
         </div>
       ))}
     </div>
@@ -54,25 +54,25 @@ function DonutTooltip({ active, payload, total }: any) {
   const pct = total > 0 ? ((d.value / total) * 100).toFixed(1) : '0';
   return (
     <div style={{
-      padding: '12px 16px', borderRadius: 14, minWidth: 160,
-      background: 'rgba(8, 8, 16, 0.97)',
-      border: `1px solid ${d.payload.color || CHART_COLORS[0]}40`,
-      backdropFilter: 'blur(20px)',
-      boxShadow: `0 12px 40px rgba(0,0,0,0.5)`,
+      padding: '14px 18px', borderRadius: 14, minWidth: 180,
+      background: '#ffffff',
+      border: `1.5px solid ${d.payload.color || CHART_COLORS[0]}`,
+      boxShadow: '0 15px 35px rgba(0, 63, 73, 0.08)',
       pointerEvents: 'none',
+      zIndex: 10000
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <span style={{ width: 10, height: 10, borderRadius: '50%', background: d.payload.color || CHART_COLORS[0], boxShadow: `0 0 8px ${d.payload.color || CHART_COLORS[0]}80` }} />
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9' }}>{d.name}</span>
+        <span style={{ width: 10, height: 10, borderRadius: '50%', background: d.payload.color || CHART_COLORS[0], boxShadow: `0 0 8px ${d.payload.color || CHART_COLORS[0]}40` }} />
+        <span style={{ fontSize: 14, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{d.name}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
-        <span style={{ fontSize: 22, fontWeight: 700, color: d.payload.color || CHART_COLORS[0] }}>{d.value}</span>
-        <span style={{ fontSize: 13, color: '#94a3b8' }}>reviews</span>
+        <span style={{ fontSize: 22, fontWeight: 950, color: d.payload.color || CHART_COLORS[0] }}>{d.value}</span>
+        <span style={{ fontSize: 12, color: 'rgba(0, 63, 73, 0.5)', fontWeight: 700 }}>reviews</span>
       </div>
-      <div style={{ width: '100%', height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 4 }}>
+      <div style={{ width: '100%', height: 4, borderRadius: 2, background: 'rgba(0, 63, 73, 0.05)', overflow: 'hidden', marginBottom: 4 }}>
         <div style={{ height: '100%', width: `${pct}%`, borderRadius: 2, background: d.payload.color || CHART_COLORS[0] }} />
       </div>
-      <span style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>{pct}% of total</span>
+      <span style={{ fontSize: 12, color: 'rgba(0, 63, 73, 0.4)', fontWeight: 800 }}>{pct}% of total</span>
     </div>
   );
 }
@@ -95,7 +95,7 @@ function PremiumLegend({ payload }: any) {
             background: entry.color || entry.payload?.fill || GOLD, 
             boxShadow: `0 0 8px ${entry.color || entry.payload?.fill || GOLD}40` 
           }} />
-          <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <span style={{ fontSize: 10, fontWeight: 900, color: 'rgba(0, 63, 73, 0.6)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             {entry.value}
           </span>
         </div>
@@ -168,13 +168,13 @@ function KPICard({ label, value, icon, color, trend, pctChange, suffix, delay, d
       <div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
           {displayValue ? (
-            <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>{displayValue}</span>
+            <span style={{ fontSize: 20, fontWeight: 950, color: '#003f49', letterSpacing: '-0.02em' }}>{displayValue}</span>
           ) : (
-            <AnimatedCounter value={value} className="text-xl font-bold text-[var(--text-primary)]" />
+            <AnimatedCounter value={value} className="text-xl font-black text-[#003f49]" />
           )}
-          {suffix && <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-dim)' }}>{suffix}</span>}
+          {suffix && <span style={{ fontSize: 13, fontWeight: 800, color: 'rgba(0, 63, 73, 0.5)' }}>{suffix}</span>}
         </div>
-        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, fontWeight: 500 }}>{label}</p>
+        <p style={{ fontSize: 11, color: 'rgba(0, 63, 73, 0.85)', marginTop: 2, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
       </div>
 
       <AnimatePresence>
@@ -183,18 +183,18 @@ function KPICard({ label, value, icon, color, trend, pctChange, suffix, delay, d
             initial={{ opacity: 0, y: 8, x: '-50%', scale: 0.96 }}
             animate={{ opacity: 1, y: 0, x: '-50%', scale: 1 }}
             exit={{ opacity: 0, y: 6, x: '-50%', scale: 0.97 }}
-            style={{ position: 'absolute', top: '100%', left: '50%', marginTop: 8, zIndex: 5000, width: 280, borderRadius: 14, background: 'rgba(12, 12, 20, 0.97)', backdropFilter: 'blur(24px)', border: `1px solid ${color}30`, boxShadow: `0 20px 50px rgba(0,0,0,0.5), 0 0 30px ${color}10`, padding: '14px 16px' }}
+            style={{ position: 'absolute', top: '100%', left: '50%', marginTop: 12, zIndex: 10000, width: 280, borderRadius: 16, background: '#ffffff', border: `1.5px solid ${color}`, boxShadow: '0 15px 35px rgba(0, 63, 73, 0.08)', padding: '16px' }}
           >
-            <div style={{ position: 'absolute', top: -6, left: '50%', marginLeft: -6, width: 12, height: 12, rotate: '45deg', background: 'rgba(12, 12, 20, 0.97)', borderLeft: `1px solid ${color}30`, borderTop: `1px solid ${color}30` }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <div style={{ width: 26, height: 26, borderRadius: 8, background: `${color}20`, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{tooltipTitle || label}</span>
+            <div style={{ position: 'absolute', top: -7, left: '50%', marginLeft: -7, width: 14, height: 14, rotate: '45deg', background: '#ffffff', borderLeft: `1.5px solid ${color}`, borderTop: `1.5px solid ${color}` }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: `${color}15`, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
+              <span style={{ fontSize: 13, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{tooltipTitle || label} Breakdown</span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {tooltipDetails.map((d, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>{d.label}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: d.color || 'var(--text-primary)' }}>{d.value}</span>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 12, background: 'rgba(0, 63, 73, 0.02)', border: '1px solid rgba(0, 63, 73, 0.05)', marginBottom: 4 }}>
+                  <span style={{ fontSize: 11, color: 'rgba(0, 63, 73, 0.6)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{d.label}</span>
+                  <span style={{ fontSize: 13, fontWeight: 950, color: d.color || color }}>{d.value}</span>
                 </div>
               ))}
             </div>
@@ -358,8 +358,8 @@ export default function BIMAnalyticsView({
               <Shield size={18} />
             </div>
             <div>
-              <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Review Matrix Intelligence</h2>
-              <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0, fontWeight: 500 }}>Technical dataset spanning {activeStakeholders} stakeholders</p>
+              <h2 style={{ fontSize: 16, fontWeight: 950, color: '#003f49', margin: 0 }}>Review Matrix Intelligence</h2>
+              <p style={{ fontSize: 11, color: 'rgba(0, 63, 73, 0.7)', margin: 0, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Technical dataset spanning {activeStakeholders} stakeholders</p>
             </div>
           </div>
 
@@ -367,25 +367,30 @@ export default function BIMAnalyticsView({
             {setSearch && (
               <motion.div 
                 whileHover={{ scale: 1.02 }}
-                style={{ position: 'relative', maxWidth: 220 }}
+                style={{ position: 'relative', maxWidth: 320 }}
               >
-                <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(212, 175, 55, 0.6)' }} />
+                <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#003f49' }} />
                 <input
-                  type="text"
-                  placeholder="Matrix Intelligence Search..."
+                  type="text" 
+                  placeholder="Search BIM Reviews"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   style={{ 
-                    padding: '10px 14px 10px 38px', borderRadius: 12, 
-                    background: 'rgba(0,0,0,0.2)', 
-                    border: '1px solid rgba(212, 175, 55, 0.2)', 
-                    fontSize: 12, color: 'white', outline: 'none', width: 220,
+                    padding: '10px 14px 10px 38px', borderRadius: 10, 
+                    background: 'rgba(255, 255, 255, 0.95)', 
+                    border: '1px solid rgba(0, 63, 73, 0.2)', 
+                    fontSize: 12, color: '#003f49', outline: 'none', width: 320,
                     fontWeight: 600,
-                    transition: 'all 0.3s ease',
-                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)'
+                    transition: 'all 0.3s ease'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = GOLD}
-                  onBlur={(e) => e.target.style.borderColor = 'rgba(212, 175, 55, 0.2)'}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#003f49';
+                    e.target.style.boxShadow = '0 0 10px rgba(0, 63, 73, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'rgba(0, 63, 73, 0.2)';
+                    e.target.style.boxShadow = 'none';
+                  }}
                 />
               </motion.div>
             )}
@@ -441,19 +446,19 @@ export default function BIMAnalyticsView({
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 14 }}>
         <GlassCard padding="none">
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Stakeholder Submission Volume</h3>
-            <span style={{ fontSize: 10, color: '#D4AF37', fontWeight: 900, textTransform: 'uppercase' }}>Volume Distribution</span>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(0, 63, 73, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: 14, fontWeight: 950, color: '#003f49', margin: 0, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Stakeholder Submission Volume</h3>
+            <span style={{ fontSize: 10, color: '#d0ab82', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Volume Distribution</span>
           </div>
           <div style={{ height: 300, padding: 20, minWidth: 0 }}>
             <ResponsiveContainer width="100%" height="100%" debounce={100}>
               <BarChart data={stakeholderData} layout="vertical" margin={{ left: 40, right: 30 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                 <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }} width={120} />
+                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#003f49', fontSize: 11, fontWeight: 950 }} width={120} />
                 <Tooltip content={<PremiumTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
                 <Legend content={<PremiumLegend />} verticalAlign="bottom" />
-                <Bar name="Review Volume" dataKey="value" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: '#D4AF37', fontSize: 11, fontWeight: 900 }}>
+                <Bar name="Review Volume" dataKey="value" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: GOLD, fontSize: 11, fontWeight: 950 }}>
                   {stakeholderData.map((entry, index) => (
                     <Cell key={index} fill={entry.color} fillOpacity={0.8} />
                   ))}
@@ -464,8 +469,9 @@ export default function BIMAnalyticsView({
         </GlassCard>
 
         <GlassCard padding="none">
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Review Progression Timeline</h3>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(0, 63, 73, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: 14, fontWeight: 950, color: '#003f49', margin: 0, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Review Progression Timeline</h3>
+            <span style={{ fontSize: 10, color: '#d0ab82', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Submission Trend</span>
           </div>
           <div style={{ height: 300, padding: 20, minWidth: 0 }}>
             <ResponsiveContainer width="100%" height="100%" debounce={100}>
@@ -477,8 +483,8 @@ export default function BIMAnalyticsView({
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 600 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 600 }} dx={-10} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#003f49', fontSize: 11, fontWeight: 950 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#003f49', fontSize: 11, fontWeight: 950 }} dx={-10} />
                 <Tooltip content={<PremiumTooltip />} />
                 <Legend content={<PremiumLegend />} verticalAlign="bottom" />
                 <Area 
@@ -499,8 +505,8 @@ export default function BIMAnalyticsView({
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
         <GlassCard padding="none">
-          <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <h3 style={{ fontSize: 12, fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>InSite Status</h3>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(0, 63, 73, 0.05)' }}>
+            <h3 style={{ fontSize: 12, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.08em' }}>InSite Status</h3>
           </div>
           <div style={{ height: 220 }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -518,8 +524,8 @@ export default function BIMAnalyticsView({
         </GlassCard>
 
         <GlassCard padding="none">
-          <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <h3 style={{ fontSize: 12, fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Design Stage Breakdown</h3>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(0, 63, 73, 0.05)' }}>
+            <h3 style={{ fontSize: 12, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Design Stage Breakdown</h3>
           </div>
           <div style={{ height: 220 }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -537,17 +543,17 @@ export default function BIMAnalyticsView({
         </GlassCard>
 
         <GlassCard padding="none">
-          <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <h3 style={{ fontSize: 12, fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Reviewer Workload</h3>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(0, 63, 73, 0.05)' }}>
+            <h3 style={{ fontSize: 12, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Reviewer Workload</h3>
           </div>
           <div style={{ height: 220, padding: '10px 20px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={reviewerData} layout="vertical">
                 <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 9 }} width={80} />
+                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#003f49', fontSize: 11, fontWeight: 950 }} width={80} />
                 <Tooltip content={<PremiumTooltip />} />
                 <Legend content={<PremiumLegend />} verticalAlign="bottom" />
-                <Bar name="Reviewer Load" dataKey="value" radius={[0, 4, 4, 0]} barSize={12} label={{ position: 'right', fill: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: 900 }}>
+                <Bar name="Reviewer Load" dataKey="value" radius={[0, 4, 4, 0]} barSize={12} label={{ position: 'right', fill: GOLD, fontSize: 10, fontWeight: 950 }}>
                   {reviewerData.map((entry, index) => (
                     <Cell key={index} fill={entry.color} fillOpacity={0.8} />
                   ))}
