@@ -47,7 +47,7 @@ export default function BulkActionConfirmModal({
         animate={{ opacity: 1 }} 
         exit={{ opacity: 0 }} 
         onClick={isExecuting ? undefined : onClose} 
-        style={{ position: 'absolute', inset: 0, background: 'rgba(0, 30, 36, 0.85)', backdropFilter: 'blur(8px)', backdropFilter: 'blur(12px)' }} 
+        style={{ position: 'absolute', inset: 0, background: 'rgba(0, 30, 36, 0.85)', backdropFilter: 'blur(12px)' }} 
       />
       
       {/* Modal */}

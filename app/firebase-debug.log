@@ -1,0 +1,35 @@
+[debug] [2026-04-16T00:23:09.345Z] ----------------------------------------------------------------------
+[debug] [2026-04-16T00:23:09.347Z] Command:       C:\nvm4w\nodejs\node.exe C:\nvm4w\nodejs\node_modules\firebase-tools\lib\bin\firebase.js deploy --only firestore:rules
+[debug] [2026-04-16T00:23:09.347Z] CLI Version:   15.14.0
+[debug] [2026-04-16T00:23:09.347Z] Platform:      win32
+[debug] [2026-04-16T00:23:09.347Z] Node Version:  v20.20.0
+[debug] [2026-04-16T00:23:09.347Z] Time:          Thu Apr 16 2026 02:23:09 GMT+0200 (Eastern European Standard Time)
+[debug] [2026-04-16T00:23:09.347Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-16T00:23:10.791Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-16T00:23:10.792Z] > authorizing via signed-in user (hesham7abibtech@gmail.com)
+[debug] [2026-04-16T00:23:10.792Z] [iam] checking project keodigitalreporting for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]
+[debug] [2026-04-16T00:23:10.793Z] Checked if tokens are valid: true, expires at: 1776300048850
+[debug] [2026-04-16T00:23:10.793Z] Checked if tokens are valid: true, expires at: 1776300048850
+[debug] [2026-04-16T00:23:10.793Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/keodigitalreporting:testIamPermissions [none]
+[debug] [2026-04-16T00:23:10.793Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/keodigitalreporting:testIamPermissions  x-goog-user-project=keodigitalreporting
+[debug] [2026-04-16T00:23:10.794Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/keodigitalreporting:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[debug] [2026-04-16T00:23:11.738Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/keodigitalreporting:testIamPermissions 200
+[debug] [2026-04-16T00:23:11.738Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/keodigitalreporting:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[info] 
+[info] === Deploying to 'keodigitalreporting'...
+[info] 
+[info] i  deploying firestore 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[debug] [2026-04-16T00:23:11.741Z] Checked if tokens are valid: true, expires at: 1776300048850
+[debug] [2026-04-16T00:23:11.741Z] Checked if tokens are valid: true, expires at: 1776300048850
+[debug] [2026-04-16T00:23:11.741Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/keodigitalreporting/databases/(default) [none]
+[debug] [2026-04-16T00:23:12.748Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/keodigitalreporting/databases/(default) 200
+[debug] [2026-04-16T00:23:12.748Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/keodigitalreporting/databases/(default) {"name":"projects/keodigitalreporting/databases/(default)","uid":"092478a0-4f70-4296-a81a-6612a15a1891","createTime":"2026-04-08T10:04:10.878293Z","updateTime":"2026-04-08T10:04:10.878293Z","locationId":"nam5","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2026-04-15T23:23:12.724198Z","appEngineIntegrationMode":"DISABLED","keyPrefix":"s","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","freeTier":true,"realtimeUpdatesMode":"REALTIME_UPDATES_MODE_ENABLED","etag":"IPrM57ON8ZMDMOPDiIyV3pMD"}
+[info] i  firestore: reading indexes from firestore.indexes.json... 
+[info] i  cloud.firestore: checking firestore.rules for compilation errors... 
+[debug] [2026-04-16T00:23:12.750Z] Checked if tokens are valid: true, expires at: 1776300048850
+[debug] [2026-04-16T00:23:12.750Z] Checked if tokens are valid: true, expires at: 1776300048850
+[debug] [2026-04-16T00:23:12.750Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/keodigitalreporting:test [none]
+[debug] [2026-04-16T00:23:12.750Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/keodigitalreporting:test [omitted]
