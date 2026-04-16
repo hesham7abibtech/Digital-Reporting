@@ -96,7 +96,11 @@ service cloud.firestore {
     // Broadcasts / News
     match /broadcasts/{docId} {
       allow read: if isAuth() && (isApproved() || isAdmin());
-      allow write: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAuth() && (
+        isAdmin() || 
+        (isApproved() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']))
+      );
     }
 
     // Global Fallback (Admin-only catch-all)

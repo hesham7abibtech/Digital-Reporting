@@ -124,6 +124,7 @@ export default function Dashboard() {
   const [bimFilterStage, setBimFilterStage] = useState<string[]>([]);
   const [bimFilterStatus, setBimFilterStatus] = useState<string[]>([]);
   const [bimFilterStakeholder, setBimFilterStakeholder] = useState<string[]>([]);
+  const [bimFilterPrecinct, setBimFilterPrecinct] = useState<string[]>([]);
   const [bimFilterReviewer, setBimFilterReviewer] = useState<string[]>([]);
 
 
@@ -362,11 +363,12 @@ export default function Dashboard() {
       const matchesStage = bimFilterStage.length === 0 || bimFilterStage.includes(review.designStage);
       const matchesStatus = bimFilterStatus.length === 0 || bimFilterStatus.includes(review.insiteBimReviewStatus);
       const matchesStakeholder = bimFilterStakeholder.length === 0 || bimFilterStakeholder.includes(review.stakeholder);
+      const matchesPrecinct = bimFilterPrecinct.length === 0 || bimFilterPrecinct.includes(review.precinct);
       const matchesReviewer = bimFilterReviewer.length === 0 || bimFilterReviewer.includes(review.insiteReviewer);
 
-      return matchesSearch && matchesStage && matchesStatus && matchesStakeholder && matchesReviewer;
+      return matchesSearch && matchesStage && matchesStatus && matchesStakeholder && matchesPrecinct && matchesReviewer;
     });
-  }, [syncedBimReviews, bimSearch, bimFilterStage, bimFilterStatus, bimFilterStakeholder, bimFilterReviewer, filterMode, selectedMonth, selectedYear, startDate, endDate]);
+  }, [syncedBimReviews, bimSearch, bimFilterStage, bimFilterStatus, bimFilterStakeholder, bimFilterPrecinct, bimFilterReviewer, filterMode, selectedMonth, selectedYear, startDate, endDate]);
 
   // Snapshot for previous period to calculate growth
   const previousPeriodBimReviews = useMemo(() => {
@@ -401,8 +403,9 @@ export default function Dashboard() {
   // Available BIM Filter Options
   const availableBimStages = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.designStage))).filter(Boolean).sort(), [syncedBimReviews]);
   const availableBimStatuses = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.insiteBimReviewStatus))).filter(Boolean).sort(), [syncedBimReviews]);
-  const availableBimStakeholders = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.stakeholder))).filter(Boolean).sort(), [syncedBimReviews]);
-  const availableBimReviewers = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.insiteReviewer))).filter(Boolean).sort(), [syncedBimReviews]);
+  const availableBimStakeholders = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.stakeholder).filter(Boolean))).sort(), [syncedBimReviews]);
+  const availableBimPrecincts = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.precinct).filter(Boolean))).sort(), [syncedBimReviews]);
+  const availableBimReviewers = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.insiteReviewer).filter(Boolean))).sort(), [syncedBimReviews]);
 
 
   const handleTaskClick = (task: Task) => {
@@ -784,6 +787,9 @@ export default function Dashboard() {
                       filterStakeholder={bimFilterStakeholder}
                       setFilterStakeholder={setBimFilterStakeholder}
                       availableStakeholders={availableBimStakeholders}
+                      filterPrecinct={bimFilterPrecinct}
+                      setFilterPrecinct={setBimFilterPrecinct}
+                      availablePrecincts={availableBimPrecincts}
                       filterReviewer={bimFilterReviewer}
                       setFilterReviewer={setBimFilterReviewer}
                       availableReviewers={availableBimReviewers}
@@ -824,6 +830,9 @@ export default function Dashboard() {
                           filterStakeholder={bimFilterStakeholder}
                           setFilterStakeholder={setBimFilterStakeholder}
                           availableStakeholders={availableBimStakeholders}
+                          filterPrecinct={bimFilterPrecinct}
+                          setFilterPrecinct={setBimFilterPrecinct}
+                          availablePrecincts={availableBimPrecincts}
                           filterReviewer={bimFilterReviewer}
                           setFilterReviewer={setBimFilterReviewer}
                           availableReviewers={availableBimReviewers}
@@ -874,6 +883,9 @@ export default function Dashboard() {
                           filterStakeholder={bimFilterStakeholder}
                           setFilterStakeholder={setBimFilterStakeholder}
                           availableStakeholders={availableBimStakeholders}
+                          filterPrecinct={bimFilterPrecinct}
+                          setFilterPrecinct={setBimFilterPrecinct}
+                          availablePrecincts={availableBimPrecincts}
                           filterReviewer={bimFilterReviewer}
                           setFilterReviewer={setBimFilterReviewer}
                           availableReviewers={availableBimReviewers}
@@ -931,6 +943,7 @@ export default function Dashboard() {
         onClose={() => setIsBimModalOpen(false)}
         onSuccess={(msg) => showToast(msg, 'SUCCESS')}
         onError={(msg) => showToast(msg, 'ERROR')}
+        readOnly={true}
       />
 
       <BIMImportConfirmModal

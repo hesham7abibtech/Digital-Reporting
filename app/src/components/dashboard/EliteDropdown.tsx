@@ -129,7 +129,7 @@ export default function EliteDropdown({
             width: 'max-content'
           }}
         >
-          <div className="brand-heading" style={{ padding: '10px 14px 10px', fontSize: 11, color: '#d0ab82', borderBottom: '1.5px solid rgba(0, 63, 73, 0.1)', marginBottom: 8, fontWeight: 950, letterSpacing: '0.08em' }}>
+          <div className="brand-heading" style={{ padding: '10px 14px 10px', fontSize: 11, color: '#003f49', borderBottom: '1.5px solid rgba(0, 63, 73, 0.1)', marginBottom: 8, fontWeight: 950, letterSpacing: '0.08em' }}>
             {menuLabel || 'Select Variable'}
           </div>
           {options.map((option) => (
@@ -174,6 +174,11 @@ export default function EliteDropdown({
               {option.label}
             </motion.div>
           ))}
+          {options.length === 0 && (
+            <div style={{ padding: '12px 14px', fontSize: 10, fontWeight: 800, color: 'var(--text-dim)', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              No Data Exist
+            </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

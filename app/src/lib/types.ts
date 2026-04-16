@@ -114,6 +114,8 @@ export interface GroupPolicy {
     policies: PolicyActions;
     broadcast: PolicyActions;
     reports: PolicyActions;
+    bimReviews: PolicyActions;
+    homePage: PolicyActions;
   };
   createdAt: string;
   updatedAt: string;
@@ -305,6 +307,7 @@ export interface BIMReview {
   insiteBimReviewStatus: string;
   insiteReviewDueDate?: string | null;
   insiteReviewOutputUrl?: string;
+  precinct?: string;
   insiteReviewer: string;
   modonHillFinalReviewStatus: string;
   onAcc: string; // "SHARED" | "NOT SHARED" 

@@ -11,7 +11,8 @@ import {
   browserSessionPersistence,
   sendEmailVerification
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import { createUserProfile, getProjectMetadata } from '@/services/FirebaseService';
 import { useAuth } from '@/context/AuthContext';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
@@ -73,6 +74,15 @@ function AdminLoginContent() {
   useEffect(() => {
     if (loading) return;
 
+    // ISOLATION PROTOCOL: Only react to auth state if admin_session is active.
+    // This prevents cross-contamination from the regular /login portal.
+    const isAdminSession = sessionStorage.getItem('admin_session');
+    if (!isAdminSession || isAdminSession !== 'active') {
+      // No admin session flag — do NOT auto-redirect or react to shared Firebase auth.
+      // The user may be signed in via the regular dashboard portal, but that's irrelevant here.
+      return;
+    }
+
     // Handle Profile Fetch Errors (usually from Firestore rules)
     if (user && authError) {
       setError(`IDENTITY SYNC FAILURE: ${authError}`);
@@ -80,20 +90,18 @@ function AdminLoginContent() {
       return;
     }
 
-    // Handle Success and Clearance Check
+    // Handle Success and Clearance Check (only for admin sessions)
     if (user && userProfile) {
       if (!user.emailVerified) {
         setError('CLEARANCE BLOCKED: Email not verified. Please verify your identity protocol.');
         auth.signOut();
+        sessionStorage.removeItem('admin_session');
         setIsSubmitting(false);
         return;
       }
 
       if (userProfile.isAdmin) {
-        const isAdminSession = sessionStorage.getItem('admin_session');
-        if (isAdminSession === 'active') {
-          router.push('/admin/dashboard');
-        }
+        router.push('/admin/dashboard');
       } else {
         // User is logged in but lacks admin role
         setMode('unauthorized');
@@ -121,10 +129,25 @@ function AdminLoginContent() {
         return;
       }
 
-      // 2. Ensure strict session persistence before sign-in
+      // 2. Sign out any existing session to prevent cross-portal contamination
+      if (auth.currentUser) {
+        await auth.signOut();
+      }
+
+      // 3. Ensure strict session persistence before sign-in
       await setPersistence(auth, browserSessionPersistence);
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      try {
+        await updateDoc(doc(db, 'users', userCredential.user.uid), {
+          lastLoginAt: new Date().toISOString()
+        });
+      } catch (e) {
+        console.error('Failed to sync admin login timestamp:', e);
+      }
       // Mark this as an admin session (separate from dashboard)
+      // Clear dashboard session flag to prevent bleed-through
+      sessionStorage.removeItem('dashboard_session');
       sessionStorage.setItem('admin_session', 'active');
       // Wait for AuthContext redirect logic above
     } catch (err: any) {

@@ -10,16 +10,11 @@ export default function AdminIndexRedirect() {
   const { userProfile, loading } = useAuth();
 
   useEffect(() => {
-    if (!loading) {
-      if (userProfile) {
-        // If authenticated as admin, go to dashboard
-        router.replace('/admin/dashboard');
-      } else {
-        // If not authenticated, go to login
-        router.replace('/admin/login');
-      }
-    }
-  }, [userProfile, loading, router]);
+    // ISOLATION ENFORCEMENT: ALWAYS route through the Admin Login Portal.
+    // If an Admin session is genuinely active, the login portal will securely auto-forward them.
+    // This prevents standard users from being wildly bounced around the admin routes.
+    router.replace('/admin/login');
+  }, [router]);
 
   return (
     <div style={{ 

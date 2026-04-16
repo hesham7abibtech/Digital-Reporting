@@ -219,6 +219,9 @@ interface BIMAnalyticsViewProps {
   filterStakeholder?: string[];
   setFilterStakeholder?: (v: string[]) => void;
   availableStakeholders?: string[];
+  filterPrecinct?: string[];
+  setFilterPrecinct?: (v: string[]) => void;
+  availablePrecincts?: string[];
   filterReviewer?: string[];
   setFilterReviewer?: (v: string[]) => void;
   availableReviewers?: string[];
@@ -238,6 +241,9 @@ export default function BIMAnalyticsView({
   filterStakeholder = [],
   setFilterStakeholder,
   availableStakeholders = [],
+  filterPrecinct = [],
+  setFilterPrecinct,
+  availablePrecincts = [],
   filterReviewer = [],
   setFilterReviewer,
   availableReviewers = []
@@ -402,6 +408,9 @@ export default function BIMAnalyticsView({
             )}
             {setFilterStakeholder && (
               <EliteDropdown value={filterStakeholder} options={availableStakeholders.map(s => ({ label: s, value: s }))} onChange={setFilterStakeholder} menuLabel="Stakeholder" isMulti allLabel="All Stakeholders" />
+            )}
+            {setFilterPrecinct && (
+              <EliteDropdown value={filterPrecinct} options={availablePrecincts.map(s => ({ label: s, value: s }))} onChange={setFilterPrecinct} menuLabel="Precinct" isMulti allLabel="All Precincts" />
             )}
             {setFilterReviewer && (
               <EliteDropdown value={filterReviewer} options={availableReviewers.map(s => ({ label: s, value: s }))} onChange={setFilterReviewer} menuLabel="Reviewer" isMulti allLabel="All Reviewers" />

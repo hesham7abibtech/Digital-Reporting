@@ -2,10 +2,10 @@
 
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Search, 
-  ArrowUpDown, 
-  ChevronDown, 
+import {
+  Search,
+  ArrowUpDown,
+  ChevronDown,
   Layers,
   Link as LinkIcon,
   Activity,
@@ -39,6 +39,7 @@ type SortDir = 'asc' | 'desc';
 
 const INITIAL_COLUMNS: ColumnDef<SortField>[] = [
   { id: 'project', field: 'project', label: 'Project Identifier', align: 'center', priority: 'high', defaultWidth: 260, alwaysVisible: true },
+  { id: 'precinct', field: 'precinct', label: 'Precinct', align: 'center', priority: 'high', defaultWidth: 150 },
   { id: 'submissionDescription', field: 'submissionDescription', label: 'Submission Description', align: 'center', priority: 'high', defaultWidth: 280 },
   { id: 'reviewNumber', field: 'reviewNumber', label: 'Rev #', align: 'center', priority: 'medium', defaultWidth: 100 },
   { id: 'designStage', field: 'designStage', label: 'Stage', align: 'center', priority: 'high', defaultWidth: 200 },
@@ -48,11 +49,10 @@ const INITIAL_COLUMNS: ColumnDef<SortField>[] = [
   { id: 'insiteReviewer', field: 'insiteReviewer', label: 'Lead Reviewer', align: 'center', priority: 'medium', defaultWidth: 200 },
   { id: 'modonHillFinalReviewStatus', field: 'modonHillFinalReviewStatus', label: 'Modon Status', align: 'center', priority: 'low', defaultWidth: 200 },
   { id: 'submissionDate', field: 'submissionDate', label: 'Submission Date', align: 'center', priority: 'low', defaultWidth: 200 },
-  { id: 'onAcc', field: 'onAcc', label: 'ACC', align: 'center', priority: 'low', defaultWidth: 120 },
+  { id: 'onAcc', field: 'onAcc', label: 'ACC Submission Status', align: 'center', priority: 'low', defaultWidth: 160 },
   { id: 'comments', field: 'comments', label: 'Internal Comments', align: 'center', priority: 'low', defaultWidth: 280 },
   { id: 'submissionCategory', field: 'submissionCategory', label: 'Category', align: 'center', priority: 'low', defaultWidth: 180 },
-  { id: 'output', field: 'insiteReviewOutputUrl', label: 'Output Hub', align: 'center', priority: 'high', defaultWidth: 120 },
-  { id: 'actions', field: 'id' as any, label: 'Actions', align: 'center', priority: 'high', defaultWidth: 100, alwaysVisible: true }
+  { id: 'output', field: 'insiteReviewOutputUrl', label: 'Report Links', align: 'center', priority: 'high', defaultWidth: 160 }
 ];
 
 function ResizeHandle({ columnWidth, onWidthChange }: { columnWidth: number, onWidthChange: (w: number) => void }) {
@@ -66,7 +66,7 @@ function ResizeHandle({ columnWidth, onWidthChange }: { columnWidth: number, onW
         setIsDragging(true);
         let startX = e.clientX;
         let currentWidth = columnWidth;
-        
+
         const handleMouseMove = (moveEvent: MouseEvent) => {
           const delta = moveEvent.clientX - startX;
           const newWidth = Math.max(80, currentWidth + delta);
@@ -101,33 +101,33 @@ function ResizeHandle({ columnWidth, onWidthChange }: { columnWidth: number, onW
       }}
       className="group"
     >
-      <div 
-        style={{ 
-          width: isDragging ? 3 : 1, 
-          height: isDragging ? '100%' : '50%', 
-          background: isDragging ? 'var(--primary)' : 'rgba(0, 63, 73, 0.1)', 
+      <div
+        style={{
+          width: isDragging ? 3 : 1,
+          height: isDragging ? '100%' : '50%',
+          background: isDragging ? 'var(--primary)' : 'rgba(0, 63, 73, 0.1)',
           borderRadius: 4,
-          transition: 'all 0.2s ease' 
-        }} 
+          transition: 'all 0.2s ease'
+        }}
         className={!isDragging ? "group-hover:bg-[rgba(0, 63, 73, 0.3)] group-hover:h-[70%]" : ""}
       />
     </div>
   );
 }
 
-function ReviewRow({ 
-  item, 
-  index, 
-  visibleColumns, 
+function ReviewRow({
+  item,
+  index,
+  visibleColumns,
   isCustomized,
   isAdminOrOwner,
   onEdit,
   onDelete
-}: { 
-  item: BIMReview; 
-  index: number; 
-  visibleColumns: ColumnDef<SortField>[]; 
-  isCustomized: boolean; 
+}: {
+  item: BIMReview;
+  index: number;
+  visibleColumns: ColumnDef<SortField>[];
+  isCustomized: boolean;
   isAdminOrOwner: boolean;
   onEdit?: (r: BIMReview) => void;
   onDelete?: (r: BIMReview) => void;
@@ -139,9 +139,37 @@ function ReviewRow({
       if (part.startsWith('(http')) {
         const url = part.slice(1, -1);
         return (
-          <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 4 }} className="hover:underline">
-            <LinkIcon size={12} />
-          </a>
+          <div key={i} className="group" style={{ display: 'inline-flex', position: 'relative', overflow: 'visible' }}>
+            <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 4, padding: 4, borderRadius: 4, background: 'rgba(0,63,73,0.05)' }} className="hover:bg-[rgba(0,63,73,0.1)] transition-colors">
+              <LinkIcon size={12} />
+            </a>
+            <div style={{
+              position: 'absolute',
+              bottom: '100%',
+              left: '50%',
+              marginBottom: 8,
+              padding: '8px 12px',
+              background: 'rgba(0, 63, 73, 0.98)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(198, 224, 224, 0.2)',
+              borderRadius: 8,
+              fontSize: 10,
+              fontWeight: 600,
+              color: '#FFFFFF',
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+              transition: 'all 0.2s',
+              zIndex: 1000,
+              boxShadow: '0 8px 24px rgba(0, 63, 73, 0.2)'
+            }} className="opacity-0 -translate-x-1/2 group-hover:opacity-100 group-hover:-translate-y-[2px]">
+              {url}
+              <div style={{
+                position: 'absolute', top: '100%', left: '50%', marginLeft: -4,
+                borderWidth: 4, borderStyle: 'solid',
+                borderColor: 'rgba(0, 63, 73, 0.98) transparent transparent transparent'
+              }} />
+            </div>
+          </div>
         );
       }
       return part;
@@ -164,11 +192,12 @@ function ReviewRow({
       transition={{ delay: index * 0.01, duration: 0.15 }}
       style={{ borderBottom: '1.5px solid rgba(0, 63, 73, 0.12)', cursor: 'pointer', transition: 'background 200ms' }}
       className="hover:bg-[rgba(0,63,73,0.03)]"
+      onClick={() => onEdit?.(item)}
     >
       {visibleColumns.map(col => {
-        const cellStyle: React.CSSProperties = { 
-          padding: '12px 20px', 
-          textAlign: (col.align as any) || 'left', 
+        const cellStyle: React.CSSProperties = {
+          padding: '12px 20px',
+          textAlign: (col.align as any) || 'left',
           verticalAlign: 'middle',
           fontSize: 12,
           fontWeight: 850,
@@ -182,6 +211,12 @@ function ReviewRow({
           </td>
         );
 
+        if (col.id === 'precinct') return (
+          <td key={col.id} style={{ ...cellStyle, color: 'var(--text-primary)', fontWeight: 800, fontSize: 11 }}>
+            {item.precinct || '—'}
+          </td>
+        );
+
         if (col.id === 'submissionDescription') return (
           <td key={col.id} style={{ ...cellStyle, color: 'rgba(0, 63, 73, 0.7)', fontStyle: 'italic', fontWeight: 800 }}>
             {item.submissionDescription}
@@ -190,10 +225,10 @@ function ReviewRow({
 
         if (col.id === 'reviewNumber') return (
           <td key={col.id} style={{ ...cellStyle }}>
-            <div style={{ 
-              display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', 
-              borderRadius: 8, background: 'rgba(0, 63, 73, 0.05)', 
-              border: '1px solid rgba(0, 63, 73, 0.2)', fontSize: 11, 
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px',
+              borderRadius: 8, background: 'rgba(0, 63, 73, 0.05)',
+              border: '1px solid rgba(0, 63, 73, 0.2)', fontSize: 11,
               fontWeight: 900, color: 'var(--teal)', boxShadow: '0 2px 8px rgba(0, 63, 73, 0.05)'
             }}>
               <Hash size={10} style={{ opacity: 0.9, color: 'var(--teal)' }} /> {item.reviewNumber || '—'}
@@ -220,16 +255,16 @@ function ReviewRow({
         if (col.id === 'insiteBimReviewStatus') return (
           <td key={col.id} style={{ ...cellStyle }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <div style={{ 
-                width: 8, height: 8, borderRadius: '50%', 
-                background: item.insiteBimReviewStatus?.toUpperCase() === 'WITH EGIS' ? '#FF7908' : getStatusColor(item.insiteBimReviewStatus), 
-                boxShadow: `0 0 10px ${item.insiteBimReviewStatus?.toUpperCase() === 'WITH EGIS' ? '#FF7908' : getStatusColor(item.insiteBimReviewStatus)}` 
+              <div style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: item.insiteBimReviewStatus?.toUpperCase() === 'WITH EGIS' ? '#FF7908' : getStatusColor(item.insiteBimReviewStatus),
+                boxShadow: `0 0 10px ${item.insiteBimReviewStatus?.toUpperCase() === 'WITH EGIS' ? '#FF7908' : getStatusColor(item.insiteBimReviewStatus)}`
               }} />
-              <span className="brand-heading" style={{ 
-                fontSize: 11, 
-                color: item.insiteBimReviewStatus?.toUpperCase() === 'WITH EGIS' ? '#DB4D00' : '#003f49', 
+              <span className="brand-heading" style={{
+                fontSize: 11,
+                color: item.insiteBimReviewStatus?.toUpperCase() === 'WITH EGIS' ? '#DB4D00' : '#003f49',
                 fontWeight: 900,
-                letterSpacing: '0.1em' 
+                letterSpacing: '0.1em'
               }}>{(item.insiteBimReviewStatus || 'PENDING').toUpperCase()}</span>
             </div>
           </td>
@@ -246,8 +281,8 @@ function ReviewRow({
         if (col.id === 'insiteReviewer') return (
           <td key={col.id} style={{ ...cellStyle }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-               <User size={12} style={{ opacity: 0.9 }} color="#003f49" />
-               <span style={{ fontSize: 11, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{item.insiteReviewer || '—'}</span>
+              <User size={12} style={{ opacity: 0.9 }} color="#003f49" />
+              <span style={{ fontSize: 11, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{item.insiteReviewer || '—'}</span>
             </div>
           </td>
         );
@@ -268,15 +303,15 @@ function ReviewRow({
 
         if (col.id === 'onAcc') return (
           <td key={col.id} style={{ ...cellStyle }}>
-             <span style={{ 
-               fontSize: 11,
-               fontWeight: 950, 
-               color: item.onAcc?.toUpperCase() === 'SHARED' ? '#FF7908' : 'rgba(198, 224, 224, 0.4)',
-               textShadow: item.onAcc?.toUpperCase() === 'SHARED' ? '0 0 10px rgba(255, 121, 8, 0.3)' : 'none',
-               letterSpacing: '0.05em'
-             }}>
-               {(item.onAcc || 'NOT SHARED').toUpperCase()}
-             </span>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 950,
+              color: item.onAcc?.toUpperCase() === 'SHARED' ? '#FF7908' : 'rgba(198, 224, 224, 0.4)',
+              textShadow: item.onAcc?.toUpperCase() === 'SHARED' ? '0 0 10px rgba(255, 121, 8, 0.3)' : 'none',
+              letterSpacing: '0.05em'
+            }}>
+              {(item.onAcc || 'NOT SHARED').toUpperCase()}
+            </span>
           </td>
         );
 
@@ -300,20 +335,20 @@ function ReviewRow({
           <td key={col.id} style={{ ...cellStyle }}>
             {item.insiteReviewOutputUrl ? (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
-                <motion.a 
-                  href={item.insiteReviewOutputUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
+                <motion.a
+                  href={item.insiteReviewOutputUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   whileHover={{ scale: 1.15, backgroundColor: '#C5A059', color: '#000000', boxShadow: '0 0 25px rgba(197, 160, 89, 0.5)' }}
-                  style={{ 
-                    width: 32, 
-                    height: 32, 
-                    borderRadius: 10, 
-                    background: 'rgba(255, 121, 8, 0.1)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    color: '#FF7908', 
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 10,
+                    background: 'rgba(255, 121, 8, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#FF7908',
                     border: '1px solid rgba(255, 121, 8, 0.3)',
                     textDecoration: 'none',
                     position: 'relative',
@@ -323,13 +358,12 @@ function ReviewRow({
                   className="group"
                 >
                   <ExternalLink size={16} />
-                  
+
                   {/* Ultra Professional Link Tooltip */}
                   <div style={{
                     position: 'absolute',
                     bottom: '100%',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
+                    right: 0,
                     marginBottom: 12,
                     padding: '12px 16px',
                     background: 'rgba(0, 63, 73, 0.98)',
@@ -339,30 +373,29 @@ function ReviewRow({
                     fontSize: 11,
                     fontWeight: 950,
                     color: '#FFFFFF',
-                    whiteSpace: 'nowrap',
-                    boxShadow: '0 12px 40px rgba(0, 63, 73, 0.25)',
+                    boxShadow: '-12px 12px 40px rgba(0, 63, 73, 0.35)',
                     pointerEvents: 'none',
-                    opacity: 0,
                     transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 6,
-                    zIndex: 1000
-                  }} className="group-hover:opacity-100 group-hover:translate-y-[-8px]">
+                    zIndex: 1000,
+                    width: 'max-content',
+                    maxWidth: 320
+                  }} className="opacity-0 group-hover:opacity-100 group-hover:-translate-y-[8px]">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#d0ab82', borderBottom: '1px solid rgba(208, 171, 130, 0.2)', paddingBottom: 6, marginBottom: 2 }}>
-                       <ExternalLink size={12} />
-                       <span style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}>Open Review Output</span>
+                      <ExternalLink size={12} />
+                      <span style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}>Open Review Output</span>
                     </div>
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 600, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 600, wordBreak: 'break-all' }}>
                       {item.insiteReviewOutputUrl}
                     </span>
-                    
+
                     {/* Tooltip Arrow */}
                     <div style={{
                       position: 'absolute',
                       top: '100%',
-                      left: '50%',
-                      marginLeft: -6,
+                      right: 12,
                       borderWidth: 6,
                       borderStyle: 'solid',
                       borderColor: '#d0ab82 transparent transparent transparent'
@@ -372,43 +405,6 @@ function ReviewRow({
               </div>
             ) : (
               <div style={{ opacity: 0.2 }}>—</div>
-            )}
-          </td>
-        );
-
-        if (col.id === 'actions') return (
-          <td key={col.id} style={{ ...cellStyle }}>
-            {isAdminOrOwner && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onEdit?.(item); }}
-                  title="Edit Record"
-                  style={{
-                    width: 30, height: 30, borderRadius: 8, background: 'rgba(0, 63, 73, 0.05)',
-                    border: '1px solid rgba(0, 63, 73, 0.1)', color: 'var(--teal)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--teal)'; e.currentTarget.style.color = 'white'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0, 63, 73, 0.05)'; e.currentTarget.style.color = 'var(--teal)'; }}
-                >
-                  <Edit2 size={14} />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDelete?.(item); }}
-                  title="Delete Record"
-                  style={{
-                    width: 30, height: 30, borderRadius: 8, background: 'rgba(239, 68, 68, 0.05)',
-                    border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = 'white'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'; e.currentTarget.style.color = '#ef4444'; }}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
             )}
           </td>
         );
@@ -436,8 +432,8 @@ const headerInputStyle: React.CSSProperties = {
   backdropFilter: 'blur(8px)'
 };
 
-export default function BIMReviewsTable({ 
-  data, 
+export default function BIMReviewsTable({
+  data,
   isLoading,
   search,
   setSearch,
@@ -450,6 +446,9 @@ export default function BIMReviewsTable({
   filterStakeholder,
   setFilterStakeholder,
   availableStakeholders = [],
+  filterPrecinct,
+  setFilterPrecinct,
+  availablePrecincts = [],
   filterReviewer,
   setFilterReviewer,
   availableReviewers = [],
@@ -457,8 +456,8 @@ export default function BIMReviewsTable({
   onDelete,
   onNew,
   onImport
-}: { 
-  data: BIMReview[]; 
+}: {
+  data: BIMReview[];
   isLoading: boolean;
   search: string;
   setSearch: (v: string) => void;
@@ -471,6 +470,9 @@ export default function BIMReviewsTable({
   filterStakeholder: string[];
   setFilterStakeholder: (v: string[]) => void;
   availableStakeholders: string[];
+  filterPrecinct: string[];
+  setFilterPrecinct: (v: string[]) => void;
+  availablePrecincts: string[];
   filterReviewer: string[];
   setFilterReviewer: (v: string[]) => void;
   availableReviewers: string[];
@@ -493,7 +495,7 @@ export default function BIMReviewsTable({
     resetSettings,
     reorderColumn,
     isCustomized
-  } = useTableColumns('bim-matrix-v4', INITIAL_COLUMNS);
+  } = useTableColumns('bim-matrix-precinct-v2', INITIAL_COLUMNS);
 
   const sortedData = useMemo(() => {
     return [...data].sort((a, b) => {
@@ -509,21 +511,22 @@ export default function BIMReviewsTable({
     else { setSortField(field); setSortDir('asc'); }
   };
 
-  const isAnyFilterActive = search || 
-    (filterStage.length > 0) || 
-    (filterStatus.length > 0) || 
-    (filterStakeholder.length > 0) || 
+  const isAnyFilterActive = search ||
+    (filterStage.length > 0) ||
+    (filterStatus.length > 0) ||
+    (filterStakeholder.length > 0) ||
+    (filterPrecinct.length > 0) ||
     (filterReviewer.length > 0);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginTop: -8 }}>
       {/* Table Interface Header */}
-      <div style={{ 
-        padding: '12px 24px', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between', 
-        flexWrap: 'wrap', 
+      <div style={{
+        padding: '12px 24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
         gap: 16,
         position: 'relative',
         zIndex: 500,
@@ -538,7 +541,7 @@ export default function BIMReviewsTable({
             <Search size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#003f49' }} />
             <input
               type="text"
-              placeholder="Search Matrix Hub..."
+              placeholder="Search Reviews..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ ...headerInputStyle, background: 'rgba(255, 255, 255, 0.8)', color: '#003f49', borderColor: 'rgba(0, 63, 73, 0.25)', fontWeight: 600 }}
@@ -578,111 +581,121 @@ export default function BIMReviewsTable({
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginLeft: 'auto' }}>
 
 
-          <EliteDropdown
-            value={filterStage}
-            options={availableStages.map(s => ({ label: s, value: s }))}
-            onChange={setFilterStage}
-            menuLabel="Stages"
-            isMulti={true}
-            allLabel="All Stages"
-          />
+            <EliteDropdown
+              value={filterStage}
+              options={availableStages.map(s => ({ label: s, value: s }))}
+              onChange={setFilterStage}
+              menuLabel="Stages"
+              isMulti={true}
+              allLabel="All Stages"
+            />
 
-          <EliteDropdown
-            value={filterStatus}
-            options={availableStatuses.map(s => ({ label: s, value: s }))}
-            onChange={setFilterStatus}
-            menuLabel="Statuses"
-            isMulti={true}
-            allLabel="All Statuses"
-          />
+            <EliteDropdown
+              value={filterStatus}
+              options={availableStatuses.map(s => ({ label: s, value: s }))}
+              onChange={setFilterStatus}
+              menuLabel="Statuses"
+              isMulti={true}
+              allLabel="All Statuses"
+            />
 
-          <EliteDropdown
-            value={filterStakeholder}
-            options={availableStakeholders.map(s => ({ label: s, value: s }))}
-            onChange={setFilterStakeholder}
-            menuLabel="Stakeholders"
-            isMulti={true}
-            allLabel="All Stakeholders"
-          />
+            <EliteDropdown
+              value={filterStakeholder}
+              options={availableStakeholders.map(s => ({ label: s, value: s }))}
+              onChange={setFilterStakeholder}
+              menuLabel="Stakeholders"
+              isMulti={true}
+              allLabel="All Stakeholders"
+            />
 
-          <EliteDropdown
-            value={filterReviewer}
-            options={availableReviewers.map(s => ({ label: s, value: s }))}
-            onChange={setFilterReviewer}
-            menuLabel="Reviewer"
-            isMulti={true}
-            allLabel="All Reviewers"
-          />
+            <EliteDropdown
+              value={filterPrecinct}
+              options={availablePrecincts.map(s => ({ label: s, value: s }))}
+              onChange={setFilterPrecinct}
+              menuLabel="Precincts"
+              isMulti={true}
+              allLabel="All Precincts"
+            />
 
-          <ColumnSettingsDropdown
-            columns={allColumns}
-            settings={settings}
-            onToggle={toggleColumnVisibility}
-            onReset={resetSettings}
-          />
+            <EliteDropdown
+              value={filterReviewer}
+              options={availableReviewers.map(s => ({ label: s, value: s }))}
+              onChange={setFilterReviewer}
+              menuLabel="Reviewer"
+              isMulti={true}
+              allLabel="All Reviewers"
+            />
 
-          {isAnyFilterActive && (
-            <button
-              onClick={() => {
-                setSearch('');
-                setFilterStage([]);
-                setFilterStatus([]);
-                setFilterStakeholder([]);
-                setFilterReviewer([]);
-              }}
-              title="Clear Filter Constraints"
-              style={{
-                padding: '8px 14px',
-                borderRadius: 10,
-                background: 'rgba(255, 76, 79, 0.1)',
-                color: '#FF4C4F',
-                border: '1px solid rgba(255, 76, 79, 0.2)',
-                fontSize: 11,
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                transition: 'all 0.2s'
-              }}
-            >
-              <RefreshCw size={14} />
-            </button>
-          )}
+            <ColumnSettingsDropdown
+              columns={allColumns}
+              settings={settings}
+              onToggle={toggleColumnVisibility}
+              onReset={resetSettings}
+            />
 
-          {isCustomized && (
-            <button
-              onClick={resetSettings}
-              title="Restore Matrix Default"
-              style={{
-                padding: '8px 12px',
-                borderRadius: 10,
-                background: 'rgba(255, 76, 79, 0.1)',
-                color: '#FF4C4F',
-                border: '1px solid rgba(255, 76, 79, 0.2)',
-                fontSize: 11,
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                transition: 'all 0.2s'
-              }}
-            >
-              <ArrowUpDown size={14} />
-            </button>
-          )}
-            </div>
+            {isAnyFilterActive && (
+              <button
+                onClick={() => {
+                  setSearch('');
+                  setFilterStage([]);
+                  setFilterStatus([]);
+                  setFilterStakeholder([]);
+                  setFilterPrecinct([]);
+                  setFilterReviewer([]);
+                }}
+                title="Clear Filter Constraints"
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 10,
+                  background: 'rgba(255, 76, 79, 0.1)',
+                  color: '#FF4C4F',
+                  border: '1px solid rgba(255, 76, 79, 0.2)',
+                  fontSize: 11,
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  transition: 'all 0.2s'
+                }}
+              >
+                <RefreshCw size={14} />
+              </button>
+            )}
+
+            {isCustomized && (
+              <button
+                onClick={resetSettings}
+                title="Restore Matrix Default"
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 10,
+                  background: 'rgba(255, 76, 79, 0.1)',
+                  color: '#FF4C4F',
+                  border: '1px solid rgba(255, 76, 79, 0.2)',
+                  fontSize: 11,
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  transition: 'all 0.2s'
+                }}
+              >
+                <ArrowUpDown size={14} />
+              </button>
+            )}
           </div>
         </div>
+      </div>
 
       <GlassCard padding="none">
         <div style={{ maxHeight: 'calc(100vh - 380px)', overflowY: 'auto', overflowX: 'auto', paddingBottom: 4, position: 'relative' }} className="elite-scrollbar">
           <style>{`
-            .elite-scrollbar::-webkit-scrollbar { height: 6px; }
-            .elite-scrollbar::-webkit-scrollbar-track { background: var(--section-bg); border-radius: 10px; }
-            .elite-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 63, 73, 0.1); border-radius: 10px; }
-            .elite-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+            .elite-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+            .elite-scrollbar::-webkit-scrollbar-track { background: rgba(0, 63, 73, 0.05); border-radius: 10px; }
+            .elite-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 63, 73, 0.35); border-radius: 10px; }
+            .elite-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 63, 73, 0.6); }
             
             .elite-column-dividers th:not(:last-child) { position: relative; }
             .elite-column-dividers th:not(:last-child)::after {
@@ -696,18 +709,24 @@ export default function BIMReviewsTable({
             }
             .elite-column-dividers td:not(:last-child) { border-right: 1px solid rgba(198, 224, 224, 0.12) !important; }
           `}</style>
-          
+
           <table className="elite-column-dividers" style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: 'max-content' }}>
             <colgroup>
-              {visibleColumns.map(col => (
-                <col key={col.id} style={{ width: col.width || INITIAL_COLUMNS.find(c => c.id === col.id)?.defaultWidth || 150 }} />
-              ))}
+              {visibleColumns.map((col, index) => {
+                // By omitting the width on the final column, Chromium's tableLayout: 'fixed' will natively 
+                // dump all remaining pixels of the 100% container into it, destroying the gap perfectly.
+                const isFinal = index === visibleColumns.length - 1;
+                const w = col.width || INITIAL_COLUMNS.find(c => c.id === col.id)?.defaultWidth || 150;
+                return (
+                  <col key={col.id} style={{ width: isFinal ? undefined : w }} />
+                );
+              })}
             </colgroup>
             <thead>
               <tr style={{ background: 'var(--section-bg)', borderBottom: '1px solid var(--border)' }}>
                 {visibleColumns.map((col) => (
-                  <th 
-                    key={col.id} 
+                  <th
+                    key={col.id}
                     draggable
                     onDragStart={(e) => {
                       e.dataTransfer.effectAllowed = 'move';
@@ -733,10 +752,10 @@ export default function BIMReviewsTable({
                         reorderColumn(sourceId, col.id);
                       }
                     }}
-                    style={{ ...thStyle, textAlign: 'center', position: 'sticky', top: 0, zIndex: 100, background: 'var(--accent)', borderBottom: '1px solid rgba(0,0,0,0.1)', transition: 'background 0.2s' }}
+                    style={{ ...thStyle, textAlign: 'center', position: 'sticky', top: 0, zIndex: 100, background: 'var(--accent)', borderBottom: '1px solid rgba(0,0,0,0.1)', transition: 'background 0.2s', overflow: 'hidden' }}
                   >
-                    <div onClick={() => toggleSort(col.field)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' }}>
-                      <span style={{ whiteSpace: 'nowrap', color: '#003f49', fontWeight: 950, letterSpacing: '0.02em', textShadow: '0 1px 2px rgba(255,255,255,0.4)' }}>{col.label}</span>
+                    <div onClick={() => toggleSort(col.field)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', overflow: 'hidden' }}>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#003f49', fontWeight: 950, letterSpacing: '0.02em', textShadow: '0 1px 2px rgba(255,255,255,0.4)' }}>{col.label}</span>
                       <ArrowUpDown size={11} style={{ color: '#003f49', opacity: sortField === col.field ? 1 : 0.6, flexShrink: 0 }} />
                     </div>
                     <ResizeHandle columnWidth={col.width || 120} onWidthChange={(w) => updateColumnWidth(col.id, w)} />
@@ -746,10 +765,10 @@ export default function BIMReviewsTable({
             </thead>
             <tbody>
               {sortedData.map((item, i) => (
-                <ReviewRow 
-                  key={item.id || `bim-row-${i}`} 
-                  item={item} 
-                  index={i} 
+                <ReviewRow
+                  key={item.id || `bim-row-${i}`}
+                  item={item}
+                  index={i}
                   visibleColumns={visibleColumns}
                   isCustomized={isCustomized}
                   isAdminOrOwner={isAdminOrOwner}
@@ -759,19 +778,19 @@ export default function BIMReviewsTable({
               ))}
             </tbody>
           </table>
-          
+
           {sortedData.length === 0 && (
-            <div style={{ 
+            <div style={{
               padding: '60px 40px',
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
               justifyContent: 'center',
-              textAlign: 'center' 
+              textAlign: 'center'
             }}>
-              <div style={{ 
-                width: 60, height: 60, borderRadius: 20, 
-                background: 'var(--secondary)', 
+              <div style={{
+                width: 60, height: 60, borderRadius: 20,
+                background: 'var(--secondary)',
                 border: '1px solid rgba(0, 63, 73, 0.1)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 marginBottom: 20,

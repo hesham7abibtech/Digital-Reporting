@@ -114,40 +114,8 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
     }
   }
 
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  // Automatically mark all as read when opening
-  useEffect(() => {
-    let active = true;
-    if (isOpen && userId && broadcasts.length > 0 && !isProcessing) {
-      const unread = broadcasts.filter(b => {
-        const readList = b.readBy || [];
-        return Array.isArray(readList) && !readList.includes(userId);
-      });
-      
-      if (unread.length > 0) {
-        // Execute batched receipt for architectural clean-sweep
-        const markAll = async () => {
-          setIsProcessing(true);
-          try {
-            const { writeBatch, doc } = await import('firebase/firestore');
-            const batch = writeBatch(db);
-            unread.forEach(b => {
-              const ref = doc(db, 'broadcasts', b.id);
-              batch.update(ref, { readBy: arrayUnion(userId) });
-            });
-            if (active) await batch.commit();
-          } catch (e) {
-            console.error("Batch Acknowledgment Protocol Failed:", e);
-          } finally {
-            if (active) setIsProcessing(false);
-          }
-        };
-        markAll();
-      }
-    }
-    return () => { active = false; };
-  }, [isOpen, userId, broadcasts, isProcessing]);
+  // Auto-read logic has been explicitly removed.
+  // Packets now strictly require physical user interaction (clicks) to mark as read.
 
   return (
     <AnimatePresence>
@@ -168,11 +136,16 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-[500px] z-[6001] bg-[#050508] border-l border-white/5 flex flex-col shadow-[-40px_0_100px_rgba(0,0,0,0.9)]"
+            className="fixed right-0 top-0 bottom-0 w-full max-w-[500px] z-[6001] flex flex-col"
+            style={{
+              background: 'var(--background)',
+              borderLeft: '1px solid var(--border)',
+              boxShadow: '-40px 0 100px rgba(0,0,0,0.8)'
+            }}
           >
             <div 
-              className="relative overflow-hidden border-b border-white/[0.03] bg-gradient-to-b from-white/[0.02] to-transparent"
-              style={{ paddingTop: '20px', paddingBottom: '16px', paddingLeft: '32px', paddingRight: '32px' }}
+              className="relative overflow-hidden"
+              style={{ paddingTop: '24px', paddingBottom: '20px', paddingLeft: '32px', paddingRight: '32px', borderBottom: '1px solid var(--border)', background: 'var(--card-haze)', backdropFilter: 'blur(20px)' }}
             >
               {/* Decorative radial glows */}
               <div className="absolute -top-32 -right-32 w-96 h-96 bg-blue-500/[0.08] blur-[150px] pointer-events-none" />
@@ -181,71 +154,76 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
               <div className="flex items-start justify-between relative z-10">
                 <div className="flex-1">
                   <div className="flex items-center gap-4 mb-2">
-                    <div className="px-3 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.15)] flex items-center gap-2">
-                       <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                       <span className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em]">Secure Link Portal</span>
+                    <div style={{ padding: '2px 12px', borderRadius: 20, background: 'var(--secondary)', border: '1px solid var(--border)', boxShadow: '0 0 20px rgba(0,204,255,0.15)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                       <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" style={{ backgroundColor: 'var(--aqua)' }} />
+                       <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-secondary)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Secure Link Portal</span>
                     </div>
                   </div>
-                  <h2 className="text-3xl font-black text-white tracking-[-0.04em] mb-1 uppercase leading-tight">Communications</h2>
-                  <p className="text-[9px] text-white/20 font-black tracking-[0.3em] uppercase pl-1">Command Center Protocol v2.5</p>
+                  <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: 4, fontFamily: 'var(--font-heading)' }}>Communications</h2>
+                  <p style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 900, letterSpacing: '0.3em', textTransform: 'uppercase', paddingLeft: 4 }}>Command Center Protocol v2.5</p>
                 </div>
                 <button 
                   onClick={onClose}
-                  className="w-11 h-11 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-300 group"
+                  style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--secondary)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', cursor: 'pointer', transition: 'all 300ms' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = 'var(--secondary)'; }}
                 >
-                  <X size={20} className="group-hover:rotate-180 transition-transform duration-500" />
+                  <X size={20} />
                 </button>
               </div>
 
               {/* Specialized Elite Tabs - Guaranteed height and layout */}
               <div 
-                className="flex gap-2 p-1 border border-white/[0.04] backdrop-blur-xl"
-                style={{ marginTop: '20px', borderRadius: '24px', backgroundColor: 'rgba(255,255,255,0.02)' }}
+                className="flex gap-2 p-1"
+                style={{ marginTop: '20px', borderRadius: '24px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)' }}
               >
                 <button
                   onClick={() => setActiveTab('ALERTS')}
-                  className={`flex-1 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-300 relative overflow-hidden group/tab
-                    ${activeTab === 'ALERTS' ? 'text-white shadow-xl' : 'text-white/20 hover:text-white/40'}`}
+                  className="flex-1 flex items-center justify-center gap-2 relative overflow-hidden group/tab"
                   style={{ 
                     height: '44px', 
                     borderRadius: '20px',
-                    backgroundColor: activeTab === 'ALERTS' ? 'rgba(255,255,255,0.06)' : 'transparent' 
+                    fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', transition: 'all 300ms',
+                    color: activeTab === 'ALERTS' ? 'var(--text-on-primary)' : 'var(--text-muted)',
+                    background: activeTab === 'ALERTS' ? 'var(--teal)' : 'transparent',
+                    boxShadow: activeTab === 'ALERTS' ? '0 8px 24px rgba(0, 204, 255, 0.2)' : 'none'
                   }}
                 >
-                  {activeTab === 'ALERTS' && (
-                    <motion.div layoutId="tab-glow" className="absolute inset-0 bg-blue-500/[0.06] blur-xl" />
-                  )}
-                  <Bell size={14} className={`transition-transform duration-500 ${activeTab === 'ALERTS' ? 'text-blue-400 scale-110' : 'group-hover/tab:scale-110'}`} />
+                  <Bell size={14} style={{ color: activeTab === 'ALERTS' ? 'inherit' : 'var(--text-muted)' }} />
                   <span className="leading-none" style={{ paddingTop: '1.5px' }}>Operational Alerts</span>
                   {unreadAlerts > 0 && (
-                    <span className="ml-1.5 w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[9px] font-black shadow-lg shadow-blue-500/20">
-                      {activeTab === 'ALERTS' ? unreadAlerts : unreadNews}
+                    <span style={{ marginLeft: 6, width: 18, height: 18, borderRadius: '50%', background: 'var(--status-error)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>
+                      {unreadAlerts}
                     </span>
                   )}
                 </button>
                 <button
                   onClick={() => setActiveTab('NEWS')}
-                  className={`flex-1 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-300 relative overflow-hidden group/tab
-                    ${activeTab === 'NEWS' ? 'text-white shadow-xl' : 'text-white/20 hover:text-white/40'}`}
+                  className="flex-1 flex items-center justify-center gap-2 relative overflow-hidden group/tab"
                   style={{ 
                     height: '44px', 
                     borderRadius: '20px',
-                    backgroundColor: activeTab === 'NEWS' ? 'rgba(255,255,255,0.06)' : 'transparent' 
+                    fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', transition: 'all 300ms',
+                    color: activeTab === 'NEWS' ? 'var(--text-on-primary)' : 'var(--text-muted)',
+                    background: activeTab === 'NEWS' ? 'var(--teal)' : 'transparent',
+                    boxShadow: activeTab === 'NEWS' ? '0 8px 24px rgba(0, 204, 255, 0.2)' : 'none'
                   }}
                 >
-                  {activeTab === 'NEWS' && (
-                    <motion.div layoutId="tab-glow" className="absolute inset-0 bg-purple-500/[0.06] blur-xl" />
-                  )}
-                  <Newspaper size={14} className={`transition-transform duration-500 ${activeTab === 'NEWS' ? 'text-purple-400 scale-110' : 'group-hover/tab:scale-110'}`} />
+                  <Newspaper size={14} style={{ color: activeTab === 'NEWS' ? 'inherit' : 'var(--text-muted)' }} />
                   <span className="leading-none" style={{ paddingTop: '1.5px' }}>Global News</span>
+                  {unreadNews > 0 && (
+                    <span style={{ marginLeft: 6, width: 18, height: 18, borderRadius: '50%', background: 'var(--status-error)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>
+                      {unreadNews}
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
 
             {/* Content Area - Hardened centering for empty state */}
             <div 
-              className={`flex-1 overflow-y-auto custom-scrollbar px-6 pb-20 space-y-3 ${filtered.length === 0 ? 'flex flex-col' : ''}`}
-              style={{ paddingTop: filtered.length === 0 ? '0' : '16px' }}
+              className="flex-1 overflow-y-auto custom-scrollbar px-12 pb-24 flex flex-col gap-4"
+              style={{ paddingTop: filtered.length === 0 ? '0' : '20px' }}
             >
               {filtered.map((item, i) => {
                 const config = severityConfig[item.severity] || severityConfig.INFO;
@@ -261,65 +239,63 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 + 0.1 }}
                     onClick={() => !isRead && handleConfirmReceipt(item.id)}
-                    className={`group relative border transition-all duration-500 cursor-pointer
-                      ${!isRead ? 'shadow-[0_10px_20px_-10px_rgba(0,0,0,0.5)]' : 'hover:opacity-100'}`}
+                    className="group relative transition-all duration-500 cursor-pointer mx-auto w-full max-w-[420px]"
                     style={{
-                      padding: '10px 16px',
-                      borderRadius: '20px',
-                      backgroundColor: !isRead ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.01)',
-                      borderColor: !isRead ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)',
-                      opacity: !isRead ? 1 : 0.8,
+                      padding: '16px 20px',
+                      borderRadius: '16px',
+                      background: !isRead ? '#ffffff' : 'var(--card-haze)',
+                      border: `1.5px solid ${!isRead ? config.color : 'var(--border)'}`,
+                      opacity: !isRead ? 1 : 0.7,
+                      boxShadow: !isRead ? `0 12px 40px -12px ${config.glow}, 0 0 10px ${config.bgColor}` : 'none',
                       transform: 'translateZ(0)'
                     }}
                   >
                     {/* Pulsing Aura for Critical alerts */}
                     {!isRead && item.severity === 'CRITICAL' && (
-                      <div className="absolute inset-0 bg-red-500/[0.03] animate-pulse pointer-events-none" style={{ borderRadius: '24px' }} />
+                      <div className="absolute inset-0 border border-red-500/20 animate-pulse pointer-events-none" style={{ borderRadius: '16px' }} />
                     )}
 
-                    <div className="flex items-center relative z-10" style={{ gap: '16px' }}>
+                    <div className="flex items-center relative z-10" style={{ gap: '12px' }}>
                       {/* Icon Cluster */}
                       <div className="relative shrink-0">
                         <div 
                           className="flex items-center justify-center border transition-all duration-500 group-hover:scale-110 group-hover:rotate-3"
                           style={{ 
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '12px',
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
                             background: config.bgColor, 
                             borderColor: config.borderColor,
                             color: config.color,
                             boxShadow: `0 4px 12px -4px ${config.glow}`
                           }}
                         >
-                          <Icon size={18} />
+                          <Icon size={15} />
                         </div>
                         {!isRead && (
-                          <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#050508] p-0.5">
+                          <div className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#050508] p-0.5">
                             <div className="w-full h-full rounded-full bg-blue-500 animate-ping" />
                           </div>
                         )}
                       </div>
 
                       {/* Content Stack - Horizontal layout focused */}
-                      <div className="flex-1 min-w-0 py-0.5">
-                         <div className="flex items-center justify-between mb-1">
+                      <div className="flex-1 min-w-0 py-0">
+                         <div className="flex items-center justify-between mb-0.5">
                            <div className="flex items-center gap-2">
-                             <span style={{ color: config.color }} className="text-[10px] font-black uppercase tracking-[0.15em] opacity-90 drop-shadow-md">
-                               {item.severity} // {item.category || (item.type === 'NEWS' ? 'MARKET' : 'SYSTEM')}
+                             <span style={{ color: config.color, fontSize: 9, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em' }} className="drop-shadow-md">
+                               {item.severity} <span style={{ color: 'var(--text-dim)' }}>//</span> {item.category || (item.type === 'NEWS' ? 'MARKET' : 'SYSTEM')}
                              </span>
                            </div>
-                           <div className="flex items-center gap-1.5 text-white/30">
-                             <Clock size={10} />
-                             <span className="text-[9px] font-bold uppercase tracking-widest">{getRelativeTime(item.timestamp)}</span>
+                           <div className="flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
+                             <Clock size={9} />
+                             <span style={{ fontSize: 8, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{getRelativeTime(item.timestamp)}</span>
                            </div>
                          </div>
-                         <h3 className={`text-[15px] font-bold tracking-tight leading-tight truncate transition-colors duration-300
-                           ${!isRead ? 'text-white' : 'text-white/70 group-hover:text-white'}`}>
+                         <h3 style={{ fontSize: 13, fontWeight: 800, color: !isRead ? 'var(--text-primary)' : 'var(--text-secondary)', transition: 'all 300ms', letterSpacing: '0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                            {item.title}
                          </h3>
-                         <p className={`text-[12px] leading-snug truncate mt-1 transition-colors duration-300
-                           ${!isRead ? 'text-white/60' : 'text-white/40 group-hover:text-white/50'}`}>
+                         <p style={{ fontSize: 11, lineHeight: '1.4', color: !isRead ? 'var(--text-secondary)' : 'var(--text-dim)', transition: 'all 300ms', marginTop: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                            {item.description}
                          </p>
                       </div>
@@ -344,9 +320,11 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
                         {!isRead && item.type === 'NOTIF' && (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleConfirmReceipt(item.id); }}
-                            className="px-3 py-1.5 rounded-lg border border-blue-500/20 text-[9px] font-black text-blue-400 focus:outline-none hover:text-white hover:bg-blue-500/20 transition-all flex items-center gap-1.5"
+                            style={{ padding: '4px 10px', borderRadius: 6, background: config.bgColor, border: `1px solid ${config.borderColor}`, color: config.color, fontSize: 9, fontWeight: 900, outline: 'none', cursor: 'pointer', transition: 'all 200ms', display: 'flex', alignItems: 'center', gap: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = config.color; e.currentTarget.style.borderColor = config.color; e.currentTarget.style.color = '#ffffff'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = config.bgColor; e.currentTarget.style.borderColor = config.borderColor; e.currentTarget.style.color = config.color; }}
                           >
-                            <Check size={10} />
+                            <Check size={10} strokeWidth={3} />
                             RECEIPT
                           </button>
                         )}
@@ -359,27 +337,25 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
               {!loading && filtered.length === 0 && (
                 <div className="flex-1 flex flex-col items-center justify-center pb-20 group">
                   <div 
-                    className="w-20 h-20 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center group-hover:rotate-45 transition-transform duration-700 relative"
-                    style={{ marginBottom: '40px' }}
+                    className="flex items-center justify-center group-hover:scale-110 transition-transform duration-700"
+                    style={{ marginBottom: '40px', width: 80, height: 80, borderRadius: '50%', background: 'var(--secondary)', border: '1px solid var(--border)' }}
                   >
-                    <div className="absolute inset-0 rounded-full bg-white/[0.05] blur-xl" />
-                    {activeTab === 'ALERTS' ? <Bell size={40} className="text-blue-400" /> : <Newspaper size={40} className="text-purple-400" />}
+                    {activeTab === 'ALERTS' ? <Bell size={32} color="var(--teal)" /> : <Newspaper size={32} color="var(--status-warning)" />}
                   </div>
-                  <p className="text-[13px] font-black uppercase tracking-[0.4em] text-white text-center drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                  <p style={{ fontSize: 13, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.4em', color: 'var(--text-secondary)' }}>
                     No active packets
                   </p>
-                  <div className="mt-4 w-12 h-0.5 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                 </div>
               )}
             </div>
 
             {/* Bottom Status Bar */}
-            <div className="px-10 py-6 border-t border-white/[0.03] bg-black flex items-center justify-between">
+            <div style={{ padding: '24px 40px', borderTop: '1px solid var(--border)', background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                <div className="flex items-center gap-3">
-                 <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-                 <span className="text-[10px] font-black text-emerald-500/80 uppercase tracking-widest">ENCRYPTED STREAM ACTIVE</span>
+                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--status-success)', boxShadow: '0 0 12px var(--status-success)' }} />
+                 <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>ENCRYPTED STREAM ACTIVE</span>
                </div>
-               <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em]">VER: ELITE_BROADCAST_X</span>
+               <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>VER: ELITE_BROADCAST_X</span>
             </div>
           </motion.div>
         </>

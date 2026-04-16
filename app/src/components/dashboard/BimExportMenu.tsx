@@ -30,6 +30,10 @@ interface BimExportMenuProps {
   setFilterReviewer: (val: string[]) => void;
   availableReviewers: string[];
 
+  filterPrecinct: string[];
+  setFilterPrecinct: (val: string[]) => void;
+  availablePrecincts: string[];
+
   // Global mode and dates
   filterMode: 'monthly' | 'custom' | 'all';
   selectedYear: number;
@@ -42,6 +46,7 @@ export default function BimExportMenu({
   filterStatus, setFilterStatus, availableStatuses,
   filterStakeholder, setFilterStakeholder, availableStakeholders,
   filterReviewer, setFilterReviewer, availableReviewers,
+  filterPrecinct, setFilterPrecinct, availablePrecincts,
   filterMode, selectedYear, selectedMonth
 }: BimExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -68,19 +73,19 @@ export default function BimExportMenu({
     setIsOpen(false);
   };
 
-  const handleConfirmGeneration = async (type: 'pdf' | 'excel', perspective: 'table' | 'dashboard' | 'both', onProgress: (p: number) => void) => {
+  const handleConfirmGeneration = async (type: 'pdf' | 'excel', perspective: 'table' | 'dashboard' | 'both', selectedColumns: string[], onProgress: (p: number) => void) => {
     onProgress(10);
     try {
       let result;
       if (type === 'excel') {
         await new Promise(r => setTimeout(r, 600));
         onProgress(40);
-        result = await exportBimToExcel(bimReviews, projectMetadata, dateRangeText, perspective);
+        result = await exportBimToExcel(bimReviews, projectMetadata, dateRangeText, perspective, selectedColumns);
         onProgress(90);
       } else {
         await new Promise(r => setTimeout(r, 800));
         onProgress(40);
-        result = await exportBimToPDF(bimReviews, projectMetadata, dateRangeText, perspective);
+        result = await exportBimToPDF(bimReviews, projectMetadata, dateRangeText, perspective, selectedColumns);
         onProgress(90);
       }
       return result;
@@ -189,6 +194,9 @@ export default function BimExportMenu({
         filterReviewer={filterReviewer}
         setFilterReviewer={setFilterReviewer}
         availableReviewers={availableReviewers}
+        filterPrecinct={filterPrecinct}
+        setFilterPrecinct={setFilterPrecinct}
+        availablePrecincts={availablePrecincts}
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
         availableStatuses={availableStatuses}

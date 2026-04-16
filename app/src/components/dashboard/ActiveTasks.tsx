@@ -449,20 +449,10 @@ export default function ActiveTasks({
 
         <div style={{ overflowX: 'auto', paddingBottom: 4 }} className="elite-scrollbar">
           <style>{`
-            .elite-scrollbar::-webkit-scrollbar {
-              height: 6px;
-            }
-            .elite-scrollbar::-webkit-scrollbar-track {
-              background: var(--section-bg);
-              border-radius: 10px;
-            }
-            .elite-scrollbar::-webkit-scrollbar-thumb {
-              background: rgba(0, 63, 73, 0.1);
-              border-radius: 10px;
-            }
-            .elite-scrollbar::-webkit-scrollbar-thumb:hover {
-              background: rgba(255, 255, 255, 0.2);
-            }
+            .elite-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+            .elite-scrollbar::-webkit-scrollbar-track { background: rgba(0, 63, 73, 0.05); border-radius: 10px; }
+            .elite-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 63, 73, 0.35); border-radius: 10px; }
+            .elite-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 63, 73, 0.6); }
             .elite-column-dividers th:not(:last-child) {
               position: relative;
             }

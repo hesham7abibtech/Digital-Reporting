@@ -393,10 +393,10 @@ export default function AdminDashboardPage() {
   const isAuthorized = userProfile?.isAdmin && isAdminSession;
 
   // Firestore Listeners (Gated for Security)
-  const [tasksSnapshot, tasksLoading] = useCollection(isAuthorized ? collections.tasks : null);
-  const [registrySnapshot, registryLoading] = useCollection(isAuthorized ? collections.registry : null);
-  const [usersSnapshot, usersLoading] = useCollection(isAuthorized ? collections.users : null);
-  const [bimReviewsSnapshot, bimReviewsLoading] = useCollection(isAuthorized ? collections.bimReviews : null);
+  const [tasksSnapshot, tasksLoading, tasksError] = useCollection(isAuthorized ? collections.tasks : null);
+  const [registrySnapshot, registryLoading, registryError] = useCollection(isAuthorized ? collections.registry : null);
+  const [usersSnapshot, usersLoading, usersError] = useCollection(isAuthorized ? collections.users : null);
+  const [bimReviewsSnapshot, bimReviewsLoading, bimReviewsError] = useCollection(isAuthorized ? collections.bimReviews : null);
 
 
   // Dynamic linking: Team Members are now explicitly fueled by the registered Users registry
@@ -904,36 +904,29 @@ export default function AdminDashboardPage() {
           boxShadow: '4px 0 20px rgba(0,63,73,0.1)',
           flexShrink: 0
         }}>
-          <div style={{ padding: '48px 32px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 44, height: 44, background: 'rgba(255, 255, 255, 0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255, 255, 255, 0.2)' }}>
-                  <Shield size={24} color="#F9F8F2" />
-                </div>
+          <div style={{ padding: '32px', textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
                 <div>
-                  <h1 style={{ fontSize: 13, fontWeight: 900, color: '#F9F8F2', margin: 0, letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'var(--font-heading)' }}>Admin Portal</h1>
+                  <h1 style={{ fontSize: 13, fontWeight: 900, color: '#F9F8F2', margin: '0 0 4px 0', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'var(--font-heading)' }}>Admin Portal</h1>
                   <span style={{ fontSize: 9, color: 'var(--sunlit-rock)', fontWeight: 800, letterSpacing: '0.2em' }}>COMMAND CENTER</span>
                 </div>
-              </div>
-              <div style={{ padding: '12px 0 0 56px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, width: '100%', padding: '0 24px' }}>
                   <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 18, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 1 }} />
                   <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.2)' }} />
                   <img src="/logos/insite_logo.png" alt="Insite" style={{ height: 18, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 1 }} />
                 </div>
-              </div>
             </div>
           </div>
 
           <nav className="custom-scrollbar" style={{ flex: 1, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
             {[
               { id: 'tasks', label: 'Deliverable Matrix', icon: BarChart3, permission: 'tasks' },
-              { id: 'bim-reviews', label: 'BIM Review Matrix', icon: Layers, permission: 'tasks' },
-              { id: 'team', label: 'Project Team', icon: Users, permission: 'users' },
+              { id: 'bim-reviews', label: 'BIM Review Matrix', icon: Layers, permission: 'bimReviews' },
+              { id: 'team', label: 'Project Team', icon: Users, permission: 'team' },
               { id: 'branding', label: 'Identity & Branding', icon: ImageIcon, permission: 'branding' },
-              { id: 'reports', label: 'Report Settings', icon: FileText, permission: 'branding' },
-              { id: 'homepage', label: 'Home Page CMS', icon: LayoutDashboard, permission: 'branding' },
-              { id: 'broadcast', label: 'Communications', icon: Megaphone, permission: 'branding' },
+              { id: 'reports', label: 'Report Settings', icon: FileText, permission: 'reports' },
+              { id: 'homepage', label: 'Home Page CMS', icon: LayoutDashboard, permission: 'homePage' },
+              { id: 'broadcast', label: 'Communications', icon: Megaphone, permission: 'broadcast' },
               { id: 'users', label: 'Access Control', icon: Shield, permission: 'users' }
             ].map((tab) => {
               if (tab.permission && !can(tab.permission as any, 'view')) return null;
@@ -1020,7 +1013,7 @@ export default function AdminDashboardPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
                   <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 800 }}>{userProfile?.name || 'Administrator'}</div>
-                  <div style={{ fontSize: 10, color: 'var(--teal)', fontWeight: 900, textTransform: 'uppercase' }}>{userProfile?.isAdmin ? 'ADMIN' : 'USER'}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{userProfile?.role || 'ADMIN'}</div>
                 </div>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--teal)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>
                   {userProfile?.name?.charAt(0)}
@@ -1067,12 +1060,14 @@ export default function AdminDashboardPage() {
                           >
                             USERS
                           </button>
-                          <button
-                            onClick={() => setActiveSubTab('policies')}
-                            style={{ padding: '6px 16px', borderRadius: 8, background: activeSubTab === 'policies' ? 'var(--teal)' : 'transparent', color: activeSubTab === 'policies' ? 'var(--text-on-primary)' : 'var(--teal)', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
-                          >
-                            GROUP POLICY
-                          </button>
+                          {userProfile?.role === 'OWNER' && (
+                            <button
+                              onClick={() => setActiveSubTab('policies')}
+                              style={{ padding: '6px 16px', borderRadius: 8, background: activeSubTab === 'policies' ? 'var(--teal)' : 'transparent', color: activeSubTab === 'policies' ? 'var(--text-on-primary)' : 'var(--teal)', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
+                            >
+                              GROUP POLICY
+                            </button>
+                          )}
                         </div>
                       )}
                       {activeTab === 'team' && (
@@ -1112,7 +1107,7 @@ export default function AdminDashboardPage() {
                           />
                         </div>
                       )}
-                      {activeTab === 'bim-reviews' && can('tasks', 'edit') && (
+                      {activeTab === 'bim-reviews' && can('bimReviews', 'edit') && (
                         <>
                           <input 
                             type="file" 
@@ -1181,16 +1176,16 @@ export default function AdminDashboardPage() {
                               </>
                             ) : (
                               <>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+                                <th style={{ textAlign: 'center', padding: activeTab === 'users' ? '12px 16px' : '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
                                   {activeTab === 'users' ? 'Staff Identity' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Project Personnel' : 'Task Category') : 'Task Definition / Asset'}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+                                <th style={{ textAlign: 'center', padding: activeTab === 'users' ? '12px 16px' : '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
                                   {activeTab === 'users' ? 'Protocol Clearance' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Functional Category' : 'Abbreviation') : 'Task Category'}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+                                <th style={{ textAlign: 'center', padding: activeTab === 'users' ? '12px 16px' : '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
                                   {activeTab === 'users' ? 'Admin Access' : activeTab === 'tasks' ? 'Submitter' : activeTab === 'team' && teamActiveSubTab === 'personnel' ? 'Email Interface' : 'Action Hub'}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+                                <th style={{ textAlign: 'center', padding: activeTab === 'users' ? '12px 16px' : '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
                                   {activeTab === 'users' ? 'Feature Modules' : activeTab === 'tasks' ? 'Submission Date' : 'Control'}
                                 </th>
                               </>
@@ -1249,7 +1244,14 @@ export default function AdminDashboardPage() {
                             </motion.tr>
                           );
                         })}
-                        {activeTab === 'tasks' && !tasksLoading && tasksSnapshot?.docs.length === 0 && (
+                        {activeTab === 'tasks' && tasksError && (
+                          <tr>
+                            <td colSpan={5} style={{ padding: '60px 40px', textAlign: 'center', color: 'var(--status-error)' }}>
+                              <p>Error querying tasks: {tasksError.message}</p>
+                            </td>
+                          </tr>
+                        )}
+                        {activeTab === 'tasks' && (!tasksSnapshot || tasksSnapshot.docs.length === 0) && !tasksLoading && !tasksError && (
                           <tr>
                             <td colSpan={5} style={{ padding: '60px 40px', textAlign: 'center' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -1258,6 +1260,7 @@ export default function AdminDashboardPage() {
                                 </div>
                                 <div>
                                   <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>No current data</p>
+                                  {!isAuthorized && <p style={{ fontSize: 12, color: 'var(--status-error)' }}>Authorization rejected by client state.</p>}
                                 </div>
                               </div>
                             </td>
@@ -1480,7 +1483,7 @@ export default function AdminDashboardPage() {
                               style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'transparent', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
                               onClick={() => handleEditRecord(userRec)}
                             >
-                              <td style={{ textAlign: 'center', padding: '32px 0' }} onClick={(e) => e.stopPropagation()}>
+                              <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
@@ -1488,39 +1491,49 @@ export default function AdminDashboardPage() {
                                   style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
                                 />
                               </td>
-                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                                <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text-primary)', letterSpacing: '0.01em', fontFamily: 'var(--font-heading)' }}>{userRec.name || 'Unknown Subject'}</div>
-                                <div style={{ fontSize: 14, color: 'var(--text-dim)', marginTop: 8, fontWeight: 500 }}>{userRec.email}</div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 12 }}>
-                                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: userRec.isVerified ? 'var(--status-success)' : 'var(--status-warning)' }} />
-                                  <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{userRec.isVerified ? 'Access Verified' : 'Handshake Pending'}</span>
+                              <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)', letterSpacing: '0.01em', fontFamily: 'var(--font-heading)' }}>{userRec.name || 'Unknown Subject'}</div>
+                                <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 4, fontWeight: 500 }}>{userRec.email}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 6 }}>
+                                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: userRec.isVerified ? 'var(--status-success)' : 'var(--status-warning)' }} />
+                                  <span style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{userRec.isVerified ? 'Access Verified' : 'Handshake Pending'}</span>
                                 </div>
                               </td>
-                              <td style={{ padding: '16px 32px', textAlign: 'center' }}>
-                                <span style={{ fontSize: 10, background: userRec.isApproved ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)', color: userRec.isApproved ? 'var(--status-success)' : 'var(--status-error)', padding: '6px 12px', borderRadius: 8, fontWeight: 900, letterSpacing: '0.08em' }}>
-                                  {userRec.isApproved ? 'APPROVED' : 'PENDING'}
-                                </span>
-                              </td>
-                              <td style={{ padding: '16px 32px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                                  <Shield size={14} color={userRec.isAdmin ? 'var(--teal)' : 'var(--text-dim)'} />
-                                  <span style={{ fontSize: 12, color: userRec.isAdmin ? 'var(--teal)' : 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.02em' }}>{userRec.isAdmin ? 'ADMIN' : 'USER'}</span>
+                              <td style={{ padding: '8px 16px', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                  <span style={{ fontSize: 10, background: userRec.isApproved ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: userRec.isApproved ? 'var(--status-success)' : 'var(--status-error)', border: `1px solid ${userRec.isApproved ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`, padding: '6px 14px', borderRadius: 12, fontWeight: 900, letterSpacing: '0.1em', display: 'flex', alignItems: 'center' }}>
+                                    {userRec.isApproved ? 'APPROVED' : 'PENDING'}
+                                  </span>
                                 </div>
                               </td>
-                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                              <td style={{ padding: '8px 16px', textAlign: 'center' }}>
+                                {(() => {
+                                  const roleLabel = (userRec.role === 'OWNER' || userRec.email?.toLowerCase() === 'hesham.habib@insiteinternational.com') ? 'OWNER' : (userRec.isAdmin ? 'ADMIN' : 'USER');
+                                  const roleColor = roleLabel === 'OWNER' ? '#d4af37' : roleLabel === 'ADMIN' ? 'var(--teal)' : 'var(--text-secondary)';
+                                  const roleBg = roleLabel === 'OWNER' ? 'rgba(212, 175, 55, 0.1)' : roleLabel === 'ADMIN' ? 'rgba(0, 63, 73, 0.08)' : 'transparent';
+                                  
+                                  return (
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: roleBg, padding: '6px 12px', borderRadius: 8, border: roleBg !== 'transparent' ? `1px solid ${roleColor}` : '1px solid transparent' }}>
+                                      <Shield size={14} color={roleColor} style={{ filter: roleLabel === 'OWNER' ? 'drop-shadow(0 0 4px rgba(212,175,55,0.4))' : 'none' }} />
+                                      <span style={{ fontSize: 11, color: roleColor, fontWeight: 900, letterSpacing: '0.05em' }}>{roleLabel}</span>
+                                    </div>
+                                  );
+                                })()}
+                              </td>
+                              <td style={{ padding: '8px 16px', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', alignItems: 'center' }}>
                                   {userRec.access?.deliverablesRegistry && (
-                                    <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', background: 'var(--secondary)', padding: '2px 6px', borderRadius: 4 }}>DELIVERABLES</span>
+                                    <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', background: 'var(--cotton)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: 6, letterSpacing: '0.05em', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>DELIVERABLES</span>
                                   )}
                                   {userRec.access?.bimReviews && (
-                                    <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--accent)', background: 'var(--border)', padding: '2px 6px', borderRadius: 4 }}>BIM REVIEWS</span>
+                                    <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--accent)', background: 'var(--cotton)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: 6, letterSpacing: '0.05em', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>BIM REVIEWS</span>
                                   )}
                                   {!userRec.access?.deliverablesRegistry && !userRec.access?.bimReviews && (
-                                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 700 }}>NO MODULES</span>
+                                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 700, fontStyle: 'italic' }}>None Assigned</span>
                                   )}
                                 </div>
                               </td>
-                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
+                              <td style={{ padding: '8px 16px', textAlign: 'center' }}>
                                 <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
                                   <MoreVertical size={18} />
                                 </button>
@@ -1543,7 +1556,7 @@ export default function AdminDashboardPage() {
                           </tr>
                         )}
 
-                        {activeTab === 'users' && activeSubTab === 'policies' && (
+                        {activeTab === 'users' && activeSubTab === 'policies' && userProfile?.role === 'OWNER' && (
                           <tr style={{ background: 'transparent' }}>
                             <td colSpan={5} style={{ padding: '0' }}>
                               <GroupPolicyList onEditPolicy={(p: any) => setSelectedPolicy(p)} />
@@ -2617,10 +2630,7 @@ export default function AdminDashboardPage() {
             </AnimatePresence>
           </main>
 
-          <div style={{ position: 'fixed', bottom: 24, right: 32, display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,0,0,0.6)', padding: '8px 16px', borderRadius: 12, border: '1px solid var(--section-bg)', backdropFilter: 'blur(10px)' }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }} className="animate-pulse" />
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>Live Edits</span>
-          </div>
+
 
           <AnimatePresence>
             {isModalOpen && activeTab === 'tasks' && (
@@ -2718,6 +2728,7 @@ export default function AdminDashboardPage() {
             )}
             {broadcastToDelete && (
               <EliteConfirmModal
+                key="broadcast-delete"
                 isOpen={!!broadcastToDelete}
                 onClose={() => setBroadcastToDelete(null)}
                 onConfirm={async () => {
@@ -2733,6 +2744,7 @@ export default function AdminDashboardPage() {
             )}
             {isModalOpen && activeTab === 'bim-reviews' && (
               <BIMReviewEditorModal
+                key="bim-review-editor"
                 isOpen={isModalOpen}
                 onClose={() => { setIsModalOpen(false); setSelectedBimReview(null); }}
                 review={selectedBimReview}
@@ -2742,6 +2754,7 @@ export default function AdminDashboardPage() {
             )}
 
       <BIMImportConfirmModal
+        key="bim-import-confirm"
         isOpen={bimImportConfirm.isOpen}
         onClose={() => setBimImportConfirm({ isOpen: false, records: [] })}
         onConfirm={handleImportConfirm}

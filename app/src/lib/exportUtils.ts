@@ -731,19 +731,20 @@ export async function exportToPDF(
 export function getBimExportColumns(metadataExcluded: string[], format: 'excel' | 'pdf' = 'excel') {
   const baseColumns = [
     { id: 'project', excelLabel: 'Project', pdfLabel: 'PROJECT', width: 30 },
+    { id: 'precinct', excelLabel: 'Precinct', pdfLabel: 'PRECINCT', width: 20 },
     { id: 'stakeholder', excelLabel: 'Stakeholder', pdfLabel: 'STAKEHOLDER', width: 25 },
     { id: 'reviewNumber', excelLabel: 'Review No.', pdfLabel: 'REV NO', width: 15 },
     { id: 'submissionDescription', excelLabel: 'Submission Description', pdfLabel: 'DESCRIPTION', width: 50 },
     { id: 'designStage', excelLabel: 'Design Stage', pdfLabel: 'STAGE', width: 20 },
     { id: 'submissionDate', excelLabel: 'Submission Date', pdfLabel: 'SUBMISSION DATE', width: 20 },
     { id: 'submissionCategory', excelLabel: 'Category', pdfLabel: 'CATEGORY', width: 25 },
-    { id: 'onAcc', excelLabel: 'On ACC', pdfLabel: 'ACC', width: 15 },
+    { id: 'onAcc', excelLabel: 'ACC Submission Status', pdfLabel: 'ACC STATUS', width: 20 },
     { id: 'insiteReviewer', excelLabel: 'InSite Reviewer', pdfLabel: 'REVIEWER', width: 25 },
     { id: 'insiteReviewDueDate', excelLabel: 'Due Date', pdfLabel: 'DUE DATE', width: 20 },
     { id: 'insiteBimReviewStatus', excelLabel: 'InSite Status', pdfLabel: 'INSITE STATUS', width: 20 },
     { id: 'modonHillFinalReviewStatus', excelLabel: 'Modon/Hill Status', pdfLabel: 'MODON STATUS', width: 20 },
     { id: 'comments', excelLabel: 'Comments', pdfLabel: 'COMMENTS', width: 40 },
-    { id: 'insiteReviewOutputUrl', excelLabel: 'Output Link', pdfLabel: 'LINK', width: 20 }
+    { id: 'insiteReviewOutputUrl', excelLabel: 'Review Report Links', pdfLabel: 'REPORT LINKS', width: 25 }
   ];
 
   return baseColumns.map((col, idx) => ({
@@ -785,14 +786,18 @@ export async function exportBimToExcel(
   reviews: BIMReview[],
   metadata: ProjectMetadata | undefined,
   dateRangeText: string | undefined,
-  perspective: 'table' | 'dashboard' | 'both' = 'table'
+  perspective: 'table' | 'dashboard' | 'both' = 'table',
+  selectedColumns?: string[]
 ) {
   const workbook = new ExcelJS.Workbook();
   const headerColors = { bg: metadata?.reportExcelHeaderColor || '0A0A0F', text: metadata?.reportExcelHeaderTextColor || 'FFFFFF' };
 
   const addRegistrySheet = (name: string) => {
     const sheet = workbook.addWorksheet(name);
-    const cols = getBimExportColumns([], 'excel');
+    let cols = getBimExportColumns([], 'excel');
+    if (selectedColumns && selectedColumns.length > 0) {
+      cols = cols.filter(c => selectedColumns.includes(c.id));
+    }
     
     const headers = cols.map(c => c.label);
     const hRow = sheet.addRow(headers);
@@ -812,9 +817,10 @@ export async function exportBimToExcel(
       const linkIdx = cols.findIndex(c => c.id === 'insiteReviewOutputUrl');
       if (linkIdx !== -1 && r.insiteReviewOutputUrl) {
         const cell = row.getCell(linkIdx + 1);
-        cell.value = { text: 'View Output', hyperlink: r.insiteReviewOutputUrl };
+        cell.value = { text: 'View Report', hyperlink: r.insiteReviewOutputUrl };
         cell.font = { color: { argb: 'FF0563C1' }, underline: true };
       }
+
     });
 
     sheet.columns.forEach(col => {
@@ -855,7 +861,8 @@ export async function exportBimToPDF(
   reviews: BIMReview[],
   metadata: ProjectMetadata | undefined,
   dateRangeText: string | undefined,
-  perspective: 'table' | 'dashboard' | 'both' = 'table'
+  perspective: 'table' | 'dashboard' | 'both' = 'table',
+  selectedColumns?: string[]
 ) {
   const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -880,7 +887,10 @@ export async function exportBimToPDF(
 
   const drawTable = () => {
     doc.addPage();
-    const cols = getBimExportColumns([], 'pdf');
+    let cols = getBimExportColumns([], 'pdf');
+    if (selectedColumns && selectedColumns.length > 0) {
+      cols = cols.filter(c => selectedColumns.includes(c.id));
+    }
     const head = [cols.map(c => c.label)];
     const body = reviews.map(r => cols.map(c => {
       const val = (r as any)[c.id];
@@ -905,20 +915,22 @@ export async function exportBimToPDF(
         overflow: 'linebreak'
       },
       columnStyles: {
-        0: { cellWidth: 20 }, // PROJECT
-        1: { cellWidth: 18 }, // STAKEHOLDER
-        2: { cellWidth: 10 }, // REV NO
-        3: { cellWidth: 45, halign: 'left' }, // DESCRIPTION
-        4: { cellWidth: 12 }, // STAGE
-        5: { cellWidth: 20 }, // SUBMISSION DATE
-        6: { cellWidth: 20 }, // CATEGORY
-        7: { cellWidth: 10 }, // ACC
-        8: { cellWidth: 18 }, // REVIEWER
-        9: { cellWidth: 20 }, // DUE DATE
-        10: { cellWidth: 15 }, // INSITE STATUS
-        11: { cellWidth: 15 }, // MODON STATUS
-        12: { cellWidth: 40, halign: 'left' }, // COMMENTS
-        13: { cellWidth: 10 }  // LINK
+        0: { cellWidth: 15 }, // PROJECT
+        1: { cellWidth: 10 }, // PRECINCT
+        2: { cellWidth: 16 }, // STAKEHOLDER
+        3: { cellWidth: 10 }, // REV NO
+        4: { cellWidth: 35, halign: 'left' }, // DESCRIPTION
+        5: { cellWidth: 12 }, // STAGE
+        6: { cellWidth: 18 }, // SUBMISSION DATE
+        7: { cellWidth: 18 }, // CATEGORY
+        8: { cellWidth: 12 }, // ACC STATUS
+        9: { cellWidth: 16 }, // REVIEWER
+        10: { cellWidth: 18 }, // DUE DATE
+        11: { cellWidth: 14 }, // INSITE STATUS
+        12: { cellWidth: 14 }, // MODON STATUS
+        13: { cellWidth: 32, halign: 'left' }, // COMMENTS
+        14: { cellWidth: 10 },  // REPORT LINKS
+        15: { cellWidth: 10 }   // WORKFLOW LINK
       }
     });
   };

@@ -12,7 +12,7 @@ import {
   sendEmailVerification
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { waitForPendingWrites } from 'firebase/firestore';
+import { waitForPendingWrites, doc, updateDoc } from 'firebase/firestore';
 import { createUserProfile, getProjectMetadata, logRegistrationEvent } from '@/services/FirebaseService';
 import { useAuth } from '@/context/AuthContext';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
@@ -106,6 +106,18 @@ function LoginContent() {
 
   useEffect(() => {
     if (loading) return;
+
+    // ISOLATION PROTOCOL: Only react to auth state if dashboard_session is active
+    // OR if the user is actively submitting login credentials (isSubmitting).
+    // This prevents cross-contamination from the admin portal.
+    const hasDashboardSession = sessionStorage.getItem('dashboard_session') === 'active';
+    const hasAdminSessionOnly = sessionStorage.getItem('admin_session') === 'active' && !hasDashboardSession;
+    
+    // If the user signed in through admin portal only, don't auto-redirect here
+    if (user && hasAdminSessionOnly && !isSubmitting) {
+      return;
+    }
+
     if (user && authError) {
       setError(`Authentication error: ${authError}`);
       setIsSubmitting(false);
@@ -138,7 +150,7 @@ function LoginContent() {
       sessionStorage.setItem('dashboard_session', 'active');
       router.push('/dashboard');
     }
-  }, [user, userProfile, loading, authError, router]);
+  }, [user, userProfile, loading, authError, router, isSubmitting]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,8 +167,20 @@ function LoginContent() {
         setIsSubmitting(false);
         return;
       }
+      // Sign out any existing session to prevent cross-portal contamination
+      if (auth.currentUser) {
+        await auth.signOut();
+      }
       
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      try {
+        await updateDoc(doc(db, 'users', userCredential.user.uid), {
+          lastLoginAt: new Date().toISOString()
+        });
+      } catch (e) {
+        console.error('Failed to sync login timestamp:', e);
+      }
       
       // Sync verification state
       if (userCredential.user.emailVerified) {
@@ -167,6 +191,8 @@ function LoginContent() {
       // - If not verified → show modal with unverified state
       // - If verified but not approved → show modal with unapproved state  
       // - If verified AND approved → skip modal, redirect to dashboard
+      // Clear admin session flag to prevent bleed-through
+      sessionStorage.removeItem('admin_session');
       sessionStorage.setItem('dashboard_session', 'active');
     } catch (err: any) {
       setError(getFirebaseErrorMessage(err));

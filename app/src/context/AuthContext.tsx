@@ -79,6 +79,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               await updateDoc(userDocRef, { isVerified: true });
             }
 
+            // 4. Force override identity for Primary Owner
+            if (data.email?.toLowerCase() === 'hesham.habib@insiteinternational.com' && (data.role !== 'OWNER' || !data.access?.deliverablesRegistry || !data.access?.bimReviews || !data.isAdmin)) {
+              await updateDoc(userDocRef, {
+                role: 'OWNER',
+                isAdmin: true,
+                isApproved: true,
+                access: {
+                  deliverablesRegistry: true,
+                  bimReviews: true,
+                  ...data.access
+                }
+              });
+            }
+
             setUserProfile(data as UserProfile);
           } else {
             // Document doesn't exist yet - this is expected during the first few seconds of registration.

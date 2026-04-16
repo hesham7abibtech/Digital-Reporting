@@ -15,11 +15,14 @@ interface GroupPolicyEditorProps {
 }
 
 const MODULES = [
-  { id: 'tasks', label: 'Tasks Matrix', description: 'Digital Deliverables & Milestone tracking' },
+  { id: 'tasks', label: 'Deliverable Matrix', description: 'Digital Deliverables & Milestone tracking' },
+  { id: 'bimReviews', label: 'BIM Review Matrix', description: 'Cross-project BIM submission reviews' },
+  { id: 'homePage', label: 'Home Page CMS', description: 'Manage home page content and display' },
   { id: 'team', label: 'Team Orchestration', description: 'Personnel management & access' },
   { id: 'branding', label: 'Identity Designer', description: 'Global aesthetics & metadata' },
   { id: 'registry', label: 'Asset Registry', description: 'Digital resource management' },
   { id: 'broadcast', label: 'Communications Hub', description: 'Real-time alert dispatch & transmission' },
+  { id: 'reports', label: 'Report Configuration', description: 'Manage report settings and parameters' },
   { id: 'users', label: 'Access Control', description: 'User account security' },
   { id: 'policies', label: 'Group Policy', description: 'Permission infrastructure' },
 ];
@@ -166,15 +169,15 @@ export default function GroupPolicyEditor({ policy, isOpen, onClose }: GroupPoli
             </button>
           </div>
 
-          <div style={{ background: 'var(--section-bg)', borderRadius: 28, border: '1px solid var(--border)', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--section-bg)', borderRadius: 28, border: '1px solid var(--border)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
+              <thead style={{ position: 'sticky', top: -32, zIndex: 10 }}>
                 <tr style={{ background: 'var(--section-bg)', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ textAlign: 'left', padding: '16px 24px', fontSize: 13, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Module Spectrum</th>
+                  <th style={{ textAlign: 'left', padding: '16px 24px', fontSize: 13, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', borderTopLeftRadius: 28 }}>Module Spectrum</th>
                    {ACTIONS.map(action => (
                     <th key={action.id} style={{ textAlign: 'center', padding: '16px 8px', fontSize: 12, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>{action.label}</th>
                   ))}
-                  <th style={{ textAlign: 'center', padding: '16px 24px', fontSize: 12, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Grant All</th>
+                  <th style={{ textAlign: 'center', padding: '16px 24px', fontSize: 12, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', borderTopRightRadius: 28 }}>Grant All</th>
                 </tr>
               </thead>
               <tbody>

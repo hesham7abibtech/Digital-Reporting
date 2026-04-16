@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Trash2, Mail, Shield, User, Info, Check, AlertCircle, ShieldCheck, CheckCircle2, UserCheck, Layout, BarChart2 } from 'lucide-react';
+import { X, Save, Trash2, Mail, Shield, User, Info, Check, AlertCircle, ShieldCheck, CheckCircle2, UserCheck, Layout, BarChart2, Briefcase, Calendar, Clock } from 'lucide-react';
 import { updateUserProfile, deleteUserProfile } from '@/services/FirebaseService';
 import { useAuth } from '@/context/AuthContext';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
@@ -46,6 +46,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
     if (userRecord) {
       setFormData({
         ...userRecord,
+        department: userRecord.department || '',
         isVerified: userRecord.isVerified || false,
         isApproved: userRecord.isApproved || false,
         isAdmin: userRecord.isAdmin || userRecord.role === 'ADMIN' || userRecord.role === 'OWNER',
@@ -60,6 +61,12 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
 
   const handleSave = async () => {
     if (!userRecord) return;
+    
+    if (formData.isAdmin && !formData.policyId) {
+      setErrorMsg("CLEARANCE OBLIGATION: Elevated Admin accounts must be strictly bound to a Group Policy.");
+      return;
+    }
+
     setIsSaving(true);
     setErrorMsg(null);
     try {
@@ -67,6 +74,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
         role: userRecord.role === 'OWNER' ? 'OWNER' : (formData.isAdmin ? 'ADMIN' : 'TEAM_MATE'),
         status: formData.status,
         name: formData.name,
+        department: formData.department,
         isVerified: formData.isVerified,
         isApproved: formData.isApproved,
         isAdmin: formData.isAdmin,
@@ -184,6 +192,36 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
               </div>
             </div>
 
+            <div>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Job Title / Designation</label>
+              <div style={{ position: 'relative' }}>
+                <Briefcase size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--teal)', opacity: 0.6 }} />
+                <input 
+                  type="text" 
+                  value={formData.department ?? ''} 
+                  onChange={e => setFormData({ ...formData, department: e.target.value })} 
+                  style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: 16, background: 'var(--section-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 14, outline: 'none', fontWeight: 600 }} 
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, padding: '12px 16px', borderRadius: 16, background: 'var(--section-bg)', border: '1px solid var(--border)' }}>
+               <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <Calendar size={10} color="var(--text-dim)" />
+                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Profile Initialized</span>
+                  </div>
+                  <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', fontWeight: 800 }}>{userRecord.createdAt ? new Date(userRecord.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</span>
+               </div>
+               <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <Clock size={10} color="var(--text-dim)" />
+                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Last Authentication</span>
+                  </div>
+                  <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', fontWeight: 800 }}>{userRecord.lastLoginAt ? new Date(userRecord.lastLoginAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</span>
+               </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
               <button
                 onClick={() => toggleFlag('isVerified')}
@@ -291,28 +329,36 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
                   exit={{ opacity: 0, y: 10 }}
                   style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
                 >
-                  <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Assign Group Policy</label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 200, overflowY: 'auto', paddingRight: 4 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                     Strict Group Policy Assignment <span style={{ color: 'var(--status-error)' }}>* REQUIRED</span>
+                  </label>
+                  <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -6, marginBottom: 4, lineHeight: 1.5, fontWeight: 500 }}>
+                     Administrative accounts cannot elevate without an active policy mapping. Select a clearance tier below.
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 250, overflowY: 'auto', paddingRight: 4, padding: 4 }}>
                     {policies.map((p: any) => (
                       <button
                         key={p.id}
                         onClick={() => setFormData({ ...formData, policyId: p.id })}
                         style={{
-                          padding: '12px 16px', borderRadius: 12, background: formData.policyId === p.id ? 'rgba(0, 63, 73, 0.08)' : 'var(--section-bg)',
-                          border: `1px solid ${formData.policyId === p.id ? 'var(--teal)' : 'var(--border)'}`,
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 200ms'
+                          padding: '16px 20px', borderRadius: 16, background: formData.policyId === p.id ? 'var(--teal)' : 'var(--section-bg)',
+                          border: `2px solid ${formData.policyId === p.id ? 'var(--teal)' : 'var(--border)'}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 200ms',
+                          boxShadow: formData.policyId === p.id ? '0 10px 30px rgba(0, 63, 73, 0.2)' : 'none'
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <Shield size={14} color="var(--text-dim)" opacity={0.6} />
-                          <div style={{ fontVariant: 'small-caps', fontWeight: 900, fontSize: 12, color: formData.policyId === p.id ? 'var(--teal)' : 'var(--text-primary)' }}>{p.name}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <Shield size={18} color={formData.policyId === p.id ? 'var(--cotton)' : 'var(--text-dim)'} opacity={formData.policyId === p.id ? 1 : 0.6} />
+                          <div style={{ fontVariant: 'small-caps', fontWeight: 900, fontSize: 14, color: formData.policyId === p.id ? 'var(--cotton)' : 'var(--text-primary)', letterSpacing: '0.05em' }}>{p.name}</div>
                         </div>
-                        {formData.policyId === p.id && <Check size={14} color="var(--teal)" />}
+                        {formData.policyId === p.id && <Check size={18} color="var(--cotton)" strokeWidth={3} />}
                       </button>
                     ))}
                     {policies.length === 0 && (
-                      <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', borderRadius: 16 }}>
-                        <p style={{ fontSize: 11, color: 'var(--status-error)', margin: 0, fontWeight: 600 }}>No policies established. Admins must have an associated policy.</p>
+                      <div style={{ padding: '20px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 16 }}>
+                        <p style={{ fontSize: 12, color: 'var(--status-error)', margin: 0, fontWeight: 700, lineHeight: 1.5 }}>
+                          FATAL ERROR: No policies established in the registry. You must forge a policy before elevating any accounts.
+                        </p>
                       </div>
                     )}
                   </div>

@@ -16,7 +16,7 @@ import { getBimExportColumns } from '@/lib/exportUtils';
 interface BimExportConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (type: 'pdf' | 'excel', perspective: 'table' | 'dashboard' | 'both', onProgress: (p: number) => void) => Promise<{ blob: Blob, filename: string }>;
+  onConfirm: (type: 'pdf' | 'excel', perspective: 'table' | 'dashboard' | 'both', selectedColumns: string[], onProgress: (p: number) => void) => Promise<{ blob: Blob, filename: string }>;
   format: 'pdf' | 'excel';
   bimReviews: BIMReview[];
   projectMetadata: ProjectMetadata | undefined;
@@ -39,6 +39,10 @@ interface BimExportConfirmationModalProps {
   setFilterReviewer: (val: string[]) => void;
   availableReviewers: string[];
 
+  filterPrecinct: string[];
+  setFilterPrecinct: (val: string[]) => void;
+  availablePrecincts: string[];
+
   // Global mode and dates (for consistent range display)
   filterMode: 'monthly' | 'custom' | 'all';
   selectedYear: number;
@@ -51,18 +55,19 @@ export default function BimExportConfirmationModal({
   filterStatus, setFilterStatus, availableStatuses,
   filterStakeholder, setFilterStakeholder, availableStakeholders,
   filterReviewer, setFilterReviewer, availableReviewers,
+  filterPrecinct, setFilterPrecinct, availablePrecincts,
   filterMode, selectedYear, selectedMonth
 }: BimExportConfirmationModalProps) {
   
   const [status, setStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle');
   const [progress, setProgress] = useState(0);
   const [generatedFile, setGeneratedFile] = useState<{ url: string, name: string } | null>(null);
-  const [exportCols, setExportCols] = useState<{label: string}[]>([]);
+  const [exportCols, setExportCols] = useState<{id: string, label: string, isSelected: boolean}[]>([]);
   const [perspective, setPerspective] = useState<'table' | 'dashboard' | 'both'>('table');
   
   useEffect(() => {
     if (isOpen) {
-      setExportCols(getBimExportColumns([], format));
+      setExportCols(getBimExportColumns([], format).map(c => ({ id: c.id, label: c.label, isSelected: true })));
     }
   }, [isOpen, format]);
 
@@ -87,7 +92,8 @@ export default function BimExportConfirmationModal({
     setStatus('generating');
     setProgress(0);
     try {
-      const result = await onConfirm(format, perspective, (p) => setProgress(p));
+      const selectedColIds = exportCols.filter(c => c.isSelected).map(c => c.id);
+      const result = await onConfirm(format, perspective, selectedColIds, (p) => setProgress(p));
       const url = URL.createObjectURL(result.blob);
       setGeneratedFile({ url, name: result.filename });
       setStatus('success');
@@ -229,6 +235,7 @@ export default function BimExportConfirmationModal({
                     <EliteDropdown value={filterStage} options={availableStages.map(s => ({ label: s, value: s }))} onChange={(v) => handleHandleToggle(filterStage, setFilterStage, v, 'All Stages')} menuLabel="Technical Stages" isMulti allLabel="All Stages" fullWidth />
                     <EliteDropdown value={filterStakeholder} options={availableStakeholders.map(s => ({ label: s, value: s }))} onChange={(v) => handleHandleToggle(filterStakeholder, setFilterStakeholder, v, 'All Stakeholders')} menuLabel="Stakeholders" isMulti allLabel="All Stakeholders" fullWidth />
                     <EliteDropdown value={filterReviewer} options={availableReviewers.map(s => ({ label: s, value: s }))} onChange={(v) => handleHandleToggle(filterReviewer, setFilterReviewer, v, 'All Reviewers')} menuLabel="Lead Reviewers" isMulti allLabel="All Reviewers" fullWidth />
+                    <EliteDropdown value={filterPrecinct} options={availablePrecincts.map(s => ({ label: s, value: s }))} onChange={(v) => handleHandleToggle(filterPrecinct, setFilterPrecinct, v, 'All Precincts')} menuLabel="Precincts" isMulti allLabel="All Precincts" fullWidth />
                   </div>
                 </section>
               </div>
@@ -259,14 +266,20 @@ export default function BimExportConfirmationModal({
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                       <Table size={14} color="#d0ab82" />
-                      <span style={{ fontSize: 10, fontWeight: 950, color: 'rgba(0, 63, 73, 0.6)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Technical Column Schema (14 Fields)</span>
+                      <span style={{ fontSize: 10, fontWeight: 950, color: 'rgba(0, 63, 73, 0.6)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Technical Column Schema ({exportCols.filter(c => c.isSelected).length} Fields Selected)</span>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, padding: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, padding: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)', maxHeight: 200, overflowY: 'auto' }}>
                       {exportCols.map((col, idx) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'rgba(255, 255, 255, 0.7)', borderRadius: 10, border: '1px solid rgba(0, 63, 73, 0.12)', boxShadow: '0 2px 8px rgba(0,63,73,0.03)' }}>
-                          <Database size={12} color="#003f49" />
-                          <span style={{ fontSize: 11, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.02em' }}>{col.label}</span>
-                        </div>
+                        <button 
+                          key={idx} 
+                          onClick={() => setExportCols(cols => cols.map(c => c.id === col.id ? { ...c, isSelected: !c.isSelected } : c))}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: col.isSelected ? 'rgba(0, 63, 73, 0.04)' : 'rgba(255, 255, 255, 0.7)', borderRadius: 10, border: `1px solid ${col.isSelected ? '#d0ab82' : 'rgba(0, 63, 73, 0.12)'}`, boxShadow: '0 2px 8px rgba(0,63,73,0.03)', cursor: 'pointer', transition: 'all 200ms', opacity: col.isSelected ? 1 : 0.5, textAlign: 'left' }}
+                        >
+                          <div style={{ width: 14, height: 14, flexShrink: 0, borderRadius: 4, border: `1.5px solid ${col.isSelected ? '#d0ab82' : 'var(--text-muted)'}`, background: col.isSelected ? '#d0ab82' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {col.isSelected && <Check size={10} color="#FFFFFF" strokeWidth={4} />}
+                          </div>
+                          <span style={{ fontSize: 11, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.02em', textDecoration: col.isSelected ? 'none' : 'line-through' }}>{col.label}</span>
+                        </button>
                       ))}
                     </div>
                   </div>

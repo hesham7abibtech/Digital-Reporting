@@ -38,6 +38,9 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
   const { showToast } = useToast();
 
   useEffect(() => {
+    // Only subscribe to broadcasts if the user is explicitly approved or an admin
+    if (!userProfile?.isApproved && !userProfile?.isAdmin) return;
+
     const q = query(collection(db, 'broadcasts'), orderBy('timestamp', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot: any) => {
@@ -72,10 +75,14 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
       }
       
       setUnreadCount(newCount);
+    }, (error: any) => {
+      if (error?.code !== 'permission-denied') {
+        console.error("Firebase Snapshot Error (Broadcasts):", error);
+      }
     });
 
     return () => unsubscribe();
-  }, [showToast, userProfile?.uid]);
+  }, [showToast, userProfile?.uid, userProfile?.isApproved, userProfile?.isAdmin]);
 
   // Optimistic UI: Hide badge/glow if the panel is currently open
   const effectiveUnreadCount = isNotificationOpen ? 0 : unreadCount;
