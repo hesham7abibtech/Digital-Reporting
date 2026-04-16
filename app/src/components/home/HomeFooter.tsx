@@ -32,18 +32,18 @@ export default function HomeFooter() {
             <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--sunlit-rock)', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 4 }}>
               Contact
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <a href="https://www.google.com/maps/search/Ras+El+Hekma,+North+Coast,+Egypt" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', transition: 'opacity 200ms' }} className="hover:opacity-80">
               <MapPin size={14} color="rgba(249, 248, 242, 0.4)" />
-              <span style={{ fontSize: 13, color: 'rgba(249, 248, 242, 0.6)' }}>North Coast, Egypt</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 13, color: 'rgba(249, 248, 242, 0.6)', borderBottom: '1px solid transparent', transition: 'border-color 200ms' }} className="hover:!border-b-[rgba(249,248,242,0.3)]">North Coast, Egypt</span>
+            </a>
+            <a href="mailto:Hesham.habib@insiteinternational.com" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', transition: 'opacity 200ms' }} className="hover:opacity-80">
               <Mail size={14} color="rgba(249, 248, 242, 0.4)" />
               <span style={{ fontSize: 13, color: 'rgba(249, 248, 242, 0.6)' }}>Hesham.habib@insiteinternational.com</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            </a>
+            <a href="https://www.insiteinternational.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', transition: 'opacity 200ms' }} className="hover:opacity-80">
               <Globe size={14} color="rgba(249, 248, 242, 0.4)" />
               <span style={{ fontSize: 13, color: 'rgba(249, 248, 242, 0.6)' }}>insiteinternational.com</span>
-            </div>
+            </a>
           </div>
 
           {/* System */}

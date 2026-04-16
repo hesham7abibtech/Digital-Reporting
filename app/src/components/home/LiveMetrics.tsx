@@ -15,12 +15,14 @@ const lucideIconMap: Record<string, any> = {
 };
 
 export default function LiveMetrics({ items }: LiveMetricsProps) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '-80px' });
+  const sectionRef = useRef(null);
+  const gridRef = useRef(null);
+  const sectionInView = useInView(sectionRef, { once: true, margin: '-40px' });
+  const gridInView = useInView(gridRef, { once: true, margin: '0px' });
   const visibleItems = items.filter(m => m.isVisible);
 
   return (
-    <section ref={ref} style={{
+    <section ref={sectionRef} style={{
       padding: '80px 24px',
       background: 'var(--teal)',
       position: 'relative', overflow: 'hidden',
@@ -33,7 +35,7 @@ export default function LiveMetrics({ items }: LiveMetricsProps) {
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
+          animate={sectionInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
           style={{ textAlign: 'center', marginBottom: 50 }}
         >
@@ -50,7 +52,7 @@ export default function LiveMetrics({ items }: LiveMetricsProps) {
         </motion.div>
 
         {/* Metrics Grid */}
-        <div style={{
+        <div ref={gridRef} style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${Math.min(visibleItems.length, 4)}, 1fr)`,
           gap: 20,
@@ -61,7 +63,8 @@ export default function LiveMetrics({ items }: LiveMetricsProps) {
               <motion.div
                 key={metric.id}
                 initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
+                animate={gridInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+
                 transition={{ delay: 0.2 + i * 0.12, duration: 0.6, ease: 'easeOut' }}
                 style={{
                   padding: '32px 24px', borderRadius: 22, textAlign: 'center',
@@ -92,11 +95,7 @@ export default function LiveMetrics({ items }: LiveMetricsProps) {
                 </div>
 
                 <div style={{ fontSize: 'clamp(30px, 4vw, 42px)', fontWeight: 900, color: 'var(--cotton)', lineHeight: 1, marginBottom: 8, fontFamily: 'var(--font-mono)' }}>
-                  {inView ? (
-                    <AnimatedCounter value={metric.value} duration={2000} suffix={metric.suffix || ''} />
-                  ) : (
-                    '0'
-                  )}
+                  <AnimatedCounter value={metric.value} duration={2000} suffix={metric.suffix || ''} startCounting={gridInView} />
                 </div>
 
                 <p style={{ fontSize: 12, fontWeight: 700, color: 'rgba(249, 248, 242, 0.5)', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>

@@ -9,6 +9,7 @@ interface AnimatedCounterProps {
   suffix?: string;
   decimals?: number;
   className?: string;
+  startCounting?: boolean;
 }
 
 export default function AnimatedCounter({
@@ -18,13 +19,16 @@ export default function AnimatedCounter({
   suffix = '',
   decimals = 0,
   className = '',
+  startCounting = true,
 }: AnimatedCounterProps) {
   const [displayValue, setDisplayValue] = useState(0);
   const animationFrameRef = useRef<number>(0);
   const hasCompleted = useRef(false);
+  const hasStarted = useRef(false);
 
   const animate = useCallback(() => {
-    if (hasCompleted.current) return;
+    if (hasCompleted.current || hasStarted.current) return;
+    hasStarted.current = true;
 
     const startTime = performance.now();
 
@@ -47,18 +51,29 @@ export default function AnimatedCounter({
   }, [value, duration]);
 
   useEffect(() => {
-    // Start animation after a brief delay to ensure DOM is ready
+    // Only start when startCounting becomes true
+    if (!startCounting) return;
+    if (hasCompleted.current) return;
+
+    // Brief delay to let the card entrance animation begin first
     const timer = setTimeout(() => {
       animate();
-    }, 100);
+    }, 200);
 
     return () => {
       clearTimeout(timer);
       cancelAnimationFrame(animationFrameRef.current);
-      // Reset for strict mode re-mount
-      hasCompleted.current = false;
     };
-  }, [animate]);
+  }, [startCounting, animate]);
+
+  // Reset if value changes significantly (e.g., new data loaded)
+  useEffect(() => {
+    if (hasCompleted.current && startCounting) {
+      hasCompleted.current = false;
+      hasStarted.current = false;
+      animate();
+    }
+  }, [value]);
 
   return (
     <span className={`font-mono-data ${className}`}>
