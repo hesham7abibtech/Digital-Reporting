@@ -932,6 +932,9 @@ export default function Dashboard() {
                           filterCDE={filterCDE}
                           setFilterCDE={setFilterCDE}
                           availableCDEs={availableCDEs}
+                          filterPrecinct={filterPrecinct}
+                          setFilterPrecinct={setFilterPrecinct}
+                          availablePrecincts={availablePrecincts}
                           onTaskClick={handleTaskClick}
                         />
                       )}

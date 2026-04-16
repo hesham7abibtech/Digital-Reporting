@@ -410,6 +410,9 @@ interface AnalyticsDashboardViewProps {
   filterCDE?: string[];
   setFilterCDE?: (v: string[]) => void;
   availableCDEs?: string[];
+  filterPrecinct?: string[];
+  setFilterPrecinct?: (v: string[]) => void;
+  availablePrecincts?: string[];
   onTaskClick?: (task: Task) => void;
 }
 
@@ -427,6 +430,9 @@ export default function AnalyticsDashboardView({
   filterCDE = [],
   setFilterCDE,
   availableCDEs = [],
+  filterPrecinct = [],
+  setFilterPrecinct,
+  availablePrecincts = [],
   onTaskClick,
 }: AnalyticsDashboardViewProps) {
   const { formatDate } = useTimeZone();
@@ -686,9 +692,9 @@ export default function AnalyticsDashboardView({
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginLeft: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginLeft: 'auto', flex: 1, justifyContent: 'flex-end' }}>
             {setSearch && (
-              <div style={{ position: 'relative', flex: 1, maxWidth: 240 }}>
+              <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 320 }}>
                 <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#003f49' }} />
                 <input
                   type="text"
@@ -704,7 +710,7 @@ export default function AnalyticsDashboardView({
                     fontSize: 13,
                     outline: 'none',
                     transition: 'all 0.2s ease',
-                    width: 320,
+                    width: '100%',
                   }}
                   onFocus={(e) => {
                     e.currentTarget.style.borderColor = '#003f49';
@@ -751,6 +757,17 @@ export default function AnalyticsDashboardView({
               />
             )}
 
+            {setFilterPrecinct && (
+              <EliteDropdown
+                value={filterPrecinct}
+                options={availablePrecincts.map(p => ({ label: p, value: p }))}
+                onChange={setFilterPrecinct}
+                menuLabel="Precinct"
+                isMulti={true}
+                allLabel="All Precincts"
+              />
+            )}
+
             {(search || 
               (filterDept.length > 0 && !filterDept.includes('All Categories')) || 
               (filterType.length > 0 && !filterType.includes('All Types')) || 
@@ -762,6 +779,7 @@ export default function AnalyticsDashboardView({
                   if (setFilterDept) setFilterDept([]);
                   if (setFilterType) setFilterType([]);
                   if (setFilterCDE) setFilterCDE([]);
+                  if (setFilterPrecinct) setFilterPrecinct([]);
                 }}
                 style={{
                   padding: '10px 16px', borderRadius: 10,
