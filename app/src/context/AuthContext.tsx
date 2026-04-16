@@ -87,7 +87,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           setLoading(false);
         },
-        (error) => {
+        async (error: any) => {
+          const errorCode = error?.code || '';
+          
+          // Permission errors can be transient during token refresh or session init.
+          // Try refreshing the token before giving up.
+          if (errorCode === 'permission-denied' && user) {
+            try {
+              await user.getIdToken(true); // Force token refresh
+              console.warn('[AUTH] Token refreshed after permission challenge.');
+              // The onSnapshot listener will automatically retry after token refresh
+              return;
+            } catch (refreshErr) {
+              console.error('[AUTH] Token refresh failed:', refreshErr);
+            }
+          }
+          
           console.error('Profile sync error:', error);
           setAuthError(getFirebaseErrorMessage(error));
           setLoading(false);
