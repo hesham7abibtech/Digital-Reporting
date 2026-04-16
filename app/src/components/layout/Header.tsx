@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Bell, Search, Globe, ChevronDown, Loader2, X, Clock as ClockIcon } from 'lucide-react';
+import { Bell, Search, Globe, ChevronDown, Loader2, X, Clock as ClockIcon, User, Shield, Info, LogOut, Settings } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { notifications } from '@/lib/data';
 import { useTimeZone } from '@/context/TimeZoneContext';
@@ -11,6 +11,8 @@ import { useToast } from '@/components/shared/EliteToast';
 import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { ProjectMetadata } from '@/lib/types';
+import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
+import ProfileInfoModal from '@/components/shared/ProfileInfoModal';
 
 interface HeaderProps {
   onNotificationClick: () => void;
@@ -25,8 +27,11 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
   const [tzSearch, setTzSearch] = useState('');
   const [time, setTime] = useState('');
   const [date, setDate] = useState('');
-  const { userProfile } = useAuth();
+  const { userProfile, logout } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const lastBroadcastIdRef = useRef<string | null>(null);
   const [isReceiving, setIsReceiving] = useState(false);
@@ -388,29 +393,140 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
             }
           `}</style>
           
-          {/* Elite User Card Trigger - Hidden during Auth - Dynamic after Login */}
-          {isAdminPage && !isAuthPage && userProfile && (
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 12, 
-              padding: '4px 14px 4px 6px', 
-              background: 'rgba(249, 248, 242, 0.08)', 
-              border: '1px solid var(--accent)', 
-              borderRadius: 14,
-              cursor: 'pointer',
-            }}>
-              <div style={{ width: 32, height: 32, borderRadius: 10, overflow: 'hidden', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', fontWeight: 900, fontSize: 13 }}>
-                {userProfile.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'AD'}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-on-primary)', lineHeight: 1 }}>{userProfile.name}</span>
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 1 }}>{userProfile.role || 'ADMIN'}</span>
-              </div>
+          {/* Elite User Card Toggle & Dropdown */}
+          {userProfile && (
+            <div style={{ position: 'relative' }}>
+              <motion.button
+                whileHover={{ scale: 1.02, background: 'rgba(249, 248, 242, 0.12)' }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '5px 14px 5px 6px',
+                  background: 'rgba(249, 248, 242, 0.06)',
+                  border: `1px solid ${showUserMenu ? 'var(--accent)' : 'rgba(249, 248, 242, 0.15)'}`,
+                  borderRadius: 14,
+                  cursor: 'pointer',
+                  transition: 'border-color 300ms',
+                  outline: 'none',
+                  minWidth: 160,
+                }}
+              >
+                <div style={{
+                  width: 32, height: 32, borderRadius: 10, overflow: 'hidden',
+                  background: 'linear-gradient(135deg, var(--accent) 0%, #b8923f 100%)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--primary)', fontWeight: 900, fontSize: 13,
+                  boxShadow: '0 4px 12px rgba(208, 171, 130, 0.2)',
+                  position: 'relative'
+                }}>
+                  {userProfile.avatar ? (
+                    <img src={userProfile.avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    userProfile.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'AD'
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-on-primary)', lineHeight: 1.1 }}>{userProfile.name}</span>
+                  {pathname?.startsWith('/admin') && (
+                    <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(249, 248, 242, 0.5)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>{userProfile.isAdmin ? 'ADMIN' : 'STAFF'}</span>
+                  )}
+                </div>
+                <ChevronDown size={14} style={{ marginLeft: 'auto', opacity: 0.6, transform: showUserMenu ? 'rotate(180deg)' : 'none', transition: 'transform 300ms', color: 'var(--accent)' }} />
+              </motion.button>
+
+              <AnimatePresence>
+                {showUserMenu && (
+                  <>
+                    <div 
+                      onClick={() => setShowUserMenu(false)}
+                      style={{ position: 'fixed', inset: 0, zIndex: -1 }}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                      style={{
+                        position: 'absolute', top: '140%', right: 0, width: 220,
+                        background: '#c6e0e0', backdropFilter: 'blur(32px)',
+                        border: '1px solid rgba(0, 63, 73, 0.2)', borderRadius: 18,
+                        boxShadow: '0 25px 80px rgba(0,0,0,0.15), 0 0 50px rgba(0, 63, 73, 0.05)',
+                        overflow: 'hidden', zIndex: 6000
+                      }}
+                    >
+                      <div style={{ padding: '16px', background: 'rgba(0, 63, 73, 0.08)', borderBottom: '1px solid rgba(0, 63, 73, 0.15)' }}>
+                        <p style={{ fontSize: 10, fontWeight: 900, color: '#002a30', textTransform: 'uppercase', letterSpacing: '0.2em', margin: '0 0 4px' }}>Session Active</p>
+                        <p style={{ fontSize: 13, color: '#003f49', fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{userProfile.email}</p>
+                      </div>
+
+                      <div style={{ padding: 8 }}>
+                        {[
+                          { icon: <Info size={16} />, label: 'Profile Info', onClick: () => setIsProfileModalOpen(true) },
+                        ].map((item, i) => (
+                          <button
+                            key={i}
+                            onClick={() => { item.onClick(); setShowUserMenu(false); }}
+                            style={{
+                              width: '100%', padding: '12px 14px', borderRadius: 12,
+                              border: 'none', background: 'transparent',
+                              color: '#002a30', fontSize: 14, fontWeight: 700,
+                              display: 'flex', alignItems: 'center', gap: 12,
+                              cursor: 'pointer', transition: 'all 200ms ease'
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0, 63, 73, 0.1)'; e.currentTarget.style.color = '#000'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#002a30'; }}
+                          >
+                            <span style={{ color: 'var(--accent)' }}>{item.icon}</span>
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ padding: 8, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                        <button
+                          onClick={() => { setIsLogoutModalOpen(true); setShowUserMenu(false); }}
+                          style={{
+                            width: '100%', padding: '12px 14px', borderRadius: 12,
+                            border: 'none', background: 'rgba(239, 68, 68, 0.05)',
+                            color: '#ef4444', fontSize: 13, fontWeight: 700,
+                            display: 'flex', alignItems: 'center', gap: 12,
+                            cursor: 'pointer', transition: 'all 200ms ease'
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'}
+                        >
+                          <LogOut size={16} />
+                          Sign Out System
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
           )}
         </div>
       </div>
+      {/* Logout Confirmation */}
+      <EliteConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={logout}
+        title="Confirm Sign-Out"
+        message="Are you sure you want to terminate your current project session? You will need to re-authenticate to regain access to the command center."
+        confirmLabel="Confirm Logout"
+        cancelLabel="Stay Logged In"
+        severity="SECURITY"
+      />
+
+      {/* Profile Info Editor */}
+      <ProfileInfoModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        userProfile={userProfile}
+      />
     </header>
   );
 }

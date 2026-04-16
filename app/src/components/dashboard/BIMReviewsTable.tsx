@@ -21,8 +21,13 @@ import {
   Clock,
   Hash,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  Trash2,
+  Edit2,
+  Upload
 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import GlassCard from '@/components/shared/GlassCard';
 import EliteDropdown from '@/components/dashboard/EliteDropdown';
 import { BIMReview } from '@/lib/types';
@@ -36,7 +41,7 @@ const INITIAL_COLUMNS: ColumnDef<SortField>[] = [
   { id: 'project', field: 'project', label: 'Project Identifier', align: 'center', priority: 'high', defaultWidth: 260, alwaysVisible: true },
   { id: 'submissionDescription', field: 'submissionDescription', label: 'Submission Description', align: 'center', priority: 'high', defaultWidth: 280 },
   { id: 'reviewNumber', field: 'reviewNumber', label: 'Rev #', align: 'center', priority: 'medium', defaultWidth: 100 },
-  { id: 'designStage', field: 'designStage', label: 'Stage', align: 'center', priority: 'high', defaultWidth: 140 },
+  { id: 'designStage', field: 'designStage', label: 'Stage', align: 'center', priority: 'high', defaultWidth: 200 },
   { id: 'stakeholder', field: 'stakeholder', label: 'Stakeholder', align: 'center', priority: 'medium', defaultWidth: 180 },
   { id: 'insiteBimReviewStatus', field: 'insiteBimReviewStatus', label: 'InSite Review Status', align: 'center', priority: 'high', defaultWidth: 240 },
   { id: 'insiteReviewDueDate', field: 'insiteReviewDueDate', label: 'Due Date', align: 'center', priority: 'medium', defaultWidth: 160 },
@@ -46,7 +51,8 @@ const INITIAL_COLUMNS: ColumnDef<SortField>[] = [
   { id: 'onAcc', field: 'onAcc', label: 'ACC', align: 'center', priority: 'low', defaultWidth: 120 },
   { id: 'comments', field: 'comments', label: 'Internal Comments', align: 'center', priority: 'low', defaultWidth: 280 },
   { id: 'submissionCategory', field: 'submissionCategory', label: 'Category', align: 'center', priority: 'low', defaultWidth: 180 },
-  { id: 'output', field: 'insiteReviewOutputUrl', label: 'Output Hub', align: 'center', priority: 'high', defaultWidth: 120 }
+  { id: 'output', field: 'insiteReviewOutputUrl', label: 'Output Hub', align: 'center', priority: 'high', defaultWidth: 120 },
+  { id: 'actions', field: 'id' as any, label: 'Actions', align: 'center', priority: 'high', defaultWidth: 100, alwaysVisible: true }
 ];
 
 function ResizeHandle({ columnWidth, onWidthChange }: { columnWidth: number, onWidthChange: (w: number) => void }) {
@@ -113,12 +119,18 @@ function ReviewRow({
   item, 
   index, 
   visibleColumns, 
-  isCustomized 
+  isCustomized,
+  isAdminOrOwner,
+  onEdit,
+  onDelete
 }: { 
   item: BIMReview; 
   index: number; 
   visibleColumns: ColumnDef<SortField>[]; 
   isCustomized: boolean; 
+  isAdminOrOwner: boolean;
+  onEdit?: (r: BIMReview) => void;
+  onDelete?: (r: BIMReview) => void;
 }) {
   const formatTextWithLinks = (text: string) => {
     if (!text) return text;
@@ -165,7 +177,7 @@ function ReviewRow({
         };
 
         if (col.id === 'project') return (
-          <td key={col.id} style={{ ...cellStyle, color: '#C5A059', fontWeight: 950, fontSize: 13, letterSpacing: '0.04em' }}>
+          <td key={col.id} style={{ ...cellStyle, color: 'var(--text-dim)', fontWeight: 800, fontSize: 11, letterSpacing: '0.02em' }}>
             {formatTextWithLinks(item.project)}
           </td>
         );
@@ -190,9 +202,11 @@ function ReviewRow({
         );
 
         if (col.id === 'designStage') return (
-          <td key={col.id} style={{ ...cellStyle }}>
-            <div style={{ display: 'inline-flex', padding: '4px 14px', borderRadius: 20, background: 'rgba(0, 63, 73, 0.95)', border: '1.5px solid rgba(0, 63, 73, 0.2)', fontSize: 10, fontWeight: 950, color: 'var(--aqua)', textTransform: 'uppercase', letterSpacing: '0.08em', boxShadow: '0 4px 12px rgba(0, 63, 73, 0.2)' }}>
-              {item.designStage}
+          <td key={col.id} style={{ ...cellStyle, textAlign: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ display: 'inline-flex', padding: '4px 14px', borderRadius: 20, background: 'rgba(0, 63, 73, 0.95)', border: '1.5px solid rgba(0, 63, 73, 0.2)', fontSize: 10, fontWeight: 950, color: 'var(--aqua)', textTransform: 'uppercase', letterSpacing: '0.08em', boxShadow: '0 4px 12px rgba(0, 63, 73, 0.2)', whiteSpace: 'nowrap' }}>
+                {item.designStage}
+              </div>
             </div>
           </td>
         );
@@ -362,6 +376,43 @@ function ReviewRow({
           </td>
         );
 
+        if (col.id === 'actions') return (
+          <td key={col.id} style={{ ...cellStyle }}>
+            {isAdminOrOwner && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onEdit?.(item); }}
+                  title="Edit Record"
+                  style={{
+                    width: 30, height: 30, borderRadius: 8, background: 'rgba(0, 63, 73, 0.05)',
+                    border: '1px solid rgba(0, 63, 73, 0.1)', color: 'var(--teal)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--teal)'; e.currentTarget.style.color = 'white'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0, 63, 73, 0.05)'; e.currentTarget.style.color = 'var(--teal)'; }}
+                >
+                  <Edit2 size={14} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete?.(item); }}
+                  title="Delete Record"
+                  style={{
+                    width: 30, height: 30, borderRadius: 8, background: 'rgba(239, 68, 68, 0.05)',
+                    border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = 'white'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'; e.currentTarget.style.color = '#ef4444'; }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            )}
+          </td>
+        );
+
         return null;
       })}
     </motion.tr>
@@ -401,7 +452,11 @@ export default function BIMReviewsTable({
   availableStakeholders = [],
   filterReviewer,
   setFilterReviewer,
-  availableReviewers = []
+  availableReviewers = [],
+  onEdit,
+  onDelete,
+  onNew,
+  onImport
 }: { 
   data: BIMReview[]; 
   isLoading: boolean;
@@ -419,7 +474,13 @@ export default function BIMReviewsTable({
   filterReviewer: string[];
   setFilterReviewer: (v: string[]) => void;
   availableReviewers: string[];
+  onEdit?: (review: BIMReview) => void;
+  onDelete?: (review: BIMReview) => void;
+  onNew?: () => void;
+  onImport?: () => void;
 }) {
+  const { userProfile } = useAuth();
+  const isAdminOrOwner = userProfile?.isAdmin || userProfile?.role === 'OWNER';
   const [sortField, setSortField] = useState<SortField>('project');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
@@ -483,6 +544,36 @@ export default function BIMReviewsTable({
               style={{ ...headerInputStyle, background: 'rgba(255, 255, 255, 0.8)', color: '#003f49', borderColor: 'rgba(0, 63, 73, 0.25)', fontWeight: 600 }}
             />
           </div>
+
+          {isAdminOrOwner && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 20 }}>
+              <div style={{ width: 1, height: 24, background: 'rgba(0, 63, 73, 0.12)' }} />
+              <button
+                onClick={onImport}
+                title="Import Intelligence Matrix"
+                style={{
+                  padding: '8px 16px', borderRadius: 10, background: 'rgba(212, 175, 55, 0.1)',
+                  color: '#C5A059', border: '1.5px solid rgba(212, 175, 55, 0.2)',
+                  fontSize: 10, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                  textTransform: 'uppercase', letterSpacing: '0.05em'
+                }}
+              >
+                <Upload size={14} /> IMPORT
+              </button>
+              <button
+                onClick={onNew}
+                title="Initiate New Matrix Record"
+                style={{
+                  padding: '8px 16px', borderRadius: 10, background: 'var(--teal)',
+                  color: 'white', border: 'none',
+                  fontSize: 10, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                  textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 4px 12px rgba(0, 63, 73, 0.2)'
+                }}
+              >
+                <Plus size={14} /> NEW ENTRY
+              </button>
+            </div>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginLeft: 'auto' }}>
 
@@ -656,11 +747,14 @@ export default function BIMReviewsTable({
             <tbody>
               {sortedData.map((item, i) => (
                 <ReviewRow 
-                  key={item.id} 
+                  key={item.id || `bim-row-${i}`} 
                   item={item} 
                   index={i} 
                   visibleColumns={visibleColumns}
                   isCustomized={isCustomized}
+                  isAdminOrOwner={isAdminOrOwner}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
                 />
               ))}
             </tbody>

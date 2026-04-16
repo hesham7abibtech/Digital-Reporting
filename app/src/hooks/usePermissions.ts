@@ -22,14 +22,14 @@ export function usePermissions() {
   const policy = policySnapshot?.data() as GroupPolicy | undefined;
 
   return useMemo(() => {
-    // 1. OWNER Bypass: Absolute sovereignty across all modules
-    const isOwner = userProfile?.role === 'OWNER';
+    // 1. ADMIN Bypass: Absolute sovereignty across all modules for cleared personnel
+    const isAdmin = !!userProfile?.isAdmin;
 
     /**
      * Determine if a specific module is visible.
      */
     const isVisible = (module: keyof GroupPolicy['modules']) => {
-      if (isOwner) return true;
+      if (isAdmin) return true;
       return !!policy?.modules[module]?.view;
     };
 
@@ -37,17 +37,16 @@ export function usePermissions() {
      * Determine if a user is authorized for a specific action within a module.
      */
     const can = (module: keyof GroupPolicy['modules'], action: keyof PolicyActions) => {
-      if (isOwner) return true;
+      if (isAdmin) return true;
       return !!policy?.modules[module]?.[action];
     };
 
     return {
-      isOwner,
+      isAdmin,
       isVisible,
       can,
       policy,
-      userRole: userProfile?.role,
-      hasAdminAccess: isOwner || userProfile?.role === 'ADMIN'
+      hasAdminAccess: isAdmin
     };
   }, [userProfile, policy]);
 }

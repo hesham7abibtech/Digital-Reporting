@@ -108,7 +108,7 @@ export default function EliteConfirmModal({
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }} 
             onClick={isExecuting ? undefined : onClose} 
-            style={{ position: 'absolute', inset: 0, background: 'rgba(5, 5, 10, 0.9)', backdropFilter: 'blur(12px)' }} 
+            style={{ position: 'absolute', inset: 0, background: 'rgba(0, 63, 73, 0.4)', backdropFilter: 'blur(12px)' }} 
           />
           
           {/* Modal Container */}
@@ -119,13 +119,13 @@ export default function EliteConfirmModal({
             style={{
               width: '100%', 
               maxWidth: onSecondaryConfirm ? 600 : 500, 
-              background: '#0a0a0f', 
-              border: `1px solid ${errorDetails ? '#ef4444' : 'rgba(255, 255, 255, 0.08)'}`, 
+              background: '#c6e0e0', 
+              border: `1px solid ${errorDetails ? '#ef4444' : 'rgba(0, 63, 73, 0.15)'}`, 
               borderRadius: 28, 
               position: 'relative', 
               zIndex: 1, 
               overflow: 'hidden',
-              boxShadow: errorDetails ? '0 0 50px rgba(239, 68, 68, 0.2)' : '0 25px 70px rgba(0,0,0,0.9)'
+              boxShadow: errorDetails ? '0 0 50px rgba(239, 68, 68, 0.2)' : '0 25px 70px rgba(0,0,0,0.1)'
             }}
           >
             {/* Severity Accent Bar */}
@@ -146,10 +146,10 @@ export default function EliteConfirmModal({
                 {severity === 'SECURITY' && <Lock size={40} color={color} />}
               </div>
 
-              <h3 style={{ fontSize: 26, fontWeight: 900, color: 'white', marginBottom: 14, letterSpacing: '-0.02em' }}>
+              <h3 style={{ fontSize: 26, fontWeight: 900, color: '#002a30', marginBottom: 14, letterSpacing: '-0.02em' }}>
                 {title}
               </h3>
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>
+              <p style={{ color: '#003f49', fontSize: 15, lineHeight: 1.6, marginBottom: 32, fontWeight: 600 }}>
                 {message}
               </p>
 
@@ -174,16 +174,17 @@ export default function EliteConfirmModal({
               <div style={{ display: 'flex', flexDirection: onSecondaryConfirm ? 'column' : 'row', gap: 16 }}>
                 <div style={{ display: 'flex', gap: 16, width: '100%' }}>
                   {!isReadOnly && (
-                    <button 
-                      onClick={onClose} 
-                      disabled={isExecuting}
-                      style={{ 
-                        flex: 1, padding: '16px', borderRadius: 16, 
-                        background: 'rgba(255,255,255,0.03)', color: 'white', 
-                        border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', 
-                        fontSize: 15, fontWeight: 700, transition: 'all 200ms' 
-                      }}
-                    >
+                      <button 
+                        onClick={onClose} 
+                        disabled={isExecuting}
+                          style={{ 
+                            flex: 1, padding: '16px', borderRadius: 16, 
+                            background: 'rgba(0, 63, 73, 0.05)', color: '#003f49', 
+                            border: '1px solid rgba(0, 63, 73, 0.1)', cursor: 'pointer', 
+                            fontSize: 15, fontWeight: 700, transition: 'all 200ms',
+                            whiteSpace: 'nowrap'
+                          }}
+                      >
                       {cancelLabel}
                     </button>
                   )}
@@ -219,7 +220,7 @@ export default function EliteConfirmModal({
                     disabled={isExecuting}
                     style={{ 
                       width: '100%', padding: '16px', borderRadius: 16, 
-                      background: 'rgba(255,255,255,0.05)', color: color, 
+                      background: 'var(--secondary)', color: color, 
                       border: `1px solid ${color}40`, cursor: 'pointer', 
                       fontSize: 15, fontWeight: 800,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,

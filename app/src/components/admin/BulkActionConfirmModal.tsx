@@ -47,7 +47,7 @@ export default function BulkActionConfirmModal({
         animate={{ opacity: 1 }} 
         exit={{ opacity: 0 }} 
         onClick={isExecuting ? undefined : onClose} 
-        style={{ position: 'absolute', inset: 0, background: 'rgba(5, 5, 10, 0.9)', backdropFilter: 'blur(12px)' }} 
+        style={{ position: 'absolute', inset: 0, background: 'rgba(0, 30, 36, 0.85)', backdropFilter: 'blur(8px)', backdropFilter: 'blur(12px)' }} 
       />
       
       {/* Modal */}
@@ -58,7 +58,7 @@ export default function BulkActionConfirmModal({
         style={{
           width: '100%', 
           maxWidth: 500, 
-          background: '#0a0a0f', 
+          background: 'var(--cotton)', 
           border: `1px solid ${errorDetails ? '#ef4444' : 'rgba(239, 68, 68, 0.3)'}`, 
           borderRadius: 28, 
           position: 'relative', 
@@ -77,11 +77,11 @@ export default function BulkActionConfirmModal({
             <AlertTriangle size={40} color="#ef4444" />
           </div>
 
-          <h3 style={{ fontSize: 26, fontWeight: 900, color: 'white', marginBottom: 14, letterSpacing: '-0.02em' }}>
+          <h3 style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 14, letterSpacing: '-0.02em' }}>
             Bulk {actionName}
           </h3>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>
-            Initiating high-authority deletion for <strong style={{ color: 'white', fontSize: 17 }}>{count} items</strong>. 
+          <p style={{ color: 'var(--text-muted)', fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>
+            Initiating high-authority deletion for <strong style={{ color: 'var(--text-primary)', fontSize: 17 }}>{count} items</strong>. 
             This operation is irreversible and will purge data from the production environment.
           </p>
 
@@ -99,8 +99,8 @@ export default function BulkActionConfirmModal({
               >
                 <ShieldAlert size={20} color="#ef4444" style={{ flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 900, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Access Denied</div>
-                  <div style={{ fontSize: 13, color: 'white', fontWeight: 600, marginTop: 2 }}>{errorDetails}</div>
+                  <div style={{ fontSize: 13, fontWeight: 900, color: 'var(--status-error)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Access Denied</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600, marginTop: 2 }}>{errorDetails}</div>
                 </div>
               </motion.div>
             )}
@@ -112,8 +112,8 @@ export default function BulkActionConfirmModal({
               disabled={isExecuting}
               style={{ 
                 flex: 1, padding: '16px', borderRadius: 16, 
-                background: 'rgba(255,255,255,0.03)', color: 'white', 
-                border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', 
+                background: 'var(--section-bg)', color: 'var(--teal)', 
+                border: '1px solid var(--border)', cursor: 'pointer', 
                 fontSize: 15, fontWeight: 700, transition: 'all 200ms' 
               }}
             >
@@ -124,7 +124,7 @@ export default function BulkActionConfirmModal({
               disabled={isExecuting}
               style={{ 
                 flex: 2, padding: '16px', borderRadius: 16, 
-                background: '#ef4444', color: 'white', 
+                background: '#ef4444', color: 'var(--text-primary)', 
                 border: 'none', cursor: 'pointer', 
                 fontSize: 15, fontWeight: 800,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
@@ -148,12 +148,12 @@ export default function BulkActionConfirmModal({
 
         {/* Security Footer */}
         <div style={{ 
-          background: 'rgba(239, 68, 68, 0.05)', padding: '14px 24px', 
+          background: 'rgba(239, 68, 68, 0.08)', padding: '14px 24px', 
           borderTop: '1px solid rgba(239, 68, 68, 0.1)', 
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
         }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} className="animate-pulse" />
-          <span style={{ fontSize: 11, color: '#ef4444', fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase' }}>High Authority Verification Required</span>
+          <span style={{ fontSize: 11, color: 'var(--status-error)', fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase' }}>High Authority Verification Required</span>
         </div>
       </motion.div>
     </div>

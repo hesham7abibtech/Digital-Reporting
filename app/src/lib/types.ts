@@ -119,6 +119,27 @@ export interface GroupPolicy {
   updatedAt: string;
 }
 
+export interface UserProfileAccess {
+  deliverablesRegistry: boolean;
+  bimReviews: boolean;
+}
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  name: string;
+  department: string;
+  avatar?: string;
+  role: UserRole;
+  isVerified: boolean;
+  isApproved: boolean;
+  isAdmin: boolean;
+  policyId?: string;
+  access: UserProfileAccess;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface TeamMember {
   id: string;
   name: string;
@@ -301,6 +322,76 @@ export interface Department {
   name: string;
   abbreviation: string;
   createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Home Page CMS Types ──────────────────────────────────────────
+export interface HomeHeroConfig {
+  backgroundUrl: string;
+  backgroundType: 'image' | 'video';
+  videoUrl?: string;
+  title: string;
+  subtitle: string;
+  tagline: string;
+  ctaPrimary: string;
+  ctaSecondary: string;
+}
+
+export interface HomeOverviewConfig {
+  description: string;
+  developer: string;
+  consultant: string;
+  location: string;
+  scope: string;
+  highlights: string[];
+}
+
+export interface HomeMetricItem {
+  id: string;
+  label: string;
+  value: number;
+  suffix?: string;
+  icon: string;
+  isVisible: boolean;
+}
+
+export interface HomeGalleryImage {
+  id: string;
+  url: string;
+  caption: string;
+  tag: 'masterplan' | 'site' | 'bim' | 'other';
+  order: number;
+}
+
+export interface HomeModuleItem {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  order: number;
+}
+
+export interface HomeTrustLogo {
+  id: string;
+  url: string;
+  name: string;
+}
+
+export interface HomePageConfig {
+  hero: HomeHeroConfig;
+  overview: HomeOverviewConfig;
+  metrics: { items: HomeMetricItem[] };
+  gallery: { images: HomeGalleryImage[] };
+  modules: { items: HomeModuleItem[] };
+  dashboardPreview: {
+    screenshotUrl: string;
+    isBlurred: boolean;
+    overlayText: string;
+  };
+  trust: {
+    logos: HomeTrustLogo[];
+    statement: string;
+  };
   updatedAt: string;
 }
 

@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -16,19 +16,20 @@ const firebaseConfig = {
 // Initialize Firebase for Client side
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
 
-// Enable Offline Persistence for Client-side Resilience
+// Modern Firestore Initialization with Multi-Tab Persistence
+let db: ReturnType<typeof getFirestore>;
 if (typeof window !== "undefined") {
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === "failed-precondition") {
-      // Multiple tabs open, persistence can only be enabled in one tab at a time.
-      console.warn("Firestore persistence failed: Multiple tabs open.");
-    } else if (err.code === "unimplemented") {
-      // The current browser does not support all of the features required to enable persistence
-      console.warn("Firestore persistence NOT supported by browser.");
-    }
-  });
+  try {
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    });
+  } catch (err) {
+    // Fallback if already initialized (Next.js Fast Refresh behavior)
+    db = getFirestore(app);
+  }
+} else {
+  db = getFirestore(app);
 }
 
 const storage = getStorage(app);

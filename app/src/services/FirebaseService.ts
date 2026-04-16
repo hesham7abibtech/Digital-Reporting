@@ -9,7 +9,8 @@ import {
   doc, 
   getDoc,
   setDoc,
-  writeBatch
+  writeBatch,
+  arrayUnion
 } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { tasks as mockTasks, teamMembers as mockMembers, dashboardsRegistry as mockRegistry } from '@/lib/data';
@@ -51,6 +52,7 @@ export const collections = {
   departments: collection(db, 'departments'),
   broadcasts: collection(db, 'broadcasts'),
   bimReviews: collection(db, 'bimReviews'),
+  diagnostics: collection(db, 'diagnostics'),
 };
 
 
@@ -217,9 +219,21 @@ export async function getUserProfile(uid: string) {
 
 export async function createUserProfile(uid: string, data: any) {
   const userDoc = doc(db, 'users', uid);
+  
+  // 1. Bootstrapping: Auto-approve the primary administrator
+  const isPrimaryAdmin = data.email?.toLowerCase() === 'hesham.habib@insiteinternational.com';
+  
   const cleanData = sanitizeData({
     ...data,
     uid,
+    role: isPrimaryAdmin ? 'OWNER' : 'TEAM_MATE',
+    isVerified: false, 
+    isApproved: isPrimaryAdmin, 
+    isAdmin: isPrimaryAdmin,    // Grant administrative portal access
+    access: {
+      deliverablesRegistry: isPrimaryAdmin, // Grant feature access to primary admin
+      bimReviews: isPrimaryAdmin
+    },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
@@ -237,6 +251,29 @@ export async function updateUserProfile(uid: string, data: any) {
 
 export async function deleteUserProfile(uid: string) {
   await deleteDoc(doc(db, 'users', uid));
+}
+
+export async function logRegistrationEvent(uid: string, stage: string, status: 'success' | 'failure', details?: any) {
+  try {
+    // Session Propagation Grace Period:
+    // Ensure Auth token is attached to Firestore headers
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const diagDoc = doc(db, 'diagnostics', uid);
+    
+    await setDoc(diagDoc, {
+      uid,
+      lastUpdated: new Date().toISOString(),
+      stages: arrayUnion({
+        timestamp: new Date().toISOString(),
+        stage,
+        status,
+        details: sanitizeData(details || {})
+      })
+    }, { merge: true });
+  } catch (err) {
+    console.error('Diagnostic log failure:', err);
+  }
 }
 
 /**
@@ -292,6 +329,23 @@ export async function updateMetadataSuggestions(types: string[], cdes: string[])
     cdeEnvironments: updatedCdes,
     updatedAt: new Date().toISOString()
   }, { merge: true });
+}
+
+// ─── Home Page CMS Helpers ─────────────────────────────────────────
+
+export async function getHomePageConfig() {
+  const homeDoc = doc(db, 'settings', 'homePage');
+  const snapshot = await getDoc(homeDoc);
+  return snapshot.exists() ? snapshot.data() : null;
+}
+
+export async function updateHomePageConfig(data: any) {
+  const homeDoc = doc(db, 'settings', 'homePage');
+  const cleanData = sanitizeData({
+    ...data,
+    updatedAt: new Date().toISOString()
+  });
+  await setDoc(homeDoc, cleanData, { merge: true });
 }
 
 export async function uploadFile(file: File, path: string) {

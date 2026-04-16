@@ -2,119 +2,106 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // ─── Helpers ─────────────────────────────────────────────────────
-    
-    // Check if the user is authenticated
-    function isAuthenticated() {
+    // --- SECURITY HELPERS ---
+    function isAuth() {
       return request.auth != null;
     }
-    
-    // Check if the user has an Admin or Owner role
+
     function isAdmin() {
-      let userDoc = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isAuthenticated() && 
-             exists(userDoc) &&
-             (get(userDoc).data.role in ['ADMIN', 'OWNER']);
+      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return isAuth() && 
+        exists(userPath) && 
+        (
+          get(userPath).data.get('isAdmin', false) == true ||
+          get(userPath).data.get('role', '') == 'ADMIN' ||
+          get(userPath).data.get('role', '') == 'OWNER' ||
+          get(userPath).data.get('role', '') == 'SUPER_ADMIN'
+        );
     }
 
-    // Check if the user is a superuser (Owner)
-    function isOwnerRole() {
-      let userDoc = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isAuthenticated() && 
-             exists(userDoc) &&
-             get(userDoc).data.role == 'OWNER';
+    function isApproved() {
+      return isAuth() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isApproved', false) == true;
     }
 
-    // Check granular admin permissions based on Dynamic Group Policy
-    function hasPermission(module, action) {
-      let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-      return userData.role == 'OWNER' || (
-        userData.role == 'ADMIN' && 
-        userData.policyId != null && 
-        get(/databases/$(database)/documents/policies/$(userData.policyId)).data.modules[module][action] == true
-      );
-    }
+    // Public Project Identity
+    match /settings/project { allow read: if true; }
+    match /settings/homePage { allow read: if true; }
 
-    
-    // Check if the user is accessing their own document
-    function isOwner(uid) {
-      return isAuthenticated() && request.auth.uid == uid;
-    }
-
-    // ─── User Profiles ───────────────────────────────────────────────
-    
-    match /users/{uid} {
-      allow read: if isOwner(uid) || isAdmin();
-      allow create: if isOwner(uid) && request.resource.data.role == 'TEAM_MATE';
-      
-      allow update: if isOwnerRole() 
-                    || (hasPermission('users', 'edit') && resource.data.role != 'OWNER')
-                    || (isOwner(uid) && request.resource.data.role == resource.data.role);
-      
-      allow delete: if isOwnerRole() || hasPermission('users', 'delete');
-    }
-
-    // ─── Group Policies ──────────────────────────────────────────────
-    
-    match /policies/{policyId} {
-      allow read: if isAdmin();
-      allow write: if isOwnerRole(); // Only Owners can forge policies
-    }
-
-    // ─── Project Data (Tasks, Members, Registry) ─────────────────────
-    
-    match /tasks/{taskId} {
-      allow read: if true;
-      allow create, update: if hasPermission('tasks', 'edit') 
-                    || (isAuthenticated() && request.auth.uid == resource.data.assigneeId);
-      allow delete: if hasPermission('tasks', 'delete');
-    }
-    
-    match /members/{memberId} {
-      allow read: if true;
-      allow create, update: if hasPermission('team', 'edit');
-      allow delete: if hasPermission('team', 'delete');
-    }
-    
-    match /registry/{registryId} {
-      allow read: if true;
-      allow create, update: if hasPermission('registry', 'edit');
-      allow delete: if hasPermission('registry', 'delete');
-    }
-
-    match /departments/{deptId} {
-      allow read: if true;
-      allow create, update: if hasPermission('team', 'edit');
-      allow delete: if hasPermission('team', 'delete');
-    }
-    
+    // Protected Settings (admin write, approved read)
     match /settings/{docId} {
-      allow read: if true;
-      allow create, update: if hasPermission('branding', 'edit');
-      allow delete: if hasPermission('branding', 'delete');
+      allow read: if isAuth() && (isApproved() || isAdmin());
+      allow write: if isAdmin();
     }
 
-    // ─── Administrative Broadcasts ───────────────────────────────────
-    
-    match /broadcasts/{broadcastId} {
-      allow read: if true;
-      allow create: if hasPermission('branding', 'edit');
-      allow update: if isAuthenticated() && (
-        hasPermission('branding', 'edit') || 
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']))
+    // Diagnostic Audit Logs
+    match /diagnostics/{userId} {
+      allow read, write: if isAuth() && request.auth.uid == userId;
+    }
+
+    // Users Registry
+    match /users/{userId} {
+      allow create: if isAuth() && request.auth.uid == userId;
+      allow read: if isAuth() && (request.auth.uid == userId || isAdmin() || isApproved());
+      allow update: if isAuth() && (
+        isAdmin() ||
+        (request.auth.uid == userId && 
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin', 'isApproved', 'access', 'email', 'role']))
       );
-      allow delete: if hasPermission('branding', 'edit');
-    }
-    
-    match /bimReviews/{reviewId} {
-      allow read: if true;
-      allow create, update, delete: if hasPermission('tasks', 'edit');
+      allow delete: if isAdmin();
     }
 
-    // ─── Default ─────────────────────────────────────────────────────
-    
-    match /{path=**} {
-      allow read, write: if false; // Deny all other access
+    // Members / Team Listing
+    match /members/{memberId} {
+      allow read: if isAuth() && (isApproved() || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // Registry / Nav Items
+    match /registry/{itemId} {
+      allow read: if isAuth() && (isApproved() || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // Departments
+    match /departments/{deptId} {
+      allow read: if isAuth() && (isApproved() || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // Tasks / Deliverables
+    match /tasks/{taskId} {
+      allow read: if isAdmin() || (isApproved() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('access', {}).get('deliverablesRegistry', false) == true);
+      allow write: if isAdmin();
+    }
+
+    // BIM Reviews
+    match /bimReviews/{reviewId} {
+      allow read: if isAdmin() || (isApproved() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('access', {}).get('bimReviews', false) == true);
+      allow write: if isAdmin();
+    }
+
+    // Group Policies
+    match /policies/{policyId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Project Metadata
+    match /projectMetadata/{docId} {
+      allow read: if isAuth() && (isApproved() || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // Broadcasts / News
+    match /broadcasts/{docId} {
+      allow read: if isAuth() && (isApproved() || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // Global Fallback (Admin-only catch-all)
+    match /{document=**} {
+      allow read, write: if isAdmin();
     }
   }
 }

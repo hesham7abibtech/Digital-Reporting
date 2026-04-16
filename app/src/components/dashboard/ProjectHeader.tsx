@@ -2,9 +2,10 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Cpu, MapPin, Users, Wifi, WifiOff, Activity } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import type { TeamMember, ProjectMetadata, Task } from '@/lib/types';
+import { useAuth } from '@/context/AuthContext';
+import { Activity, MapPin, Cpu } from 'lucide-react';
 
 interface ProjectHeaderProps {
   members?: TeamMember[];
@@ -27,6 +28,10 @@ export default function ProjectHeader({
   bimReviewsCount = 0
 }: ProjectHeaderProps) {
   const [isOnline, setIsOnline] = useState(true);
+  const { userProfile } = useAuth();
+  
+  const hasDRAccess = userProfile?.access?.deliverablesRegistry === true;
+  const hasBIMAccess = userProfile?.access?.bimReviews === true;
 
   useEffect(() => {
     setIsOnline(navigator.onLine);
@@ -153,55 +158,59 @@ export default function ProjectHeader({
 
           {/* Dynamic Report Navigation Badges */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', marginTop: 8 }}>
-            <button
-              onClick={() => onReportChange?.('DELIVERABLES')}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '8px 20px', borderRadius: 10,
-                background: activeReport === 'DELIVERABLES' ? '#d0ab82' : 'rgba(0, 63, 73, 0.4)',
-                border: `1px solid ${activeReport === 'DELIVERABLES' ? '#d0ab82' : 'rgba(255, 255, 255, 0.2)'}`,
-                cursor: 'pointer',
-                transition: 'all 300ms',
-                boxShadow: activeReport === 'DELIVERABLES' ? '0 0 15px rgba(208, 171, 130, 0.3)' : 'none'
-              }}
-            >
-              <div style={{ 
-                width: 6, height: 6, borderRadius: '50%', 
-                background: activeReport === 'DELIVERABLES' ? '#003f49' : '#FFFFFF',
-              }} className={activeReport === 'DELIVERABLES' ? "animate-pulse" : ""} />
-              <span style={{ 
-                fontSize: 12, fontWeight: 950, 
-                color: activeReport === 'DELIVERABLES' ? '#000000' : '#FFFFFF', 
-                textTransform: 'uppercase', letterSpacing: '0.08em' 
-              }}>
-                Deliverables Registry
-              </span>
-            </button>
+            {hasDRAccess && (
+              <button
+                onClick={() => onReportChange?.('DELIVERABLES')}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '8px 20px', borderRadius: 10,
+                  background: activeReport === 'DELIVERABLES' ? '#d0ab82' : 'rgba(0, 63, 73, 0.4)',
+                  border: `1px solid ${activeReport === 'DELIVERABLES' ? '#d0ab82' : 'rgba(255, 255, 255, 0.2)'}`,
+                  cursor: 'pointer',
+                  transition: 'all 300ms',
+                  boxShadow: activeReport === 'DELIVERABLES' ? '0 0 15px rgba(208, 171, 130, 0.3)' : 'none'
+                }}
+              >
+                <div style={{ 
+                  width: 6, height: 6, borderRadius: '50%', 
+                  background: activeReport === 'DELIVERABLES' ? '#003f49' : '#FFFFFF',
+                }} className={activeReport === 'DELIVERABLES' ? "animate-pulse" : ""} />
+                <span style={{ 
+                  fontSize: 12, fontWeight: 950, 
+                  color: activeReport === 'DELIVERABLES' ? '#000000' : '#FFFFFF', 
+                  textTransform: 'uppercase', letterSpacing: '0.08em' 
+                }}>
+                  Deliverables Registry
+                </span>
+              </button>
+            )}
 
-            <button
-              onClick={() => onReportChange?.('BIM_REVIEWS')}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '8px 20px', borderRadius: 10,
-                background: activeReport === 'BIM_REVIEWS' ? '#d0ab82' : 'rgba(0, 63, 73, 0.4)',
-                border: `1px solid ${activeReport === 'BIM_REVIEWS' ? '#d0ab82' : 'rgba(255, 255, 255, 0.2)'}`,
-                cursor: 'pointer',
-                transition: 'all 300ms',
-                boxShadow: activeReport === 'BIM_REVIEWS' ? '0 0 15px rgba(208, 171, 130, 0.3)' : 'none'
-              }}
-            >
-              <div style={{ 
-                width: 6, height: 6, borderRadius: '50%', 
-                background: activeReport === 'BIM_REVIEWS' ? '#003f49' : '#FFFFFF',
-              }} className={activeReport === 'BIM_REVIEWS' ? "animate-pulse" : ""} />
-              <span style={{ 
-                fontSize: 12, fontWeight: 950, 
-                color: activeReport === 'BIM_REVIEWS' ? '#000000' : '#FFFFFF', 
-                textTransform: 'uppercase', letterSpacing: '0.08em' 
-              }}>
-                BIM Reviews
-              </span>
-            </button>
+            {hasBIMAccess && (
+              <button
+                onClick={() => onReportChange?.('BIM_REVIEWS')}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '8px 20px', borderRadius: 10,
+                  background: activeReport === 'BIM_REVIEWS' ? '#d0ab82' : 'rgba(0, 63, 73, 0.4)',
+                  border: `1px solid ${activeReport === 'BIM_REVIEWS' ? '#d0ab82' : 'rgba(255, 255, 255, 0.2)'}`,
+                  cursor: 'pointer',
+                  transition: 'all 300ms',
+                  boxShadow: activeReport === 'BIM_REVIEWS' ? '0 0 15px rgba(208, 171, 130, 0.3)' : 'none'
+                }}
+              >
+                <div style={{ 
+                  width: 6, height: 6, borderRadius: '50%', 
+                  background: activeReport === 'BIM_REVIEWS' ? '#003f49' : '#FFFFFF',
+                }} className={activeReport === 'BIM_REVIEWS' ? "animate-pulse" : ""} />
+                <span style={{ 
+                  fontSize: 12, fontWeight: 950, 
+                  color: activeReport === 'BIM_REVIEWS' ? '#000000' : '#FFFFFF', 
+                  textTransform: 'uppercase', letterSpacing: '0.08em' 
+                }}>
+                  BIM Reviews
+                </span>
+              </button>
+            )}
 
             {project?.headerBadges?.filter(b => {
               if (!b.isVisible) return false;

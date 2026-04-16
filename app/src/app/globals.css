@@ -405,3 +405,11 @@ h4,
   background: rgba(212, 175, 55, 0.3);
   color: white;
 }
+@keyframes slow-pan {
+  0% { background-position: 0 0; }
+  100% { background-position: 100% 100%; }
+}
+
+.admin-dashboard-container {
+  animation: slow-pan 120s linear infinite;
+}

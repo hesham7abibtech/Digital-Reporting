@@ -16,7 +16,7 @@ export default function AdminLayout({
   const pathname = usePathname();
 
   const isLoginPage = pathname === '/admin/login';
-  const isAdmin = ['ADMIN', 'SUPER_ADMIN', 'OWNER', 'PROJECT_MANAGER', 'DEPARTMENT_HEAD'].includes(userProfile?.role || '');
+  const isAdmin = userProfile?.isAdmin === true;
 
 
   useEffect(() => {

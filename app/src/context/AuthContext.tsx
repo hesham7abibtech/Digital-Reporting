@@ -8,18 +8,12 @@ import {
   setPersistence,
   browserSessionPersistence
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { UserRole } from '@/lib/types';
+import { db, auth } from '@/lib/firebase';
+import { UserProfile } from '@/lib/types';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 
-interface UserProfile {
-  uid: string;
-  email: string | null;
-  role: UserRole;
-  [key: string]: any;
-}
+// Removed local UserProfile interface in favor of types.ts definition
 
 interface AuthContextType {
   user: User | null;
@@ -75,12 +69,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userDocRef = doc(db, 'users', user.uid);
       profileUnsubscribe = onSnapshot(
         userDocRef,
-        (snapshot) => {
+        async (snapshot) => {
           if (snapshot.exists()) {
-            setUserProfile(snapshot.data() as UserProfile);
+            const data = snapshot.data();
+            
+            // 3. Email Verification Sync Logic
+            // If Firebase Auth says verified but Firestore doesn't, sync it.
+            if (user.emailVerified && !data.isVerified) {
+              await updateDoc(userDocRef, { isVerified: true });
+            }
+
+            setUserProfile(data as UserProfile);
           } else {
+            // Document doesn't exist yet - this is expected during the first few seconds of registration.
+            // We set profile to null but avoid setting an aggressive authError that blocks the transition.
             setUserProfile(null);
-            setAuthError('Identity profile not found in registry.');
           }
           setLoading(false);
         },
@@ -99,6 +102,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
+      // Clear all potential session flags and auth state
+      sessionStorage.removeItem('dashboard_session');
+      sessionStorage.removeItem('admin_session');
+      sessionStorage.clear(); 
       await signOut(auth);
     } catch (error) {
       console.error('Error signing out:', error);

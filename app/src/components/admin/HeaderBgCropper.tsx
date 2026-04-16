@@ -103,7 +103,7 @@ export default function HeaderBgCropper({ image, onCropComplete, onCancel }: Hea
           width: '100%',
           maxWidth: 1000,
           background: 'rgba(15, 15, 20, 0.95)',
-          border: '1px solid rgba(255,255,255,0.1)',
+          border: '1px solid var(--border)',
           borderRadius: 32,
           overflow: 'hidden',
           display: 'flex',
@@ -112,17 +112,17 @@ export default function HeaderBgCropper({ image, onCropComplete, onCancel }: Hea
           boxShadow: '0 50px 100px rgba(0,0,0,0.8)'
         }}
       >
-        <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-              <Crop size={18} color="#D4AF37" />
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}>
+              <Crop size={18} color="var(--teal)" />
             </div>
             <div>
-              <h3 style={{ fontSize: 16, fontWeight: 900, color: 'white', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Banner Optimization Protocol</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Banner Optimization Protocol</h3>
               <p style={{ fontSize: 10, color: 'rgba(212, 175, 55, 0.6)', fontWeight: 800, margin: 0, letterSpacing: '0.1em' }}>PRECISION CROP // 12:1 ULTRA-PANORAMA</p>
             </div>
           </div>
-          <button onClick={onCancel} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
+          <button onClick={onCancel} style={{ background: 'var(--section-bg)', border: 'none', color: 'var(--text-primary)', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
         </div>
 
         <div style={{ flex: 1, position: 'relative', background: '#050508' }}>
@@ -142,9 +142,9 @@ export default function HeaderBgCropper({ image, onCropComplete, onCancel }: Hea
           />
         </div>
 
-        <div style={{ padding: '24px 32px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.3)' }}>
+        <div style={{ padding: '24px 32px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.3)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1 }}>
-            <span style={{ fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Zoom Level</span>
+            <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Zoom Level</span>
             <input
               type="range"
               min={1}
@@ -152,7 +152,7 @@ export default function HeaderBgCropper({ image, onCropComplete, onCancel }: Hea
               step={0.1}
               value={zoom}
               onChange={(e) => setZoom(Number(e.target.value))}
-              style={{ flex: 1, maxWidth: 300, accentColor: '#D4AF37' }}
+              style={{ flex: 1, maxWidth: 300, accentColor: 'var(--teal)' }}
             />
           </div>
 
@@ -161,8 +161,8 @@ export default function HeaderBgCropper({ image, onCropComplete, onCancel }: Hea
             disabled={isProcessing}
             style={{
               padding: '12px 32px',
-              background: '#D4AF37',
-              color: '#0a0a0f',
+              background: 'var(--teal)',
+              color: '#ffffff',
               border: 'none',
               borderRadius: 12,
               fontWeight: 900,
@@ -171,7 +171,7 @@ export default function HeaderBgCropper({ image, onCropComplete, onCancel }: Hea
               display: 'flex',
               alignItems: 'center',
               gap: 10,
-              boxShadow: '0 10px 20px rgba(212, 175, 55, 0.2)'
+              boxShadow: '0 10px 20px var(--border)'
             }}
           >
             {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
@@ -180,7 +180,7 @@ export default function HeaderBgCropper({ image, onCropComplete, onCancel }: Hea
         </div>
       </motion.div>
       
-      <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 12, color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+      <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 12, color: 'var(--text-muted)', fontSize: 12 }}>
         <ImageIcon size={14} />
         <span>Optimizing for ultra-wide viewport. Select the focal area of your project.</span>
       </div>

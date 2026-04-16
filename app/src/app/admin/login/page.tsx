@@ -8,7 +8,8 @@ import {
   sendPasswordResetEmail,
   updateProfile,
   setPersistence,
-  browserSessionPersistence
+  browserSessionPersistence,
+  sendEmailVerification
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { createUserProfile, getProjectMetadata } from '@/services/FirebaseService';
@@ -79,14 +80,20 @@ function AdminLoginContent() {
       return;
     }
 
-    // Handle Success and Role Check
+    // Handle Success and Clearance Check
     if (user && userProfile) {
-      const isAuthorized =
-        userProfile.role === 'ADMIN' ||
-        userProfile.role === 'OWNER';
+      if (!user.emailVerified) {
+        setError('CLEARANCE BLOCKED: Email not verified. Please verify your identity protocol.');
+        auth.signOut();
+        setIsSubmitting(false);
+        return;
+      }
 
-      if (isAuthorized) {
-        router.push('/admin/dashboard');
+      if (userProfile.isAdmin) {
+        const isAdminSession = sessionStorage.getItem('admin_session');
+        if (isAdminSession === 'active') {
+          router.push('/admin/dashboard');
+        }
       } else {
         // User is logged in but lacks admin role
         setMode('unauthorized');
@@ -117,6 +124,8 @@ function AdminLoginContent() {
       // 2. Ensure strict session persistence before sign-in
       await setPersistence(auth, browserSessionPersistence);
       await signInWithEmailAndPassword(auth, email, password);
+      // Mark this as an admin session (separate from dashboard)
+      sessionStorage.setItem('admin_session', 'active');
       // Wait for AuthContext redirect logic above
     } catch (err: any) {
       console.error('Login error:', err);
@@ -154,12 +163,14 @@ function AdminLoginContent() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: name });
 
+      // 1. Send Email Verification
+      await sendEmailVerification(userCredential.user);
+
+      // 2. Initialize Firestore Profile
       await createUserProfile(userCredential.user.uid, {
         name,
         email,
-        department,
-        role: 'USER',
-        status: 'PENDING_APPROVAL'
+        department
       });
 
       // Sign out user immediately (they need an admin approval first)
@@ -204,14 +215,14 @@ function AdminLoginContent() {
 
   if (loading && !isSubmitting) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0f' }}>
-        <Loader2 className="animate-spin" size={32} color="#D4AF37" />
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a1220' }}>
+        <Loader2 className="animate-spin" size={32} color="var(--teal)" />
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', display: 'flex', flexDirection: 'column', background: '#0a0a0f' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', display: 'flex', flexDirection: 'column', background: '#0a1220' }}>
       <Header onNotificationClick={() => { }} project={projectMetadata || undefined} />
 
       <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, overflow: 'hidden' }}>
@@ -229,13 +240,13 @@ function AdminLoginContent() {
           style={{
             width: '100%',
             maxWidth: 480,
-            background: mode === 'unauthorized' ? 'rgba(24, 12, 12, 0.9)' : 'rgba(12, 12, 18, 0.8)',
+            background: mode === 'unauthorized' ? 'rgba(24, 12, 12, 0.9)' : 'rgba(10, 18, 32, 0.85)',
             backdropFilter: 'blur(40px)',
-            border: mode === 'unauthorized' ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(255,255,255,0.06)',
+            border: mode === 'unauthorized' ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(255,255,255,0.08)',
             borderRadius: 32,
             boxShadow: mode === 'unauthorized'
               ? '0 40px 100px -20px rgba(239, 68, 68, 0.2), inset 0 0 20px rgba(239, 68, 68, 0.05)'
-              : '0 40px 100px -20px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.05)',
+              : '0 40px 100px -20px rgba(0,0,0,0.8), inset 0 0 40px rgba(0, 63, 73, 0.15)',
             overflow: 'hidden',
             zIndex: 10,
             position: 'relative'
@@ -649,11 +660,11 @@ function AdminLoginContent() {
                 >
                   <CheckCircle2 size={40} color="#0a0a0f" />
                 </motion.div>
-                <h2 style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: '0 0 12px', letterSpacing: '-0.02em' }}>Account Created!</h2>
-                <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, margin: '0 0 12px' }}>Your account has been created successfully.</p>
+                <h2 style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: '0 0 12px', letterSpacing: '-0.02em' }}>Verification Sent</h2>
+                <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, margin: '0 0 12px' }}>Check your email to verify your identity.</p>
                 <div style={{ padding: '16px 20px', borderRadius: 16, background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', marginBottom: 32 }}>
                   <p style={{ color: '#fbbf24', fontSize: 14, fontWeight: 600, margin: 0, lineHeight: 1.6 }}>
-                    ⏳ Your account is pending admin approval. You will be able to sign in once an administrator activates your account.
+                    ⏳ Once verified, your account must be granted administrative clearance before you can access the Command Center.
                   </p>
                 </div>
                 <button
@@ -758,8 +769,8 @@ function AdminLoginContent() {
 export default function AdminLoginPage() {
   return (
     <Suspense fallback={
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0f' }}>
-        <Loader2 className="animate-spin" size={32} color="#D4AF37" />
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a1220' }}>
+        <Loader2 className="animate-spin" size={32} color="var(--teal)" />
       </div>
     }>
       <AdminLoginContent />

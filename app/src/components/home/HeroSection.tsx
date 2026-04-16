@@ -1,0 +1,216 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
+import type { HomeHeroConfig } from '@/lib/types';
+
+interface HeroSectionProps {
+  config: HomeHeroConfig;
+  isLoggedIn: boolean;
+  onExploreCick: () => void;
+  onLoginClick: () => void;
+}
+
+export default function HeroSection({ config, isLoggedIn, onExploreCick, onLoginClick }: HeroSectionProps) {
+  return (
+    <section id="hero" style={{
+      position: 'relative', height: '100vh', width: '100%', overflow: 'hidden',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      {/* Background Image with Parallax-like subtle zoom */}
+      <motion.div
+        initial={{ scale: 1.1 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 12, ease: 'easeOut' }}
+        style={{
+          position: 'absolute', inset: 0, zIndex: 0,
+          backgroundImage: `url(${config.backgroundUrl})`,
+          backgroundSize: 'cover', backgroundPosition: 'center',
+        }}
+      />
+
+      {/* Dark Overlay Layer */}
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 0,
+        background: 'rgba(0, 20, 30, 0.45)',
+      }} />
+
+      {/* Gradient Overlays */}
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 1,
+        background: 'linear-gradient(180deg, rgba(0,40,48,0.75) 0%, rgba(0,40,48,0.45) 35%, rgba(0,40,48,0.55) 65%, rgba(0,40,48,0.9) 100%)',
+      }} />
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 1,
+        background: 'radial-gradient(ellipse 80% 60% at 50% 40%, transparent 0%, rgba(0,20,24,0.5) 100%)',
+      }} />
+
+      {/* Content */}
+      <div style={{ position: 'absolute', zIndex: 2, textAlign: 'center', width: '100%', maxWidth: 900, left: '50%', top: '50%', transform: 'translate(-50%, -50%)', padding: '0 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+        {/* Partner Logos — Ultra Elite */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 1 }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 28, marginBottom: 20,
+            padding: '12px 32px',
+            background: 'rgba(255, 255, 255, 0.02)',
+            backdropFilter: 'blur(12px)',
+            borderRadius: 100,
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+          }}
+        >
+          <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 30, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.9 }} />
+          <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.15)' }} />
+          <img src="/logos/insite_logo.png" alt="Insite International" style={{ height: 30, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.9 }} />
+        </motion.div>
+
+        {/* Decorative line */}
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: 60 }}
+          transition={{ delay: 0.3, duration: 0.8 }}
+          style={{ height: 1.5, background: 'linear-gradient(90deg, transparent, var(--sunlit-rock), transparent)', margin: '0 auto 18px' }}
+        />
+
+        {/* Subtitle — High Contrast */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.7 }}
+          style={{
+            fontSize: 15, fontWeight: 900, color: '#ffffff',
+            textTransform: 'uppercase', letterSpacing: '0.35em', marginBottom: 18,
+            textShadow: '0 1px 3px rgba(0,0,0,0.9), 0 3px 10px rgba(0,0,0,0.5)',
+            width: '100%', textAlign: 'center',
+            background: 'linear-gradient(90deg, rgba(208,171,130,0.0), rgba(208,171,130,0.15), rgba(208,171,130,0.0))',
+            padding: '8px 0',
+            borderRadius: 4,
+          }}
+        >
+          {config.subtitle}
+        </motion.p>
+
+        {/* Title — Two Lines */}
+        <motion.h1
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.8 }}
+          className="brand-heading"
+          style={{
+            fontSize: 'clamp(36px, 6vw, 72px)', color: '#ffffff',
+            margin: '0 0 24px', lineHeight: 1.1,
+            textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.5), 0 8px 30px rgba(0,0,0,0.3)',
+            fontWeight: 400,
+            width: '100%', textAlign: 'center',
+          }}
+        >
+          {config.title}
+        </motion.h1>
+
+        {/* Wadi Yemm — Second Title Line */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.75, duration: 0.7 }}
+          className="brand-heading"
+          style={{
+            fontSize: 'clamp(18px, 3vw, 32px)', color: 'var(--sunlit-rock)',
+            margin: '-12px 0 28px', lineHeight: 1.2,
+            textShadow: '0 2px 6px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.3)',
+            fontWeight: 400,
+            letterSpacing: '0.2em',
+            textAlign: 'center',
+          }}
+        >
+          Wadi Yemm
+        </motion.p>
+
+        {/* Tagline */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9, duration: 0.7 }}
+          style={{
+            fontSize: 'clamp(16px, 2vw, 21px)', color: 'rgba(255, 255, 255, 0.9)',
+            maxWidth: 600, margin: '0 auto 40px', lineHeight: 1.6,
+            fontWeight: 500,
+            textShadow: '0 1px 4px rgba(0,0,0,0.6), 0 3px 12px rgba(0,0,0,0.3)',
+            textAlign: 'center',
+          }}
+        >
+          {config.tagline}
+        </motion.p>
+
+        {/* CTA Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.1, duration: 0.7 }}
+          style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}
+        >
+          <motion.button
+            whileHover={{ scale: 1.04, boxShadow: '0 12px 40px rgba(208, 171, 130, 0.3)' }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onExploreCick}
+            style={{
+              padding: '16px 36px', borderRadius: 16,
+              background: 'linear-gradient(135deg, var(--sunlit-rock) 0%, #d3e7e6 100%)',
+              color: 'black', fontSize: 14, fontWeight: 1000, border: 'none',
+              cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.12em',
+              boxShadow: '0 8px 30px rgba(208, 171, 130, 0.2)',
+              transition: 'all 300ms',
+            }}
+          >
+            {config.ctaPrimary}
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.04, background: 'rgba(255,255,255,0.15)', borderColor: 'rgba(249, 248, 242, 0.5)' }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onLoginClick}
+            style={{
+              padding: '16px 36px', borderRadius: 16,
+              background: 'rgba(255, 255, 255, 0.08)',
+              backdropFilter: 'blur(10px)',
+              color: 'var(--cotton)', fontSize: 14, fontWeight: 800,
+              border: '1px solid rgba(249, 248, 242, 0.25)',
+              cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.12em',
+              transition: 'all 300ms',
+            }}
+          >
+            {isLoggedIn ? 'Go to Dashboard' : config.ctaSecondary}
+          </motion.button>
+        </motion.div>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 2 }}
+        onClick={() => {
+          const el = document.getElementById('overview');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+        style={{
+          position: 'absolute', bottom: 40, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+          cursor: 'pointer',
+        }}
+      >
+        <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.25em', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
+          Scroll to explore
+        </span>
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+        >
+          <ChevronDown size={20} color="rgba(255,255,255,0.55)" />
+        </motion.div>
+      </motion.div>
+    </section>
+  );
+}

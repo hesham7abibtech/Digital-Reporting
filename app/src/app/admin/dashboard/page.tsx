@@ -69,6 +69,7 @@ import GroupPolicyEditor from '@/components/admin/GroupPolicyEditor';
 import BulkActionConfirmModal from '@/components/admin/BulkActionConfirmModal';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import HeaderBgCropper from '@/components/admin/HeaderBgCropper';
+import HomePageEditor from '@/components/admin/HomePageEditor';
 
 const DEFAULT_ALLOWED_DOMAINS = ['modon.com', 'insiteinternational.com'];
 
@@ -139,8 +140,8 @@ function BroadcastSender({ showToast }: { showToast: any }) {
       <form onSubmit={handleDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <div style={{ display: 'flex', gap: 16 }}>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Packet Stream</label>
-            <div style={{ display: 'flex', gap: 8, background: 'rgba(0,0,0,0.2)', padding: 4, borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Packet Stream</label>
+            <div style={{ display: 'flex', gap: 8, background: 'var(--secondary)', padding: 4, borderRadius: 12, border: '1px solid var(--border)' }}>
               {(['NOTIF', 'NEWS'] as const).map(t => (
                 <button
                   key={t}
@@ -148,8 +149,8 @@ function BroadcastSender({ showToast }: { showToast: any }) {
                   onClick={() => setType(t)}
                   style={{
                     flex: 1, padding: '10px', borderRadius: 10, border: 'none',
-                    background: type === t ? 'rgba(212, 175, 55, 0.1)' : 'transparent',
-                    color: type === t ? '#D4AF37' : 'rgba(255,255,255,0.3)',
+                    background: type === t ? 'var(--teal)' : 'transparent',
+                    color: type === t ? '#ffffff' : 'var(--text-muted)',
                     fontSize: 11, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
                   }}
@@ -161,13 +162,13 @@ function BroadcastSender({ showToast }: { showToast: any }) {
             </div>
           </div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Authority Classification</label>
-            <div style={{ display: 'flex', gap: 6, background: 'rgba(0,0,0,0.2)', padding: 4, borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Authority Classification</label>
+            <div style={{ display: 'flex', gap: 6, background: 'var(--secondary)', padding: 4, borderRadius: 12, border: '1px solid var(--border)' }}>
               {[
-                { id: 'INFO', label: 'INFO', color: '#60a5fa' },
-                { id: 'SUCCESS', label: 'SUCCESS', color: '#10b981' },
-                { id: 'WARNING', label: 'WARNING', color: '#D4AF37' },
-                { id: 'CRITICAL', label: 'CRITICAL', color: '#ef4444' }
+                { id: 'INFO', label: 'INFO', color: 'var(--primary-light)' },
+                { id: 'SUCCESS', label: 'SUCCESS', color: 'var(--status-success)' },
+                { id: 'WARNING', label: 'WARNING', color: 'var(--status-warning)' },
+                { id: 'CRITICAL', label: 'CRITICAL', color: 'var(--status-error)' }
               ].map(s => (
                 <button
                   key={s.id}
@@ -175,11 +176,11 @@ function BroadcastSender({ showToast }: { showToast: any }) {
                   onClick={() => setSeverity(s.id as any)}
                   style={{
                     flex: 1, padding: '10px 0', borderRadius: 8, border: 'none',
-                    background: severity === s.id ? `${s.color}20` : 'transparent',
-                    color: severity === s.id ? s.color : 'rgba(255,255,255,0.3)',
+                    background: severity === s.id ? `${s.color}` : 'transparent',
+                    color: severity === s.id ? '#ffffff' : 'var(--text-muted)',
                     fontSize: 10, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms',
-                    boxShadow: severity === s.id ? `inset 0 0 0 1px ${s.color}40` : 'none',
-                    letterSpacing: '0.05em'
+                    boxShadow: severity === s.id ? `inset 0 0 0 1px ${s.color}` : 'none',
+                    letterSpacing: '0.05em', opacity: severity === s.id ? 1 : 0.8
                   }}
                 >
                   {s.label}
@@ -190,43 +191,43 @@ function BroadcastSender({ showToast }: { showToast: any }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Broadcast Headline</label>
+          <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Broadcast Headline</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Enter high-impact title..."
-            style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, color: 'white', fontSize: 15, outline: 'none' }}
+            style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
           />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Narrative Body</label>
+          <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Narrative Body</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Detailed administrative context..."
             rows={4}
-            style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, color: 'white', fontSize: 15, outline: 'none', resize: 'none' }}
+            style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', resize: 'none' }}
           />
         </div>
 
         <div style={{ display: 'flex', gap: 16 }}>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Functional Category</label>
+            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Functional Category</label>
             <input
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="e.g. SYSTEM, MARKET, TEAM"
-              style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }}
+              style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
             />
           </div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Secure Attachment URL</label>
+            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Secure Attachment URL</label>
             <input
               value={link}
               onChange={(e) => setLink(e.target.value)}
               placeholder="https://..."
-              style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }}
+              style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
             />
           </div>
         </div>
@@ -234,10 +235,10 @@ function BroadcastSender({ showToast }: { showToast: any }) {
         <button
           disabled={loading}
           style={{
-            marginTop: 12, padding: '16px', background: '#D4AF37', color: '#0a0a0f',
+            marginTop: 12, padding: '16px', background: 'var(--primary)', color: '#ffffff',
             border: 'none', borderRadius: 16, fontWeight: 900, fontSize: 15,
             cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-            boxShadow: '0 10px 30px rgba(212, 175, 55, 0.3)', letterSpacing: '0.05em'
+            boxShadow: 'var(--shadow-premium)', letterSpacing: '0.05em'
           }}
         >
           {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
@@ -245,37 +246,37 @@ function BroadcastSender({ showToast }: { showToast: any }) {
         </button>
       </form>
 
-      <div style={{ padding: 40, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ padding: 40, background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-            <Shield size={18} color="#D4AF37" />
+          <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}>
+            <Shield size={18} color="var(--primary)" />
           </div>
-          <span style={{ fontSize: 12, fontWeight: 900, color: 'white', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Transmission Preview</span>
+          <span style={{ fontSize: 12, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Transmission Preview</span>
         </div>
 
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{
-            width: '100%', maxWidth: 360, padding: 24, borderRadius: 24, background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+            width: '100%', maxWidth: 360, padding: 24, borderRadius: 24, background: 'var(--cotton)',
+            border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)',
             opacity: title || description ? 1 : 0.3, filter: title || description ? 'none' : 'grayscale(1)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: severity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${severity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)'}` }}>
-                {type === 'NOTIF' ? <Bell size={18} color={severity === 'CRITICAL' ? '#ef4444' : '#60a5fa'} /> : <Newspaper size={18} color="#a78bfa" />}
+                {type === 'NOTIF' ? <Bell size={18} color={severity === 'CRITICAL' ? 'var(--status-error)' : 'var(--primary-light)'} /> : <Newspaper size={18} color="#a78bfa" />}
               </div>
               <div>
-                <span style={{ fontSize: 9, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
                   {type} // {severity}
                 </span>
-                <h4 style={{ fontSize: 14, fontWeight: 800, color: 'white', margin: 0 }}>{title || 'Headline Protocol'}</h4>
+                <h4 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{title || 'Headline Protocol'}</h4>
               </div>
             </div>
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: 0 }}>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
               {description || 'Establishing secure administrative narrative... awaiting payload input.'}
             </p>
             <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
-              <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.2)' }}>RECEPTION TERMINAL PREVIEW</span>
+              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+              <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)' }}>RECEPTION TERMINAL PREVIEW</span>
             </div>
           </div>
         </div>
@@ -286,17 +287,23 @@ function BroadcastSender({ showToast }: { showToast: any }) {
 
 export default function AdminDashboardPage() {
   const { logout, userProfile } = useAuth();
-  const { isVisible, can, userRole, policy } = usePermissions();
+  const { isVisible, can, isAdmin, policy } = usePermissions();
   const router = useRouter();
 
   // Security Clearance Protocol: TEAM_MATE access to Command Center is restricted
+  // Also verify this is a proper admin session (not just dashboard login)
   useEffect(() => {
-    if (userProfile && userProfile.role === 'TEAM_MATE') {
+    const isAdminSession = sessionStorage.getItem('admin_session');
+    if (!isAdminSession || isAdminSession !== 'active') {
+      router.push('/admin/login');
+      return;
+    }
+    if (userProfile && !userProfile.isAdmin) {
       router.push('/');
     }
   }, [userProfile, router]);
 
-  const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'branding' | 'registry' | 'users' | 'policies' | 'broadcast' | 'reports' | 'bim-reviews'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'branding' | 'registry' | 'users' | 'policies' | 'broadcast' | 'reports' | 'bim-reviews' | 'homepage'>('tasks');
 
   const [activeSubTab, setActiveSubTab] = useState<'users' | 'policies'>('users');
   const [teamActiveSubTab, setTeamActiveSubTab] = useState<'personnel' | 'departments'>('personnel');
@@ -380,6 +387,25 @@ export default function AdminDashboardPage() {
   const projectData = projectSnapshot?.data() as ProjectMetadata | undefined;
 
   const { showToast } = useToast();
+  
+  // Strict Security Handshake: Only attempt collection synchronization if authorized
+  const isAdminSession = typeof window !== 'undefined' ? sessionStorage.getItem('admin_session') === 'active' : false;
+  const isAuthorized = userProfile?.isAdmin && isAdminSession;
+
+  // Firestore Listeners (Gated for Security)
+  const [tasksSnapshot, tasksLoading] = useCollection(isAuthorized ? collections.tasks : null);
+  const [registrySnapshot, registryLoading] = useCollection(isAuthorized ? collections.registry : null);
+  const [usersSnapshot, usersLoading] = useCollection(isAuthorized ? collections.users : null);
+  const [bimReviewsSnapshot, bimReviewsLoading] = useCollection(isAuthorized ? collections.bimReviews : null);
+
+
+  // Dynamic linking: Team Members are now explicitly fueled by the registered Users registry
+  const membersSnapshot = usersSnapshot;
+  const membersLoading = usersLoading;
+
+  const [broadcastsSnapshot, broadcastsLoading] = useCollection(isAuthorized ? query(collection(db, 'broadcasts'), orderBy('timestamp', 'desc')) : null);
+  const [departmentsSnapshot, departmentsLoading] = useCollection(isAuthorized ? query(collections.departments, orderBy('name', 'asc')) : null);
+
   // Selector state
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
@@ -477,19 +503,7 @@ export default function AdminDashboardPage() {
     setPartnerLogosList(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Firestore Listeners
-  const [tasksSnapshot, tasksLoading] = useCollection(collections.tasks);
-  const [registrySnapshot, registryLoading] = useCollection(collections.registry);
-  const [usersSnapshot, usersLoading] = useCollection(collections.users);
-  const [bimReviewsSnapshot, bimReviewsLoading] = useCollection(collections.bimReviews);
 
-
-  // Dynamic linking: Team Members are now explicitly fueled by the registered Users registry
-  const membersSnapshot = usersSnapshot;
-  const membersLoading = usersLoading;
-
-  const [broadcastsSnapshot, broadcastsLoading] = useCollection(query(collection(db, 'broadcasts'), orderBy('timestamp', 'desc')));
-  const [departmentsSnapshot, departmentsLoading] = useCollection(query(collections.departments, orderBy('name', 'asc')));
 
   // Snapshot Memoization to stabilize array references and prevent update depth loops
   const memoizedTasks = useMemo(() =>
@@ -812,41 +826,41 @@ export default function AdminDashboardPage() {
             style={{
               position: 'fixed', top: 90, left: '50%', transform: 'translateX(-50%)',
               zIndex: 90,
-              background: 'rgba(15, 15, 25, 0.98)',
+              background: 'rgba(255, 255, 255, 0.98)',
               backdropFilter: 'blur(20px)',
               padding: '12px 24px',
               borderRadius: 16,
-              border: '2px solid #ef4444',
+              border: '2px solid var(--status-error)',
               display: 'flex', alignItems: 'center', gap: 24,
-              boxShadow: '0 20px 50px rgba(0,0,0,0.9), 0 0 20px rgba(239, 68, 68, 0.15)',
+              boxShadow: 'var(--shadow-card)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                <Shield size={18} color="#ef4444" />
+                <Shield size={18} color="var(--status-error)" />
               </div>
               <div>
-                <span style={{ fontSize: 14, fontWeight: 900, color: 'white', display: 'block', letterSpacing: '0.05em' }}>{selectedIds.size} ITEMS SELECTED</span>
-                <span style={{ fontSize: 10, color: '#ef4444', fontWeight: 700, textTransform: 'uppercase' }}>High Authority Mode Active</span>
+                <span style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', display: 'block', letterSpacing: '0.05em' }}>{selectedIds.size} ITEMS SELECTED</span>
+                <span style={{ fontSize: 10, color: 'var(--status-error)', fontWeight: 700, textTransform: 'uppercase' }}>High Authority Mode Active</span>
               </div>
               <button
                 onClick={() => setSelectedIds(new Set())}
                 style={{
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'white', fontSize: 10, fontWeight: 800, padding: '4px 10px',
+                  background: 'var(--secondary)', border: '1px solid var(--border)',
+                  color: 'var(--text-secondary)', fontSize: 10, fontWeight: 800, padding: '4px 10px',
                   borderRadius: 6, cursor: 'pointer', marginLeft: 8
                 }}
               >
                 DISMISS
               </button>
             </div>
-            <div style={{ width: 1, height: 32, background: 'rgba(239, 68, 68, 0.3)' }} />
+            <div style={{ width: 1, height: 32, background: 'var(--border)' }} />
 
             <div style={{ display: 'flex', gap: 12 }}>
               <button
                 onClick={() => showToast('Command Accepted: Exporting high-fidelity dataset...', 'INFO')}
                 style={{
-                  background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'var(--secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)',
                   padding: '10px 24px', borderRadius: 10, fontSize: 13, fontWeight: 700,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10
                 }}
@@ -859,14 +873,17 @@ export default function AdminDashboardPage() {
                 <button
                   onClick={() => setIsBulkModalOpen(true)}
                   style={{
-                    background: '#ef4444', color: 'white', border: 'none',
-                    padding: '10px 24px', borderRadius: 10, fontSize: 14, fontWeight: 800,
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
-                    boxShadow: '0 8px 16px rgba(239, 68, 68, 0.4)'
+                    background: 'var(--status-error)', 
+                    color: 'white', border: 'none',
+                    padding: '12px 28px', borderRadius: 12, fontSize: 13, fontWeight: 900,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12,
+                    boxShadow: '0 8px 30px rgba(239, 68, 68, 0.4)',
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase'
                   }}
                 >
                   <Trash2 size={18} />
-                  TERMINATE RECORDS
+                  SECURITY PURGE PROTOCOL
                 </button>
               )}
             </div>
@@ -875,132 +892,151 @@ export default function AdminDashboardPage() {
       </AnimatePresence>
       <div style={{ display: 'flex', height: '100vh' }}>
         {/* Elite Navigation Sidebar */}
-        <aside style={{
-          width: 280,
+        <aside style={{ 
+          width: 280, 
           minWidth: 280,
-          background: 'rgba(10, 10, 15, 0.98)',
-          borderRight: '1px solid rgba(255,255,255,0.06)',
-          display: 'flex',
-          flexDirection: 'column',
+          background: 'var(--teal)', 
+          borderRight: '1px solid var(--border)', 
+          display: 'flex', 
+          flexDirection: 'column', 
           height: '100vh',
-          zIndex: 110,
-          backdropFilter: 'blur(30px)',
+          zIndex: 150,
+          boxShadow: '4px 0 20px rgba(0,63,73,0.1)',
           flexShrink: 0
         }}>
-          <div style={{ padding: '32px 16px 24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, borderBottom: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
-            <div>
-              <h1 style={{ fontSize: 16, fontWeight: 900, margin: 0, letterSpacing: '-0.02em', color: 'white', lineHeight: 1.1 }}>ADMIN PORTAL</h1>
-              <p style={{ fontSize: 9, color: '#D4AF37', fontWeight: 800, margin: 0, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 4 }}>Elite Command Center</p>
-            </div>
-            {projectData?.partnerLogos && projectData.partnerLogos.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, width: '100%' }}>
-                {projectData.partnerLogos.slice(0, 3).map((logo, index) => (
-                  <img key={index} src={logo} alt="Partner" style={{ height: 20, opacity: 0.8 }} />
-                ))}
+          <div style={{ padding: '48px 32px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 44, height: 44, background: 'rgba(255, 255, 255, 0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                  <Shield size={24} color="#F9F8F2" />
+                </div>
+                <div>
+                  <h1 style={{ fontSize: 13, fontWeight: 900, color: '#F9F8F2', margin: 0, letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'var(--font-heading)' }}>Admin Portal</h1>
+                  <span style={{ fontSize: 9, color: 'var(--sunlit-rock)', fontWeight: 800, letterSpacing: '0.2em' }}>COMMAND CENTER</span>
+                </div>
               </div>
-            )}
+              <div style={{ padding: '12px 0 0 56px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, width: '100%', padding: '0 24px' }}>
+                  <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 18, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 1 }} />
+                  <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.2)' }} />
+                  <img src="/logos/insite_logo.png" alt="Insite" style={{ height: 18, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 1 }} />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <nav className="custom-scrollbar" style={{ flex: 1, padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <nav className="custom-scrollbar" style={{ flex: 1, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
             {[
               { id: 'tasks', label: 'Deliverable Matrix', icon: BarChart3, permission: 'tasks' },
               { id: 'bim-reviews', label: 'BIM Review Matrix', icon: Layers, permission: 'tasks' },
-              { id: 'team', label: 'Project Team', icon: Users, permission: 'team' },
-              { id: 'branding', label: 'Identity & Branding', icon: Database, permission: 'branding' },
-              { id: 'reports', label: 'Report Settings', icon: Settings, permission: 'reports' },
-              { id: 'broadcast', label: 'Communications', icon: Megaphone, permission: 'broadcast' },
-              { id: 'users', label: 'Access Control', icon: Shield, permission: 'users' },
-            ].filter(tab => tab.id === 'reports' || isVisible(tab.permission as any)).map((tab) => (
-
-              <button
-                key={tab.id}
-                onClick={() => { setActiveTab(tab.id as any); setSelectedIds(new Set()); }}
-                style={{
-                  width: '100%',
-                  padding: '14px 20px',
-                  borderRadius: 14,
-                  border: 'none',
-                  background: activeTab === tab.id ? 'rgba(212, 175, 55, 0.1)' : 'transparent',
-                  color: activeTab === tab.id ? '#ffffff' : 'rgba(255, 255, 255, 0.4)',
-                  fontSize: 15,
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 14,
-                  transition: 'all 300ms',
-                  textAlign: 'left',
-                  position: 'relative'
-                }}
-              >
-                <tab.icon
-                  size={18}
+              { id: 'team', label: 'Project Team', icon: Users, permission: 'users' },
+              { id: 'branding', label: 'Identity & Branding', icon: ImageIcon, permission: 'branding' },
+              { id: 'reports', label: 'Report Settings', icon: FileText, permission: 'branding' },
+              { id: 'homepage', label: 'Home Page CMS', icon: LayoutDashboard, permission: 'branding' },
+              { id: 'broadcast', label: 'Communications', icon: Megaphone, permission: 'branding' },
+              { id: 'users', label: 'Access Control', icon: Shield, permission: 'users' }
+            ].map((tab) => {
+              if (tab.permission && !can(tab.permission as any, 'view')) return null;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
                   style={{
-                    opacity: activeTab === tab.id ? 1 : 0.4,
-                    color: activeTab === tab.id ? '#D4AF37' : 'inherit'
+                    display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 14,
+                    background: isActive ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                    color: isActive ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                    border: 'none', cursor: 'pointer', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                    width: '100%', textAlign: 'left', position: 'relative', overflow: 'hidden'
                   }}
-                />
-                <span style={{ flex: 1 }}>{tab.label}</span>
-                {activeTab === tab.id && (
-                  <motion.div
-                    layoutId="sidebarActiveMarker"
-                    style={{
-                      position: 'absolute', left: 0, width: 4, height: 20,
-                      background: '#D4AF37',
-                      borderRadius: '0 4px 4px 0',
-                      boxShadow: '4px 0 15px rgba(212, 175, 55, 0.5)'
-                    }}
-                  />
-                )}
-              </button>
-            ))}
+                >
+                  <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <tab.icon size={20} style={{ opacity: isActive ? 1 : 0.6, color: isActive ? '#ffffff' : 'inherit' }} />
+                    <span style={{ fontSize: 14, fontWeight: isActive ? 800 : 500, letterSpacing: isActive ? '0.02em' : 'normal' }}>{tab.label}</span>
+                  </div>
+                  {isActive && (
+                    <motion.div
+                      layoutId="nav-active"
+                      initial={false}
+                      style={{
+                        position: 'absolute', left: 0, top: '20%', bottom: '20%', width: 3, background: 'var(--aqua)', borderRadius: '0 4px 4px 0',
+                        boxShadow: '0 0 10px rgba(0, 204, 255, 0.5)'
+                      }}
+                    />
+                  )}
+                </button>
+              );
+            })}
           </nav>
 
-          <div style={{ padding: '24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+          <div style={{ padding: '32px 24px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
             <button
               onClick={() => setIsLogoutConfirmOpen(true)}
               style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px',
-                borderRadius: 14, background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)',
-                color: '#ef4444', fontSize: 13, fontWeight: 800, cursor: 'pointer'
+                width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '16px',
+                borderRadius: 14, background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.2)',
+                color: '#ffffff', fontSize: 13, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms',
+                letterSpacing: '0.1em', textTransform: 'uppercase'
               }}
             >
               <LogOut size={18} />
-              Terminte Protocol
+              Logout System
             </button>
           </div>
         </aside>
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100vh', overflow: 'hidden' }}>
+        <div className="admin-dashboard-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100vh', overflow: 'hidden', background: 'var(--cotton)', backgroundImage: 'radial-gradient(var(--border) 1px, transparent 1px)', backgroundSize: '24px 24px', backgroundPosition: 'center center' }}>
           <header style={{
-            height: 72, background: 'rgba(10, 10, 15, 0.85)', backdropFilter: 'blur(20px)',
-            borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px',
-            position: 'sticky', top: 0, zIndex: 100
+            height: 72, 
+            background: 'rgba(255, 255, 255, 0.7)', 
+            backdropFilter: 'blur(20px)',
+            borderBottom: '1px solid var(--border)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            padding: '0 40px',
+            position: 'sticky', 
+            top: 0, 
+            zIndex: 100
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: 'white', letterSpacing: '-0.01em' }}>
-                  {activeTab === 'tasks' ? 'Deliverable Registry' : activeTab === 'bim-reviews' ? 'BIM Review Matrix' : activeTab === 'reports' ? 'Report Configuration' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1) + ' Management'}
+                <h2 style={{ 
+                  fontSize: 15, 
+                  fontWeight: 900, 
+                  margin: 0, 
+                  color: 'var(--text-primary)', 
+                  letterSpacing: '0.18em', 
+                  textTransform: 'uppercase', 
+                  fontFamily: 'var(--font-heading)' 
+                }}>
+                  {activeTab === 'tasks' ? 'Deliverable Registry' : activeTab === 'bim-reviews' ? 'BIM Review Matrix' : activeTab === 'reports' ? 'Report Configuration' : activeTab === 'homepage' ? 'Home Page CMS' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1) + ' Management'}
                 </h2>
-
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
               {/* Partner Logos moved to Sidebar */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>{userProfile?.name}</div>
-                  <div style={{ fontSize: 10, color: '#D4AF37', fontWeight: 900, textTransform: 'uppercase' }}>{userProfile?.role}</div>
+                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
+                  <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 800 }}>{userProfile?.name || 'Administrator'}</div>
+                  <div style={{ fontSize: 10, color: 'var(--teal)', fontWeight: 900, textTransform: 'uppercase' }}>{userProfile?.isAdmin ? 'ADMIN' : 'USER'}</div>
                 </div>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: '#D4AF37', color: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--teal)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>
                   {userProfile?.name?.charAt(0)}
                 </div>
               </div>
             </div>
           </header>
 
-          <main style={{ padding: '32px 40px', flex: 1, overflowY: 'auto', overflowX: 'hidden', height: 'calc(100vh - 72px)' }}>
+          <main style={{ 
+            padding: '40px', 
+            flex: 1, 
+            overflowY: 'auto', 
+            overflowX: 'hidden', 
+            height: 'calc(100vh - 72px)',
+            background: 'var(--cotton)' 
+          }}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -1010,46 +1046,46 @@ export default function AdminDashboardPage() {
                 transition={{ duration: 0.2 }}
               >
                 <GlassCard padding="none">
-                  <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>
                         {activeTab === 'tasks' ? 'Digital Deliverable Matrix' : activeTab === 'bim-reviews' ? 'BIM Review Intelligence Matrix' : activeTab === 'team' ? 'Active Digital Project Team' : activeTab === 'registry' ? 'Digital Asset Registry Index' : activeTab === 'branding' ? 'Project Identity & Branding' : activeTab === 'broadcast' ? 'Elite Broadcast Command' : 'Security Access Registry'}
                       </h2>
 
-                      <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 4 }}>
+                      <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 6, fontWeight: 500, letterSpacing: '0.01em' }}>
                         {activeTab === 'bim-reviews' ? 'Strategic oversight of cross-project BIM submission reviews and status tracking' : activeTab === 'users' ? 'Management of security clearances and administrative roles' : activeTab === 'branding' ? 'Configuration of project branding and site-wide metadata' : activeTab === 'broadcast' ? 'Dispatch real-time classified notifications and news updates' : 'Real-time synchronization with Digital Workflow Systems'}
                       </p>
 
                     </div>
 
                     <div style={{ display: 'flex', gap: 12 }}>
-                      {activeTab === 'users' && userProfile?.role === 'OWNER' && (
-                        <div style={{ display: 'flex', background: 'rgba(212, 175, 55, 0.05)', padding: 4, borderRadius: 10, border: '1px solid rgba(212, 175, 55, 0.1)', marginRight: 20 }}>
+                      {activeTab === 'users' && userProfile?.isAdmin && (
+                        <div style={{ display: 'flex', background: 'var(--secondary)', padding: 4, borderRadius: 10, border: '1px solid var(--border)', marginRight: 20 }}>
                           <button
                             onClick={() => setActiveSubTab('users')}
-                            style={{ padding: '6px 16px', borderRadius: 8, background: activeSubTab === 'users' ? '#D4AF37' : 'transparent', color: activeSubTab === 'users' ? '#0a0a0f' : '#D4AF37', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
+                            style={{ padding: '6px 16px', borderRadius: 8, background: activeSubTab === 'users' ? 'var(--teal)' : 'transparent', color: activeSubTab === 'users' ? 'var(--text-on-primary)' : 'var(--teal)', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
                           >
                             USERS
                           </button>
                           <button
                             onClick={() => setActiveSubTab('policies')}
-                            style={{ padding: '6px 16px', borderRadius: 8, background: activeSubTab === 'policies' ? '#D4AF37' : 'transparent', color: activeSubTab === 'policies' ? '#0a0a0f' : '#D4AF37', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
+                            style={{ padding: '6px 16px', borderRadius: 8, background: activeSubTab === 'policies' ? 'var(--teal)' : 'transparent', color: activeSubTab === 'policies' ? 'var(--text-on-primary)' : 'var(--teal)', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
                           >
                             GROUP POLICY
                           </button>
                         </div>
                       )}
                       {activeTab === 'team' && (
-                        <div style={{ display: 'flex', background: 'rgba(212, 175, 55, 0.05)', padding: 4, borderRadius: 10, border: '1px solid rgba(212, 175, 55, 0.1)', marginRight: 20 }}>
+                        <div style={{ display: 'flex', background: 'var(--secondary)', padding: 4, borderRadius: 10, border: '1px solid var(--border)', marginRight: 20 }}>
                           <button
                             onClick={() => setTeamActiveSubTab('personnel')}
-                            style={{ padding: '6px 16px', borderRadius: 8, background: teamActiveSubTab === 'personnel' ? '#D4AF37' : 'transparent', color: teamActiveSubTab === 'personnel' ? '#0a0a0f' : '#D4AF37', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
+                            style={{ padding: '6px 16px', borderRadius: 8, background: teamActiveSubTab === 'personnel' ? 'var(--teal)' : 'transparent', color: teamActiveSubTab === 'personnel' ? 'var(--text-on-primary)' : 'var(--teal)', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
                           >
                             PERSONNEL
                           </button>
                           <button
                             onClick={() => setTeamActiveSubTab('departments')}
-                            style={{ padding: '6px 16px', borderRadius: 8, background: teamActiveSubTab === 'departments' ? '#D4AF37' : 'transparent', color: teamActiveSubTab === 'departments' ? '#0a0a0f' : '#D4AF37', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
+                            style={{ padding: '6px 16px', borderRadius: 8, background: teamActiveSubTab === 'departments' ? 'var(--teal)' : 'transparent', color: teamActiveSubTab === 'departments' ? 'var(--text-on-primary)' : 'var(--teal)', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
                           >
                             TASK CATEGORIES
                           </button>
@@ -1057,11 +1093,22 @@ export default function AdminDashboardPage() {
                       )}
                       {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'broadcast' && (
                         <div style={{ position: 'relative' }}>
-                          <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
+                          <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                           <input
                             type="text"
                             placeholder="Filter records..."
-                            style={{ padding: '10px 16px 10px 38px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none', width: 240 }}
+                            style={{ 
+                              padding: '12px 20px 12px 42px', 
+                              borderRadius: 14, 
+                              background: 'var(--card-haze)', 
+                              border: '1px solid var(--border)', 
+                              color: 'var(--text-primary)', 
+                              fontSize: 14, 
+                              outline: 'none', 
+                              width: 280,
+                              transition: 'all 300ms',
+                              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
+                            }}
                           />
                         </div>
                       )}
@@ -1089,57 +1136,63 @@ export default function AdminDashboardPage() {
                         </>
                       )}
                       {activeTab !== 'users' && activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'broadcast' && can(activeTab as any, 'edit') && (
-                        <button onClick={handleNewRecord} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, background: '#D4AF37', color: '#0a0a0f', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>
+                        <button 
+                          onClick={handleNewRecord} 
+                          style={{ 
+                            display: 'flex', alignItems: 'center', gap: 12, padding: '14px 32px', 
+                            borderRadius: 16, 
+                            background: 'var(--teal)', color: 'var(--cotton)', border: 'none', cursor: 'pointer', 
+                            fontSize: 13, fontWeight: 900,
+                            boxShadow: 'var(--shadow-premium)',
+                            transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+                            letterSpacing: '0.1em',
+                            textTransform: 'uppercase',
+                            fontFamily: 'var(--font-heading)'
+                          }}
+                          onMouseEnter={(e: any) => e.currentTarget.style.boxShadow = '0 10px 35px rgba(0, 63, 73, 0.3)'}
+                          onMouseLeave={(e: any) => e.currentTarget.style.boxShadow = 'var(--shadow-premium)'}
+                        >
                           <Plus size={18} />
-                          New Record
+                          Authorized Entry
                         </button>
                       )}
                     </div>
                   </div>
 
-                  <div style={{ overflowX: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'broadcast') ? 'hidden' : 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'broadcast') ? 'fixed' : 'auto' }}>
-                      {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'broadcast' && !(activeTab === 'users' && activeSubTab === 'policies') && (
-                        <thead style={{ background: 'rgba(0,0,0,0.1)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ overflowX: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'broadcast' || activeTab === 'homepage') ? 'hidden' : 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'broadcast' || activeTab === 'homepage') ? 'fixed' : 'auto' }}>
+                      {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'broadcast' && activeTab !== 'homepage' && !(activeTab === 'users' && activeSubTab === 'policies') && (
+                        <thead style={{ background: 'transparent', borderBottom: '2px solid var(--border)' }}>
                           <tr>
-                            <th style={{ width: 60, padding: '16px 0', textAlign: 'center' }}>
+                            <th style={{ width: 80, padding: '24px 0', textAlign: 'center' }}>
                               <input
                                 type="checkbox"
                                 checked={selectedIds.size > 0 && selectedIds.size === currentTabIds.length}
                                 onChange={() => toggleSelectAll(currentTabIds)}
-                                style={{ cursor: 'pointer', width: 18, height: 18 }}
+                                style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
                               />
                             </th>
                             {activeTab === 'bim-reviews' ? (
                               <>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Project Identity</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Stage</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Status (InSite)</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Status (Modon/Hill)</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Reviewer</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Due Date</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Submission</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 11, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Control</th>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>BIM Profile</th>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Submission Info</th>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Audit Progress</th>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Control</th>
                               </>
                             ) : (
                               <>
-                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
                                   {activeTab === 'users' ? 'Staff Identity' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Project Personnel' : 'Task Category') : 'Task Definition / Asset'}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                                  {activeTab === 'users' ? 'Designation' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Functional Category' : 'Abbreviation') : 'Task Category'}
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+                                  {activeTab === 'users' ? 'Protocol Clearance' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Functional Category' : 'Abbreviation') : 'Task Category'}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                                  {activeTab === 'users' ? 'Access Control' : activeTab === 'tasks' ? 'Submitter' : activeTab === 'team' && teamActiveSubTab === 'personnel' ? 'Email Interface' : 'Action Hub'}
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+                                  {activeTab === 'users' ? 'Admin Access' : activeTab === 'tasks' ? 'Submitter' : activeTab === 'team' && teamActiveSubTab === 'personnel' ? 'Email Interface' : 'Action Hub'}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                                  {activeTab === 'users' ? 'Security Protocol' : activeTab === 'tasks' ? 'Submission Date' : 'Control'}
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+                                  {activeTab === 'users' ? 'Feature Modules' : activeTab === 'tasks' ? 'Submission Date' : 'Control'}
                                 </th>
-                                {activeTab === 'users' && (
-                                  <th style={{ textAlign: 'center', padding: '12px 32px', fontSize: 13, fontWeight: 900, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                                    Digital Signature
-                                  </th>
-                                )}
                               </>
                             )}
                           </tr>
@@ -1150,55 +1203,58 @@ export default function AdminDashboardPage() {
                           const task = doc.data() as Task;
                           const isSelected = selectedIds.has(doc.id);
                           return (
-                            <tr key={doc.id || `task-${i}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer', background: isSelected ? 'rgba(212, 175, 55, 0.05)' : 'transparent' }} onClick={() => handleEditRecord(task)}>
-                              <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
+                            <motion.tr 
+                              key={doc.id || `task-${i}`} 
+                              whileHover={{ background: 'var(--card-haze)' }}
+                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'transparent', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
+                              onClick={() => handleEditRecord(task)}
+                            >
+                              <td style={{ textAlign: 'center', padding: '32px 0' }} onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={(e) => toggleSelect(doc.id, e as any)}
-                                  style={{ cursor: 'pointer', width: 16, height: 16 }}
+                                  style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
                                 />
                               </td>
-                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <div style={{ fontWeight: 600, fontSize: 15 }}>{task.title}</div>
-                                <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4 }}>ID: {doc.id}</div>
+                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text-primary)', letterSpacing: '0.02em', fontFamily: 'var(--font-heading)' }}>{task.title}</div>
+                                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 8, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase' }}>REGISTRY ID: {doc.id}</div>
                               </td>
-                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <span style={{ fontSize: 13, background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>{task.department}</span>
+                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                <span style={{ fontSize: 10, background: 'var(--secondary)', color: 'var(--teal)', padding: '8px 16px', borderRadius: 10, fontWeight: 900, letterSpacing: '0.1em', border: '1px solid var(--border)', textTransform: 'uppercase' }}>{task.department}</span>
                               </td>
-                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
                                   {task.submitterName && (
                                     <div style={{
-                                      width: 28, height: 28, borderRadius: '50%',
-                                      background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.2)',
-                                      color: '#D4AF37', fontSize: 11, fontWeight: 700,
+                                      width: 36, height: 36, borderRadius: 12,
+                                      background: 'var(--secondary)', border: '1px solid var(--border)',
+                                      color: 'var(--teal)', fontSize: 13, fontWeight: 900,
                                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                                       flexShrink: 0
                                     }}>
-                                      {task.submitterName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                      {task.submitterName?.charAt(0)}
                                     </div>
                                   )}
-                                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{task.submitterName || '—'}</span>
+                                  <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 600 }}>{task.submitterName || '—'}</span>
                                 </div>
                               </td>
-                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>{formatDate(task.submittingDate || (task as any).actualEndDate || (task as any).actualStartDate)}</span>
+                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 800, letterSpacing: '0.05em' }}>{task.submittingDate || '—'}</div>
                               </td>
-                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
-                                  <MoreVertical size={18} />
-                                </button>
+                              <td style={{ padding: '24px 32px', textAlign: 'center' }} onClick={(e) => { e.stopPropagation(); handleEditRecord(task); }}>
+                                <MoreVertical size={20} color="var(--text-muted)" />
                               </td>
-                            </tr>
+                            </motion.tr>
                           );
                         })}
                         {activeTab === 'tasks' && !tasksLoading && tasksSnapshot?.docs.length === 0 && (
                           <tr>
                             <td colSpan={5} style={{ padding: '60px 40px', textAlign: 'center' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(212, 175, 55, 0.06)', border: '1px solid rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <Inbox size={24} style={{ color: 'rgba(212, 175, 55, 0.4)' }} />
+                                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--secondary)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Inbox size={24} style={{ color: 'var(--text-muted)' }} />
                                 </div>
                                 <div>
                                   <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>No current data</p>
@@ -1210,34 +1266,39 @@ export default function AdminDashboardPage() {
                          {activeTab === 'team' && teamActiveSubTab === 'personnel' && membersSnapshot?.docs.map((doc: any, i: number) => {
                             const member = { id: doc.id, ...doc.data() } as any;
                             const isSelected = selectedIds.has(doc.id);
-                            return (
-                              <tr key={doc.id || `member-${i}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer', background: isSelected ? 'rgba(212, 175, 55, 0.05)' : 'transparent' }} onClick={() => handleEditRecord(member)}>
-                                <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={(e) => toggleSelect(doc.id, e as any)}
-                                    style={{ cursor: 'pointer', width: 16, height: 16 }}
-                                  />
-                                </td>
-                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: member.status === 'ACTIVE' ? '#10b981' : '#f59e0b', flexShrink: 0 }} />
-                                   <div style={{ fontWeight: 600, fontSize: 15 }}>{member.name || 'Anonymous User'}</div>
+                             return (
+                            <motion.tr 
+                              key={doc.id || `member-${i}`} 
+                              whileHover={{ background: 'var(--card-haze)' }}
+                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'transparent', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
+                              onClick={() => handleEditRecord(member)}
+                            >
+                              <td style={{ textAlign: 'center', padding: '32px 0' }} onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => toggleSelect(doc.id, e as any)}
+                                  style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
+                                />
+                              </td>
+                               <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+                                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: member.status === 'ACTIVE' ? 'var(--status-success)' : 'var(--status-warning)', flexShrink: 0, boxShadow: member.status === 'ACTIVE' ? 'none' : 'none' }} />
+                                   <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text-primary)', letterSpacing: '0.01em', fontFamily: 'var(--font-heading)' }}>{member.name || 'Anonymous User'}</div>
                                  </div>
                                </td>
-                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                 <span style={{ fontSize: 13, background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>{member.department || 'Awaiting Assignment'}</span>
+                               <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                 <span style={{ fontSize: 10, background: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6', padding: '8px 16px', borderRadius: 10, fontWeight: 900, letterSpacing: '0.1em', border: '1px solid rgba(139, 92, 246, 0.15)', textTransform: 'uppercase' }}>{member.department || 'Awaiting Assignment'}</span>
                                </td>
-                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                 <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>{member.email}</div>
+                               <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                 <div style={{ fontSize: 15, color: 'var(--text-secondary)', fontWeight: 600 }}>{member.email}</div>
                                </td>
-                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
+                               <td style={{ padding: '24px 32px', textAlign: 'center' }}>
                                  <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
-                                   <MoreVertical size={18} />
+                                   <MoreVertical size={20} />
                                  </button>
                                </td>
-                             </tr>
+                             </motion.tr>
                            );
                          })}
 
@@ -1245,20 +1306,20 @@ export default function AdminDashboardPage() {
                           const dept = { id: doc.id, ...doc.data() } as any;
                           const isSelected = selectedIds.has(doc.id);
                           return (
-                            <tr key={doc.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer', background: isSelected ? 'rgba(212, 175, 55, 0.05)' : 'transparent' }} onClick={() => handleEditRecord(dept)}>
+                            <tr key={doc.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'transparent' }} onClick={() => handleEditRecord(dept)}>
                               <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={(e) => toggleSelect(doc.id, e as any)}
-                                  style={{ cursor: 'pointer', width: 16, height: 16 }}
+                                  style={{ cursor: 'pointer', width: 16, height: 16, accentColor: 'var(--teal)' }}
                                 />
                               </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <div style={{ fontWeight: 600, fontSize: 15 }}>{dept.name}</div>
+                                <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>{dept.name}</div>
                               </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <span style={{ fontSize: 13, background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', padding: '4px 10px', borderRadius: 6, fontWeight: 700, letterSpacing: '0.05em' }}>{dept.abbreviation}</span>
+                                <span style={{ fontSize: 13, background: 'var(--secondary)', color: 'var(--teal)', padding: '4px 10px', borderRadius: 6, fontWeight: 700, letterSpacing: '0.05em' }}>{dept.abbreviation}</span>
                               </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
                                 <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>
@@ -1278,8 +1339,8 @@ export default function AdminDashboardPage() {
                           <tr>
                             <td colSpan={5} style={{ padding: '60px 40px', textAlign: 'center' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(212, 175, 55, 0.06)', border: '1px solid rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <Building2 size={24} style={{ color: 'rgba(212, 175, 55, 0.4)' }} />
+                                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--secondary)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Building2 size={24} style={{ color: 'var(--teal)' }} />
                                 </div>
                                 <div>
                                   <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>No current data</p>
@@ -1292,8 +1353,8 @@ export default function AdminDashboardPage() {
                           <tr>
                             <td colSpan={5} style={{ padding: '60px 40px', textAlign: 'center' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(212, 175, 55, 0.06)', border: '1px solid rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <Users size={24} style={{ color: 'rgba(212, 175, 55, 0.4)' }} />
+                                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--secondary)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Users size={24} style={{ color: 'var(--teal)' }} />
                                 </div>
                                 <div>
                                   <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>No current data</p>
@@ -1306,53 +1367,56 @@ export default function AdminDashboardPage() {
                           const review = { id: doc.id, ...doc.data() } as BIMReview;
                           const isSelected = selectedIds.has(doc.id);
                           return (
-                            <tr key={doc.id || `bim-${i}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer', background: isSelected ? 'rgba(212, 175, 55, 0.05)' : 'transparent' }} onClick={() => { setSelectedBimReview(review); setIsModalOpen(true); }}>
-                              <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
+                            <motion.tr 
+                              key={doc.id || `bim-${i}`} 
+                              whileHover={{ background: 'var(--card-haze)' }}
+                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'transparent', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
+                              onClick={() => { setSelectedBimReview(review); setIsModalOpen(true); }}
+                            >
+                              <td style={{ textAlign: 'center', padding: '32px 0' }} onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={(e) => toggleSelect(doc.id, e as any)}
-                                  style={{ cursor: 'pointer', width: 16, height: 16 }}
+                                  style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
                                 />
                               </td>
-                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
-                                <div style={{ fontWeight: 700, fontSize: 13, color: 'white' }}>{review.project}</div>
-                                <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{review.submissionDescription}</div>
+                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text-primary)', letterSpacing: '0.02em', fontFamily: 'var(--font-heading)' }}>{review.project}</div>
+                                <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220, fontWeight: 700, letterSpacing: '0.05em' }}>{review.submissionDescription}</div>
                               </td>
-                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
-                                <span style={{ fontSize: 10, background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', padding: '4px 8px', borderRadius: 6, fontWeight: 900, letterSpacing: '0.05em' }}>{review.designStage}</span>
+                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                <span style={{ fontSize: 10, background: 'var(--secondary)', color: 'var(--teal)', padding: '8px 16px', borderRadius: 10, fontWeight: 900, letterSpacing: '0.1em', border: '1px solid var(--border)', textTransform: 'uppercase' }}>{review.designStage}</span>
                               </td>
-                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 700 }}>{review.insiteBimReviewStatus || '—'}</div>
-                                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{review.stakeholder}</div>
+                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 800 }}>{review.insiteBimReviewStatus || '—'}</div>
+                                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 8, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{review.stakeholder}</div>
                               </td>
-                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 12, color: '#10b981', fontWeight: 800 }}>{review.modonHillFinalReviewStatus || '—'}</div>
+                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 13, color: 'var(--status-success)', fontWeight: 900 }}>{review.modonHillFinalReviewStatus || '—'}</div>
                               </td>
-                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{review.insiteReviewer || '—'}</div>
+                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 700 }}>{review.insiteReviewer || '—'}</div>
                               </td>
-                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 12, color: '#f59e0b', fontWeight: 800 }}>{review.insiteReviewDueDate || '—'}</div>
+                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 14, color: 'var(--status-warning)', fontWeight: 900, letterSpacing: '0.02em' }}>{review.insiteReviewDueDate || '—'}</div>
                               </td>
-                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>{review.submissionDate || '—'}</div>
-                                <div style={{ fontSize: 10, color: review.onAcc === 'SHARED' ? '#10b981' : '#ef4444', fontWeight: 900, marginTop: 4 }}>{review.onAcc}</div>
+                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 700 }}>{review.submissionDate || '—'}</div>
+                                <div style={{ fontSize: 10, color: review.onAcc === 'SHARED' ? 'var(--status-success)' : 'var(--status-error)', fontWeight: 900, marginTop: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{review.onAcc}</div>
                               </td>
-                              <td style={{ padding: '12px 24px', textAlign: 'center' }}>
-                                <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
-                                  <MoreVertical size={18} />
-                                </button>
+                              <td style={{ padding: '24px 32px', textAlign: 'center' }} onClick={(e) => { e.stopPropagation(); setSelectedBimReview(review); setIsModalOpen(true); }}>
+                                <MoreVertical size={22} color="var(--text-muted)" />
                               </td>
-                            </tr>
+                            </motion.tr>
                           );
                         })}
                         {activeTab === 'bim-reviews' && bimReviewsSnapshot?.docs.length === 0 && (
                           <tr>
                             <td colSpan={9} style={{ padding: '60px 40px', textAlign: 'center' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(212, 175, 55, 0.06)', border: '1px solid rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <Layers size={24} style={{ color: 'rgba(212, 175, 55, 0.4)' }} />
+                                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--secondary)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Layers size={24} style={{ color: 'var(--teal)' }} />
                                 </div>
                                 <div>
                                   <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>No intelligence records found</p>
@@ -1367,21 +1431,21 @@ export default function AdminDashboardPage() {
                           const item = doc.data() as DashboardNavItem;
                           const isSelected = selectedIds.has(doc.id);
                           return (
-                            <tr key={doc.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer', background: isSelected ? 'rgba(212, 175, 55, 0.05)' : 'transparent' }} onClick={() => handleEditRecord(item)}>
+                            <tr key={doc.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'transparent' }} onClick={() => handleEditRecord(item)}>
                               <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={(e) => toggleSelect(doc.id, e as any)}
-                                  style={{ cursor: 'pointer', width: 16, height: 16 }}
+                                  style={{ cursor: 'pointer', width: 16, height: 16, accentColor: 'var(--teal)' }}
                                 />
                               </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <div style={{ fontWeight: 600, fontSize: 15 }}>{item.name}</div>
+                                <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>{item.name}</div>
                                 <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4 }}>{item.category}</div>
                               </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <span style={{ fontSize: 13, background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>{item.department || 'General'}</span>
+                                <span style={{ fontSize: 13, background: 'var(--secondary)', color: 'var(--teal)', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>{item.department || 'General'}</span>
                               </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
                                 <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
@@ -1395,8 +1459,8 @@ export default function AdminDashboardPage() {
                           <tr>
                             <td colSpan={5} style={{ padding: '60px 40px', textAlign: 'center' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(212, 175, 55, 0.06)', border: '1px solid rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <LayoutDashboard size={24} style={{ color: 'rgba(212, 175, 55, 0.4)' }} />
+                                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--secondary)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <LayoutDashboard size={24} style={{ color: 'var(--teal)' }} />
                                 </div>
                                 <div>
                                   <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>No current data</p>
@@ -1410,26 +1474,50 @@ export default function AdminDashboardPage() {
                           const userRec = doc.data();
                           const isSelected = selectedIds.has(doc.id);
                           return (
-                            <tr key={doc.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', cursor: 'pointer', background: isSelected ? 'rgba(212, 175, 55, 0.05)' : 'transparent' }} onClick={() => handleEditRecord(userRec)}>
-                              <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
+                            <motion.tr 
+                              key={doc.id} 
+                              whileHover={{ background: 'var(--card-haze)' }}
+                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'transparent', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
+                              onClick={() => handleEditRecord(userRec)}
+                            >
+                              <td style={{ textAlign: 'center', padding: '32px 0' }} onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={(e) => toggleSelect(doc.id, e as any)}
-                                  style={{ cursor: 'pointer', width: 16, height: 16 }}
+                                  style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
                                 />
                               </td>
-                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <div style={{ fontWeight: 600, fontSize: 15 }}>{userRec.name || 'Unknown Subject'}</div>
-                                <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4 }}>{userRec.email}</div>
+                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text-primary)', letterSpacing: '0.01em', fontFamily: 'var(--font-heading)' }}>{userRec.name || 'Unknown Subject'}</div>
+                                <div style={{ fontSize: 14, color: 'var(--text-dim)', marginTop: 8, fontWeight: 500 }}>{userRec.email}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 12 }}>
+                                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: userRec.isVerified ? 'var(--status-success)' : 'var(--status-warning)' }} />
+                                  <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{userRec.isVerified ? 'Access Verified' : 'Handshake Pending'}</span>
+                                </div>
+                              </td>
+                              <td style={{ padding: '16px 32px', textAlign: 'center' }}>
+                                <span style={{ fontSize: 10, background: userRec.isApproved ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)', color: userRec.isApproved ? 'var(--status-success)' : 'var(--status-error)', padding: '6px 12px', borderRadius: 8, fontWeight: 900, letterSpacing: '0.08em' }}>
+                                  {userRec.isApproved ? 'APPROVED' : 'PENDING'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '16px 32px', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                  <Shield size={14} color={userRec.isAdmin ? 'var(--teal)' : 'var(--text-dim)'} />
+                                  <span style={{ fontSize: 12, color: userRec.isAdmin ? 'var(--teal)' : 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.02em' }}>{userRec.isAdmin ? 'ADMIN' : 'USER'}</span>
+                                </div>
                               </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <span style={{ fontSize: 13, background: userRec.role === 'OWNER' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(212, 175, 55, 0.1)', color: userRec.role === 'OWNER' ? '#10b981' : '#D4AF37', padding: '4px 10px', borderRadius: 6, fontWeight: 700, letterSpacing: '0.05em' }}>{userRec.role}</span>
-                              </td>
-                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: userRec.status === 'ACTIVE' ? '#10b981' : '#ef4444' }} />
-                                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{userRec.status || 'ACTIVE'}</span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                                  {userRec.access?.deliverablesRegistry && (
+                                    <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', background: 'var(--secondary)', padding: '2px 6px', borderRadius: 4 }}>DELIVERABLES</span>
+                                  )}
+                                  {userRec.access?.bimReviews && (
+                                    <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--accent)', background: 'var(--border)', padding: '2px 6px', borderRadius: 4 }}>BIM REVIEWS</span>
+                                  )}
+                                  {!userRec.access?.deliverablesRegistry && !userRec.access?.bimReviews && (
+                                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 700 }}>NO MODULES</span>
+                                  )}
                                 </div>
                               </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
@@ -1437,15 +1525,15 @@ export default function AdminDashboardPage() {
                                   <MoreVertical size={18} />
                                 </button>
                               </td>
-                            </tr>
+                            </motion.tr>
                           );
                         })}
                         {activeTab === 'users' && activeSubTab === 'users' && !usersLoading && usersSnapshot?.docs.length === 0 && (
                           <tr>
                             <td colSpan={5} style={{ padding: '60px 40px', textAlign: 'center' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(212, 175, 55, 0.06)', border: '1px solid rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <Shield size={24} style={{ color: 'rgba(212, 175, 55, 0.4)' }} />
+                                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--secondary)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Shield size={24} style={{ color: 'var(--teal)' }} />
                                 </div>
                                 <div>
                                   <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>No current data</p>
@@ -1520,40 +1608,40 @@ export default function AdminDashboardPage() {
                                 style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}
                               >
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                  <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Project Sector / Category</label>
+                                  <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Project Sector / Category</label>
                                   <input
                                     name="title"
                                     value={localTitle}
                                     onChange={(e) => setLocalTitle(e.target.value)}
                                     placeholder="e.g. Infrastructure Hub"
-                                    style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, color: 'white', fontSize: 15, outline: 'none', transition: 'all 200ms' }}
+                                    style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', transition: 'all 200ms' }}
                                   />
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                  <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Primary Project Name</label>
+                                  <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Primary Project Name</label>
                                   <input
                                     name="projectName"
                                     value={localProjectName}
                                     onChange={(e) => setLocalProjectName(e.target.value)}
                                     placeholder="e.g. North Sector Expansion"
-                                    style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, color: 'white', fontSize: 15, outline: 'none', transition: 'all 200ms' }}
+                                    style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', transition: 'all 200ms' }}
                                   />
                                 </div>
 
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 24, gridColumn: 'span 2', padding: 32, background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 28, marginTop: 12 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 24, gridColumn: 'span 2', padding: 32, background: 'var(--section-bg)', border: '1px solid var(--section-bg)', borderRadius: 28, marginTop: 12 }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4AF37' }} />
-                                    <h3 style={{ fontSize: 13, fontWeight: 900, color: 'white', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Global Project Identity & Metadata</h3>
+                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--teal)' }} />
+                                    <h3 style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Global Project Identity & Metadata</h3>
                                   </div>
 
                                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                                     {/* Subtitles Section */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                                      <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Subtitles</label>
+                                      <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Subtitles</label>
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                         {subtitleList.map((sub, idx) => (
-                                          <div key={sub.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12 }}>
-                                            <span style={{ fontSize: 10, fontWeight: 900, color: 'rgba(255,255,255,0.2)', width: 16 }}>{idx + 1}</span>
+                                          <div key={sub.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 12px', background: 'var(--section-bg)', border: '1px solid var(--section-bg)', borderRadius: 12 }}>
+                                            <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--border)', width: 16 }}>{idx + 1}</span>
                                             <input
                                               value={sub.text}
                                               onChange={(e) => {
@@ -1561,36 +1649,36 @@ export default function AdminDashboardPage() {
                                                 newList[idx].text = e.target.value;
                                                 setSubtitleList(newList);
                                               }}
-                                              style={{ flex: 1, background: 'none', border: 'none', color: 'white', fontSize: 13, outline: 'none' }}
+                                              style={{ flex: 1, background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
                                             />
                                             <button type="button" onClick={() => setSubtitleList(prev => prev.filter((_, i) => i !== idx))} disabled={idx === 0} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: idx === 0 ? 0 : 0.6 }}><X size={14} /></button>
                                           </div>
                                         ))}
-                                        <button type="button" onClick={() => setSubtitleList([...subtitleList, { id: `sub-${Date.now()}`, text: '' }])} style={{ padding: '8px 16px', borderRadius: 10, background: 'rgba(212, 175, 55, 0.05)', border: '1px dashed rgba(212, 175, 55, 0.2)', color: '#D4AF37', fontSize: 10, fontWeight: 800, cursor: 'pointer' }}>+ ADD SUBTITLE</button>
+                                        <button type="button" onClick={() => setSubtitleList([...subtitleList, { id: `sub-${Date.now()}`, text: '' }])} style={{ padding: '8px 16px', borderRadius: 10, background: 'var(--secondary)', border: '1px dashed var(--border)', color: 'var(--teal)', fontSize: 10, fontWeight: 800, cursor: 'pointer' }}>+ ADD SUBTITLE</button>
                                       </div>
                                     </div>
 
                                     {/* Region & Status Section */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                        <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Region</label>
+                                        <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Region</label>
                                         <div style={{ position: 'relative' }}>
-                                          <MapPin size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.2)' }} />
-                                          <input value={localLocation} onChange={(e) => setLocalLocation(e.target.value)} style={{ width: '100%', padding: '12px 16px 12px 40px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }} />
+                                          <MapPin size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--border)' }} />
+                                          <input value={localLocation} onChange={(e) => setLocalLocation(e.target.value)} style={{ width: '100%', padding: '12px 16px 12px 40px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }} />
                                         </div>
                                       </div>
                                     </div>
 
                                     {/* Atmospheric Branding Section */}
-                                      <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 24, padding: 32, background: 'rgba(212, 175, 55, 0.03)', border: '1px solid rgba(212, 175, 55, 0.1)', borderRadius: 28, marginTop: 12 }}>
+                                      <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 24, padding: 32, background: 'var(--secondary)', border: '1px solid var(--border)', borderRadius: 28, marginTop: 12 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4AF37' }} />
-                                            <h3 style={{ fontSize: 13, fontWeight: 900, color: 'white', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Atmospheric Branding (Header Banner)</h3>
+                                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--teal)' }} />
+                                            <h3 style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Atmospheric Branding (Header Banner)</h3>
                                           </div>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(212, 175, 55, 0.1)', padding: '6px 14px', borderRadius: 10, border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-                                            <ImageIcon size={14} color="#D4AF37" />
-                                            <span style={{ fontSize: 10, fontWeight: 900, color: '#D4AF37' }}>REQUIRED SIZE: 2400 X 200 PX</span>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--border)', padding: '6px 14px', borderRadius: 10, border: '1px solid var(--border)' }}>
+                                            <ImageIcon size={14} color="var(--teal)" />
+                                            <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>REQUIRED SIZE: 2400 X 200 PX</span>
                                           </div>
                                         </div>
 
@@ -1599,8 +1687,8 @@ export default function AdminDashboardPage() {
                                           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                                             <div 
                                               style={{ 
-                                                width: '100%', minHeight: 140, borderRadius: 16, border: '1px dashed rgba(212, 175, 55, 0.3)', 
-                                                background: 'rgba(0,0,0,0.2)', overflow: 'hidden', position: 'relative',
+                                                width: '100%', minHeight: 140, borderRadius: 16, border: '1px dashed var(--teal)', 
+                                                background: 'var(--section-bg)', overflow: 'hidden', position: 'relative',
                                                 display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start',
                                                 padding: '24px 32px'
                                               }}
@@ -1622,14 +1710,14 @@ export default function AdminDashboardPage() {
                                                   />
                                                   {/* Dashboard Simulation Overlay */}
                                                   <div style={{ position: 'relative', zIndex: 1, pointerEvents: 'none' }}>
-                                                    <div style={{ fontSize: 18, fontWeight: 900, color: 'white', opacity: 0.6 }}>{localProjectName || projectData?.projectName}</div>
-                                                    <div style={{ fontSize: 10, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginTop: 4, letterSpacing: '0.1em' }}>PROJECT TERMINAL PREVIEW</div>
+                                                    <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', opacity: 0.6 }}>{localProjectName || projectData?.projectName}</div>
+                                                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', marginTop: 4, letterSpacing: '0.1em' }}>PROJECT TERMINAL PREVIEW</div>
                                                   </div>
                                                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', display: 'flex', alignItems: 'flex-end', padding: 16 }}>
                                                     <button 
                                                       type="button" 
                                                       onClick={() => document.getElementById('header-bg-input')?.click()}
-                                                      style={{ background: '#D4AF37', border: 'none', color: '#0a0a0f', padding: '8px 16px', borderRadius: 8, fontSize: 11, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                                                      style={{ background: 'var(--teal)', border: 'none', color: 'var(--surface)', padding: '8px 16px', borderRadius: 8, fontSize: 11, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
                                                     >
                                                       <ImageIcon size={14} /> REPLACE ASSET
                                                     </button>
@@ -1637,11 +1725,11 @@ export default function AdminDashboardPage() {
                                                 </>
                                               ) : (
                                                 <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                                                  <ImageIcon size={32} color="rgba(212, 175, 55, 0.2)" />
+                                                  <ImageIcon size={32} color="var(--border)" />
                                                   <button 
                                                     type="button" 
                                                     onClick={() => document.getElementById('header-bg-input')?.click()}
-                                                    style={{ background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.2)', color: '#D4AF37', padding: '10px 24px', borderRadius: 10, fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
+                                                    style={{ background: 'var(--border)', border: '1px solid var(--border)', color: 'var(--teal)', padding: '10px 24px', borderRadius: 10, fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
                                                   >
                                                     UPLOAD BANNER
                                                   </button>
@@ -1671,47 +1759,47 @@ export default function AdminDashboardPage() {
                                           </div>
 
                                           {/* Sliders */}
-                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: '12px 24px', background: 'rgba(0,0,0,0.2)', borderRadius: 20 }}>
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: '12px 24px', background: 'var(--section-bg)', borderRadius: 20 }}>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <label style={{ fontSize: 10, fontWeight: 900, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Atmospheric Opacity</label>
-                                                <span style={{ fontSize: 10, fontWeight: 900, color: '#D4AF37' }}>{bgOpacity}%</span>
+                                                <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Atmospheric Opacity</label>
+                                                <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>{bgOpacity}%</span>
                                               </div>
-                                              <input type="range" min="0" max="100" value={bgOpacity} onChange={(e) => setBgOpacity(Number(e.target.value))} style={{ width: '100%', accentColor: '#D4AF37' }} />
+                                              <input type="range" min="0" max="100" value={bgOpacity} onChange={(e) => setBgOpacity(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--teal)' }} />
                                             </div>
 
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <label style={{ fontSize: 10, fontWeight: 900, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Vertical Focus Offset (Y)</label>
-                                                <span style={{ fontSize: 10, fontWeight: 900, color: '#D4AF37' }}>{bgPosY}%</span>
+                                                <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Vertical Focus Offset (Y)</label>
+                                                <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>{bgPosY}%</span>
                                               </div>
-                                              <input type="range" min="0" max="100" value={bgPosY} onChange={(e) => setBgPosY(Number(e.target.value))} style={{ width: '100%', accentColor: '#D4AF37' }} />
+                                              <input type="range" min="0" max="100" value={bgPosY} onChange={(e) => setBgPosY(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--teal)' }} />
                                             </div>
 
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <label style={{ fontSize: 10, fontWeight: 900, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Horizontal Alignment (X)</label>
-                                                <span style={{ fontSize: 10, fontWeight: 900, color: '#D4AF37' }}>{bgPosX}%</span>
+                                                <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Horizontal Alignment (X)</label>
+                                                <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>{bgPosX}%</span>
                                               </div>
-                                              <input type="range" min="0" max="100" value={bgPosX} onChange={(e) => setBgPosX(Number(e.target.value))} style={{ width: '100%', accentColor: '#D4AF37' }} />
+                                              <input type="range" min="0" max="100" value={bgPosX} onChange={(e) => setBgPosX(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--teal)' }} />
                                             </div>
                                           </div>
                                         </div>
                                       </div>
 
                                     {/* Partner Logo Registry Section (Elite Vector Hub) */}
-                                    <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 24, padding: 32, background: 'rgba(212, 175, 55, 0.03)', border: '1px solid rgba(212, 175, 55, 0.1)', borderRadius: 28, marginTop: 12 }}>
+                                    <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 24, padding: 32, background: 'var(--secondary)', border: '1px solid var(--border)', borderRadius: 28, marginTop: 12 }}>
                                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4AF37' }} />
-                                          <h3 style={{ fontSize: 13, fontWeight: 900, color: 'white', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Partner Logo Registry (Top Bar Display)</h3>
+                                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--teal)' }} />
+                                          <h3 style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Partner Logo Registry (Top Bar Display)</h3>
                                         </div>
                                         <button 
                                           type="button" 
                                           onClick={() => document.getElementById('partner-logo-input')?.click()} 
                                           style={{ 
-                                            padding: '8px 16px', borderRadius: 10, background: '#D4AF37', 
-                                            border: 'none', color: '#0a0a0f', fontSize: 11, fontWeight: 900, 
+                                            padding: '8px 16px', borderRadius: 10, background: 'var(--teal)', 
+                                            border: 'none', color: 'var(--surface)', fontSize: 11, fontWeight: 900, 
                                             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 
                                           }}
                                         >
@@ -1735,27 +1823,27 @@ export default function AdminDashboardPage() {
                                             initial={{ opacity: 0, scale: 0.9 }} 
                                             animate={{ opacity: 1, scale: 1 }} 
                                             style={{ 
-                                              padding: 20, background: 'rgba(255,255,255,0.02)', 
-                                              border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, 
+                                              padding: 20, background: 'var(--section-bg)', 
+                                              border: '1px solid var(--section-bg)', borderRadius: 24, 
                                               position: 'relative', display: 'flex', flexDirection: 'column', 
                                               alignItems: 'center', gap: 20,
-                                              boxShadow: '0 10px 20px rgba(0,0,0,0.2)'
+                                              boxShadow: '0 10px 20px var(--section-bg)'
                                             }}
                                           >
-                                            <div style={{ width: '100%', height: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', borderRadius: 16, padding: 16, border: '1px solid rgba(212, 175, 55, 0.05)' }}>
-                                              <img src={logo.url} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', filter: 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.2))' }} alt="Partner" />
+                                            <div style={{ width: '100%', height: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', borderRadius: 16, padding: 16, border: '1px solid var(--secondary)' }}>
+                                              <img src={logo.url} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', filter: 'drop-shadow(0 0 8px var(--border))' }} alt="Partner" />
                                             </div>
                                             <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                                              <button type="button" onClick={() => movePartnerLogo(idx, 'up')} disabled={idx === 0} style={{ flex: 1, padding: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, color: '#D4AF37', cursor: 'pointer', opacity: idx === 0 ? 0.2 : 0.8 }} title="Move Left"><ChevronLeft size={16} /></button>
-                                              <button type="button" onClick={() => movePartnerLogo(idx, 'down')} disabled={idx === partnerLogosList.length - 1} style={{ flex: 1, padding: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, color: '#D4AF37', cursor: 'pointer', opacity: idx === partnerLogosList.length - 1 ? 0.2 : 0.8 }} title="Move Right"><ChevronRight size={16} /></button>
+                                              <button type="button" onClick={() => movePartnerLogo(idx, 'up')} disabled={idx === 0} style={{ flex: 1, padding: '8px', background: 'var(--section-bg)', border: '1px solid var(--section-bg)', borderRadius: 10, color: 'var(--teal)', cursor: 'pointer', opacity: idx === 0 ? 0.2 : 0.8 }} title="Move Left"><ChevronLeft size={16} /></button>
+                                              <button type="button" onClick={() => movePartnerLogo(idx, 'down')} disabled={idx === partnerLogosList.length - 1} style={{ flex: 1, padding: '8px', background: 'var(--section-bg)', border: '1px solid var(--section-bg)', borderRadius: 10, color: 'var(--teal)', cursor: 'pointer', opacity: idx === partnerLogosList.length - 1 ? 0.2 : 0.8 }} title="Move Right"><ChevronRight size={16} /></button>
                                               <button type="button" onClick={() => removePartnerLogo(idx)} style={{ flex: 1, padding: '8px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', borderRadius: 10, color: '#ef4444', cursor: 'pointer' }} title="Purge Logo"><Trash2 size={16} /></button>
                                             </div>
                                           </motion.div>
                                         ))}
                                         {partnerLogosList.length === 0 && (
-                                          <div style={{ gridColumn: 'span 4', padding: '40px', textAlign: 'center', background: 'rgba(255,255,255,0.01)', border: '1px dashed rgba(255,255,255,0.05)', borderRadius: 20 }}>
-                                            <ImageIcon size={32} style={{ color: 'rgba(255,255,255,0.1)', marginBottom: 12 }} />
-                                            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', margin: 0 }}>No partner identity vectors registered. Upload logos to populate the Top Bar.</p>
+                                          <div style={{ gridColumn: 'span 4', padding: '40px', textAlign: 'center', background: 'rgba(255,255,255,0.01)', border: '1px dashed var(--section-bg)', borderRadius: 20 }}>
+                                            <ImageIcon size={32} style={{ color: 'var(--border)', marginBottom: 12 }} />
+                                            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>No partner identity vectors registered. Upload logos to populate the Top Bar.</p>
                                           </div>
                                         )}
                                       </div>
@@ -1764,12 +1852,12 @@ export default function AdminDashboardPage() {
                                     {/* Badges Section */}
                                     <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
                                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Insight Badges</label>
-                                        <button type="button" onClick={() => setLocalHeaderBadges([...localHeaderBadges, { id: `manual-${Date.now()}`, label: 'New Insight', color: '#D4AF37', isVisible: true }])} style={{ padding: '4px 12px', borderRadius: 8, background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.2)', color: '#D4AF37', fontSize: 10, fontWeight: 900, cursor: 'pointer' }}>+ ADD BADGE</button>
+                                        <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Insight Badges</label>
+                                        <button type="button" onClick={() => setLocalHeaderBadges([...localHeaderBadges, { id: `manual-${Date.now()}`, label: 'New Insight', color: 'var(--teal)', isVisible: true }])} style={{ padding: '4px 12px', borderRadius: 8, background: 'var(--border)', border: '1px solid var(--border)', color: 'var(--teal)', fontSize: 10, fontWeight: 900, cursor: 'pointer' }}>+ ADD BADGE</button>
                                       </div>
                                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
                                         {localHeaderBadges.map((badge, idx) => (
-                                          <div key={badge.id} style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', gap: 12, alignItems: 'center' }}>
+                                          <div key={badge.id} style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.01)', border: '1px solid var(--section-bg)', display: 'flex', gap: 12, alignItems: 'center' }}>
                                             <input type="color" value={badge.color} onChange={(e) => {
                                               const newList = [...localHeaderBadges];
                                               newList[idx].color = e.target.value;
@@ -1779,12 +1867,12 @@ export default function AdminDashboardPage() {
                                               const newList = [...localHeaderBadges];
                                               newList[idx].label = e.target.value;
                                               setLocalHeaderBadges(newList);
-                                            }} style={{ flex: 1, background: 'none', border: 'none', color: 'white', fontSize: 13, outline: 'none', fontWeight: 600 }} />
+                                            }} style={{ flex: 1, background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: 13, outline: 'none', fontWeight: 600 }} />
                                             <button type="button" onClick={() => {
                                               const newList = [...localHeaderBadges];
                                               newList[idx].isVisible = !newList[idx].isVisible;
                                               setLocalHeaderBadges(newList);
-                                            }} style={{ background: badge.isVisible ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.05)', color: badge.isVisible ? '#10b981' : 'rgba(255,255,255,0.3)', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 9, fontWeight: 900 }}>{badge.isVisible ? 'LIVE' : 'HID'} {badge.isVisible ? <Check size={10} /> : <X size={10} />}</button>
+                                            }} style={{ background: badge.isVisible ? 'rgba(16, 185, 129, 0.1)' : 'var(--section-bg)', color: badge.isVisible ? '#10b981' : 'var(--text-secondary)', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 9, fontWeight: 900 }}>{badge.isVisible ? 'LIVE' : 'HID'} {badge.isVisible ? <Check size={10} /> : <X size={10} />}</button>
                                             {!badge.isAutomated && (
                                               <button type="button" onClick={() => setLocalHeaderBadges(localHeaderBadges.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.6 }}><X size={14} /></button>
                                             )}
@@ -1795,29 +1883,29 @@ export default function AdminDashboardPage() {
                                   </div>
                                 </div>
 
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, gridColumn: 'span 2', padding: 24, background: 'rgba(212, 175, 55, 0.03)', border: '1px solid rgba(212, 175, 55, 0.1)', borderRadius: 20 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, gridColumn: 'span 2', padding: 24, background: 'var(--secondary)', border: '1px solid var(--border)', borderRadius: 20 }}>
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <label style={{ fontSize: 11, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Authorized Domain Spectrum (Access Control)</label>
+                                    <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Authorized Domain Spectrum (Access Control)</label>
                                     <span style={{ fontSize: 10, color: 'rgba(212, 175, 55, 0.5)', fontWeight: 700 }}>RESTRICTS NEW REGISTRATIONS</span>
                                   </div>
 
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, padding: 16, background: 'rgba(0,0,0,0.2)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, padding: 16, background: 'var(--section-bg)', borderRadius: 12, border: '1px solid var(--section-bg)' }}>
                                     {localAllowedDomains.length === 0 && (
-                                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)', fontWeight: 500, fontStyle: 'italic' }}>No domain restrictions active — All identities allowed.</div>
+                                      <div style={{ fontSize: 12, color: 'var(--border)', fontWeight: 500, fontStyle: 'italic' }}>No domain restrictions active — All identities allowed.</div>
                                     )}
                                     {localAllowedDomains.map((domain, idx) => (
                                       <motion.div
                                         key={domain}
                                         initial={{ scale: 0.8, opacity: 0 }}
                                         animate={{ scale: 1, opacity: 1 }}
-                                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.2)', borderRadius: 8, color: '#D4AF37', fontSize: 12, fontWeight: 700 }}
+                                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'var(--border)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--teal)', fontSize: 12, fontWeight: 700 }}
                                       >
                                         <Globe size={12} />
                                         @{domain}
                                         <button
                                           type="button"
                                           onClick={() => setLocalAllowedDomains(prev => prev.filter((_, i) => i !== idx))}
-                                          style={{ background: 'transparent', border: 'none', color: '#D4AF37', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 2, opacity: 0.6 }}
+                                          style={{ background: 'transparent', border: 'none', color: 'var(--teal)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 2, opacity: 0.6 }}
                                         >
                                           <X size={12} />
                                         </button>
@@ -1839,26 +1927,26 @@ export default function AdminDashboardPage() {
                                           }
                                         }}
                                         placeholder="Add authorized domain (e.g. keoic.com)..."
-                                        style={{ width: '100%', background: 'transparent', border: 'none', color: 'white', fontSize: 13, outline: 'none', padding: '4px 0' }}
+                                        style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13, outline: 'none', padding: '4px 0' }}
                                       />
                                     </div>
                                   </div>
-                                  <p style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 4 }}>Press <span style={{ color: 'white' }}>Enter</span> to add a domain signature to the spectrum.</p>
+                                  <p style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 4 }}>Press <span style={{ color: 'var(--text-primary)' }}>Enter</span> to add a domain signature to the spectrum.</p>
                                 </div>
 
                                 <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
                                   <motion.button
-                                    whileHover={{ scale: 1.02, boxShadow: '0 15px 30px rgba(212, 175, 55, 0.4)' }}
+                                    whileHover={{ scale: 1.02, boxShadow: '0 15px 30px var(--teal)' }}
                                     whileTap={{ scale: 0.98 }}
                                     type="submit"
                                     disabled={isBrandingUpdating}
                                     style={{
                                       padding: '16px 48px',
-                                      background: isBrandingUpdating ? 'rgba(212, 175, 55, 0.5)' : '#D4AF37',
-                                      color: '#0a0a0f', border: 'none', borderRadius: 16, fontWeight: 900,
+                                      background: isBrandingUpdating ? 'rgba(212, 175, 55, 0.5)' : 'var(--teal)',
+                                      color: 'var(--surface)', border: 'none', borderRadius: 16, fontWeight: 900,
                                       cursor: isBrandingUpdating ? 'not-allowed' : 'pointer',
                                       fontSize: 15, letterSpacing: '0.05em',
-                                      boxShadow: '0 8px 16px rgba(212, 175, 55, 0.3)',
+                                      boxShadow: '0 8px 16px var(--teal)',
                                       display: 'flex', alignItems: 'center', gap: 12
                                     }}
                                   >
@@ -1887,10 +1975,10 @@ export default function AdminDashboardPage() {
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                        <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-                                          <Settings size={18} color="#D4AF37" />
+                                        <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}>
+                                          <Settings size={18} color="var(--teal)" />
                                         </div>
-                                        <h3 style={{ fontSize: 18, fontWeight: 900, color: 'white', margin: 0 }}>Reporting Engine Command Center</h3>
+                                        <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>Reporting Engine Command Center</h3>
                                       </div>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                         <button
@@ -1905,17 +1993,17 @@ export default function AdminDashboardPage() {
                                         >
                                           <FileText size={14} /> TEST PDF
                                         </button>
-                                        <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.06)', margin: '0 8px' }} />
+                                        <div style={{ width: 1, height: 24, background: 'var(--border)', margin: '0 8px' }} />
                                         <button
                                           onClick={handleManualSync}
                                           disabled={isSavingReport}
                                           style={{
                                             padding: '10px 24px', borderRadius: 12, border: 'none',
-                                            background: saveSuccess ? '#10b981' : '#D4AF37',
-                                            color: '#0a0a0f', fontSize: 11, fontWeight: 900,
+                                            background: saveSuccess ? '#10b981' : 'var(--teal)',
+                                            color: 'var(--surface)', fontSize: 11, fontWeight: 900,
                                             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
                                             transition: 'all 200ms', opacity: isSavingReport ? 0.7 : 1,
-                                            boxShadow: saveSuccess ? '0 0 20px rgba(16, 185, 129, 0.2)' : '0 10px 20px rgba(212, 175, 55, 0.1)'
+                                            boxShadow: saveSuccess ? '0 0 20px rgba(16, 185, 129, 0.2)' : '0 10px 20px var(--border)'
                                           }}
                                         >
                                           {saveSuccess ? <CheckCircle2 size={14} /> : <Save size={14} />}
@@ -1924,52 +2012,52 @@ export default function AdminDashboardPage() {
                                       </div>
                                     </div>
 
-                                    <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                                    <div style={{ padding: 24, background: 'var(--section-bg)', border: '1px solid var(--section-bg)', borderRadius: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#D4AF37' }} />
-                                        <span style={{ fontSize: 10, fontWeight: 900, color: 'white', letterSpacing: '0.1em' }}>GLOBAL REPORT TEMPLATE CONFIGURATION</span>
+                                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--teal)' }} />
+                                        <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.1em' }}>GLOBAL REPORT TEMPLATE CONFIGURATION</span>
                                       </div>
                                       
                                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                          <label style={{ fontSize: 9, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Report Title</label>
+                                          <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Report Title</label>
                                           <input
                                             value={localReportTitle}
                                             onChange={(e) => setLocalReportTitle(e.target.value)}
                                             placeholder="e.g. Executive Status Report"
-                                            style={{ padding: '12px 14px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: 'white', fontSize: 13, outline: 'none' }}
+                                            style={{ padding: '12px 14px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
                                           />
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                          <label style={{ fontSize: 9, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Subtitle / Reference</label>
+                                          <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Subtitle / Reference</label>
                                           <input
                                             value={localReportSubtitle}
                                             onChange={(e) => setLocalReportSubtitle(e.target.value)}
                                             placeholder="e.g. Q2 Performance Overview"
-                                            style={{ padding: '12px 14px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: 'white', fontSize: 13, outline: 'none' }}
+                                            style={{ padding: '12px 14px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
                                           />
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, gridColumn: 'span 2' }}>
-                                          <label style={{ fontSize: 9, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cover Summary / Disclaimer</label>
+                                          <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cover Summary / Disclaimer</label>
                                           <textarea
                                             value={localReportSummary}
                                             onChange={(e) => setLocalReportSummary(e.target.value)}
                                             placeholder="Detailed project summary for the cover page..."
                                             rows={2}
-                                            style={{ padding: '12px 14px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: 'white', fontSize: 13, outline: 'none', resize: 'none' }}
+                                            style={{ padding: '12px 14px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 13, outline: 'none', resize: 'none' }}
                                           />
                                         </div>
                                       </div>
 
-                                      <div style={{ width: '100%', height: 1, background: 'rgba(255,255,255,0.04)', margin: '8px 0' }} />
+                                      <div style={{ width: '100%', height: 1, background: 'var(--section-bg)', margin: '8px 0' }} />
 
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa' }} />
-                                        <span style={{ fontSize: 10, fontWeight: 900, color: 'white', letterSpacing: '0.1em' }}>DOCUMENT HEADER REGISTRY</span>
+                                        <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.1em' }}>DOCUMENT HEADER REGISTRY</span>
                                       </div>
                                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                                         {localSummaryFields.map((field, idx) => (
-                                            <div key={field.id} style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1.5fr', gap: 14, alignItems: 'center', background: 'rgba(0,0,0,0.25)', padding: '12px 14px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.04)', transition: 'all 200ms' }}>
+                                            <div key={field.id} style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1.5fr', gap: 14, alignItems: 'center', background: 'rgba(0,0,0,0.25)', padding: '12px 14px', borderRadius: 14, border: '1px solid var(--section-bg)', transition: 'all 200ms' }}>
                                               <button
                                                 type="button"
                                                 onClick={() => {
@@ -1977,12 +2065,12 @@ export default function AdminDashboardPage() {
                                                   updated[idx] = { ...updated[idx], isVisible: !updated[idx].isVisible };
                                                   setLocalSummaryFields(updated);
                                                 }}
-                                                style={{ width: 26, height: 26, borderRadius: 6, border: 'none', background: field.isVisible ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.02)', color: field.isVisible ? '#10b981' : 'rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
+                                                style={{ width: 26, height: 26, borderRadius: 6, border: 'none', background: field.isVisible ? 'rgba(16, 185, 129, 0.1)' : 'var(--section-bg)', color: field.isVisible ? '#10b981' : 'var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
                                               >
                                                 {field.isVisible ? <CheckCircle2 size={14} /> : <X size={14} />}
                                               </button>
                                               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                <span style={{ fontSize: 9, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', minWidth: 40, letterSpacing: '0.05em' }}>Label</span>
+                                                <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', minWidth: 40, letterSpacing: '0.05em' }}>Label</span>
                                                 <input
                                                   value={field.label}
                                                   onChange={e => {
@@ -1990,12 +2078,12 @@ export default function AdminDashboardPage() {
                                                     updated[idx] = { ...updated[idx], label: e.target.value };
                                                     setLocalSummaryFields(updated);
                                                   }}
-                                                  style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '4px 0', color: 'white', fontSize: 13, outline: 'none' }}
+                                                  style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', padding: '4px 0', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
                                                   placeholder="Label Text"
                                                 />
                                               </div>
                                               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                <span style={{ fontSize: 9, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', minWidth: 40, letterSpacing: '0.05em' }}>Value</span>
+                                                <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', minWidth: 40, letterSpacing: '0.05em' }}>Value</span>
                                                 <input
                                                   value={field.value || (field.id === 'reportTitle' ? localReportTitle : field.id === 'projectName' ? localProjectName : field.id === 'periodReference' ? localReportSubtitle : field.id === 'temporalReference' ? localTemporalReference : '')}
                                                   onChange={e => {
@@ -2008,7 +2096,7 @@ export default function AdminDashboardPage() {
                                                     if (field.id === 'periodReference') setLocalReportSubtitle(e.target.value);
                                                     if (field.id === 'temporalReference') setLocalTemporalReference(e.target.value);
                                                   }}
-                                                  style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '4px 0', color: 'white', fontSize: 13, outline: 'none' }}
+                                                  style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', padding: '4px 0', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
                                                   placeholder={['activeDate', 'generatedOn', 'totalTasks'].includes(field.id) ? "Dynamic Fallback" : (field.id === 'periodReference' ? "Operational Performance & Deliverables" : (field.id === 'temporalReference' ? "MAY 2026 HUB RECAP" : "Hardcoded Value"))}
                                                 />
                                               </div>
@@ -2017,59 +2105,59 @@ export default function AdminDashboardPage() {
                                         </div>
 
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'rgba(212, 175, 55, 0.05)', padding: '16px 20px', borderRadius: 16, border: '1px solid rgba(212, 175, 55, 0.1)' }}>
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--secondary)', padding: '16px 20px', borderRadius: 16, border: '1px solid var(--border)' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                              <Globe size={14} color="#D4AF37" opacity={0.6} />
+                                              <Globe size={14} color="var(--teal)" opacity={0.6} />
                                               <span style={{ fontSize: 9, fontWeight: 900, color: 'rgba(212,175,55,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Administrative Branding</span>
                                             </div>
-                                            <input value={localReportBranding} onChange={(e) => setLocalReportBranding(e.target.value)} style={{ padding: '8px 0', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(212, 175, 55, 0.2)', color: '#D4AF37', fontSize: 13, outline: 'none', fontWeight: 800 }} placeholder="KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT" />
+                                            <input value={localReportBranding} onChange={(e) => setLocalReportBranding(e.target.value)} style={{ padding: '8px 0', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', color: 'var(--teal)', fontSize: 13, outline: 'none', fontWeight: 800 }} placeholder="KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT" />
                                           </div>
-                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'rgba(255,255,255,0.03)', padding: '16px 20px', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)' }}>
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--section-bg)', padding: '16px 20px', borderRadius: 16, border: '1px solid var(--section-bg)' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                              <Shield size={14} color="white" opacity={0.3} />
-                                              <span style={{ fontSize: 9, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Security Footer Protocol</span>
+                                              <Shield size={14} color='var(--text-primary)' opacity={0.3} />
+                                              <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Security Footer Protocol</span>
                                             </div>
-                                            <input value={localReportFooter} onChange={(e) => setLocalReportFooter(e.target.value)} style={{ padding: '8px 0', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: 13, outline: 'none', opacity: 0.8 }} placeholder="PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM" />
+                                            <input value={localReportFooter} onChange={(e) => setLocalReportFooter(e.target.value)} style={{ padding: '8px 0', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 13, outline: 'none', opacity: 0.8 }} placeholder="PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM" />
                                           </div>
                                         </div>
 
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(0,0,0,0.3)', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(0,0,0,0.3)', padding: '12px 14px', borderRadius: 12, border: '1px solid var(--section-bg)' }}>
                                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <span style={{ fontSize: 9, fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Executive Narrative Overlay</span>
+                                            <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Executive Narrative Overlay</span>
                                           </div>
-                                          <textarea value={localReportSummary} onChange={(e) => setLocalReportSummary(e.target.value)} rows={2} style={{ padding: '8px 0', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'white', resize: 'none', fontSize: 12, outline: 'none', lineHeight: 1.5 }} placeholder="Enter official executive disclaimer narrative..." />
+                                          <textarea value={localReportSummary} onChange={(e) => setLocalReportSummary(e.target.value)} rows={2} style={{ padding: '8px 0', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', color: 'var(--text-primary)', resize: 'none', fontSize: 12, outline: 'none', lineHeight: 1.5 }} placeholder="Enter official executive disclaimer narrative..." />
                                         </div>
                                       </div>
-                                      <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', margin: 0, fontStyle: 'italic' }}>* Toggling visibility off hides the entire header row from exported document structures.</p>
+                                      <p style={{ fontSize: 10, color: 'var(--text-secondary)', margin: 0, fontStyle: 'italic' }}>* Toggling visibility off hides the entire header row from exported document structures.</p>
                                     </div>
 
-                                    <div style={{ padding: 24, background: 'rgba(212, 175, 55, 0.03)', border: '1px solid rgba(212, 175, 55, 0.1)', borderRadius: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                                    <div style={{ padding: 24, background: 'var(--secondary)', border: '1px solid var(--border)', borderRadius: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#D4AF37' }} />
-                                        <span style={{ fontSize: 10, fontWeight: 900, color: '#D4AF37', letterSpacing: '0.1em' }}>AESTHETIC VECTORS</span>
+                                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--teal)' }} />
+                                        <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)', letterSpacing: '0.1em' }}>AESTHETIC VECTORS</span>
                                       </div>
 
                                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
                                         {/* PDF Section */}
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                                          <div style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 10, borderLeft: '3px solid #60a5fa' }}>
+                                          <div style={{ padding: '8px 12px', background: 'var(--section-bg)', borderRadius: 10, borderLeft: '3px solid #60a5fa' }}>
                                             <span style={{ fontSize: 9, fontWeight: 900, color: '#60a5fa', letterSpacing: '0.1em' }}>PDF ATMOSPHERE CALIBRATION</span>
                                           </div>
                                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                             <div>
-                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', display: 'block', marginBottom: 6 }}>PRIMARY BG</label>
+                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>PRIMARY BG</label>
                                               <input type="color" value={localReportBgColor} onChange={(e) => setLocalReportBgColor(e.target.value)} style={{ width: '100%', height: 32, border: 'none', background: 'none', cursor: 'pointer' }} title="Main background of PDF pages" />
                                             </div>
                                             <div>
-                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', display: 'block', marginBottom: 6 }}>ACCENT LINE</label>
+                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>ACCENT LINE</label>
                                               <input type="color" value={localReportAccentColor} onChange={(e) => setLocalReportAccentColor(e.target.value)} style={{ width: '100%', height: 32, border: 'none', background: 'none', cursor: 'pointer' }} title="Left-side vertical brand accent" />
                                             </div>
                                             <div>
-                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', display: 'block', marginBottom: 6 }}>HEADING TEXT</label>
+                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>HEADING TEXT</label>
                                               <input type="color" value={localReportHeaderTextColor} onChange={(e) => setLocalReportHeaderTextColor(e.target.value)} style={{ width: '100%', height: 32, border: 'none', background: 'none', cursor: 'pointer' }} title="Report Title & Unit labels" />
                                             </div>
                                             <div>
-                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', display: 'block', marginBottom: 6 }}>BODY TEXT</label>
+                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>BODY TEXT</label>
                                               <input type="color" value={localReportPdfBodyTextColor} onChange={(e) => setLocalReportPdfBodyTextColor(e.target.value)} style={{ width: '100%', height: 32, border: 'none', background: 'none', cursor: 'pointer' }} title="General narrative and metadata text" />
                                             </div>
                                           </div>
@@ -2077,24 +2165,24 @@ export default function AdminDashboardPage() {
 
                                         {/* Excel Section */}
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                                          <div style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 10, borderLeft: '3px solid #10b981' }}>
+                                          <div style={{ padding: '8px 12px', background: 'var(--section-bg)', borderRadius: 10, borderLeft: '3px solid #10b981' }}>
                                             <span style={{ fontSize: 9, fontWeight: 900, color: '#10b981', letterSpacing: '0.1em' }}>EXCEL FORGE CONFIGURATION</span>
                                           </div>
                                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                             <div>
-                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', display: 'block', marginBottom: 6 }}>APP BAR BG</label>
+                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>APP BAR BG</label>
                                               <input type="color" value={localReportExcelHeaderColor} onChange={(e) => setLocalReportExcelHeaderColor(e.target.value)} style={{ width: '100%', height: 32, border: 'none', background: 'none', cursor: 'pointer' }} title="Standard Excel header bar color" />
                                             </div>
                                             <div>
-                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', display: 'block', marginBottom: 6 }}>HEADER TEXT</label>
+                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>HEADER TEXT</label>
                                               <input type="color" value={localReportExcelHeaderTextColor} onChange={(e) => setLocalReportExcelHeaderTextColor(e.target.value)} style={{ width: '100%', height: 32, border: 'none', background: 'none', cursor: 'pointer' }} title="Color of text in the Excel header bar" />
                                             </div>
                                             <div>
-                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', display: 'block', marginBottom: 6 }}>SHEET ACCENT</label>
+                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>SHEET ACCENT</label>
                                               <input type="color" value={localReportExcelAccentColor} onChange={(e) => setLocalReportExcelAccentColor(e.target.value)} style={{ width: '100%', height: 32, border: 'none', background: 'none', cursor: 'pointer' }} title="Sheet tab bottom border and active indicators" />
                                             </div>
                                             <div>
-                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', display: 'block', marginBottom: 6 }}>GRID TEXT</label>
+                                              <label style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>GRID TEXT</label>
                                               <input type="color" value={localReportExcelBodyTextColor} onChange={(e) => setLocalReportExcelBodyTextColor(e.target.value)} style={{ width: '100%', height: 32, border: 'none', background: 'none', cursor: 'pointer' }} title="Color of alphanumeric data in grid cells" />
                                             </div>
                                           </div>
@@ -2108,15 +2196,15 @@ export default function AdminDashboardPage() {
                                       </span>
                                     </div>
 
-                                  <div style={{ padding: '48px 24px', width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 48, position: 'relative', overflow: 'hidden' }}>
+                                  <div style={{ padding: '48px 24px', width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border)', borderRadius: 48, position: 'relative', overflow: 'hidden' }}>
                                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40, padding: '0 24px' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                          <div style={{ fontSize: 12, fontWeight: 900, color: 'white', letterSpacing: '0.1em' }}>LIVE REPORT SIMULATION</div>
-                                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>Ultra-accurate real-time visualization of the document identity</div>
+                                          <div style={{ fontSize: 12, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.1em' }}>LIVE REPORT SIMULATION</div>
+                                          <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>Ultra-accurate real-time visualization of the document identity</div>
                                         </div>
-                                        <div style={{ display: 'flex', gap: 6, background: 'rgba(0,0,0,0.4)', padding: 6, borderRadius: 14, border: '1px solid rgba(255,255,255,0.05)' }}>
-                                          <button type="button" onClick={() => setSimulationMode('PDF')} style={{ padding: '8px 20px', borderRadius: 10, border: 'none', background: simulationMode === 'PDF' ? '#D4AF37' : 'transparent', color: simulationMode === 'PDF' ? '#0a0a0f' : 'white', fontSize: 11, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms' }}>PDF ENGINE</button>
-                                          <button type="button" onClick={() => setSimulationMode('EXCEL')} style={{ padding: '8px 20px', borderRadius: 10, border: 'none', background: simulationMode === 'EXCEL' ? '#10b981' : 'transparent', color: simulationMode === 'EXCEL' ? '#0a0a0f' : 'white', fontSize: 11, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms' }}>EXCEL ENGINE</button>
+                                        <div style={{ display: 'flex', gap: 6, background: 'rgba(0,0,0,0.4)', padding: 6, borderRadius: 14, border: '1px solid var(--section-bg)' }}>
+                                          <button type="button" onClick={() => setSimulationMode('PDF')} style={{ padding: '8px 20px', borderRadius: 10, border: 'none', background: simulationMode === 'PDF' ? 'var(--teal)' : 'transparent', color: simulationMode === 'PDF' ? 'var(--surface)' : 'var(--text-primary)', fontSize: 11, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms' }}>PDF ENGINE</button>
+                                          <button type="button" onClick={() => setSimulationMode('EXCEL')} style={{ padding: '8px 20px', borderRadius: 10, border: 'none', background: simulationMode === 'EXCEL' ? '#10b981' : 'transparent', color: simulationMode === 'EXCEL' ? 'var(--surface)' : 'var(--text-primary)', fontSize: 11, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms' }}>EXCEL ENGINE</button>
                                         </div>
                                       </div>
 
@@ -2133,7 +2221,7 @@ export default function AdminDashboardPage() {
                                               }
                                             }}
                                             style={{
-                                              position: 'absolute', left: 0, zIndex: 10, width: 44, height: 44, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 200ms', opacity: currentPdfPage === 0 ? 0.3 : 1, pointerEvents: currentPdfPage === 0 ? 'none' : 'auto'
+                                              position: 'absolute', left: 0, zIndex: 10, width: 44, height: 44, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: '1px solid var(--border)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 200ms', opacity: currentPdfPage === 0 ? 0.3 : 1, pointerEvents: currentPdfPage === 0 ? 'none' : 'auto'
                                             }}
                                           >
                                             <ChevronLeft size={24} />
@@ -2168,7 +2256,7 @@ export default function AdminDashboardPage() {
                                             <div style={{ flex: '0 0 100%', display: 'flex', justifyContent: 'center', scrollSnapAlign: 'center' }}>
                                               {/* PDF Page 1: Cover */}
                                               <div style={{
-                                                width: 842, height: 595, background: localReportBgColor, borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)',
+                                                width: 842, height: 595, background: localReportBgColor, borderRadius: 24, border: '1px solid var(--border)',
                                                 display: 'flex', flexDirection: 'column', padding: 0, position: 'relative', flexShrink: 0, overflow: 'hidden',
                                                 boxShadow: '0 40px 80px rgba(0,0,0,0.6)', textAlign: 'left'
                                               }}>
@@ -2193,7 +2281,7 @@ export default function AdminDashboardPage() {
                                                 {/* Title & Subtitle (Matched vertical offsets) */}
                                                 <div style={{ position: 'absolute', top: 156, left: 57, display: 'flex', flexDirection: 'column', gap: 12 }}>
                                                   <div style={{ fontSize: 48, fontWeight: 900, color: localReportHeaderTextColor, lineHeight: 1 }}>{localReportTitle || 'Digital Team Report'}</div>
-                                                  <div style={{ fontSize: 18, fontWeight: 800, color: 'white', letterSpacing: '0.05em', textTransform: 'uppercase', opacity: 0.9 }}>{localReportSubtitle || 'OPERATIONAL PERFORMANCE & DELIVERABLES'}</div>
+                                                  <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '0.05em', textTransform: 'uppercase', opacity: 0.9 }}>{localReportSubtitle || 'OPERATIONAL PERFORMANCE & DELIVERABLES'}</div>
                                                 </div>
 
                                                 {/* Data Fields Registry (Scaled for full height utilization) */}
@@ -2220,14 +2308,14 @@ export default function AdminDashboardPage() {
                                                     return (
                                                       <div key={field.id} style={{ display: 'flex', gap: 10, fontSize: 15, fontWeight: 700 }}>
                                                         <span style={{ color: localReportAccentColor }}>{field.label}:</span>
-                                                        <span style={{ color: 'white', opacity: 0.95 }}>{val}</span>
+                                                        <span style={{ color: 'var(--text-primary)', opacity: 0.95 }}>{val}</span>
                                                       </div>
                                                     );
                                                   })}
                                                 </div>
 
                                                 {/* Security Footer Protocol (Narrow bottom margin) */}
-                                                <div style={{ position: 'absolute', bottom: 42, left: 57, fontSize: 12, color: 'white', opacity: 0.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                                                <div style={{ position: 'absolute', bottom: 42, left: 57, fontSize: 12, color: 'var(--text-primary)', opacity: 0.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                                                   {localReportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM'}
                                                 </div>
                                               </div>
@@ -2237,7 +2325,7 @@ export default function AdminDashboardPage() {
                                             <div style={{ flex: '0 0 100%', display: 'flex', justifyContent: 'center', scrollSnapAlign: 'center' }}>
                                               {/* PDF Page 2: Table Data (LANDSCAPE) */}
                                               <div style={{
-                                                width: 842, height: 595, background: 'white', borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)',
+                                                width: 842, height: 595, background: 'var(--text-primary)', borderRadius: 24, border: '1px solid var(--border)',
                                                 display: 'flex', flexDirection: 'column', padding: 48, flexShrink: 0, overflow: 'hidden',
                                                 boxShadow: '0 40px 80px rgba(0,0,0,0.6)'
                                               }}>
@@ -2247,7 +2335,7 @@ export default function AdminDashboardPage() {
 
                                                 <div style={{ flex: 1, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                                                   {/* Table Header: Black background, Gold text */}
-                                                  <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 100px 100px 100px 100px 140px', background: '#0a0a0f', borderBottom: '1px solid #1e293b', padding: '12px' }}>
+                                                  <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 100px 100px 100px 100px 140px', background: 'var(--surface)', borderBottom: '1px solid #1e293b', padding: '12px' }}>
                                                     {[
                                                       { label: 'UID', width: 100 },
                                                       { label: 'ASSET TITLE', width: '1fr' },
@@ -2267,7 +2355,7 @@ export default function AdminDashboardPage() {
                                                       { id: 'DR-100', title: 'Monthly Task Test', department: 'Digital Reporting', status: 'COMPLETED', actualStartDate: '18-MAR-2026', actualEndDate: '10-APR-2026' },
                                                       { id: 'GIS-100', title: 'GIS Data Sync', department: 'GIS', status: 'COMPLETED', actualStartDate: '10-APR-2026', actualEndDate: '10-APR-2026' }
                                                     ]).map((task: any, idx) => (
-                                                      <div key={task.id} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 100px 100px 100px 100px 140px', borderBottom: '1px solid #e2e8f0', padding: '10px 12px', background: 'white', alignItems: 'center', minHeight: 44 }}>
+                                                      <div key={task.id} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 100px 100px 100px 100px 140px', borderBottom: '1px solid #e2e8f0', padding: '10px 12px', background: 'var(--text-primary)', alignItems: 'center', minHeight: 44 }}>
                                                         <span style={{ fontSize: 9, color: '#475569', textAlign: 'center', fontWeight: 500 }}>REH-{task.id?.split('-').pop()?.toUpperCase() || 'DH-100'}</span>
                                                         <span style={{ fontSize: 9, color: '#1e293b', fontWeight: 600, paddingLeft: 12 }}>{task.title}</span>
                                                         <span style={{ fontSize: 8, color: '#64748b', textAlign: 'center' }}>{task.department || 'N/A'}</span>
@@ -2303,7 +2391,7 @@ export default function AdminDashboardPage() {
                                               }
                                             }}
                                             style={{
-                                              position: 'absolute', right: 0, zIndex: 10, width: 44, height: 44, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 200ms', opacity: currentPdfPage === 1 ? 0.3 : 1, pointerEvents: currentPdfPage === 1 ? 'none' : 'auto'
+                                              position: 'absolute', right: 0, zIndex: 10, width: 44, height: 44, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: '1px solid var(--border)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 200ms', opacity: currentPdfPage === 1 ? 0.3 : 1, pointerEvents: currentPdfPage === 1 ? 'none' : 'auto'
                                             }}
                                           >
                                             <ChevronRight size={24} />
@@ -2312,7 +2400,7 @@ export default function AdminDashboardPage() {
                                           {/* Page Indicator */}
                                           <div style={{ position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8 }}>
                                             {[0, 1].map(i => (
-                                              <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: currentPdfPage === i ? '#D4AF37' : 'rgba(255,255,255,0.2)', transition: 'all 300ms' }} />
+                                              <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: currentPdfPage === i ? 'var(--teal)' : 'var(--border)', transition: 'all 300ms' }} />
                                             ))}
                                           </div>
                                         </div>
@@ -2325,7 +2413,7 @@ export default function AdminDashboardPage() {
                                         </div>
 
                                         {/* Excel Workspace */}
-                                        <div style={{ flex: 1, background: 'white', overflowX: 'auto', position: 'relative', padding: 20 }} className="custom-scrollbar">
+                                        <div style={{ flex: 1, background: 'var(--text-primary)', overflowX: 'auto', position: 'relative', padding: 20 }} className="custom-scrollbar">
                                           {excelActiveTab === 'summary' && (
                                             <div style={{ display: 'flex', gap: 40, marginBottom: 20, paddingLeft: 10 }}>
                                               <img src="/logos/modon_logo.png" style={{ height: 45, opacity: 0.9 }} alt="Modon" />
@@ -2423,7 +2511,7 @@ export default function AdminDashboardPage() {
                                                 onClick={() => setExcelActiveTab(sheet.id as any)}
                                                 style={{
                                                   padding: '10px 24px',
-                                                  background: excelActiveTab === sheet.id ? 'white' : 'transparent',
+                                                  background: excelActiveTab === sheet.id ? 'var(--text-primary)' : 'transparent',
                                                   borderRight: '1px solid #cbd5e1',
                                                   borderTop: excelActiveTab === sheet.id ? `3px solid ${localReportExcelAccentColor}` : 'none',
                                                   fontSize: 10,
@@ -2457,6 +2545,13 @@ export default function AdminDashboardPage() {
                             </td>
                           </tr>
                         )}
+                        {activeTab === 'homepage' && (
+                          <tr style={{ background: 'transparent' }}>
+                            <td colSpan={5} style={{ padding: '40px' }}>
+                              <HomePageEditor showToast={showToast} />
+                            </td>
+                          </tr>
+                        )}
                         {activeTab === 'broadcast' && (
                           <tr style={{ background: 'transparent' }}>
                             <td colSpan={5} style={{ padding: '40px' }}>
@@ -2464,9 +2559,9 @@ export default function AdminDashboardPage() {
 
                               {/* Broadcast History Log */}
                               <div style={{ marginTop: 64 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                  <Megaphone size={18} color="#D4AF37" />
-                                  <span style={{ fontSize: 13, fontWeight: 900, color: 'white', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Transmission History Log</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--section-bg)' }}>
+                                  <Megaphone size={18} color="var(--teal)" />
+                                  <span style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Transmission History Log</span>
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -2477,18 +2572,18 @@ export default function AdminDashboardPage() {
                                       : (b.timestamp ? new Date(b.timestamp).toLocaleString() : 'Pending...');
 
                                     return (
-                                      <div key={docSnap.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.04)' }}>
+                                      <div key={docSnap.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', background: 'var(--section-bg)', borderRadius: 16, border: '1px solid var(--section-bg)' }}>
                                         <div style={{ display: 'flex', gap: 16 }}>
                                           <div style={{ width: 40, height: 40, borderRadius: 12, background: b.severity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                             {b.type === 'NOTIF' ? <Bell size={18} color={b.severity === 'CRITICAL' ? '#ef4444' : '#60a5fa'} /> : <Newspaper size={18} color="#a78bfa" />}
                                           </div>
                                           <div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                              <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 6px', borderRadius: 4, background: 'rgba(255,255,255,0.1)', color: 'white' }}>{b.type}</span>
-                                              <span style={{ fontSize: 9, fontWeight: 900, color: b.severity === 'CRITICAL' ? '#ef4444' : '#D4AF37' }}>{b.severity}</span>
+                                              <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 6px', borderRadius: 4, background: 'var(--border)', color: 'var(--text-primary)' }}>{b.type}</span>
+                                              <span style={{ fontSize: 9, fontWeight: 900, color: b.severity === 'CRITICAL' ? '#ef4444' : 'var(--teal)' }}>{b.severity}</span>
                                             </div>
-                                            <div style={{ fontWeight: 800, fontSize: 15, color: 'white' }}>{b.title}</div>
-                                            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 4, maxWidth: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.description}</div>
+                                            <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)' }}>{b.title}</div>
+                                            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, maxWidth: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.description}</div>
                                           </div>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -2522,14 +2617,15 @@ export default function AdminDashboardPage() {
             </AnimatePresence>
           </main>
 
-          <div style={{ position: 'fixed', bottom: 24, right: 32, display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,0,0,0.6)', padding: '8px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)' }}>
+          <div style={{ position: 'fixed', bottom: 24, right: 32, display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,0,0,0.6)', padding: '8px 16px', borderRadius: 12, border: '1px solid var(--section-bg)', backdropFilter: 'blur(10px)' }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }} className="animate-pulse" />
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.05em' }}>Live Edits</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>Live Edits</span>
           </div>
 
           <AnimatePresence>
             {isModalOpen && activeTab === 'tasks' && (
               <TaskEditorModal
+                key="task-editor"
                 task={selectedTask}
                 isOpen={isModalOpen}
                 onClose={() => { setIsModalOpen(false); setSelectedTask(null); }}
@@ -2543,6 +2639,7 @@ export default function AdminDashboardPage() {
             {isModalOpen && activeTab === 'team' && (
               teamActiveSubTab === 'personnel' ? (
                 <MemberEditorModal
+                  key="member-editor"
                   member={selectedMember}
                   isOpen={isModalOpen}
                   onClose={() => setIsModalOpen(false)}
@@ -2551,6 +2648,7 @@ export default function AdminDashboardPage() {
                 />
               ) : (
                 <DepartmentEditorModal
+                  key="dept-editor"
                   department={selectedDepartment}
                   isOpen={isModalOpen}
                   onClose={() => setIsModalOpen(false)}
@@ -2561,6 +2659,7 @@ export default function AdminDashboardPage() {
 
             {isModalOpen && activeTab === 'registry' && (
               <RegistryEditorModal
+                key="registry-editor"
                 item={selectedRegistry}
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -2570,10 +2669,11 @@ export default function AdminDashboardPage() {
               />
             )}
             {isModalOpen && activeTab === 'users' && activeSubTab === 'users' && (
-              <UserEditorModal userRecord={selectedUser} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+              <UserEditorModal key="user-editor" userRecord={selectedUser} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
             )}
             {!!selectedPolicy && (
               <GroupPolicyEditor
+                key="policy-editor"
                 policy={selectedPolicy}
                 isOpen={!!selectedPolicy}
                 onClose={() => setSelectedPolicy(null)}
@@ -2581,6 +2681,7 @@ export default function AdminDashboardPage() {
             )}
             {isBulkModalOpen && (
               <BulkActionConfirmModal
+                key="bulk-modal"
                 isOpen={isBulkModalOpen}
                 onClose={() => setIsBulkModalOpen(false)}
                 onConfirm={handleBulkDelete}
@@ -2590,6 +2691,7 @@ export default function AdminDashboardPage() {
             )}
             {eliteAlert.isOpen && (
               <EliteConfirmModal
+                key="elite-alert"
                 isOpen={eliteAlert.isOpen}
                 onClose={() => setEliteAlert(prev => ({ ...prev, isOpen: false }))}
                 title={eliteAlert.title}
@@ -2601,6 +2703,7 @@ export default function AdminDashboardPage() {
             )}
             {isLogoutConfirmOpen && (
               <EliteConfirmModal
+                key="logout-confirm"
                 isOpen={isLogoutConfirmOpen}
                 onClose={() => setIsLogoutConfirmOpen(false)}
                 onConfirm={async () => {

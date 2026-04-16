@@ -106,54 +106,54 @@ export default function GroupPolicyEditor({ policy, isOpen, onClose }: GroupPoli
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         style={{
-          width: '100%', maxWidth: 900, background: '#0a0a0f', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 24, position: 'relative', zIndex: 1, overflow: 'hidden', boxShadow: '0 32px 64px rgba(0,0,0,0.5)'
+          width: '100%', maxWidth: 900, background: 'var(--cotton)', border: '1px solid var(--border)', borderRadius: 24, position: 'relative', zIndex: 1, overflow: 'hidden', boxShadow: '0 32px 64px rgba(0,0,0,0.5)'
         }}
       >
-        <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.01)' }}>
+        <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--section-bg)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D4AF37' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--teal)' }}>
               <Shield size={18} />
             </div>
             <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: '0.02em' }}>{policy?.id ? 'Refine Security Policy' : 'Forge New Security Policy'}</h2>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer' }}><X size={24} /></button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}><X size={24} /></button>
         </div>
 
         <div style={{ padding: '32px', maxHeight: '75vh', overflowY: 'auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 40 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#D4AF37', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Policy Identity</label>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Policy Identity</label>
               <input 
                 type="text" 
                 value={formData.name || ''} 
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                style={{ width: '100%', padding: '14px 18px', borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 15, outline: 'none' }}
+                style={{ width: '100%', padding: '14px 18px', borderRadius: 12, background: 'var(--section-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
                 placeholder="e.g., Regional Manager Access"
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#D4AF37', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Strategic Intent</label>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Strategic Intent</label>
               <input 
                 type="text" 
                 value={formData.description || ''} 
                 onChange={e => setFormData({ ...formData, description: e.target.value })}
-                style={{ width: '100%', padding: '14px 18px', borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 15, outline: 'none' }}
+                style={{ width: '100%', padding: '14px 18px', borderRadius: 12, background: 'var(--section-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
                 placeholder="Brief description of authorization scope..."
               />
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 40, background: 'rgba(212, 175, 55, 0.05)', borderRadius: 16, border: '1px solid rgba(212, 175, 55, 0.1)', padding: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 40, background: 'rgba(212, 175, 55, 0.05)', borderRadius: 16, border: '1px solid var(--secondary)', padding: 16 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#D4AF37' }}>TEAM MATE RESTRICTION PROTOCOL</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>When activated, subjects are restricted to viewing only their exclusively assigned Digital Deliverables.</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--teal)' }}>TEAM MATE RESTRICTION PROTOCOL</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>When activated, subjects are restricted to viewing only their exclusively assigned Digital Deliverables.</div>
             </div>
             <button
                type="button"
                onClick={() => setFormData({ ...formData, isTeammatePolicy: !formData.isTeammatePolicy })}
                style={{
                  width: 50, height: 28, borderRadius: 14, border: 'none', position: 'relative', cursor: 'pointer', transition: 'all 200ms',
-                 background: formData.isTeammatePolicy ? '#D4AF37' : 'rgba(255,255,255,0.1)'
+                 background: formData.isTeammatePolicy ? 'var(--teal)' : 'var(--text-dim)'
                }}
             >
                <motion.div
@@ -166,23 +166,23 @@ export default function GroupPolicyEditor({ policy, isOpen, onClose }: GroupPoli
             </button>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.01)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.03)', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--section-bg)', borderRadius: 28, border: '1px solid var(--border)', overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <th style={{ textAlign: 'left', padding: '16px 24px', fontSize: 13, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase' }}>Module Spectrum</th>
+                <tr style={{ background: 'var(--section-bg)', borderBottom: '1px solid var(--border)' }}>
+                  <th style={{ textAlign: 'left', padding: '16px 24px', fontSize: 13, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Module Spectrum</th>
                    {ACTIONS.map(action => (
-                    <th key={action.id} style={{ textAlign: 'center', padding: '16px 8px', fontSize: 12, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase' }}>{action.label}</th>
+                    <th key={action.id} style={{ textAlign: 'center', padding: '16px 8px', fontSize: 12, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>{action.label}</th>
                   ))}
-                  <th style={{ textAlign: 'center', padding: '16px 24px', fontSize: 12, fontWeight: 900, color: '#D4AF37', textTransform: 'uppercase' }}>Grant All</th>
+                  <th style={{ textAlign: 'center', padding: '16px 24px', fontSize: 12, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Grant All</th>
                 </tr>
               </thead>
               <tbody>
                 {MODULES.map(mod => (
-                  <tr key={mod.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                  <tr key={mod.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '20px 24px' }}>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: 'white' }}>{mod.label}</div>
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{mod.description}</div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>{mod.label}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>{mod.description}</div>
                     </td>
                     {ACTIONS.map(action => {
                       const isActive = !!formData.modules?.[mod.id as keyof GroupPolicy['modules']]?.[action.id as keyof PolicyActions];
@@ -198,9 +198,9 @@ export default function GroupPolicyEditor({ policy, isOpen, onClose }: GroupPoli
                               setFormData({ ...formData, modules });
                             }}
                             style={{
-                              width: 24, height: 24, borderRadius: 6, border: '1px solid ' + (isActive ? '#D4AF37' : 'rgba(255,255,255,0.1)'),
-                              background: isActive ? 'rgba(212, 175, 55, 0.1)' : 'transparent',
-                              color: isActive ? '#D4AF37' : 'rgba(255,255,255,0.1)',
+                              width: 24, height: 24, borderRadius: 6, border: '1px solid ' + (isActive ? 'var(--teal)' : 'var(--text-dim)'),
+                              background: isActive ? 'var(--secondary)' : 'transparent',
+                              color: isActive ? 'var(--teal)' : 'var(--text-dim)',
                               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', transition: 'all 200ms'
                             }}
                           >
@@ -225,7 +225,7 @@ export default function GroupPolicyEditor({ policy, isOpen, onClose }: GroupPoli
                         }}
                         style={{
                           padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(212, 175, 55, 0.3)',
-                          background: 'rgba(212, 175, 55, 0.05)', color: '#D4AF37',
+                          background: 'rgba(212, 175, 55, 0.05)', color: 'var(--teal)',
                           fontSize: 10, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', transition: 'all 200ms'
                         }}
                       >
@@ -239,12 +239,12 @@ export default function GroupPolicyEditor({ policy, isOpen, onClose }: GroupPoli
           </div>
         </div>
 
-        <div style={{ padding: '24px 32px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.01)' }}>
+        <div style={{ padding: '24px 32px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--section-bg)' }}>
           {policy?.id ? (
             <button
               onClick={handleDelete}
               disabled={isDeleting}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 13, fontWeight: 700, opacity: isDeleting ? 0.5 : 1 }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: 'var(--status-error)', cursor: 'pointer', fontSize: 13, fontWeight: 700, opacity: isDeleting ? 0.5 : 1 }}
             >
               <Trash2 size={16} />
               Purge Policy
@@ -252,11 +252,11 @@ export default function GroupPolicyEditor({ policy, isOpen, onClose }: GroupPoli
           ) : <div />}
 
           <div style={{ display: 'flex', gap: 12 }}>
-            <button onClick={onClose} style={{ padding: '12px 24px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', color: 'white', border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+            <button onClick={onClose} style={{ padding: '12px 24px', borderRadius: 12, background: 'var(--section-bg)', color: 'var(--teal)', border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
             <button 
               onClick={handleSave}
               disabled={isSaving}
-              style={{ padding: '12px 32px', borderRadius: 12, background: '#D4AF37', color: '#0a0a0f', border: 'none', fontSize: 14, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 20px rgba(212, 175, 55, 0.2)' }}
+              style={{ padding: '12px 32px', borderRadius: 12, background: 'var(--teal)', color: '#ffffff', border: 'none', fontSize: 14, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 20px var(--border)' }}
             >
               {isSaving ? <Shield size={18} className="animate-spin" /> : <Save size={18} />}
               Finalize Security Parameters

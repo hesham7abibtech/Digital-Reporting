@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { X, Save, Trash2, Mail, Shield, User, Info, Check, AlertCircle } from 'lucide-react';
-import { UserRole, AdminPermissions } from '@/lib/types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Save, Trash2, Mail, Shield, User, Info, Check, AlertCircle, ShieldCheck, CheckCircle2, UserCheck, Layout, BarChart2 } from 'lucide-react';
 import { updateUserProfile, deleteUserProfile } from '@/services/FirebaseService';
 import { useAuth } from '@/context/AuthContext';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
@@ -19,14 +18,19 @@ interface UserEditorProps {
   onClose: () => void;
 }
 
-const roles: UserRole[] = ['OWNER', 'ADMIN', 'TEAM_MATE'];
-
 export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEditorProps) {
   const { userProfile: currentUser } = useAuth();
   const [formData, setFormData] = useState<any>({
     name: '',
-    role: 'VIEWER',
-    status: 'ACTIVE'
+    role: 'TEAM_MATE',
+    status: 'ACTIVE',
+    isVerified: false,
+    isApproved: false,
+    isAdmin: false,
+    access: {
+      deliverablesRegistry: false,
+      bimReviews: false
+    }
   });
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -40,7 +44,17 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
 
   useEffect(() => {
     if (userRecord) {
-      setFormData(userRecord);
+      setFormData({
+        ...userRecord,
+        isVerified: userRecord.isVerified || false,
+        isApproved: userRecord.isApproved || false,
+        isAdmin: userRecord.isAdmin || userRecord.role === 'ADMIN' || userRecord.role === 'OWNER',
+        access: {
+          deliverablesRegistry: userRecord.access?.deliverablesRegistry || false,
+          bimReviews: userRecord.access?.bimReviews || false,
+          ...(userRecord.access || {})
+        }
+      });
     }
   }, [userRecord, isOpen]);
 
@@ -50,10 +64,15 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
     setErrorMsg(null);
     try {
       await updateUserProfile(userRecord.uid, {
-        role: formData.role,
+        role: userRecord.role === 'OWNER' ? 'OWNER' : (formData.isAdmin ? 'ADMIN' : 'TEAM_MATE'),
         status: formData.status,
         name: formData.name,
-        policyId: formData.role === 'ADMIN' ? formData.policyId : null
+        isVerified: formData.isVerified,
+        isApproved: formData.isApproved,
+        isAdmin: formData.isAdmin,
+        access: formData.access,
+        policyId: formData.isAdmin ? formData.policyId : null,
+        updatedAt: new Date().toISOString()
       });
       showToast('Security credentials updated.', 'SUCCESS');
       onClose();
@@ -84,170 +103,249 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
 
   const isOwner = currentUser?.role === 'OWNER';
   const isEditingSelf = currentUser?.uid === userRecord.uid;
-  const targetIsOwner = userRecord.role === 'OWNER';
+  const targetIsOwner = (userRecord as any).role === 'OWNER';
+
+  const toggleFlag = (field: string) => {
+    if (!isOwner && field === 'isAdmin') return;
+    setFormData((prev: any) => {
+      const newVal = !prev[field];
+      const update: any = { [field]: newVal };
+      if (field === 'isAdmin' && !newVal) update.policyId = null;
+      if (field === 'isApproved') update.status = newVal ? 'ACTIVE' : 'PENDING_APPROVAL';
+      return { ...prev, ...update };
+    });
+  };
+
+  const toggleAccess = (module: string) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      access: {
+        ...prev.access,
+        [module]: !prev.access[module]
+      }
+    }));
+  };
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }} />
+      {/* Premium Backdrop */}
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }} 
+        onClick={onClose} 
+        style={{ position: 'absolute', inset: 0, background: 'rgba(0, 63, 73, 0.3)', backdropFilter: 'blur(12px)' }} 
+      />
       
+      {/* Modal Container */}
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         style={{
-          width: '100%', maxWidth: 500, background: '#12121a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, position: 'relative', zIndex: 1, overflow: 'hidden'
+          width: '100%', maxWidth: 900, background: 'var(--cotton)', border: '1px solid var(--border)', borderRadius: 28, position: 'relative', zIndex: 1, overflow: 'hidden'
         }}
       >
-        <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Terminal Access Control</h2>
-            <p style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4 }}>ID: {userRecord.uid.substring(0, 12)}...</p>
+            <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: 'var(--teal)', letterSpacing: '0.01em' }}>TERMINAL ACCESS CONTROL</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>ID: {userRecord.uid.substring(0, 16)}...</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={24} /></button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}><X size={24} /></button>
         </div>
 
-        <div style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Identity Name</label>
-            <div style={{ position: 'relative' }}>
-              <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
-              <input 
-                type="text" 
-                value={formData.name ?? ''} 
-                onChange={e => setFormData({ ...formData, name: e.target.value })} 
-                style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }} 
-              />
+        {/* 2-COLUMN GRID FORM */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 32, padding: 32, maxHeight: '70vh', overflowY: 'auto' }}>
+          
+          {/* LEFT COLUMN: IDENTITY & SECURITY */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Identity Name</label>
+              <div style={{ position: 'relative' }}>
+                <User size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--teal)', opacity: 0.6 }} />
+                <input 
+                  type="text" 
+                  value={formData.name ?? ''} 
+                  onChange={e => setFormData({ ...formData, name: e.target.value })} 
+                  style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: 16, background: 'var(--section-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 14, outline: 'none', fontWeight: 600 }} 
+                />
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Authenticated Email</label>
-            <div style={{ position: 'relative' }}>
-              <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
-              <input 
-                type="text" 
-                value={userRecord.email} 
-                disabled
-                style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 12, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.3)', fontSize: 14, cursor: 'not-allowed' }}
-              />
+            <div>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Authenticated Email</label>
+              <div style={{ position: 'relative' }}>
+                <Mail size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+                <input 
+                  type="text" 
+                  value={userRecord.email} 
+                  disabled
+                  style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: 16, background: 'var(--section-bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 14, cursor: 'not-allowed', fontWeight: 600 }}
+                />
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Security Clearance & Role Assignment</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {/* OWNER ROLE */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
               <button
-                type="button"
-                disabled={!isOwner}
-                onClick={() => setFormData({ ...formData, role: 'OWNER', policyId: null })}
+                onClick={() => toggleFlag('isVerified')}
                 style={{
-                  padding: '12px 16px', fontSize: 11, fontWeight: 800, borderRadius: 12,
-                  background: formData.role === 'OWNER' ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255,255,255,0.02)',
-                  color: formData.role === 'OWNER' ? '#D4AF37' : !isOwner ? 'rgba(255,255,255,0.05)' : 'var(--text-secondary)',
-                  border: formData.role === 'OWNER' ? '1px solid #D4AF37' : '1px solid rgba(255,255,255,0.05)',
-                  cursor: !isOwner ? 'not-allowed' : 'pointer',
-                  transition: 'all 200ms',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                  padding: '16px 8px', borderRadius: 16, background: formData.isVerified ? 'rgba(12, 169, 155, 0.08)' : 'var(--section-bg)',
+                  border: `1px solid ${formData.isVerified ? 'var(--teal)' : 'var(--border)'}`,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer', transition: 'all 300ms'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Shield size={14} />
-                  <span>PROJECT OWNER (ABSOLUTE SOVEREIGNTY)</span>
-                </div>
-                {formData.role === 'OWNER' && <Check size={14} />}
+                <UserCheck size={18} color={formData.isVerified ? 'var(--teal)' : 'var(--text-dim)'} />
+                <span style={{ fontSize: 9, fontWeight: 900, color: formData.isVerified ? 'var(--teal)' : 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Verified</span>
               </button>
 
-              {/* DYNAMIC POLICIES (ADMINS) */}
-              {policies.map((p: any) => (
+              <button
+                onClick={() => toggleFlag('isApproved')}
+                style={{
+                  padding: '16px 8px', borderRadius: 16, background: formData.isApproved ? 'rgba(12, 169, 155, 0.08)' : 'var(--section-bg)',
+                  border: `1px solid ${formData.isApproved ? 'var(--teal)' : 'var(--border)'}`,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer', transition: 'all 300ms'
+                }}
+              >
+                <CheckCircle2 size={18} color={formData.isApproved ? 'var(--teal)' : 'var(--text-dim)'} />
+                <span style={{ fontSize: 9, fontWeight: 900, color: formData.isApproved ? 'var(--teal)' : 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Approved</span>
+              </button>
+
+              <button
+                onClick={() => toggleFlag('isAdmin')}
+                disabled={!isOwner}
+                style={{
+                  padding: '16px 8px', borderRadius: 16, background: formData.isAdmin ? 'rgba(0, 63, 73, 0.1)' : 'var(--section-bg)',
+                  border: `1px solid ${formData.isAdmin ? 'var(--teal)' : 'var(--border)'}`,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: isOwner ? 'pointer' : 'not-allowed', transition: 'all 300ms',
+                  opacity: isOwner ? 1 : 0.5
+                }}
+              >
+                <ShieldCheck size={18} color={formData.isAdmin ? 'var(--teal)' : 'var(--text-dim)'} />
+                <span style={{ fontSize: 9, fontWeight: 900, color: formData.isAdmin ? 'var(--teal)' : 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Admin</span>
+              </button>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Access Status</label>
+              <select 
+                value={formData.status || 'ACTIVE'} 
+                onChange={e => setFormData({ ...formData, status: e.target.value })}
+                style={{ width: '100%', padding: '14px 16px', borderRadius: 16, background: 'var(--section-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 14, outline: 'none', fontWeight: 600, cursor: 'pointer' }}
+              >
+                <option value="ACTIVE">ACTIVE - FULL ACCESS</option>
+                <option value="PENDING_APPROVAL">PENDING APPROVAL</option>
+                <option value="SUSPENDED">SUSPENDED - NO ACCESS</option>
+              </select>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: MODULE ACCESS & POLICIES */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: 'var(--teal)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Reports & Module Access</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {/* DELIVERABLES TOGGLE */}
                 <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, role: 'ADMIN', policyId: p.id })}
+                  onClick={() => toggleAccess('deliverablesRegistry')}
                   style={{
-                    padding: '12px 16px', fontSize: 11, fontWeight: 800, borderRadius: 12,
-                    background: formData.policyId === p.id ? 'rgba(212, 175, 55, 0.1)' : 'rgba(255,255,255,0.02)',
-                    color: formData.policyId === p.id ? '#D4AF37' : 'var(--text-secondary)',
-                    border: formData.policyId === p.id ? '1px solid rgba(212, 175, 55, 0.5)' : '1px solid rgba(255,255,255,0.05)',
-                    cursor: 'pointer',
-                    transition: 'all 200ms',
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                    padding: '16px', borderRadius: 16, background: formData.access.deliverablesRegistry ? 'rgba(12, 169, 155, 0.08)' : 'var(--section-bg)',
+                    border: `1px solid ${formData.access.deliverablesRegistry ? 'var(--teal)' : 'var(--border)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 300ms'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <Shield size={14} style={{ opacity: 0.5 }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Layout size={18} color={formData.access.deliverablesRegistry ? 'var(--teal)' : 'var(--text-dim)'} />
                     <div style={{ textAlign: 'left' }}>
-                      <div style={{ fontSize: 11 }}>{p.name.toUpperCase()}</div>
-                      <div style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 500, marginTop: 2 }}>DELEGATED ADMINISTRATIVE CLEARANCE</div>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: formData.access.deliverablesRegistry ? 'var(--teal)' : 'var(--text-primary)' }}>DELIVERABLES REGISTRY</div>
+                      <div style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 500 }}>SUBMISSIONS & TRACKING ACCESS</div>
                     </div>
                   </div>
-                  {formData.policyId === p.id && <Check size={14} />}
+                  {formData.access.deliverablesRegistry && <Check size={14} color="var(--teal)" />}
                 </button>
-              ))}
 
-              {/* TEAM MATE ROLE */}
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, role: 'TEAM_MATE', policyId: null })}
-                style={{
-                  padding: '12px 16px', fontSize: 11, fontWeight: 800, borderRadius: 12,
-                  background: (formData.role === 'TEAM_MATE' && !formData.policyId) ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
-                  color: (formData.role === 'TEAM_MATE' && !formData.policyId) ? 'white' : 'var(--text-secondary)',
-                  border: (formData.role === 'TEAM_MATE' && !formData.policyId) ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.05)',
-                  cursor: 'pointer',
-                  transition: 'all 200ms',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <User size={14} />
-                  <span>TEAM MATE (RESTRICTED ACCESS)</span>
-                </div>
-                {(formData.role === 'TEAM_MATE' && !formData.policyId) && <Check size={14} />}
-              </button>
+                {/* BIM REVIEWS TOGGLE */}
+                <button
+                  onClick={() => toggleAccess('bimReviews')}
+                  style={{
+                    padding: '16px', borderRadius: 16, background: formData.access.bimReviews ? 'rgba(12, 169, 155, 0.08)' : 'var(--section-bg)',
+                    border: `1px solid ${formData.access.bimReviews ? 'var(--teal)' : 'var(--border)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 300ms'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <BarChart2 size={18} color={formData.access.bimReviews ? 'var(--teal)' : 'var(--text-dim)'} />
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: formData.access.bimReviews ? 'var(--teal)' : 'var(--text-primary)' }}>BIM INTELLIGENCE REVIEWS</div>
+                      <div style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 500 }}>MATRIX & ANALYTICS ACCESS</div>
+                    </div>
+                  </div>
+                  {formData.access.bimReviews && <Check size={14} color="var(--teal)" />}
+                </button>
+              </div>
             </div>
+
+            <AnimatePresence>
+              {formData.isAdmin && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+                >
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Assign Group Policy</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 200, overflowY: 'auto', paddingRight: 4 }}>
+                    {policies.map((p: any) => (
+                      <button
+                        key={p.id}
+                        onClick={() => setFormData({ ...formData, policyId: p.id })}
+                        style={{
+                          padding: '12px 16px', borderRadius: 12, background: formData.policyId === p.id ? 'rgba(0, 63, 73, 0.08)' : 'var(--section-bg)',
+                          border: `1px solid ${formData.policyId === p.id ? 'var(--teal)' : 'var(--border)'}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 200ms'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <Shield size={14} color="var(--text-dim)" opacity={0.6} />
+                          <div style={{ fontVariant: 'small-caps', fontWeight: 900, fontSize: 12, color: formData.policyId === p.id ? 'var(--teal)' : 'var(--text-primary)' }}>{p.name}</div>
+                        </div>
+                        {formData.policyId === p.id && <Check size={14} color="var(--teal)" />}
+                      </button>
+                    ))}
+                    {policies.length === 0 && (
+                      <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', borderRadius: 16 }}>
+                        <p style={{ fontSize: 11, color: 'var(--status-error)', margin: 0, fontWeight: 600 }}>No policies established. Admins must have an associated policy.</p>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-
-          {policies.length === 0 && formData.role === 'ADMIN' && (
-            <div style={{ padding: '12px 16px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', borderRadius: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
-              <AlertCircle size={16} color="#ef4444" />
-              <p style={{ fontSize: 12, color: '#f87171', margin: 0 }}>No Group Policies established. Administrative access restricted.</p>
-            </div>
-          )}
-
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Access Status</label>
-            <select 
-              value={formData.status || 'ACTIVE'} 
-              onChange={e => setFormData({ ...formData, status: e.target.value })}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#1a1a24', border: '1px solid rgba(255,255,255,0.06)', color: 'white', fontSize: 14, outline: 'none' }}
-            >
-              <option value="ACTIVE">ACTIVE - FULL ACCESS</option>
-              <option value="PENDING_APPROVAL">PENDING APPROVAL</option>
-              <option value="SUSPENDED">SUSPENDED - NO ACCESS</option>
-            </select>
-          </div>
-
-          {!isOwner && targetIsOwner && (
-            <div style={{ padding: '12px 16px', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)', borderRadius: 12, display: 'flex', gap: 10 }}>
-              <Info size={16} color="#f59e0b" style={{ flexShrink: 0, marginTop: 2 }} />
-              <p style={{ fontSize: 12, color: '#f59e0b', margin: 0 }}>Only an existing Owner can modify Owner-level credentials.</p>
-            </div>
-          )}
-
-          {errorMsg && (
-            <div style={{ padding: '12px 16px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
-              <X size={16} color="#ef4444" style={{ flexShrink: 0 }} />
-              <p style={{ fontSize: 13, color: '#f87171', margin: 0, fontWeight: 600 }}>{errorMsg}</p>
-            </div>
-          )}
         </div>
 
-        <div style={{ padding: '24px 32px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* ERROR MESSAGE (FULL WIDTH) */}
+        <AnimatePresence>
+          {errorMsg && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              style={{ padding: '0 32px 24px', overflow: 'hidden' }}
+            >
+              <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
+                <X size={18} color="var(--status-error)" style={{ flexShrink: 0 }} />
+                <p style={{ fontSize: 13, color: 'var(--status-error)', margin: 0, fontWeight: 600 }}>{errorMsg}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* FOOTER ACTIONS */}
+        <div style={{ padding: '24px 32px', background: 'var(--section-bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button 
             onClick={() => setIsConfirmOpen(true)} 
             disabled={isEditingSelf || (targetIsOwner && !isOwner)}
             style={{ 
-              display: 'flex', alignItems: 'center', gap: 8, color: '#ef4444', background: 'none', border: 'none', 
+              display: 'flex', alignItems: 'center', gap: 8, color: 'var(--status-error)', background: 'none', border: 'none', 
               fontSize: 13, fontWeight: 600, cursor: (isEditingSelf || (targetIsOwner && !isOwner)) ? 'not-allowed' : 'pointer',
               opacity: (isEditingSelf || (targetIsOwner && !isOwner)) ? 0.3 : 1
             }}
@@ -257,19 +355,20 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
           </button>
           
           <div style={{ display: 'flex', gap: 12 }}>
-            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', color: 'white', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>Cancel</button>
+            <button onClick={onClose} style={{ padding: '12px 24px', borderRadius: 12, background: 'var(--cotton)', color: 'var(--teal)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>Cancel</button>
             <button 
               onClick={handleSave} 
               disabled={isSaving || (targetIsOwner && !isOwner && !isEditingSelf)}
               style={{ 
-                display: 'flex', alignItems: 'center', gap: 8, padding: '10px 24px', borderRadius: 10, 
-                background: '#D4AF37', color: '#0a0a0f', border: 'none', 
+                display: 'flex', alignItems: 'center', gap: 10, padding: '12px 32px', borderRadius: 12, 
+                background: 'var(--teal)', color: 'var(--cotton)', border: 'none', 
                 cursor: (isSaving || (targetIsOwner && !isOwner && !isEditingSelf)) ? 'not-allowed' : 'pointer',
                 opacity: (targetIsOwner && !isOwner && !isEditingSelf) ? 0.5 : 1,
-                fontSize: 14, fontWeight: 700 
+                fontSize: 14, fontWeight: 900,
+                boxShadow: '0 10px 20px rgba(0, 63, 73, 0.15)'
               }}
             >
-              <Save size={18} />
+              {isSaving ? <Check size={18} className="animate-pulse" /> : <Save size={18} />}
               {isSaving ? 'Syncing...' : 'Commit Changes'}
             </button>
           </div>
