@@ -25,6 +25,9 @@ interface ExportMenuProps {
   filterCDE: string[];
   setFilterCDE: (val: string[]) => void;
   availableCDEs: string[];
+  filterPrecinct: string[];
+  setFilterPrecinct: (val: string[]) => void;
+  availablePrecincts: string[];
   // Date states
   selectedYear: number;
   setSelectedYear: (y: number) => void;
@@ -46,6 +49,7 @@ export default function ExportMenu({
   filterMode, setFilterMode, filterDept, setFilterDept, availableDepts,
   filterType, setFilterType, availableTypes,
   filterCDE, setFilterCDE, availableCDEs,
+  filterPrecinct, setFilterPrecinct, availablePrecincts,
   selectedYear, setSelectedYear, yearOptions,
   selectedMonth, setSelectedMonth, monthOptions,
   startDate, setStartDate, endDate, setEndDate
@@ -75,7 +79,12 @@ export default function ExportMenu({
     setIsOpen(false);
   };
 
-  const handleConfirmGeneration = async (type: 'pdf' | 'excel', perspective: 'table' | 'dashboard' | 'both', onProgress: (p: number) => void) => {
+  const handleConfirmGeneration = async (
+    type: 'pdf' | 'excel', 
+    perspective: 'table' | 'dashboard' | 'both', 
+    onProgress: (p: number) => void,
+    filters?: { types: string[], cdes: string[] }
+  ) => {
     onProgress(10);
     await new Promise(r => setTimeout(r, 400));
     onProgress(25);
@@ -88,7 +97,7 @@ export default function ExportMenu({
         if (activeReport === 'BIM_REVIEWS') {
           result = await exportBimToExcel(bimReviews, projectMetadata, dateRangeText, perspective);
         } else {
-          result = await exportToExcel(tasks, projectMetadata, dateRangeText, perspective);
+          result = await exportToExcel(tasks, projectMetadata, dateRangeText, perspective, filters);
         }
         onProgress(90);
       } else {
@@ -97,7 +106,7 @@ export default function ExportMenu({
         if (activeReport === 'BIM_REVIEWS') {
           result = await exportBimToPDF(bimReviews, projectMetadata, dateRangeText, perspective);
         } else {
-          result = await exportToPDF(tasks, projectMetadata, dateRangeText, perspective);
+          result = await exportToPDF(tasks, projectMetadata, dateRangeText, perspective, filters);
         }
         onProgress(85);
       }
@@ -236,6 +245,9 @@ export default function ExportMenu({
         filterCDE={filterCDE}
         setFilterCDE={setFilterCDE}
         availableCDEs={availableCDEs}
+        filterPrecinct={filterPrecinct}
+        setFilterPrecinct={setFilterPrecinct}
+        availablePrecincts={availablePrecincts}
         selectedYear={selectedYear}
         setSelectedYear={setSelectedYear}
         yearOptions={yearOptions}

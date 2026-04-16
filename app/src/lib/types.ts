@@ -43,6 +43,14 @@ export interface TaskLink {
   url: string;
 }
 
+export interface NetworkVector {
+  id: string;
+  type: string;
+  cde: string;
+  label: string;
+  url: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -53,6 +61,7 @@ export interface Task {
   attachments: number;
   files: TaskFile[];
   links: TaskLink[];
+  vectors?: NetworkVector[];
   tags: string[];
   fileZone: string; // Internal tracking
   timeZone: string;
@@ -62,6 +71,7 @@ export interface Task {
   pendingReviewDate?: string | null; // When task entered PENDING_REVIEW status
   submittingDate?: string | null;
   submitterName?: string;
+  precinct?: string;
 
   createdAt: string;
   updatedAt: string;
@@ -307,7 +317,6 @@ export interface BIMReview {
   insiteBimReviewStatus: string;
   insiteReviewDueDate?: string | null;
   insiteReviewOutputUrl?: string;
-  precinct?: string;
   insiteReviewer: string;
   modonHillFinalReviewStatus: string;
   onAcc: string; // "SHARED" | "NOT SHARED" 

@@ -111,6 +111,7 @@ export function getDynamicExportColumns(metadataExcluded: string[], format: 'exc
     { id: 'id', excelLabel: 'ID', pdfLabel: 'UID', width: 25 },
     { id: 'title', excelLabel: 'Asset / Task Title', pdfLabel: 'ASSET TITLE', width: 50 },
     { id: 'department', excelLabel: 'Task Category', pdfLabel: 'TASK CATEGORY', width: 20 },
+    { id: 'precinct', excelLabel: 'Precinct', pdfLabel: 'PRECINCT', width: 20 },
     { id: 'submitterName', excelLabel: 'Submitter', pdfLabel: 'SUBMITTER', width: 25 },
     { id: 'submittingDate', excelLabel: 'Submission Date', pdfLabel: 'SUBMISSION DATE', width: 20 },
     { id: 'deliverableType', excelLabel: 'Deliverable Type', pdfLabel: 'DELIVERABLE TYPE', width: 25 },
@@ -203,12 +204,55 @@ export async function exportToExcel(
   tasks: Task[], 
   metadata: ProjectMetadata | undefined, 
   dateRangeText: string | undefined,
-  perspective: 'table' | 'dashboard' | 'both' = 'table'
+  perspective: 'table' | 'dashboard' | 'both' = 'table',
+  filters?: { types: string[], cdes: string[] }
 ) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'KEO Digital Intelligence';
   workbook.lastModifiedBy = 'KEO Admin Hub';
   workbook.created = new Date();
+
+  // Helper to filter data for a specific task based on active export filters
+  const getFilteredTaskData = (t: Task) => {
+    const activeTypes = (filters?.types || []).filter(v => v !== 'All Types');
+    const activeCDEs = (filters?.cdes || []).filter(v => v !== 'All Environments');
+
+    // Aggregate from both legacy and new vector structure
+    const legacyTypes = (Array.isArray(t.deliverableType) ? t.deliverableType : [t.deliverableType]).filter((v): v is string => !!v);
+    const legacyCdes = (Array.isArray(t.cde) ? t.cde : [t.cde]).filter((v): v is string => !!v);
+    const vectorTypes = (t.vectors || []).map(v => v.type);
+    const vectorCdes = (t.vectors || []).map(v => v.cde);
+
+    const allTypesRaw = Array.from(new Set([...legacyTypes, ...vectorTypes]));
+    const allCdesRaw = Array.from(new Set([...legacyCdes, ...vectorCdes]));
+
+    // Filter by active selection
+    const filteredTypes = allTypesRaw.filter(type => activeTypes.length === 0 || activeTypes.includes(type));
+    const filteredCdes = allCdesRaw.filter(c => activeCDEs.length === 0 || activeCDEs.includes(c));
+
+    // Filter Vectors
+    const filteredVectors = (t.vectors || []).filter(v => {
+      const typeMatch = activeTypes.length === 0 || activeTypes.includes(v.type);
+      const cdeMatch = activeCDEs.length === 0 || activeCDEs.includes(v.cde);
+      return typeMatch && cdeMatch;
+    });
+
+    // Filter Legacy Links 
+    const filteredLinks = (t.links || []).filter((l, i) => {
+      const typeAtIdx = legacyTypes[i] || legacyTypes[0];
+      const cdeAtIdx = legacyCdes[i] || legacyCdes[0];
+      const typeMatch = activeTypes.length === 0 || activeTypes.includes(typeAtIdx);
+      const cdeMatch = activeCDEs.length === 0 || activeCDEs.includes(cdeAtIdx);
+      return typeMatch && cdeMatch;
+    });
+
+    return { 
+      vectors: filteredVectors, 
+      types: filteredTypes, 
+      cdes: filteredCdes, 
+      links: filteredLinks 
+    };
+  };
 
   // Helper to add Master Registry sheet
   const addRegistrySheet = (name: string, isMain: boolean) => {
@@ -216,13 +260,14 @@ export async function exportToExcel(
     const excluded = metadata?.reportExcludedFields || [];
     const visibleColumns = getDynamicExportColumns(excluded, 'excel');
     
-    const maxLinks = Math.max(...tasks.map(t => getTaskLinks(t).length), 1);
+    // Compute max deliverables per task after filtering to size columns
+    const filteredTasksData = tasks.map(t => getFilteredTaskData(t));
+    const maxDeliverables = Math.max(...filteredTasksData.map(d => Math.max(d.vectors.length, d.links.length)), 1);
+    
     const headers: string[] = [];
-    const colWidths: any[] = [];
-
     visibleColumns.forEach(c => {
       if (c.id === 'links') {
-        for (let i = 0; i < Math.min(maxLinks, 5); i++) {
+        for (let i = 0; i < Math.min(maxDeliverables, 5); i++) {
           headers.push(`Deliverable ${i + 1}`);
         }
       } else {
@@ -236,19 +281,23 @@ export async function exportToExcel(
     hRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + headerColors.bg.replace('#', '') } };
     hRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    tasks.forEach(t => {
-      const links = getTaskLinks(t);
+    tasks.forEach((t, tIdx) => {
+      const fData = filteredTasksData[tIdx];
       const rowData: any[] = [];
       visibleColumns.forEach(c => {
         if (c.id === 'id') rowData.push(t.id.toUpperCase());
         else if (c.id === 'title') rowData.push(t.title);
         else if (c.id === 'department') rowData.push(t.department);
+        else if (c.id === 'precinct') rowData.push(t.precinct || '-');
         else if (c.id === 'submitterName') rowData.push(t.submitterName || '-');
         else if (c.id === 'submittingDate') rowData.push(formatReportDate(t.submittingDate));
-        else if (c.id === 'deliverableType') rowData.push(Array.isArray(t.deliverableType) ? t.deliverableType.join(' | ') : t.deliverableType);
-        else if (c.id === 'cde') rowData.push(Array.isArray(t.cde) ? t.cde.join(' | ') : t.cde);
+        else if (c.id === 'deliverableType') rowData.push(fData.types.join(' | '));
+        else if (c.id === 'cde') rowData.push(fData.cdes.join(' | '));
         else if (c.id === 'links') {
-          for (let i = 0; i < Math.min(maxLinks, 5); i++) rowData.push(links[i]?.label || '');
+          const combinedLinks = fData.vectors.length > 0 
+            ? fData.vectors.map(v => ({ label: `${v.type} (${v.cde})`, url: v.url }))
+            : fData.links;
+          for (let i = 0; i < Math.min(maxDeliverables, 5); i++) rowData.push(combinedLinks[i]?.label || '');
         }
       });
       const row = dataSheet.addRow(rowData);
@@ -258,10 +307,13 @@ export async function exportToExcel(
       if (!excluded.includes('links')) {
         const lIdx = visibleColumns.findIndex(vv => vv.id === 'links');
         if (lIdx !== -1) {
-          links.slice(0, 5).forEach((link, idx) => {
+          const combinedLinks = fData.vectors.length > 0 
+            ? fData.vectors.map(v => ({ label: `${v.type} (${v.cde})`, url: v.url }))
+            : fData.links;
+          combinedLinks.slice(0, 5).forEach((link, idx) => {
             const cell = row.getCell(lIdx + 1 + idx);
             if (link.url) {
-              cell.value = { text: link.label || 'Link', hyperlink: link.url };
+              cell.value = { text: link.label || 'Link', hyperlink: ensureAbsoluteUrl(link.url) };
               cell.font = { color: { argb: 'FF0563C1' }, underline: true };
             }
           });
@@ -384,7 +436,8 @@ export async function exportToPDF(
   tasks: Task[], 
   metadata: ProjectMetadata | undefined, 
   dateRangeText: string | undefined,
-  perspective: 'table' | 'dashboard' | 'both' = 'table'
+  perspective: 'table' | 'dashboard' | 'both' = 'table',
+  filters?: { types: string[], cdes: string[] }
 ) {
   const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -393,6 +446,46 @@ export async function exportToPDF(
   const bgColor = hexToRgb(metadata?.reportBgColor || '#0a0a0f');
   const accentColor = hexToRgb(metadata?.reportAccentColor || '#D4AF37');
   const headerTextColor = hexToRgb(metadata?.reportHeaderTextColor || '#D4AF37');
+
+  // Helper to filter data for a specific task based on active export filters
+  const getFilteredTaskData = (t: Task) => {
+    const activeTypes = (filters?.types || []).filter(v => v !== 'All Types');
+    const activeCDEs = (filters?.cdes || []).filter(v => v !== 'All Environments');
+
+    // Aggregate from both legacy and new vector structure
+    const legacyTypes = (Array.isArray(t.deliverableType) ? t.deliverableType : [t.deliverableType]).filter((v): v is string => !!v);
+    const legacyCdes = (Array.isArray(t.cde) ? t.cde : [t.cde]).filter((v): v is string => !!v);
+    const vectorTypes = (t.vectors || []).map(v => v.type);
+    const vectorCdes = (t.vectors || []).map(v => v.cde);
+
+    const allTypesRaw = Array.from(new Set([...legacyTypes, ...vectorTypes]));
+    const allCdesRaw = Array.from(new Set([...legacyCdes, ...vectorCdes]));
+
+    // Filter by active selection
+    const filteredTypes = allTypesRaw.filter(type => activeTypes.length === 0 || activeTypes.includes(type));
+    const filteredCdes = allCdesRaw.filter(c => activeCDEs.length === 0 || activeCDEs.includes(c));
+
+    const filteredVectors = (t.vectors || []).filter(v => {
+      const typeMatch = activeTypes.length === 0 || activeTypes.includes(v.type);
+      const cdeMatch = activeCDEs.length === 0 || activeCDEs.includes(v.cde);
+      return typeMatch && cdeMatch;
+    });
+
+    const filteredLinks = (t.links || []).filter((l, i) => {
+      const typeAtIdx = legacyTypes[i] || legacyTypes[0];
+      const cdeAtIdx = legacyCdes[i] || legacyCdes[0];
+      const typeMatch = activeTypes.length === 0 || activeTypes.includes(typeAtIdx);
+      const cdeMatch = activeCDEs.length === 0 || activeCDEs.includes(cdeAtIdx);
+      return typeMatch && cdeMatch;
+    });
+
+    return { 
+      vectors: filteredVectors, 
+      types: filteredTypes, 
+      cdes: filteredCdes, 
+      links: filteredLinks 
+    };
+  };
 
   // Helper for Cover Page
   const drawCover = () => {
@@ -444,182 +537,82 @@ export async function exportToPDF(
     doc.text(metadata?.reportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM', 20, pageHeight - 15);
   };
 
-  // Helper for Dashboard Page
-  const drawDashboard = () => {
-    const analytics = getDashboardAnalytics(tasks);
+  // Section Divider Helper
+  const drawDivider = (title: string) => {
     doc.addPage();
     doc.setFillColor(...bgColor);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
-    
-    doc.setTextColor(...headerTextColor);
-    doc.setFontSize(22);
+    doc.setFillColor(...accentColor);
+    doc.rect(0, pageHeight / 2 - 25, pageWidth, 50, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
-    doc.text('ANALYTICS SUMMARY', 20, 25);
-    
-    // 1. KPI ROW (Top)
-    let kpiX = 20, kpiY = 35;
-    const kpiW = (pageWidth - 60) / 5;
-    const drawKPI = (label: string, value: string | number, color: [number,number,number]) => {
-      // High-Contrast Professional Card Logic
-      doc.setFillColor(...accentColor);
-      doc.rect(kpiX, kpiY, 3, 30, 'F');
-      
-      doc.setFillColor(25, 25, 30); // Solid high-density slate
-      doc.roundedRect(kpiX + 3, kpiY, kpiW - 3, 30, 4, 4, 'F');
-      
-      doc.setTextColor(...color);
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text(value.toString(), kpiX + kpiW/2 + 1.5, kpiY + 16, { align: 'center' });
-      
-      doc.setTextColor(255, 255, 255); // SOLID WHITE FOR GUARANTEED VISIBILITY
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'bold');
-      doc.text(label.toUpperCase(), kpiX + kpiW/2 + 1.5, kpiY + 25, { align: 'center' });
-      kpiX += kpiW + 5;
-    };
-    
-    drawKPI('Total Vectors', analytics.total, accentColor);
-    drawKPI('Categories', analytics.categories.length, [66, 153, 225]);
-    drawKPI('Submitters', analytics.activeSubmitters, [72, 187, 120]);
-    drawKPI('Types', analytics.types.length, [237, 137, 54]);
-    drawKPI('Primary CDE', analytics.cde[0]?.name || 'N/A', [159, 122, 234]);
-    
-    // 2. PIE / DONUT DISTRIBUTION CHARTS
-    const chartColors: [number, number, number][] = [
-      accentColor, 
-      [66, 153, 225], [72, 187, 120], [237, 137, 54], [159, 122, 234], [245, 101, 101]
-    ];
-
-    const drawDonutChart = (title: string, data: {name: string, value: number}[], x: number, y: number, radius: number) => {
-      doc.setTextColor(...accentColor);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text(title.toUpperCase(), x + radius, y - 5, { align: 'center' });
-      
-      const cx = x + radius, cy = y + radius + 2;
-      let startAngle = -Math.PI / 2;
-      const sorted = data.slice(0, 5);
-      
-      // Render Pie Wedges with Surgical Precision
-      sorted.forEach((d, i) => {
-        const sliceAngle = (d.value / (analytics.total || 1)) * 2 * Math.PI;
-        if (sliceAngle <= 0) return;
-        
-        doc.setFillColor(...(chartColors[i % chartColors.length]));
-        const segments = 60; // ANTI-FACETING RESOLUTION
-        for (let s = 0; s < segments; s++) {
-          const a1 = startAngle + (s / segments) * sliceAngle;
-          const a2 = startAngle + ((s + 1) / segments) * sliceAngle;
-          doc.triangle(
-            cx, cy,
-            cx + radius * Math.cos(a1), cy + radius * Math.sin(a1),
-            cx + radius * Math.cos(a2), cy + radius * Math.sin(a2),
-            'F'
-          );
-        }
-        startAngle += sliceAngle;
-      });
-
-      // Background "Rest" Slice
-      const totalVal = sorted.reduce((acc, curr) => acc + curr.value, 0);
-      if (totalVal < analytics.total) {
-        const restAngle = ((analytics.total - totalVal) / analytics.total) * 2 * Math.PI;
-        doc.setFillColor(40, 40, 45); // Solid dark slate rest wedge
-        const segments = 20;
-        for (let s = 0; s < segments; s++) {
-          const a1 = startAngle + (s / segments) * restAngle;
-          const a2 = startAngle + ((s + 1) / segments) * restAngle;
-          doc.triangle(cx, cy, cx+radius*Math.cos(a1), cy+radius*Math.sin(a1), cx+radius*Math.cos(a2), cy+radius*Math.sin(a2), 'F');
-        }
-      }
-
-      // Elegant Center Hole
-      doc.setFillColor(...bgColor);
-      doc.circle(cx, cy, radius * 0.65, 'F');
-      
-      // High-Visibility Legend
-      let legendY = cy - (sorted.length * 3);
-      sorted.forEach((d, i) => {
-        doc.setFillColor(...(chartColors[i % chartColors.length]));
-        doc.rect(x + radius * 2 + 8, legendY - 2.5, 3, 3, 'F');
-        
-        doc.setTextColor(255, 255, 255); // SOLID WHITE LABELS
-        doc.setFontSize(7.5);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`${d.name.substring(0, 20).toUpperCase()}`, x + radius * 2 + 14, legendY);
-        
-        doc.setTextColor(...accentColor);
-        doc.setFontSize(7.5);
-        doc.text(`${((d.value/analytics.total)*100).toFixed(0)}%`, x + radius * 2 + 75, legendY, { align: 'right' });
-        legendY += 7.5;
-      });
-    };
-    
-    const chartR = 30; // SCALED UP FOR EXECUTIVE PRESENCE
-    const chartSpacing = (pageWidth - 40) / 3;
-    drawDonutChart('Category Performance', analytics.categories, 15, 85, chartR);
-    drawDonutChart('Technical Distributions', analytics.types, 15 + chartSpacing, 85, chartR);
-    drawDonutChart('CDE Dominance Profile', analytics.cde, 15 + chartSpacing * 2, 85, chartR);
-
-    // 3. TIMELINE ROW (Bottom)
-    const drawTimelineChart = (x: number, y: number) => {
-      doc.setTextColor(...accentColor);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text('SUBMISSION TIMELINE TRENDS', x, y);
-
-      const timeline: Record<string, number> = {};
-      [...tasks].sort((a,b) => new Date(a.submittingDate || 0).getTime() - new Date(b.submittingDate || 0).getTime())
-           .forEach(t => {
-              if (!t.submittingDate) return;
-              const d = new Date(t.submittingDate);
-              const key = `${d.toLocaleString('en-GB', { month: 'short' })} ${d.getFullYear()}`;
-              timeline[key] = (timeline[key] || 0) + 1;
-           });
-
-      const timelineData = Object.entries(timeline).slice(-6);
-      const max = Math.max(...timelineData.map(d => d[1]), 1);
-      const chartW = pageWidth - 40;
-      const chartH = 35;
-      const barW = (chartW / (timelineData.length || 1)) - 15;
-
-      timelineData.forEach((d, i) => {
-        const bX = x + (i * (barW + 15));
-        const h = (d[1] / max) * chartH;
-        doc.setTextColor(255, 255, 255, 0.6);
-        doc.setFontSize(7);
-        doc.text(d[0], bX + barW / 2, y + chartH + 12, { align: 'center' });
-        doc.setFillColor(25, 25, 30); 
-        doc.roundedRect(bX + 1, y + chartH + 5 - h + 1, barW, h, 2, 2, 'F');
-        doc.setFillColor(...accentColor);
-        doc.roundedRect(bX, y + chartH + 5 - h, barW, h, 2, 2, 'F');
-        doc.setTextColor(255, 255, 255); // High contrast white
-        doc.setFont('helvetica', 'bold');
-        doc.text(d[1].toString(), bX + barW / 2, y + chartH + 5 - h - 3, { align: 'center' });
-      });
-    };
-    
-    drawTimelineChart(20, 155);
+    doc.text(title, pageWidth / 2, pageHeight / 2 + 3, { align: 'center' });
   };
 
-  // Helper for Section Divider
-  const drawDivider = (title: string) => {
+  // Dashboard / Analytics Page Helper
+  const drawDashboard = () => {
     doc.addPage();
-    doc.setFillColor(...accentColor);
+    doc.setFillColor(255, 255, 255);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
     
-    doc.setTextColor(...bgColor);
-    doc.setFontSize(42);
-    doc.setFont('helvetica', 'bold');
-    doc.text(title.toUpperCase(), pageWidth / 2, pageHeight / 2 - 10, { align: 'center' });
-    
+    doc.setTextColor(30, 41, 59);
     doc.setFontSize(14);
-    doc.text('KEO DIGITAL INTELLIGENCE // TRANSITIONING TO REGISTRY DATA', pageWidth / 2, pageHeight / 2 + 10, { align: 'center' });
-    
-    doc.setDrawColor(...bgColor);
-    doc.setLineWidth(1);
-    doc.line(pageWidth / 2 - 50, pageHeight / 2 + 20, pageWidth / 2 + 50, pageHeight / 2 + 20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('EXECUTIVE PERFORMANCE DASHBOARD', 14, 20);
+
+    // Filter summary for this page
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    const filterText = `Refined by: ${filters?.types?.join(', ') || 'All Types'} // ${filters?.cdes?.join(', ') || 'All Environments'}`;
+    doc.text(filterText, 14, 28);
+
+    // Simple KPIs Grid
+    const kpiY = 40;
+    const kpiW = (pageWidth - 40) / 4;
+    const kpiH = 30;
+
+    const stats = [
+      { label: 'Total Tasks', value: tasks.length.toString() },
+      { label: 'Completion Rate', value: `${Math.round((tasks.filter(t => t.status === 'COMPLETED').length / (tasks.length || 1)) * 100)}%` },
+      { label: 'In-Progress', value: tasks.filter(t => t.status === 'IN_PROGRESS').length.toString() },
+      { label: 'Pending Review', value: tasks.filter(t => t.status === 'PENDING_REVIEW').length.toString() }
+    ];
+
+    stats.forEach((s, i) => {
+      const x = 14 + i * (kpiW + 4);
+      doc.setDrawColor(226, 232, 240);
+      doc.setFillColor(248, 250, 252);
+      doc.rect(x, kpiY, kpiW, kpiH, 'FD');
+      
+      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text(s.label.toUpperCase(), x + 5, kpiY + 8);
+      
+      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(14);
+      doc.text(s.value, x + 5, kpiY + 22);
+    });
+
+    // Add a simple chart placeholder / summary table
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DISTRIBUTION BY CATEGORY', 14, kpiY + kpiH + 15);
+
+    const deptsRaw: Record<string, number> = {};
+    tasks.forEach(t => deptsRaw[t.department] = (deptsRaw[t.department] || 0) + 1);
+    const deptStats = Object.entries(deptsRaw).sort((a,b) => b[1] - a[1]);
+
+    autoTable(doc, {
+      startY: kpiY + kpiH + 20,
+      head: [['Category', 'Count', 'Weight']],
+      body: deptStats.map(([name, count]) => [name, count.toString(), `${Math.round((count / tasks.length) * 100)}%`]),
+      margin: { left: 14 },
+      tableWidth: 120,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [30, 41, 59] }
+    });
   };
 
   // Helper for Table Registry
@@ -635,17 +628,28 @@ export async function exportToPDF(
     const excluded = metadata?.reportExcludedFields || [];
     const visibleCols = getDynamicExportColumns(excluded, 'pdf');
     const head = [visibleCols.map(c => c.label)];
-    const body = tasks.map(t => {
-      const links = getTaskLinks(t).map(l => l.label).join(' | ');
+    
+    // Process filtered data for each task
+    const filteredTasksData = tasks.map(t => getFilteredTaskData(t));
+
+    const body = tasks.map((t, tIdx) => {
+      const fData = filteredTasksData[tIdx];
+      const combinedLinks = fData.vectors.length > 0 
+        ? fData.vectors.map(v => ({ label: `${v.type} (${v.cde})`, url: v.url }))
+        : fData.links;
+      
+      const linksLabels = combinedLinks.map(l => l.label).join(' | ');
+      
       return visibleCols.map(c => {
         if (c.id === 'id') return t.id.toUpperCase();
         if (c.id === 'title') return t.title;
         if (c.id === 'department') return t.department;
+        if (c.id === 'precinct') return t.precinct || '-';
         if (c.id === 'submitterName') return t.submitterName || '-';
         if (c.id === 'submittingDate') return formatReportDate(t.submittingDate);
-        if (c.id === 'deliverableType') return Array.isArray(t.deliverableType) ? t.deliverableType.join(' | ') : (t.deliverableType || '-');
-        if (c.id === 'cde') return Array.isArray(t.cde) ? t.cde.join(' | ') : (t.cde || '-');
-        if (c.id === 'links') return links || '-';
+        if (c.id === 'deliverableType') return fData.types.join(' | ') || '-';
+        if (c.id === 'cde') return fData.cdes.join(' | ') || '-';
+        if (c.id === 'links') return linksLabels || '-';
         return '-';
       });
     });
@@ -731,7 +735,6 @@ export async function exportToPDF(
 export function getBimExportColumns(metadataExcluded: string[], format: 'excel' | 'pdf' = 'excel') {
   const baseColumns = [
     { id: 'project', excelLabel: 'Project', pdfLabel: 'PROJECT', width: 30 },
-    { id: 'precinct', excelLabel: 'Precinct', pdfLabel: 'PRECINCT', width: 20 },
     { id: 'stakeholder', excelLabel: 'Stakeholder', pdfLabel: 'STAKEHOLDER', width: 25 },
     { id: 'reviewNumber', excelLabel: 'Review No.', pdfLabel: 'REV NO', width: 15 },
     { id: 'submissionDescription', excelLabel: 'Submission Description', pdfLabel: 'DESCRIPTION', width: 50 },
@@ -916,21 +919,20 @@ export async function exportBimToPDF(
       },
       columnStyles: {
         0: { cellWidth: 15 }, // PROJECT
-        1: { cellWidth: 10 }, // PRECINCT
-        2: { cellWidth: 16 }, // STAKEHOLDER
-        3: { cellWidth: 10 }, // REV NO
-        4: { cellWidth: 35, halign: 'left' }, // DESCRIPTION
-        5: { cellWidth: 12 }, // STAGE
-        6: { cellWidth: 18 }, // SUBMISSION DATE
-        7: { cellWidth: 18 }, // CATEGORY
-        8: { cellWidth: 12 }, // ACC STATUS
-        9: { cellWidth: 16 }, // REVIEWER
-        10: { cellWidth: 18 }, // DUE DATE
-        11: { cellWidth: 14 }, // INSITE STATUS
-        12: { cellWidth: 14 }, // MODON STATUS
-        13: { cellWidth: 32, halign: 'left' }, // COMMENTS
-        14: { cellWidth: 10 },  // REPORT LINKS
-        15: { cellWidth: 10 }   // WORKFLOW LINK
+        1: { cellWidth: 16 }, // STAKEHOLDER
+        2: { cellWidth: 10 }, // REV NO
+        3: { cellWidth: 35, halign: 'left' }, // DESCRIPTION
+        4: { cellWidth: 12 }, // STAGE
+        5: { cellWidth: 18 }, // SUBMISSION DATE
+        6: { cellWidth: 18 }, // CATEGORY
+        7: { cellWidth: 12 }, // ACC STATUS
+        8: { cellWidth: 16 }, // REVIEWER
+        9: { cellWidth: 18 }, // DUE DATE
+        10: { cellWidth: 14 }, // INSITE STATUS
+        11: { cellWidth: 14 }, // MODON STATUS
+        12: { cellWidth: 32, halign: 'left' }, // COMMENTS
+        13: { cellWidth: 10 },  // REPORT LINKS
+        14: { cellWidth: 10 }   // WORKFLOW LINK
       }
     });
   };

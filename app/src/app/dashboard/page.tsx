@@ -79,6 +79,7 @@ export default function Dashboard() {
   const [filterDept, setFilterDept] = useState<string[]>(['All Categories']);
   const [filterType, setFilterType] = useState<string[]>(['All Types']);
   const [filterCDE, setFilterCDE] = useState<string[]>(['All Environments']);
+  const [filterPrecinct, setFilterPrecinct] = useState<string[]>(['All Precincts']);
   const [search, setSearch] = useState('');
   const { activeView, setActiveView } = useRegistryView('table');
   const [activeReport, setActiveReport] = useState<'DELIVERABLES' | 'BIM_REVIEWS'>('DELIVERABLES');
@@ -124,7 +125,6 @@ export default function Dashboard() {
   const [bimFilterStage, setBimFilterStage] = useState<string[]>([]);
   const [bimFilterStatus, setBimFilterStatus] = useState<string[]>([]);
   const [bimFilterStakeholder, setBimFilterStakeholder] = useState<string[]>([]);
-  const [bimFilterPrecinct, setBimFilterPrecinct] = useState<string[]>([]);
   const [bimFilterReviewer, setBimFilterReviewer] = useState<string[]>([]);
 
 
@@ -230,13 +230,26 @@ export default function Dashboard() {
   }, [dateFilteredTasks]);
 
   const availableTypes = useMemo(() => {
-    const types = new Set(dateFilteredTasks.flatMap(t => t.deliverableType || []));
+    const types = new Set(dateFilteredTasks.flatMap(t => {
+      const legacy = (Array.isArray(t.deliverableType) ? t.deliverableType : [t.deliverableType]).filter((v): v is string => !!v);
+      const vector = (t.vectors || []).map(v => v.type);
+      return [...legacy, ...vector];
+    }));
     return ['All Types', ...Array.from(types).sort()];
   }, [dateFilteredTasks]);
 
   const availableCDEs = useMemo(() => {
-    const cdes = new Set(dateFilteredTasks.flatMap(t => t.cde || []));
+    const cdes = new Set(dateFilteredTasks.flatMap(t => {
+      const legacy = (Array.isArray(t.cde) ? t.cde : [t.cde]).filter((v): v is string => !!v);
+      const vector = (t.vectors || []).map(v => v.cde);
+      return [...legacy, ...vector];
+    }));
     return ['All Environments', ...Array.from(cdes).sort()];
+  }, [dateFilteredTasks]);
+  
+  const availablePrecincts = useMemo(() => {
+    const precincts = new Set(dateFilteredTasks.map(t => t.precinct).filter((v): v is string => !!v));
+    return ['All Precincts', ...Array.from(precincts).sort()];
   }, [dateFilteredTasks]);
 
   // Reset filters if they are no longer available in the new pool
@@ -260,6 +273,13 @@ export default function Dashboard() {
     if (valid.length === 0) setFilterCDE(['All Environments']);
     else if (valid.length !== filterCDE.length) setFilterCDE(valid);
   }, [availableCDEs, filterCDE]);
+
+  useEffect(() => {
+    if (filterPrecinct.includes('All Precincts')) return;
+    const valid = filterPrecinct.filter(p => availablePrecincts.includes(p));
+    if (valid.length === 0) setFilterPrecinct(['All Precincts']);
+    else if (valid.length !== filterPrecinct.length) setFilterPrecinct(valid);
+  }, [availablePrecincts, filterPrecinct]);
 
   // Tasks from the previous equivalent period for KPI growth comparisons
   const previousPeriodTasks = useMemo(() => {
@@ -301,16 +321,27 @@ export default function Dashboard() {
 
     // Apply Deliverable Type filter
     if (filterType.length > 0 && !filterType.includes('All Types')) {
-      result = result.filter(t =>
-        (t.deliverableType || []).some(type => filterType.includes(type))
-      );
+      result = result.filter(t => {
+        const legacy = (Array.isArray(t.deliverableType) ? t.deliverableType : [t.deliverableType]).filter((v): v is string => !!v);
+        const vector = (t.vectors || []).map(v => v.type);
+        const combined = [...legacy, ...vector];
+        return combined.some(type => filterType.includes(type));
+      });
     }
 
     // Apply CDE Environment filter
     if (filterCDE.length > 0 && !filterCDE.includes('All Environments')) {
-      result = result.filter(t =>
-        (t.cde || []).some(env => filterCDE.includes(env))
-      );
+      result = result.filter(t => {
+        const legacy = (Array.isArray(t.cde) ? t.cde : [t.cde]).filter((v): v is string => !!v);
+        const vector = (t.vectors || []).map(v => v.cde);
+        const combined = [...legacy, ...vector];
+        return combined.some(env => filterCDE.includes(env));
+      });
+    }
+
+    // Apply Precinct filter
+    if (filterPrecinct.length > 0 && !filterPrecinct.includes('All Precincts')) {
+      result = result.filter(t => filterPrecinct.includes(t.precinct || ''));
     }
 
     // Apply Search filter
@@ -363,12 +394,11 @@ export default function Dashboard() {
       const matchesStage = bimFilterStage.length === 0 || bimFilterStage.includes(review.designStage);
       const matchesStatus = bimFilterStatus.length === 0 || bimFilterStatus.includes(review.insiteBimReviewStatus);
       const matchesStakeholder = bimFilterStakeholder.length === 0 || bimFilterStakeholder.includes(review.stakeholder);
-      const matchesPrecinct = bimFilterPrecinct.length === 0 || bimFilterPrecinct.includes(review.precinct);
       const matchesReviewer = bimFilterReviewer.length === 0 || bimFilterReviewer.includes(review.insiteReviewer);
 
-      return matchesSearch && matchesStage && matchesStatus && matchesStakeholder && matchesPrecinct && matchesReviewer;
+      return matchesSearch && matchesStage && matchesStatus && matchesStakeholder && matchesReviewer;
     });
-  }, [syncedBimReviews, bimSearch, bimFilterStage, bimFilterStatus, bimFilterStakeholder, bimFilterPrecinct, bimFilterReviewer, filterMode, selectedMonth, selectedYear, startDate, endDate]);
+  }, [syncedBimReviews, bimSearch, bimFilterStage, bimFilterStatus, bimFilterStakeholder, bimFilterReviewer, filterMode, selectedMonth, selectedYear, startDate, endDate]);
 
   // Snapshot for previous period to calculate growth
   const previousPeriodBimReviews = useMemo(() => {
@@ -772,6 +802,9 @@ export default function Dashboard() {
                       filterCDE={filterCDE}
                       setFilterCDE={setFilterCDE}
                       availableCDEs={availableCDEs}
+                      filterPrecinct={filterPrecinct}
+                      setFilterPrecinct={setFilterPrecinct}
+                      availablePrecincts={availablePrecincts}
                     />
                   ) : (
                     <BimExportMenu
@@ -787,9 +820,6 @@ export default function Dashboard() {
                       filterStakeholder={bimFilterStakeholder}
                       setFilterStakeholder={setBimFilterStakeholder}
                       availableStakeholders={availableBimStakeholders}
-                      filterPrecinct={bimFilterPrecinct}
-                      setFilterPrecinct={setBimFilterPrecinct}
-                      availablePrecincts={availableBimPrecincts}
                       filterReviewer={bimFilterReviewer}
                       setFilterReviewer={setBimFilterReviewer}
                       availableReviewers={availableBimReviewers}
@@ -830,9 +860,6 @@ export default function Dashboard() {
                           filterStakeholder={bimFilterStakeholder}
                           setFilterStakeholder={setBimFilterStakeholder}
                           availableStakeholders={availableBimStakeholders}
-                          filterPrecinct={bimFilterPrecinct}
-                          setFilterPrecinct={setBimFilterPrecinct}
-                          availablePrecincts={availableBimPrecincts}
                           filterReviewer={bimFilterReviewer}
                           setFilterReviewer={setBimFilterReviewer}
                           availableReviewers={availableBimReviewers}
@@ -857,6 +884,9 @@ export default function Dashboard() {
                           filterCDE={filterCDE}
                           setFilterCDE={setFilterCDE}
                           availableCDEs={availableCDEs}
+                          filterPrecinct={filterPrecinct}
+                          setFilterPrecinct={setFilterPrecinct}
+                          availablePrecincts={availablePrecincts}
                         />
                       )}
                     </motion.div>
@@ -883,9 +913,6 @@ export default function Dashboard() {
                           filterStakeholder={bimFilterStakeholder}
                           setFilterStakeholder={setBimFilterStakeholder}
                           availableStakeholders={availableBimStakeholders}
-                          filterPrecinct={bimFilterPrecinct}
-                          setFilterPrecinct={setBimFilterPrecinct}
-                          availablePrecincts={availableBimPrecincts}
                           filterReviewer={bimFilterReviewer}
                           setFilterReviewer={setBimFilterReviewer}
                           availableReviewers={availableBimReviewers}
@@ -927,6 +954,7 @@ export default function Dashboard() {
         isOpen={!!selectedTask}
         task={selectedTask ? (syncedTasks.find(t => t.id === selectedTask.id) || selectedTask) : null}
         onClose={() => setSelectedTask(null)}
+        activeFilters={{ types: filterType, cdes: filterCDE }}
       />
 
       <input 

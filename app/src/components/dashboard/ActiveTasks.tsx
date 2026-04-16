@@ -13,13 +13,14 @@ import EliteDropdown from '@/components/dashboard/EliteDropdown';
 import { useTableColumns, ColumnDef } from '@/hooks/useTableColumns';
 import ColumnSettingsDropdown from '@/components/dashboard/ColumnSettingsDropdown';
 
-type SortField = 'title' | 'status' | 'completion' | 'submittingDate' | 'id' | 'department' | 'submitterName' | 'deliverableType' | 'cde';
+type SortField = 'title' | 'status' | 'completion' | 'submittingDate' | 'id' | 'department' | 'submitterName' | 'deliverableType' | 'cde' | 'precinct';
 type SortDir = 'asc' | 'desc';
 
 const INITIAL_COLUMNS: ColumnDef<SortField>[] = [
   { id: 'id', field: 'id', label: 'ID', align: 'center', priority: 'high', defaultWidth: 100, alwaysVisible: true },
   { id: 'title', field: 'title', label: 'Task Name', align: 'center', priority: 'high', defaultWidth: 160, alwaysVisible: true },
   { id: 'department', field: 'department', label: 'Task Category', align: 'center', priority: 'medium', defaultWidth: 190 },
+  { id: 'precinct', field: 'precinct', label: 'Precinct', align: 'center', priority: 'medium', defaultWidth: 150 },
   { id: 'submitterName', field: 'submitterName', label: 'Submitter', align: 'center', priority: 'medium', defaultWidth: 180 },
   { id: 'submittingDate', field: 'submittingDate', label: 'Submission Date', align: 'center', priority: 'medium', defaultWidth: 180 },
   { id: 'deliverableType', field: 'deliverableType', label: 'Deliverable Type', align: 'center', priority: 'medium', defaultWidth: 210 },
@@ -92,7 +93,13 @@ function ResizeHandle({ columnWidth, onWidthChange }: { columnWidth: number, onW
 const PREVIEW_ROWS = 5;
 
 
-function TaskRow({ task, index, onClick, visibleColumns, isCustomized }: { task: Task; index: number; onClick?: (task: Task) => void, visibleColumns: ColumnDef<SortField>[], isCustomized: boolean }) {
+function TaskRow({ 
+  task, index, onClick, visibleColumns, isCustomized, 
+  filterType = [], filterCDE = [] 
+}: { 
+  task: Task; index: number; onClick?: (task: Task) => void, visibleColumns: ColumnDef<SortField>[], isCustomized: boolean,
+  filterType?: string[], filterCDE?: string[]
+}) {
   const { formatDate } = useTimeZone();
 
   const isVisible = (id: string) => visibleColumns.some(c => c.id === id);
@@ -127,7 +134,6 @@ function TaskRow({ task, index, onClick, visibleColumns, isCustomized }: { task:
             }}>{task.title}</p>
           </td>
         );
-        
         if (col.id === 'department') return (
           <td key={col.id} style={{ 
             padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle',
@@ -135,6 +141,17 @@ function TaskRow({ task, index, onClick, visibleColumns, isCustomized }: { task:
           }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: getDepartmentColor(task.department) }}>
               {task.department}
+            </span>
+          </td>
+        );
+        
+        if (col.id === 'precinct') return (
+          <td key={col.id} style={{ 
+            padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle',
+            whiteSpace: isCustomized ? 'normal' : 'nowrap',
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+              {task.precinct || '—'}
             </span>
           </td>
         );
@@ -168,62 +185,129 @@ function TaskRow({ task, index, onClick, visibleColumns, isCustomized }: { task:
           </td>
         );
 
-        if (col.id === 'deliverableType') return (
-          <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
-            <div style={{ display: 'flex', flexWrap: isCustomized ? 'wrap' : 'nowrap', justifyContent: 'center', gap: 6 }}>
-              {Array.isArray(task.deliverableType) && task.deliverableType.map((type, i) => (
-                <span key={i} style={{ 
-                  fontSize: 10, fontWeight: 950, padding: '4px 14px', 
-                  background: type === 'RVT' ? 'var(--teal)' : type === 'PPTX' ? '#C5A059' : 'rgba(0, 63, 73, 0.85)', 
-                  border: '1px solid rgba(0, 63, 73, 0.2)', 
-                  borderRadius: '20px', color: type === 'PPTX' ? '#000' : 'var(--aqua)', whiteSpace: 'nowrap', textTransform: 'uppercase',
-                  letterSpacing: '0.08em', 
-                  boxShadow: '0 2px 10px rgba(0, 63, 73, 0.15)',
-                  display: 'flex', alignItems: 'center', gap: 6
-                }}>{type}</span>
-              ))}
-              {(!task.deliverableType || task.deliverableType.length === 0) && <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>—</span>}
-            </div>
-          </td>
-        );
+        if (col.id === 'deliverableType') {
+          const activeTypes = (filterType || []).filter(v => v !== 'All Types');
+          const activeCDEs = (filterCDE || []).filter(v => v !== 'All Environments');
 
-        if (col.id === 'cde') return (
-          <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
-            <div style={{ display: 'flex', flexWrap: isCustomized ? 'wrap' : 'nowrap', justifyContent: 'center', gap: 6 }}>
-              {Array.isArray(task.cde) && task.cde.map((env, i) => (
-                <span key={i} style={{ 
-                  fontSize: 10, fontWeight: 950, padding: '4px 14px', 
-                  background: env === 'ACC' ? 'var(--teal)' : 'rgba(0, 63, 73, 0.85)', 
-                  border: '1px solid rgba(0, 63, 73, 0.2)', 
-                  borderRadius: '20px', color: 'var(--aqua)', whiteSpace: 'nowrap', textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  boxShadow: '0 2px 10px rgba(0, 63, 73, 0.15)',
-                  display: 'flex', alignItems: 'center', gap: 6
-                }}>{env}</span>
-              ))}
-              {(!task.cde || task.cde.length === 0) && <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>—</span>}
-            </div>
-          </td>
-        );
+          const legacyTypes = (Array.isArray(task.deliverableType) ? task.deliverableType : [task.deliverableType]).filter((v): v is string => !!v);
+          
+          // Filter Legacy Types
+          const filteredLegacyTypes = legacyTypes.filter(type => activeTypes.length === 0 || activeTypes.includes(type));
 
-        if (col.id === 'links') return (
-          <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: isCustomized ? 'wrap' : 'nowrap' }}>
-              {task.links?.slice(0, 3).map((link) => (
-                <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ 
-                  color: 'var(--teal)', background: 'var(--sunlit-rock)', 
-                  padding: '5px 12px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 7, 
-                  textDecoration: 'none', border: '1px solid var(--sunlit-rock)', transition: 'all 200ms', 
-                  whiteSpace: 'nowrap', boxShadow: '0 4px 15px rgba(197, 160, 89, 0.2)' 
-                }} className="hover:scale-105 hover:brightness-110">
-                  <Activity size={11} strokeWidth={3} />
-                  <span style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{link.label}</span>
-                </a>
-              ))}
-              {(!task.links || task.links.length === 0) && <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>—</span>}
-            </div>
-          </td>
-        );
+          // Filter Vectors surgically
+          const filteredVectors = (task.vectors || []).filter(v => {
+            const typeMatch = activeTypes.length === 0 || activeTypes.includes(v.type);
+            const cdeMatch = activeCDEs.length === 0 || activeCDEs.includes(v.cde);
+            return typeMatch && cdeMatch;
+          });
+
+          const vectorTypes = filteredVectors.map(v => v.type);
+          const allTypes = Array.from(new Set([...filteredLegacyTypes, ...vectorTypes]));
+
+          return (
+            <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
+              <div style={{ display: 'flex', flexWrap: isCustomized ? 'wrap' : 'nowrap', justifyContent: 'center', gap: 6 }}>
+                {allTypes.map((type, i) => (
+                  <span key={i} style={{ 
+                    fontSize: 10, fontWeight: 950, padding: '4px 14px', 
+                    background: type === 'RVT' ? 'var(--teal)' : type === 'PPTX' ? '#C5A059' : 'rgba(0, 63, 73, 0.85)', 
+                    border: '1px solid rgba(0, 63, 73, 0.2)', 
+                    borderRadius: '20px', color: type === 'PPTX' ? '#000' : 'var(--aqua)', whiteSpace: 'nowrap', textTransform: 'uppercase',
+                    letterSpacing: '0.08em', 
+                    boxShadow: '0 2px 10px rgba(0, 63, 73, 0.15)',
+                    display: 'flex', alignItems: 'center', gap: 6
+                  }}>{type}</span>
+                ))}
+                {allTypes.length === 0 && <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>—</span>}
+              </div>
+            </td>
+          );
+        }
+
+        if (col.id === 'cde') {
+          const activeTypes = (filterType || []).filter(v => v !== 'All Types');
+          const activeCDEs = (filterCDE || []).filter(v => v !== 'All Environments');
+          
+          const legacyCdes = (Array.isArray(task.cde) ? task.cde : [task.cde]).filter((v): v is string => !!v);
+
+          // Filter Legacy CDEs 
+          const filteredLegacyCdes = legacyCdes.filter(c => activeCDEs.length === 0 || activeCDEs.includes(c));
+
+          // Filter Vectors surgically (Must match both Type and CDE filter if present)
+          const filteredVectors = (task.vectors || []).filter(v => {
+            const typeMatch = activeTypes.length === 0 || activeTypes.includes(v.type);
+            const cdeMatch = activeCDEs.length === 0 || activeCDEs.includes(v.cde);
+            return typeMatch && cdeMatch;
+          });
+
+          const vectorCdes = filteredVectors.map(v => v.cde);
+          const allCdes = Array.from(new Set([...filteredLegacyCdes, ...vectorCdes]));
+
+          return (
+            <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
+              <div style={{ display: 'flex', flexWrap: isCustomized ? 'wrap' : 'nowrap', justifyContent: 'center', gap: 6 }}>
+                {allCdes.map((env, i) => (
+                  <span key={i} style={{ 
+                    fontSize: 10, fontWeight: 950, padding: '4px 14px', 
+                    background: env === 'ACC' ? 'var(--teal)' : 'rgba(0, 63, 73, 0.85)', 
+                    border: '1px solid rgba(0, 63, 73, 0.2)', 
+                    borderRadius: '20px', color: 'var(--aqua)', whiteSpace: 'nowrap', textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    boxShadow: '0 2px 10px rgba(0, 63, 73, 0.15)',
+                    display: 'flex', alignItems: 'center', gap: 6
+                  }}>{env}</span>
+                ))}
+                {allCdes.length === 0 && <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>—</span>}
+              </div>
+            </td>
+          );
+        }
+
+        if (col.id === 'links') {
+          const activeTypes = (filterType || []).filter(v => v !== 'All Types');
+          const activeCDEs = (filterCDE || []).filter(v => v !== 'All Environments');
+
+          const legacyTypes = (Array.isArray(task.deliverableType) ? task.deliverableType : [task.deliverableType]).filter((v): v is string => !!v);
+          const legacyCdes = (Array.isArray(task.cde) ? task.cde : [task.cde]).filter((v): v is string => !!v);
+
+          // Filter Vectors surgically
+          const filteredVectors = (task.vectors || []).filter(v => {
+            const typeMatch = activeTypes.length === 0 || activeTypes.includes(v.type);
+            const cdeMatch = activeCDEs.length === 0 || activeCDEs.includes(v.cde);
+            return typeMatch && cdeMatch;
+          });
+
+          // Filter Legacy Links surgically
+          const filteredLegacyLinks = (task.links || []).filter((l, i) => {
+            const typeAtIdx = legacyTypes[i] || legacyTypes[0];
+            const cdeAtIdx = legacyCdes[i] || legacyCdes[0];
+            const typeMatch = activeTypes.length === 0 || activeTypes.includes(typeAtIdx);
+            const cdeMatch = activeCDEs.length === 0 || activeCDEs.includes(cdeAtIdx);
+            return typeMatch && cdeMatch;
+          });
+
+          const vectorLinks = filteredVectors.map(v => ({ id: v.id, label: `${v.type} (${v.cde})`, url: v.url }));
+          const allLinks = [...filteredLegacyLinks, ...vectorLinks];
+
+          return (
+            <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: isCustomized ? 'wrap' : 'nowrap' }}>
+                {allLinks.slice(0, 3).map((link) => (
+                  <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ 
+                    color: 'var(--teal)', background: 'var(--sunlit-rock)', 
+                    padding: '5px 12px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 7, 
+                    textDecoration: 'none', border: '1px solid var(--sunlit-rock)', transition: 'all 200ms', 
+                    whiteSpace: 'nowrap', boxShadow: '0 4px 15px rgba(197, 160, 89, 0.2)' 
+                  }} className="hover:scale-105 hover:brightness-110">
+                    <Activity size={11} strokeWidth={3} />
+                    <span style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{link.label}</span>
+                  </a>
+                ))}
+                {allLinks.length === 0 && <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>—</span>}
+              </div>
+            </td>
+          );
+        }
 
         return null;
       })}
@@ -257,7 +341,7 @@ export default function ActiveTasks({
   onTaskClick,
   search,
   setSearch,
-  filterDept,
+  filterDept = [],
   setFilterDept,
   availableDepts = [],
   filterType = [],
@@ -265,7 +349,10 @@ export default function ActiveTasks({
   availableTypes = [],
   filterCDE = [],
   setFilterCDE,
-  availableCDEs = []
+  availableCDEs = [],
+  filterPrecinct = [],
+  setFilterPrecinct,
+  availablePrecincts = []
 }: {
   tasks?: Task[];
   onTaskClick?: (task: Task) => void;
@@ -280,6 +367,9 @@ export default function ActiveTasks({
   filterCDE: string[];
   setFilterCDE: (v: string[]) => void;
   availableCDEs: string[];
+  filterPrecinct?: string[];
+  setFilterPrecinct?: (v: string[]) => void;
+  availablePrecincts?: string[];
 }) {
   const activeTasksInitial = useMemo(() => {
     // Note: dataToFilter passed from parent is already filtered by Date, Dept, Status, and Search.
@@ -315,6 +405,7 @@ export default function ActiveTasks({
       else if (sortField === 'submitterName') cmp = (a.submitterName || '').localeCompare(b.submitterName || '');
       else if (sortField === 'deliverableType') cmp = (Array.isArray(a.deliverableType) ? a.deliverableType.join(',') : (a.deliverableType || '')).localeCompare(Array.isArray(b.deliverableType) ? b.deliverableType.join(',') : (b.deliverableType || ''));
       else if (sortField === 'cde') cmp = (Array.isArray(a.cde) ? a.cde.join(',') : (a.cde || '')).localeCompare(Array.isArray(b.cde) ? b.cde.join(',') : (b.cde || ''));
+      else if (sortField === 'precinct') cmp = (a.precinct || '').localeCompare(b.precinct || '');
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return result;
@@ -381,9 +472,18 @@ export default function ActiveTasks({
               value={filterCDE}
               options={availableCDEs.map(c => ({ label: c, value: c }))}
               onChange={setFilterCDE}
-              menuLabel="CDE (Environment)"
+              menuLabel="Environments"
               isMulti={true}
               allLabel="All Environments"
+            />
+
+            <EliteDropdown
+              value={filterPrecinct}
+              options={availablePrecincts.map(p => ({ label: p, value: p }))}
+              onChange={setFilterPrecinct || (() => {})}
+              menuLabel="Precincts"
+              isMulti={true}
+              allLabel="All Precincts"
             />
 
             <ColumnSettingsDropdown
@@ -394,9 +494,9 @@ export default function ActiveTasks({
             />
 
             {(search || 
-              (filterDept.length > 0 && !filterDept.includes('All Categories')) || 
               (filterType.length > 0 && !filterType.includes('All Types')) || 
-              (filterCDE.length > 0 && !filterCDE.includes('All Environments'))
+              (filterCDE.length > 0 && !filterCDE.includes('All Environments')) ||
+              (filterPrecinct.length > 0 && !filterPrecinct.includes('All Precincts'))
             ) && (
               <button
                 onClick={() => {
@@ -404,6 +504,7 @@ export default function ActiveTasks({
                   setFilterDept([]);
                   setFilterType([]);
                   setFilterCDE([]);
+                  if (setFilterPrecinct) setFilterPrecinct([]);
                 }}
                 title="Clear All Data Filters"
                 style={{
@@ -530,6 +631,8 @@ export default function ActiveTasks({
                   onClick={onTaskClick} 
                   visibleColumns={visibleColumns}
                   isCustomized={isCustomized}
+                  filterType={filterType}
+                  filterCDE={filterCDE}
                 />
               ))}
               <AnimatePresence initial={false}>
@@ -541,6 +644,8 @@ export default function ActiveTasks({
                     onClick={onTaskClick} 
                     visibleColumns={visibleColumns}
                     isCustomized={isCustomized}
+                    filterType={filterType}
+                    filterCDE={filterCDE}
                   />
                 ))}
               </AnimatePresence>

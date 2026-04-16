@@ -25,7 +25,6 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
     insiteBimReviewStatus: '',
     insiteReviewDueDate: '',
     insiteReviewOutputUrl: '',
-    precinct: '',
     insiteReviewer: '',
     modonHillFinalReviewStatus: '',
     onAcc: 'NOT SHARED',
@@ -61,7 +60,6 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
         insiteBimReviewStatus: '',
         insiteReviewDueDate: '',
         insiteReviewOutputUrl: '',
-        precinct: '',
         insiteReviewer: '',
         modonHillFinalReviewStatus: '',
         onAcc: 'NOT SHARED',
@@ -148,15 +146,6 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Precinct</label>
-                  <input
-                    value={formData.precinct || ''}
-                    onChange={(e) => setFormData({ ...formData, precinct: e.target.value })}
-                    placeholder="e.g. Area A"
-                    style={{ width: '100%', padding: '10px 14px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 14, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
-                  />
-                </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Submission Description</label>

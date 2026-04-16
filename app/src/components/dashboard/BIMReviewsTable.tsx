@@ -39,7 +39,6 @@ type SortDir = 'asc' | 'desc';
 
 const INITIAL_COLUMNS: ColumnDef<SortField>[] = [
   { id: 'project', field: 'project', label: 'Project Identifier', align: 'center', priority: 'high', defaultWidth: 260, alwaysVisible: true },
-  { id: 'precinct', field: 'precinct', label: 'Precinct', align: 'center', priority: 'high', defaultWidth: 150 },
   { id: 'submissionDescription', field: 'submissionDescription', label: 'Submission Description', align: 'center', priority: 'high', defaultWidth: 280 },
   { id: 'reviewNumber', field: 'reviewNumber', label: 'Rev #', align: 'center', priority: 'medium', defaultWidth: 100 },
   { id: 'designStage', field: 'designStage', label: 'Stage', align: 'center', priority: 'high', defaultWidth: 200 },
@@ -211,11 +210,6 @@ function ReviewRow({
           </td>
         );
 
-        if (col.id === 'precinct') return (
-          <td key={col.id} style={{ ...cellStyle, color: 'var(--text-primary)', fontWeight: 800, fontSize: 11 }}>
-            {item.precinct || '—'}
-          </td>
-        );
 
         if (col.id === 'submissionDescription') return (
           <td key={col.id} style={{ ...cellStyle, color: 'rgba(0, 63, 73, 0.7)', fontStyle: 'italic', fontWeight: 800 }}>
@@ -446,9 +440,6 @@ export default function BIMReviewsTable({
   filterStakeholder,
   setFilterStakeholder,
   availableStakeholders = [],
-  filterPrecinct,
-  setFilterPrecinct,
-  availablePrecincts = [],
   filterReviewer,
   setFilterReviewer,
   availableReviewers = [],
@@ -470,9 +461,6 @@ export default function BIMReviewsTable({
   filterStakeholder: string[];
   setFilterStakeholder: (v: string[]) => void;
   availableStakeholders: string[];
-  filterPrecinct: string[];
-  setFilterPrecinct: (v: string[]) => void;
-  availablePrecincts: string[];
   filterReviewer: string[];
   setFilterReviewer: (v: string[]) => void;
   availableReviewers: string[];
@@ -515,7 +503,6 @@ export default function BIMReviewsTable({
     (filterStage.length > 0) ||
     (filterStatus.length > 0) ||
     (filterStakeholder.length > 0) ||
-    (filterPrecinct.length > 0) ||
     (filterReviewer.length > 0);
 
   return (
@@ -608,14 +595,6 @@ export default function BIMReviewsTable({
               allLabel="All Stakeholders"
             />
 
-            <EliteDropdown
-              value={filterPrecinct}
-              options={availablePrecincts.map(s => ({ label: s, value: s }))}
-              onChange={setFilterPrecinct}
-              menuLabel="Precincts"
-              isMulti={true}
-              allLabel="All Precincts"
-            />
 
             <EliteDropdown
               value={filterReviewer}
@@ -640,7 +619,6 @@ export default function BIMReviewsTable({
                   setFilterStage([]);
                   setFilterStatus([]);
                   setFilterStakeholder([]);
-                  setFilterPrecinct([]);
                   setFilterReviewer([]);
                 }}
                 title="Clear Filter Constraints"

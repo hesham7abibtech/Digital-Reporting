@@ -16,25 +16,30 @@ import { getDynamicExportColumns } from '@/lib/exportUtils';
 interface ExportConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (type: 'pdf' | 'excel', perspective: 'table' | 'dashboard' | 'both', onProgress: (p: number) => void) => Promise<{ blob: Blob, filename: string }>;
+  onConfirm: (
+    type: 'pdf' | 'excel', 
+    perspective: 'table' | 'dashboard' | 'both', 
+    onProgress: (p: number) => void,
+    filters?: { types: string[], cdes: string[] }
+  ) => Promise<{ blob: Blob, filename: string }>;
   format: 'pdf' | 'excel';
   tasks: Task[];
   projectMetadata: ProjectMetadata | undefined;
   dateRangeText?: string;
-  // Filter states
   filterMode: 'monthly' | 'custom' | 'all';
   setFilterMode: (mode: 'monthly' | 'custom' | 'all') => void;
   filterDept: string[];
   setFilterDept: (val: string[]) => void;
   availableDepts: string[];
-  // New technical filters
   filterType: string[];
   setFilterType: (val: string[]) => void;
   availableTypes: string[];
   filterCDE: string[];
   setFilterCDE: (val: string[]) => void;
   availableCDEs: string[];
-  // Date states
+  filterPrecinct: string[];
+  setFilterPrecinct: (val: string[]) => void;
+  availablePrecincts: string[];
   selectedYear: number;
   setSelectedYear: (y: number) => void;
   yearOptions: { label: string, value: number }[];
@@ -52,71 +57,17 @@ export default function ExportConfirmationModal({
   filterMode, setFilterMode, filterDept, setFilterDept, availableDepts,
   filterType, setFilterType, availableTypes,
   filterCDE, setFilterCDE, availableCDEs,
+  filterPrecinct, setFilterPrecinct, availablePrecincts,
   selectedYear, setSelectedYear, yearOptions,
   selectedMonth, setSelectedMonth, monthOptions,
   startDate, setStartDate, endDate, setEndDate
 }: ExportConfirmationModalProps) {
-  
   const [status, setStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle');
   const [progress, setProgress] = useState(0);
-  const [generatedFile, setGeneratedFile] = useState<{ url: string, name: string } | null>(null);
-  const [exportCols, setExportCols] = useState<{label: string}[]>([]);
   const [perspective, setPerspective] = useState<'table' | 'dashboard' | 'both'>('table');
-  
-  useEffect(() => {
-    if (isOpen) {
-      setExportCols(getDynamicExportColumns(projectMetadata?.reportExcludedFields || [], format));
-    }
-  }, [isOpen, projectMetadata, format]);
+  const [generatedFile, setGeneratedFile] = useState<{ url: string, name: string } | null>(null);
 
-  // Cleanup URL on unmount
-  useEffect(() => {
-    return () => {
-      if (generatedFile) URL.revokeObjectURL(generatedFile.url);
-    };
-  }, [generatedFile]);
-
-  // Body Scroll Lock
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-
-  const handleToggleDept = (dept: string) => {
-    if (dept === 'All Categories') { setFilterDept(['All Categories']); return; }
-    let newDepts = filterDept.filter(d => d !== 'All Categories');
-    if (newDepts.includes(dept)) {
-      newDepts = newDepts.filter(d => d !== dept);
-      if (newDepts.length === 0) newDepts = ['All Categories'];
-    } else newDepts.push(dept);
-    setFilterDept(newDepts);
-  };
-
-  const handleToggleType = (type: string) => {
-    if (type === 'All Types') { setFilterType(['All Types']); return; }
-    let newTypes = filterType.filter(t => t !== 'All Types');
-    if (newTypes.includes(type)) {
-      newTypes = newTypes.filter(t => t !== type);
-      if (newTypes.length === 0) newTypes = ['All Types'];
-    } else newTypes.push(type);
-    setFilterType(newTypes);
-  };
-
-  const handleToggleCDE = (cde: string) => {
-    if (cde === 'All Environments') { setFilterCDE(['All Environments']); return; }
-    let newCDEs = filterCDE.filter(c => c !== 'All Environments');
-    if (newCDEs.includes(cde)) {
-      newCDEs = newCDEs.filter(c => c !== cde);
-      if (newCDEs.length === 0) newCDEs = ['All Environments'];
-    } else newCDEs.push(cde);
-    setFilterCDE(newCDEs);
-  };
+  const exportCols = getDynamicExportColumns(projectMetadata?.reportExcludedFields || [], format);
 
   const startGeneration = async () => {
     setStatus('generating');
@@ -126,7 +77,13 @@ export default function ExportConfirmationModal({
       // Small delay for UI transition
       await new Promise(r => setTimeout(r, 400));
       
-      const result = await onConfirm(format, perspective, (p) => setProgress(p));
+      const filters = {
+        types: filterType.filter(t => t !== 'All Types'),
+        cdes: filterCDE.filter(c => c !== 'All Environments'),
+        precincts: filterPrecinct.filter(p => p !== 'All Precincts')
+      };
+
+      const result = await onConfirm(format, perspective, (p) => setProgress(p), filters);
       const url = URL.createObjectURL(result.blob);
       setGeneratedFile({ url, name: result.filename });
       
@@ -390,6 +347,20 @@ export default function ExportConfirmationModal({
                               fullWidth={true}
                             />
                           </div>
+
+                          {/* Precincts Dropdown */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                             <span style={{ fontSize: 10, color: '#003f49', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.12em', opacity: 0.8 }}>Project Precinct Grid</span>
+                             <EliteDropdown 
+                               value={filterPrecinct} 
+                               options={availablePrecincts.map(p => ({ label: p, value: p }))} 
+                               onChange={setFilterPrecinct} 
+                               isMulti={true}
+                               allLabel="All Precincts"
+                               menuLabel="Regional Precincts"
+                               fullWidth={true}
+                             />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -398,7 +369,7 @@ export default function ExportConfirmationModal({
                       <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: 12 }}>
                         <span style={{ fontSize: 9, color: 'rgba(0, 63, 73, 0.5)', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Exported Columns Schema</span>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                            {exportCols.map((c, i) => (
+                            {exportCols.map((c: any, i: number) => (
                               <span key={i} style={{ fontSize: 9, fontWeight: 950, padding: '8px 12px', background: 'rgba(255, 255, 255, 0.8)', border: '1px solid rgba(0, 63, 73, 0.12)', borderRadius: 8, color: '#003f49', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
                                 <Database size={10} color="#d0ab82" />
                                 {c.label}

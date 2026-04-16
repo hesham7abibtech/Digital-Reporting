@@ -73,15 +73,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (snapshot.exists()) {
             const data = snapshot.data();
             
-            // 3. Email Verification Sync Logic
-            // If Firebase Auth says verified but Firestore doesn't, sync it.
+            // 5. Immediate State Release
+            // We set the profile state immediately and fire sync updates in the background 
+            // to ensure zero-latency transitions for the user.
+            setUserProfile(data as UserProfile);
+
+            // 3. Email Verification Sync Logic (Background)
             if (user.emailVerified && !data.isVerified) {
-              await updateDoc(userDocRef, { isVerified: true });
+              updateDoc(userDocRef, { isVerified: true }).catch(e => console.error('BG Sync Error (Verification):', e));
             }
 
-            // 4. Force override identity for Primary Owner
+            // 4. Force override identity for Primary Owner (Background)
             if (data.email?.toLowerCase() === 'hesham.habib@insiteinternational.com' && (data.role !== 'OWNER' || !data.access?.deliverablesRegistry || !data.access?.bimReviews || !data.isAdmin)) {
-              await updateDoc(userDocRef, {
+              updateDoc(userDocRef, {
                 role: 'OWNER',
                 isAdmin: true,
                 isApproved: true,
@@ -90,10 +94,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   bimReviews: true,
                   ...data.access
                 }
-              });
+              }).catch(e => console.error('BG Sync Error (Owner Override):', e));
             }
-
-            setUserProfile(data as UserProfile);
           } else {
             // Document doesn't exist yet - this is expected during the first few seconds of registration.
             // We set profile to null but avoid setting an aggressive authError that blocks the transition.

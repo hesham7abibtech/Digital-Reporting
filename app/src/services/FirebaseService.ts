@@ -187,6 +187,37 @@ export async function bulkUpsertBimReviews(reviews: any[], strategy: 'OVERWRITE'
   await batch.commit();
 }
 
+/**
+ * Bulk Upsert Tasks with Overwrite or Append strategy
+ */
+export async function bulkUpsertTasks(tasks: Task[], strategy: 'OVERWRITE' | 'APPEND') {
+  const batch = writeBatch(db);
+
+  if (strategy === 'OVERWRITE') {
+    const { getDocs } = await import('firebase/firestore');
+    const snapshot = await getDocs(collections.tasks);
+    snapshot.docs.forEach(d => batch.delete(d.ref));
+  }
+
+  tasks.forEach((task) => {
+    // Generate/Normalize ID
+    const taskId = task.id || `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const taskDoc = doc(collections.tasks, taskId);
+    
+    const cleanData = sanitizeData({
+      ...task,
+      id: taskId,
+      updatedAt: new Date().toISOString(),
+      createdAt: task.createdAt || new Date().toISOString(),
+      status: task.status || 'NOT_STARTED',
+      completion: task.completion ?? 0
+    });
+    batch.set(taskDoc, cleanData, { merge: true });
+  });
+
+  await batch.commit();
+}
+
 
 // ─── Department Operations ────────────────────────────────────────
 

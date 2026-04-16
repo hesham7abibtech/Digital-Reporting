@@ -39,10 +39,6 @@ interface BimExportConfirmationModalProps {
   setFilterReviewer: (val: string[]) => void;
   availableReviewers: string[];
 
-  filterPrecinct: string[];
-  setFilterPrecinct: (val: string[]) => void;
-  availablePrecincts: string[];
-
   // Global mode and dates (for consistent range display)
   filterMode: 'monthly' | 'custom' | 'all';
   selectedYear: number;
@@ -55,7 +51,6 @@ export default function BimExportConfirmationModal({
   filterStatus, setFilterStatus, availableStatuses,
   filterStakeholder, setFilterStakeholder, availableStakeholders,
   filterReviewer, setFilterReviewer, availableReviewers,
-  filterPrecinct, setFilterPrecinct, availablePrecincts,
   filterMode, selectedYear, selectedMonth
 }: BimExportConfirmationModalProps) {
   
@@ -235,7 +230,6 @@ export default function BimExportConfirmationModal({
                     <EliteDropdown value={filterStage} options={availableStages.map(s => ({ label: s, value: s }))} onChange={(v) => handleHandleToggle(filterStage, setFilterStage, v, 'All Stages')} menuLabel="Technical Stages" isMulti allLabel="All Stages" fullWidth />
                     <EliteDropdown value={filterStakeholder} options={availableStakeholders.map(s => ({ label: s, value: s }))} onChange={(v) => handleHandleToggle(filterStakeholder, setFilterStakeholder, v, 'All Stakeholders')} menuLabel="Stakeholders" isMulti allLabel="All Stakeholders" fullWidth />
                     <EliteDropdown value={filterReviewer} options={availableReviewers.map(s => ({ label: s, value: s }))} onChange={(v) => handleHandleToggle(filterReviewer, setFilterReviewer, v, 'All Reviewers')} menuLabel="Lead Reviewers" isMulti allLabel="All Reviewers" fullWidth />
-                    <EliteDropdown value={filterPrecinct} options={availablePrecincts.map(s => ({ label: s, value: s }))} onChange={(v) => handleHandleToggle(filterPrecinct, setFilterPrecinct, v, 'All Precincts')} menuLabel="Precincts" isMulti allLabel="All Precincts" fullWidth />
                   </div>
                 </section>
               </div>

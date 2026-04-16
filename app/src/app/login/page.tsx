@@ -174,13 +174,10 @@ function LoginContent() {
       
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      try {
-        await updateDoc(doc(db, 'users', userCredential.user.uid), {
-          lastLoginAt: new Date().toISOString()
-        });
-      } catch (e) {
-        console.error('Failed to sync login timestamp:', e);
-      }
+      // Fire-and-forget telemetry (Non-blocking)
+      updateDoc(doc(db, 'users', userCredential.user.uid), {
+        lastLoginAt: new Date().toISOString()
+      }).catch(e => console.error('Failed to sync login timestamp:', e));
       
       // Sync verification state
       if (userCredential.user.emailVerified) {

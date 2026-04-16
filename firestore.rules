@@ -8,15 +8,20 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isAuth() && 
-        exists(userPath) && 
+      // 1. High-Speed Clearance (Zero Lookups)
+      // 2. Standard Clearance (Database-Driven)
+      return isAuth() && (
+        request.auth.token.email.lower() in [
+          'hesham.7abib@modon.com'.lower(),
+          'hesham.habib@insiteinternational.com'.lower()
+        ] || 
         (
-          get(userPath).data.get('isAdmin', false) == true ||
-          get(userPath).data.get('role', '') == 'ADMIN' ||
-          get(userPath).data.get('role', '') == 'OWNER' ||
-          get(userPath).data.get('role', '') == 'SUPER_ADMIN'
-        );
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true ||
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') in ['ADMIN', 'OWNER', 'SUPER_ADMIN']
+          )
+        )
+      );
     }
 
     function isApproved() {

@@ -55,7 +55,7 @@ import { doc, collection, query, orderBy, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import GlassCard from '@/components/shared/GlassCard';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { Task, TeamMember, DashboardNavItem, ProjectMetadata, Department, ReportSummaryField, HeaderBadge, BIMReview } from '@/lib/types';
+import { Task, TaskStatus, TeamMember, DashboardNavItem, ProjectMetadata, Department, ReportSummaryField, HeaderBadge, BIMReview } from '@/lib/types';
 import TaskEditorModal from '@/components/admin/TaskEditorModal';
 import MemberEditorModal from '@/components/admin/MemberEditorModal';
 import RegistryEditorModal from '@/components/admin/RegistryEditorModal';
@@ -63,6 +63,7 @@ import UserEditorModal from '@/components/admin/UserEditorModal';
 import DepartmentEditorModal from '@/components/admin/DepartmentEditorModal';
 import BIMReviewEditorModal from '@/components/admin/BIMReviewEditorModal';
 import BIMImportConfirmModal from '@/components/admin/BIMImportConfirmModal';
+import TaskImportConfirmModal from '@/components/admin/TaskImportConfirmModal';
 import GroupPolicyList from '@/components/admin/GroupPolicyList';
 
 import GroupPolicyEditor from '@/components/admin/GroupPolicyEditor';
@@ -304,6 +305,9 @@ export default function AdminDashboardPage() {
   }, [userProfile, router]);
 
   const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'branding' | 'registry' | 'users' | 'policies' | 'broadcast' | 'reports' | 'bim-reviews' | 'homepage'>('tasks');
+  const [taskImportConfirm, setTaskImportConfirm] = useState<{ isOpen: boolean; records: Task[] }>({ isOpen: false, records: [] });
+  const [isTaskImportLoading, setIsTaskImportLoading] = useState(false);
+  const taskFileInputRef = useRef<HTMLInputElement>(null);
 
   const [activeSubTab, setActiveSubTab] = useState<'users' | 'policies'>('users');
   const [teamActiveSubTab, setTeamActiveSubTab] = useState<'personnel' | 'departments'>('personnel');
@@ -728,6 +732,153 @@ export default function AdminDashboardPage() {
     setSelectedIds(new Set());
   };
 
+  const handleDelete = async (id: string, collection: string) => {
+    try {
+      if (collection === 'tasks') await deleteDoc(doc(db, 'tasks', id));
+      if (collection === 'members') await deleteDoc(doc(db, 'members', id));
+      if (collection === 'registry') await deleteDoc(doc(db, 'registry', id));
+      if (collection === 'departments') await deleteDoc(doc(db, 'departments', id));
+      if (collection === 'bim-reviews') await deleteDoc(doc(db, 'bimReviews', id));
+      showToast('Administrative protocol: Asset record terminated.', 'SUCCESS');
+    } catch (err) {
+      showToast('Security system failure: Record deletion denied.', 'ERROR');
+    }
+  };
+
+  const handleDownloadTaskTemplate = async () => {
+    try {
+      const ExcelJS = await import('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('Digital Deliverable Matrix');
+      
+      const columns = [
+        { header: 'ID', key: 'id', width: 25 },
+        { header: 'Asset / Task Title', key: 'title', width: 50 },
+        { header: 'Task Category', key: 'department', width: 20 },
+        { header: 'Submitter', key: 'submitterName', width: 25 },
+        { header: 'Submission Date', key: 'submittingDate', width: 20 },
+        { header: 'Deliverable Type', key: 'deliverableType', width: 25 },
+        { header: 'CDE', key: 'cde', width: 20 },
+        { header: 'Description', key: 'description', width: 40 }
+      ];
+      
+      sheet.columns = columns;
+      
+      const headerRow = sheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF003F49' } };
+      headerRow.alignment = { horizontal: 'center' };
+      
+      sheet.addRow({
+        id: 'T-001 (Optional)',
+        title: 'Sample Asset Title',
+        department: 'Architecture',
+        submitterName: 'John Doe',
+        submittingDate: '11-APR-2026',
+        deliverableType: 'RVT | IFC',
+        cde: 'ACC | BIM360',
+        description: 'Sample administrative note.'
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `Digital_Deliverable_Matrix_Template_${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.click();
+      
+      showToast('Digital Template transmitted successfully.', 'SUCCESS');
+    } catch (err) {
+      console.error('Template Download Failure:', err);
+      showToast('System Protocol Error: Template generation failed.', 'ERROR');
+    }
+  };
+
+  const handleTaskExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet) as any[];
+
+        if (json.length === 0) {
+          showToast('Packet analysis failure: Data stream is empty.', 'INFO');
+          return;
+        }
+
+        const expectedHeaders = ['Asset / Task Title', 'Task Category', 'Submitter', 'Submission Date'];
+        const firstRow = json[0];
+        const missingHeaders = expectedHeaders.filter(h => !Object.keys(firstRow).includes(h));
+        
+        if (missingHeaders.length > 0) {
+          showToast(`Schema Mismatch: Missing required fields [${missingHeaders.join(', ')}]`, 'ERROR');
+          return;
+        }
+
+        const normalizeExcelDate = (val: any) => {
+          if (!val) return null;
+          if (typeof val === 'number') {
+            const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+            return date.toISOString();
+          }
+          const parsed = new Date(val);
+          return isNaN(parsed.getTime()) ? String(val) : parsed.toISOString();
+        };
+
+        const mappedTasks = json.map((row: any) => ({
+          id: String(row['ID'] || '').replace(' (Optional)', '').trim(),
+          title: String(row['Asset / Task Title'] || ''),
+          department: String(row['Task Category'] || ''),
+          submitterName: String(row['Submitter'] || ''),
+          submittingDate: normalizeExcelDate(row['Submission Date']),
+          deliverableType: row['Deliverable Type'] ? String(row['Deliverable Type']).split('|').map(s => s.trim()) : [],
+          cde: row['CDE'] ? String(row['CDE']).split('|').map(s => s.trim()) : [],
+          description: row['Description'] || '',
+          status: 'NOT_STARTED' as TaskStatus,
+          completion: 0,
+          attachments: 0,
+          files: [],
+          links: [],
+          tags: [],
+          fileZone: 'INTERNAL',
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          fileShareLink: '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }));
+
+        setTaskImportConfirm({ isOpen: true, records: mappedTasks as Task[] });
+      } catch (err) {
+        console.error('Task Import Failure:', err);
+        showToast('Digital transport integrity error: Task ingestion failed.', 'ERROR');
+      } finally {
+        if (taskFileInputRef.current) taskFileInputRef.current.value = '';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleCommitTaskImport = async (strategy: 'APPEND' | 'OVERWRITE') => {
+    setIsTaskImportLoading(true);
+    try {
+      const { bulkUpsertTasks } = await import('@/services/FirebaseService');
+      await bulkUpsertTasks(taskImportConfirm.records, strategy);
+      showToast(`Deliverable Matrix synchronized: ${taskImportConfirm.records.length} records ingested in ${strategy} mode.`, 'SUCCESS');
+      setTaskImportConfirm({ isOpen: false, records: [] });
+    } catch (err) {
+      console.error('Task Import Commit Failure:', err);
+      showToast('Administrative protocol failure: Batch commit interrupted.', 'ERROR');
+    } finally {
+      setIsTaskImportLoading(false);
+    }
+  };
+
   const handleNewRecord = () => {
     if (!can(activeTab as any, 'edit')) {
       showToast('UNAUTHORIZED: Insufficient clearance to initiate new records.', 'ERROR');
@@ -742,6 +893,8 @@ export default function AdminDashboardPage() {
         return;
       }
     }
+    if (activeTab === 'registry') setSelectedRegistry(null);
+    if (activeTab === 'bim-reviews') setSelectedBimReview(null);
     if (activeTab === 'users') {
       setEliteAlert({
         isOpen: true,
@@ -1130,6 +1283,43 @@ export default function AdminDashboardPage() {
                           </button>
                         </>
                       )}
+                      
+                      {activeTab === 'tasks' && can('tasks', 'edit') && (
+                        <>
+                          <input 
+                            type="file" 
+                            ref={taskFileInputRef} 
+                            onChange={handleTaskExcelImport} 
+                            accept=".xlsx, .xls, .csv" 
+                            style={{ display: 'none' }} 
+                          />
+                          <button 
+                            onClick={handleDownloadTaskTemplate}
+                            style={{ 
+                              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', 
+                              borderRadius: 10, background: 'rgba(212, 175, 55, 0.1)', 
+                              color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.2)', 
+                              cursor: 'pointer', fontSize: 13, fontWeight: 800 
+                            }}
+                          >
+                            <FileSpreadsheet size={18} />
+                            Template
+                          </button>
+                          <button 
+                            onClick={() => taskFileInputRef.current?.click()} 
+                            style={{ 
+                              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', 
+                              borderRadius: 10, background: 'rgba(0, 128, 128, 0.1)', 
+                              color: 'var(--teal)', border: '1px solid rgba(0, 128, 128, 0.2)', 
+                              cursor: 'pointer', fontSize: 13, fontWeight: 800 
+                            }}
+                          >
+                            <Database size={18} />
+                            Import Matrix
+                          </button>
+                        </>
+                      )}
+
                       {activeTab !== 'users' && activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'broadcast' && can(activeTab as any, 'edit') && (
                         <button 
                           onClick={handleNewRecord} 
@@ -2760,6 +2950,14 @@ export default function AdminDashboardPage() {
         onConfirm={handleImportConfirm}
         isLoading={isBimImportLoading}
         records={bimImportConfirm.records}
+      />
+      <TaskImportConfirmModal
+        key="task-import-confirm"
+        isOpen={taskImportConfirm.isOpen}
+        onClose={() => setTaskImportConfirm({ isOpen: false, records: [] })}
+        onConfirm={handleCommitTaskImport}
+        isLoading={isTaskImportLoading}
+        records={taskImportConfirm.records}
       />
           </AnimatePresence>
 

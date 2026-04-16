@@ -30,10 +30,6 @@ interface BimExportMenuProps {
   setFilterReviewer: (val: string[]) => void;
   availableReviewers: string[];
 
-  filterPrecinct: string[];
-  setFilterPrecinct: (val: string[]) => void;
-  availablePrecincts: string[];
-
   // Global mode and dates
   filterMode: 'monthly' | 'custom' | 'all';
   selectedYear: number;
@@ -46,7 +42,6 @@ export default function BimExportMenu({
   filterStatus, setFilterStatus, availableStatuses,
   filterStakeholder, setFilterStakeholder, availableStakeholders,
   filterReviewer, setFilterReviewer, availableReviewers,
-  filterPrecinct, setFilterPrecinct, availablePrecincts,
   filterMode, selectedYear, selectedMonth
 }: BimExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -194,9 +189,6 @@ export default function BimExportMenu({
         filterReviewer={filterReviewer}
         setFilterReviewer={setFilterReviewer}
         availableReviewers={availableReviewers}
-        filterPrecinct={filterPrecinct}
-        setFilterPrecinct={setFilterPrecinct}
-        availablePrecincts={availablePrecincts}
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
         availableStatuses={availableStatuses}

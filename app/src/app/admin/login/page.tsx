@@ -25,7 +25,6 @@ import {
   CheckCircle2, Eye, EyeOff, Circle, Briefcase, Home
 } from 'lucide-react';
 import ParticleBackground from '@/components/layout/ParticleBackground';
-import Header from '@/components/layout/Header';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'unauthorized';
 
@@ -60,8 +59,7 @@ function AdminLoginContent() {
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam === 'unauthorized') {
-      setMode('unauthorized');
-      setError('ACCESS DENIED: Insufficient administrative clearance detected.');
+      setError('ACCESS DENIED: Insufficient administrative clearance. Please authenticate with an Admin profile.');
     }
   }, [searchParams]);
 
@@ -103,8 +101,7 @@ function AdminLoginContent() {
       if (userProfile.isAdmin) {
         router.push('/admin/dashboard');
       } else {
-        // User is logged in but lacks admin role
-        setMode('unauthorized');
+        // User is logged in but lacks admin role - Keep form visible but show error
         setError('CLEARANCE REJECTED: Your identity is recognized but your account lacks administrative authority.');
         setIsSubmitting(false);
       }
@@ -134,17 +131,15 @@ function AdminLoginContent() {
         await auth.signOut();
       }
 
-      // 3. Ensure strict session persistence before sign-in
-      await setPersistence(auth, browserSessionPersistence);
+      // 3. Ensure strict session persistence is initialized
+      // (Global persistence is already initialized in AuthContext, these are fast sync checks)
+      setPersistence(auth, browserSessionPersistence);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      try {
-        await updateDoc(doc(db, 'users', userCredential.user.uid), {
-          lastLoginAt: new Date().toISOString()
-        });
-      } catch (e) {
-        console.error('Failed to sync admin login timestamp:', e);
-      }
+      // 4. Fire-and-forget telemetry (Non-blocking)
+      updateDoc(doc(db, 'users', userCredential.user.uid), {
+        lastLoginAt: new Date().toISOString()
+      }).catch(e => console.error('Failed to sync admin login timestamp:', e));
       // Mark this as an admin session (separate from dashboard)
       // Clear dashboard session flag to prevent bleed-through
       sessionStorage.removeItem('dashboard_session');
@@ -246,8 +241,14 @@ function AdminLoginContent() {
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative', display: 'flex', flexDirection: 'column', background: '#0a1220' }}>
-      <Header onNotificationClick={() => { }} project={projectMetadata || undefined} />
-
+      {/* Isolated Administrative Branding */}
+      <div style={{ padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255,255,255,0.03)', zIndex: 100 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 18, filter: 'brightness(0) invert(1)' }} />
+          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.1)' }} />
+          <img src="/logos/insite_logo.png" alt="Insite" style={{ height: 18, filter: 'brightness(0) invert(1)' }} />
+        </div>
+      </div>
       <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, overflow: 'hidden' }}>
         <ParticleBackground />
 
@@ -263,13 +264,11 @@ function AdminLoginContent() {
           style={{
             width: '100%',
             maxWidth: 480,
-            background: mode === 'unauthorized' ? 'rgba(24, 12, 12, 0.9)' : 'rgba(10, 18, 32, 0.85)',
+            background: 'rgba(10, 18, 32, 0.85)',
             backdropFilter: 'blur(40px)',
-            border: mode === 'unauthorized' ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 32,
-            boxShadow: mode === 'unauthorized'
-              ? '0 40px 100px -20px rgba(239, 68, 68, 0.2), inset 0 0 20px rgba(239, 68, 68, 0.05)'
-              : '0 40px 100px -20px rgba(0,0,0,0.8), inset 0 0 40px rgba(0, 63, 73, 0.15)',
+            boxShadow: '0 40px 100px -20px rgba(0,0,0,0.8), inset 0 0 40px rgba(0, 63, 73, 0.15)',
             overflow: 'hidden',
             zIndex: 10,
             position: 'relative'
@@ -285,12 +284,8 @@ function AdminLoginContent() {
                 transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
                 style={{
                   position: 'absolute', left: 0, right: 0, height: '2px',
-                  background: mode === 'unauthorized'
-                    ? 'linear-gradient(to right, transparent, rgba(239, 68, 68, 0.5), transparent)'
-                    : 'linear-gradient(to right, transparent, rgba(212, 175, 55, 0.5), transparent)',
-                  boxShadow: mode === 'unauthorized'
-                    ? '0 0 15px rgba(239, 68, 68, 0.8)'
-                    : '0 0 15px rgba(212, 175, 55, 0.8)',
+                  background: 'linear-gradient(to right, transparent, rgba(212, 175, 55, 0.5), transparent)',
+                  boxShadow: '0 0 15px rgba(212, 175, 55, 0.8)',
                   zIndex: 20, pointerEvents: 'none'
                 }}
               />
@@ -298,7 +293,6 @@ function AdminLoginContent() {
           </AnimatePresence>
 
           <div style={{ padding: '24px 32px 16px', position: 'relative' }}>
-            {/* Ultra Premium Home Button */}
             <motion.button
               onClick={() => router.push('/')}
               whileHover={{ scale: 1.1, backgroundColor: 'rgba(212, 175, 55, 0.15)', borderColor: 'rgba(212, 175, 55, 0.4)' }}
@@ -318,96 +312,41 @@ function AdminLoginContent() {
 
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
               <motion.div
-                animate={mode === 'unauthorized' ? {
-                  scale: [1, 1.05, 1],
-                  filter: ['drop-shadow(0 0 10px rgba(239, 68, 68, 0))', 'drop-shadow(0 0 30px rgba(239, 68, 68, 0.5))', 'drop-shadow(0 0 10px rgba(239, 68, 68, 0))'],
-                } : {}}
-                transition={{ duration: 2, repeat: Infinity }}
                 style={{
                   width: 60, height: 60, borderRadius: 18,
-                  background: mode === 'unauthorized'
-                    ? 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)'
-                    : 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                  background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   position: 'relative', overflow: 'hidden'
                 }}
               >
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(255,255,255,0.2), transparent)', opacity: 0.5 }} />
-                {mode === 'unauthorized' ? <ShieldAlert size={30} color="white" /> : <ShieldCheck size={30} color="white" />}
+                <ShieldCheck size={30} color="white" />
               </motion.div>
             </div>
 
             <motion.h1
-              animate={mode === 'unauthorized' ? { x: [-1, 1, -1, 1, 0], opacity: [1, 0.8, 1] } : {}}
-              transition={{ duration: 0.1, repeat: mode === 'unauthorized' ? 5 : 0 }}
               style={{
                 fontSize: 26, fontWeight: 900, textAlign: 'center', margin: '0 0 8px',
-                letterSpacing: '-0.04em', background: mode === 'unauthorized'
-                  ? 'linear-gradient(to bottom, #fca5a5, #ef4444)'
-                  : 'linear-gradient(to bottom, #fff, #94a3b8)',
+                letterSpacing: '-0.04em', background: 'linear-gradient(to bottom, #fff, #94a3b8)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                 fontFamily: 'var(--font-heading)'
               }}
             >
               {mode === 'login' ? 'Auth Required' :
                 mode === 'register' ? 'Account Provision' :
-                  mode === 'forgot-password' ? 'Recov Protocol' :
-                    'Restricted Access'}
+                  'Recov Protocol'}
             </motion.h1>
-            <p style={{ textAlign: 'center', color: mode === 'unauthorized' ? '#fca5a5' : '#64748b', fontSize: 13, marginBottom: 24, fontWeight: 500, letterSpacing: '0.01em', opacity: 0.8 }}>
+            <p style={{ textAlign: 'center', color: '#64748b', fontSize: 13, marginBottom: 24, fontWeight: 500, letterSpacing: '0.01em', opacity: 0.8 }}>
               {mode === 'login' ? 'Sign in to access the admin dashboard' :
                 mode === 'register' ? 'Create a new account to get started' :
-                  mode === 'forgot-password' ? 'Enter your email to reset your password' :
-                    'UNAUTHORIZED CLEARANCE DETECTED'}
+                  'Enter your email to reset your password'}
             </p>
 
             <AnimatePresence mode="wait">
-              {mode === 'unauthorized' ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  style={{ textAlign: 'center' }}
-                >
-                  <div style={{ padding: '24px', borderRadius: 24, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', marginBottom: 32, position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(45deg, transparent, rgba(239, 68, 68, 0.05), transparent)', animation: 'pulse 3s infinite' }} />
-                    <p style={{ fontSize: 14, color: '#fca5a5', lineHeight: 1.6, margin: 0, fontWeight: 600 }}>
-                      Identity verified as <span style={{ color: 'white' }}>{user?.email}</span>. However, your account has not been granted administrative privileges for the Command Center.
-                    </p>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <button
-                      onClick={() => {
-                        setMessage('ELEVATION REQUEST TRANSMITTED: Awaiting Admin approval.');
-                        setTimeout(() => setMessage(''), 5000);
-                      }}
-                      style={{
-                        width: '100%', padding: '16px', borderRadius: 16,
-                        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
-                        color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: 13,
-                        textTransform: 'uppercase', letterSpacing: '0.1em'
-                      }}
-                    >
-                      Request Elevated Clearance
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        auth.signOut();
-                        setMode('login');
-                        setError('');
-                      }}
-                      style={{ width: '100%', padding: '12px', background: 'transparent', border: 'none', color: '#ef4444', fontWeight: 600, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-                    >
-                      <ArrowLeft size={16} /> Terminate Connection
-                    </button>
-                  </div>
-                </motion.div>
-              ) : (
-                <form
-                  onSubmit={mode === 'register' ? handleRegister : mode === 'forgot-password' ? handleResetPassword : handleLogin}
-                  style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-                >
+              <form
+                onSubmit={mode === 'register' ? handleRegister : mode === 'forgot-password' ? handleResetPassword : handleLogin}
+                style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+              >
                   {mode === 'register' && (
                     <>
                       <div style={{ position: 'relative' }}>
@@ -588,8 +527,7 @@ function AdminLoginContent() {
                       <>Send Reset Link <ChevronRight size={18} /></>
                     )}
                   </button>
-                </form>
-              )}
+              </form>
             </AnimatePresence>
 
             {mode !== 'unauthorized' && (

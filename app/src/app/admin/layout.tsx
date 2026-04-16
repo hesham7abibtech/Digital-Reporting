@@ -14,17 +14,16 @@ export default function AdminLayout({
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-
   const isLoginPage = pathname === '/admin/login';
   const isAdmin = userProfile?.isAdmin === true;
-
 
   useEffect(() => {
     if (!loading && !isLoginPage) {
       if (!user) {
         router.push('/admin/login');
       } else if (userProfile && !isAdmin) {
-        router.push('/admin/login?error=unauthorized');
+        // Force them to the login form even if globally authenticated as non-admin
+        router.push('/admin/login');
       }
     }
   }, [user, userProfile, loading, isAdmin, isLoginPage, router]);
