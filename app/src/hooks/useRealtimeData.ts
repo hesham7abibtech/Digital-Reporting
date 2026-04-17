@@ -27,7 +27,9 @@ export function useRealtimeData() {
   const [projectSnapshot, projectLoading, projectError] = useDocument(doc(db, 'settings', 'project'));
 
   const tasks = tasksSnapshot ? tasksSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Task)) : [];
-  const members = membersSnapshot ? membersSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as TeamMember)) : [];
+  const members = membersSnapshot 
+    ? membersSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as TeamMember)) 
+    : [];
   const registry = registrySnapshot ? registrySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as DashboardNavItem)) : [];
   const departments = departmentsSnapshot ? departmentsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Department)) : [];
   const bimReviews = bimReviewsSnapshot ? bimReviewsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as any)) : [];
@@ -39,7 +41,7 @@ export function useRealtimeData() {
     // Only log genuine mismatches (where the client thinks it has access but Firestore disagrees).
     if (isApproved) {
       if (tasksError && hasDR) console.warn('[REALTIME_SYNC] Tasks access handshake pending...');
-      if (membersError) console.warn('[REALTIME_SYNC] Members access handshake pending...');
+      if (membersError) console.warn('[REALTIME_SYNC] Users access handshake pending...');
       if (registryError) console.warn('[REALTIME_SYNC] Registry access handshake pending...');
       if (departmentsError) console.warn('[REALTIME_SYNC] Departments access handshake pending...');
       if (bimReviewsError && hasBIM) console.warn('[REALTIME_SYNC] BIM access handshake pending...');

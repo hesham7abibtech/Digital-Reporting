@@ -6,6 +6,9 @@ import { X, Save, Shield, Info, Link as LinkIcon, Calendar, Hash, User, Building
 import GlassCard from '@/components/shared/GlassCard';
 import { BIMReview } from '@/lib/types';
 import { upsertBimReview } from '@/services/FirebaseService';
+import { db } from '@/lib/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
+import { useCollection } from 'react-firebase-hooks/firestore';
 
 interface BIMReviewEditorModalProps {
   isOpen: boolean;
@@ -18,6 +21,8 @@ interface BIMReviewEditorModalProps {
 
 export default function BIMReviewEditorModal({ isOpen, onClose, review, onSuccess, onError, readOnly }: BIMReviewEditorModalProps) {
   const [loading, setLoading] = useState(false);
+  const [membersSnapshot] = useCollection(query(collection(db, 'members'), orderBy('name', 'asc')));
+  
   const [formData, setFormData] = useState<Partial<BIMReview>>({
     submissionDescription: '',
     comments: '',
@@ -26,6 +31,8 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
     insiteReviewDueDate: '',
     insiteReviewOutputUrl: '',
     insiteReviewer: '',
+    insiteReviewerEmail: '',
+    insiteReviewerId: '',
     modonHillFinalReviewStatus: '',
     onAcc: 'NOT SHARED',
     project: '',
@@ -34,6 +41,25 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
     submissionCategory: [],
     submissionDate: ''
   });
+
+  const personnel = React.useMemo<{ name: string; email: string; id: string; status?: string }[]>(() => {
+    const list = (membersSnapshot?.docs
+      .map((d: any) => {
+        const data = d.data();
+        return { 
+          name: data.name || 'Anonymous', 
+          email: data.email || '',
+          id: d.id,
+          status: data.status
+        };
+      }) || []).filter((p: { email: string }) => p.email);
+
+    // For BIM reviews: show ACTIVE members, always include current reviewer
+    return list.filter(p => {
+      const isStatusValid = p.status === 'ACTIVE' || !p.status;
+      return isStatusValid || p.id === formData.insiteReviewerId;
+    });
+  }, [membersSnapshot, formData.insiteReviewerId]);
 
   const [categoryInput, setCategoryInput] = useState('');
 
@@ -61,6 +87,8 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
         insiteReviewDueDate: '',
         insiteReviewOutputUrl: '',
         insiteReviewer: '',
+        insiteReviewerEmail: '',
+        insiteReviewerId: '',
         modonHillFinalReviewStatus: '',
         onAcc: 'NOT SHARED',
         project: '',
@@ -279,13 +307,23 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>InSite Reviewer</label>
                     <div style={{ position: 'relative' }}>
-                      <Shield size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                      <input
-                        value={formData.insiteReviewer}
-                        onChange={(e) => setFormData({ ...formData, insiteReviewer: e.target.value })}
-                        placeholder="Reviewer Name"
-                        style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
-                      />
+                      <Shield size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', zIndex: 1 }} />
+                      <select
+                        value={formData.insiteReviewerId || ''}
+                        onChange={(e) => {
+                          const selected = personnel.find(p => p.id === e.target.value);
+                          setFormData({ 
+                            ...formData, 
+                            insiteReviewerId: e.target.value,
+                            insiteReviewerEmail: selected ? selected.email : '',
+                            insiteReviewer: selected ? selected.name : '' 
+                          });
+                        }}
+                        style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 13, outline: 'none', appearance: 'none' }}
+                      >
+                        <option value="">Select InSite Reviewer</option>
+                        {personnel.map(p => (<option key={p.id} value={p.id}>{p.name} ({p.email})</option>))}
+                      </select>
                     </div>
                   </div>
 

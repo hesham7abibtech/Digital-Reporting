@@ -71,6 +71,8 @@ export interface Task {
   pendingReviewDate?: string | null; // When task entered PENDING_REVIEW status
   submittingDate?: string | null;
   submitterName?: string;
+  submitterEmail?: string;
+  submitterId?: string;
   precinct?: string;
 
   createdAt: string;
@@ -126,6 +128,7 @@ export interface GroupPolicy {
     reports: PolicyActions;
     bimReviews: PolicyActions;
     homePage: PolicyActions;
+    tickets: PolicyActions;
   };
   createdAt: string;
   updatedAt: string;
@@ -160,6 +163,7 @@ export interface TeamMember {
   role: UserRole;
   policyId?: string; // ID of the assigned GroupPolicy
   department: string;
+  status: string;
   isOnline: boolean;
   lastActive: string;
 }
@@ -318,6 +322,8 @@ export interface BIMReview {
   insiteReviewDueDate?: string | null;
   insiteReviewOutputUrl?: string;
   insiteReviewer: string;
+  insiteReviewerEmail?: string;
+  insiteReviewerId?: string;
   modonHillFinalReviewStatus: string;
   onAcc: string; // "SHARED" | "NOT SHARED" 
   project: string;
@@ -404,6 +410,20 @@ export interface HomePageConfig {
     logos: HomeTrustLogo[];
     statement: string;
   };
+  updatedAt: string;
+}
+
+// ─── Ticket Types ──────────────────────────────────────────────────
+export type TicketStatus = 'PENDING' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED';
+
+export interface Ticket {
+  id: string; // DR-XXXXXX
+  uid: string;
+  email: string;
+  reason: string;
+  message: string;
+  status: TicketStatus;
+  createdAt: string;
   updatedAt: string;
 }
 

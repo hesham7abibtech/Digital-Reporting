@@ -8,16 +8,19 @@ import {
   Download, ExternalLink, Activity, Pause, Timer, CheckCircle2,
   Building2, UserCheck, Globe
 } from 'lucide-react';
-import type { Task, TaskFile } from '@/lib/types';
+import type { Task, TaskFile, TeamMember, Department } from '@/lib/types';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { getDepartmentColor } from '@/lib/utils';
 import { useTimeZone } from '@/context/TimeZoneContext';
+import { useToast } from '@/components/shared/EliteToast';
 
 interface TaskDetailModalProps {
   task: Task | null;
   isOpen: boolean;
   onClose: () => void;
   activeFilters?: { types: string[], cdes: string[] };
+  members?: TeamMember[];
+  departments?: Department[];
 }
 
 const getFileIcon = (type: string) => {
@@ -40,16 +43,30 @@ const getFileIcon = (type: string) => {
 };
 
 
-export default function TaskDetailModal({ task, isOpen, onClose, activeFilters }: TaskDetailModalProps) {
+export default function TaskDetailModal({ task, isOpen, onClose, activeFilters, members = [], departments = [] }: TaskDetailModalProps) {
   const { formatDate, formatTime } = useTimeZone();
+  const { showToast } = useToast();
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   if (!task) return null;
+
+  // Resolve department
+  const dept = (departments || []).find(d => d.id === task.department || d.name === task.department);
+  const resolvedDeptName = dept ? dept.name : (task.department || 'General');
+
+  // Resolve submitter profile
+  const submitterProfile = members.find(m =>
+    (task.submitterEmail && m.email.toLowerCase() === task.submitterEmail.toLowerCase()) ||
+    (task.submitterName && m.name.toLowerCase() === task.submitterName.toLowerCase())
+  );
+  const submitterAvatar = submitterProfile?.avatar;
+  const resolvedSubmitterName = submitterProfile?.name || task.submitterName || 'Unassigned';
 
   const filteredVectors = task.vectors?.filter(v => {
     if (!activeFilters) return true;
     const activeTypes = activeFilters.types?.filter(t => t !== 'All Types') || [];
     const activeCDEs = activeFilters.cdes?.filter(c => c !== 'All Environments') || [];
-    
+
     const typeMatch = activeTypes.length === 0 || activeTypes.includes(v.type);
     const cdeMatch = activeCDEs.length === 0 || activeCDEs.includes(v.cde);
     return typeMatch && cdeMatch;
@@ -119,7 +136,9 @@ export default function TaskDetailModal({ task, isOpen, onClose, activeFilters }
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
                     <span style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.6)', fontWeight: 800, letterSpacing: '0.05em' }}>{task.id}</span>
                     <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(212, 175, 55, 0.4)' }} />
-                    <span style={{ fontSize: 12, color: '#D4AF37', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{task.department}</span>
+                    <span style={{ fontSize: 12, color: '#D4AF37', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      {resolvedDeptName}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -152,10 +171,10 @@ export default function TaskDetailModal({ task, isOpen, onClose, activeFilters }
 
             {/* Content Scroll Area */}
             <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }}>
-              <div 
-                style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
                   gap: 32,
                   alignItems: 'start'
                 }}
@@ -164,70 +183,95 @@ export default function TaskDetailModal({ task, isOpen, onClose, activeFilters }
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
                   {/* Timeline & Metadata Section */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                      <Activity size={16} color="#003F49" />
-                      <h4 style={{ fontSize: 11, fontWeight: 900, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>Case Information</h4>
-                    </div>
-                    {[
-                      { label: 'Transmission Date', value: formatDate(task.submittingDate || (task as any).actualEndDate || (task as any).actualStartDate), icon: Calendar },
-                      { label: 'Project Precinct', value: task.precinct || 'General', icon: Building2 },
-                      { label: 'Registry Category', value: task.department, icon: Tag, color: getDepartmentColor(task.department) },
-                      { label: 'Responsible Entity', value: task.submitterName || 'Unassigned', icon: UserCheck }
-                    ].map((item, i) => (
-                      <div key={i} style={{
-                        padding: '16px 20px', borderRadius: 14,
-                        background: '#ffffff',
-                        border: '1px solid rgba(0, 0, 0, 0.08)',
-                        display: 'flex', alignItems: 'center', gap: 16,
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
-                        transition: 'all 0.2s'
-                      }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(0, 63, 73, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#003F49' }}>
-                          <item.icon size={18} />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <span style={{ fontSize: 9, fontWeight: 950, color: 'rgba(0, 63, 73, 0.5)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{item.label}</span>
-                          <span style={{ fontSize: 13, fontWeight: 800, color: item.color || '#0a1220' }}>{item.value}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Notes / Narrative */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                      <FileText size={16} color="#003F49" />
-                      <h4 style={{ fontSize: 11, fontWeight: 900, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>Executive Notes</h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                      <Activity size={18} color="#003F49" strokeWidth={2.5} />
+                      <h4 style={{ fontSize: 13, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>Case Information</h4>
                     </div>
                     <div style={{
-                      fontSize: 13, lineHeight: 1.7, color: '#0a1220',
-                      background: '#ffffff', padding: '24px',
-                      borderRadius: 16, border: '1px solid rgba(0,0,0,0.08)',
-                      whiteSpace: 'pre-wrap', fontWeight: 600,
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
-                      minHeight: 120
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, 1fr)',
+                      gap: 16
                     }}>
-                      {task.description || "No supplemental intelligence provided for this record."}
+                      {[
+                        { label: 'Transmission Date', value: formatDate(task.submittingDate || (task as any).actualEndDate || (task as any).actualStartDate), icon: Calendar },
+                        { label: 'Project Precinct', value: task.precinct || 'General', icon: Building2 },
+                        { label: 'Registry Category', value: resolvedDeptName, icon: Tag, color: getDepartmentColor(resolvedDeptName) },
+                        {
+                          label: 'Responsible Entity',
+                          value: resolvedSubmitterName,
+                          subtitle: submitterProfile?.email || task.submitterEmail,
+                          icon: UserCheck,
+                          isAvatar: true,
+                          avatarUrl: submitterAvatar,
+                          onAvatarClick: () => {
+                            if (submitterAvatar) {
+                              setPreviewImage(submitterAvatar);
+                            } else {
+                              showToast('No profile photo has been added yet.', 'INFO');
+                            }
+                          }
+                        }
+                      ].map((item, i) => (
+                        <div key={i} style={{
+                          padding: '20px 24px', borderRadius: 16,
+                          background: '#ffffff',
+                          border: '1.5px solid rgba(0, 63, 73, 0.12)',
+                          display: 'flex', alignItems: 'center', gap: 16,
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
+                          transition: 'all 0.2s'
+                        }}>
+                          <div
+                            onClick={(item as any).onAvatarClick}
+                            style={{
+                              width: 40, height: 40, borderRadius: 12,
+                              background: 'rgba(0, 63, 73, 0.05)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              color: '#003F49',
+                              overflow: 'hidden',
+                              cursor: (item as any).isAvatar ? 'pointer' : 'default',
+                              border: (item as any).isAvatar && (item as any).avatarUrl ? '1.5px solid #003F49' : '1px solid rgba(0, 63, 73, 0.1)'
+                            }}
+                          >
+                            {(item as any).isAvatar && (item as any).avatarUrl ? (
+                              <img src={(item as any).avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <item.icon size={20} />
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <span style={{ fontSize: 12, fontWeight: 950, color: 'rgba(0, 63, 73, 0.6)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{item.label}</span>
+                            <span style={{ fontSize: 14, fontWeight: 950, color: item.color || '#003F49' }}>{item.value}</span>
+                            {(item as any).subtitle && (
+                              <span style={{ fontSize: 11, color: 'rgba(0, 63, 73, 0.4)', fontWeight: 700, marginTop: -1 }}>{(item as any).subtitle}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
+
                 </div>
 
                 {/* Column 2: Deliverable Matrix Terminal */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div style={{ 
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-                    padding: '0 4px', marginBottom: 4 
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <Globe size={16} color="#D4AF37" />
-                      <h4 style={{ fontSize: 11, fontWeight: 900, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>Network Vector Matrix</h4>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '0 4px', marginBottom: 8
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <Globe size={18} color="#D4AF37" strokeWidth={2.5} />
+                        <h4 style={{ fontSize: 13, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>Network Vector Matrix</h4>
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 1000, color: '#D4AF37', background: 'rgba(212, 175, 55, 0.12)', border: '1px solid rgba(212, 175, 55, 0.2)', padding: '5px 12px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {filteredVectors.length} Linked Items
+                      </span>
                     </div>
-                    <span style={{ fontSize: 10, fontWeight: 900, color: '#D4AF37', background: 'rgba(212, 175, 55, 0.1)', padding: '4px 10px', borderRadius: 20 }}>
-                      {filteredVectors.length} Linked Items
-                    </span>
-                  </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, 1fr)',
+                      gap: 14
+                    }}>
                     {filteredVectors.length > 0 ? (
                       filteredVectors.map((vector, i) => (
                         <motion.a
@@ -238,9 +282,9 @@ export default function TaskDetailModal({ task, isOpen, onClose, activeFilters }
                           whileHover={{ x: 4, background: 'rgba(212, 175, 55, 0.05)', borderColor: 'rgba(212, 175, 55, 0.3)' }}
                           style={{
                             background: '#ffffff',
-                            borderRadius: 14,
-                            border: '1px solid rgba(0,0,0,0.08)',
-                            padding: '16px 20px',
+                            borderRadius: 16,
+                            border: '1.5px solid rgba(0, 63, 73, 0.15)',
+                            padding: '20px 24px',
                             textDecoration: 'none',
                             display: 'flex',
                             alignItems: 'center',
@@ -253,23 +297,23 @@ export default function TaskDetailModal({ task, isOpen, onClose, activeFilters }
                             <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(0, 63, 73, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#003F49' }}>
                               <FileCode size={20} />
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <span style={{ fontSize: 13, fontWeight: 800, color: '#0a1220' }}>{vector.label}</span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ fontSize: 9, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', opacity: 0.6 }}>{vector.type}</span>
-                                <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#D4AF37' }} />
-                                <span style={{ fontSize: 9, fontWeight: 950, color: '#D4AF37', textTransform: 'uppercase' }}>{vector.cde}</span>
-                              </div>
-                            </div>
+                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                               <span style={{ fontSize: 14, fontWeight: 950, color: '#003F49' }}>{vector.label}</span>
+                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                 <span style={{ fontSize: 10, fontWeight: 1000, color: 'rgba(0, 63, 73, 0.5)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{vector.type}</span>
+                                 <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#D4AF37' }} />
+                                 <span style={{ fontSize: 10, fontWeight: 1000, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{vector.cde}</span>
+                               </div>
+                             </div>
                           </div>
                           <ExternalLink size={14} color="#003F49" style={{ opacity: 0.4 }} />
                         </motion.a>
                       ))
                     ) : (
                       // Fallback for empty or legacy
-                      <div style={{ 
-                        padding: '40px 20px', textAlign: 'center', borderRadius: 20, 
-                        border: '2px dashed rgba(0,0,0,0.05)', color: 'rgba(0,0,0,0.3)', 
+                      <div style={{
+                        padding: '40px 20px', textAlign: 'center', borderRadius: 20,
+                        border: '2px dashed rgba(0,0,0,0.05)', color: 'rgba(0,0,0,0.3)',
                         fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.5)'
                       }}>
                         No active deliverable vectors matched the current filter protocol.
@@ -278,7 +322,58 @@ export default function TaskDetailModal({ task, isOpen, onClose, activeFilters }
                   </div>
                 </div>
               </div>
+
+              {/* Notes Section - Moved to End */}
+              <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <FileText size={18} color="#003F49" strokeWidth={2.5} />
+                  <h4 style={{ fontSize: 13, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>Notes</h4>
+                </div>
+                <div style={{
+                  fontSize: 13, lineHeight: 1.7, color: '#0a1220',
+                  background: 'rgba(0, 63, 73, 0.03)', padding: '24px 30px',
+                  borderRadius: 24, border: '1.5px solid rgba(0, 63, 73, 0.1)',
+                  whiteSpace: 'pre-wrap', fontWeight: 700,
+                  boxShadow: 'inset 0 3px 10px rgba(0, 63, 73, 0.04)',
+                  minHeight: 100
+                }}>
+                  {task.description || "No current notes added."}
+                </div>
+              </div>
             </div>
+
+            {/* Image Preview Overlay */}
+            <AnimatePresence>
+              {previewImage && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setPreviewImage(null)}
+                  style={{
+                    position: 'fixed', inset: 0, zIndex: 10000,
+                    background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(10px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40,
+                    cursor: 'zoom-out'
+                  }}
+                >
+                  <motion.img
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    src={previewImage}
+                    alt="Preview"
+                    style={{ maxWidth: '90%', maxHeight: '90%', borderRadius: 12, boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}
+                  />
+                  <button
+                    onClick={() => setPreviewImage(null)}
+                    style={{ position: 'absolute', top: 30, right: 30, background: 'white', border: 'none', borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  >
+                    <X size={20} color="#000" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Sticky Footer */}
             <footer style={{

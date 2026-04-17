@@ -414,6 +414,8 @@ interface AnalyticsDashboardViewProps {
   setFilterPrecinct?: (v: string[]) => void;
   availablePrecincts?: string[];
   onTaskClick?: (task: Task) => void;
+  departments?: any[];
+  members?: any[];
 }
 
 export default function AnalyticsDashboardView({
@@ -434,6 +436,8 @@ export default function AnalyticsDashboardView({
   setFilterPrecinct,
   availablePrecincts = [],
   onTaskClick,
+  departments = [],
+  members = []
 }: AnalyticsDashboardViewProps) {
   const { formatDate } = useTimeZone();
 
@@ -442,23 +446,39 @@ export default function AnalyticsDashboardView({
     const totalDeliverables = tasks.length;
     const prevTotal = previousPeriodTasks.length;
 
-    const categoriesSet = new Set(tasks.map(t => t.department));
+    const getResolvedDept = (raw: string) => {
+      const d = (departments || []).find(dept => dept.id === raw || dept.name === raw);
+      return d ? d.name : (raw || 'General');
+    };
+
+    const getResolvedSubmitter = (name: string, email?: string) => {
+      const m = (members || []).find(mem => 
+        (email && mem.email.toLowerCase() === email.toLowerCase()) || 
+        (name && mem.name.toLowerCase() === name.toLowerCase())
+      );
+      return m ? m.name : (name || 'Unassigned');
+    };
+
+    const categoriesSet = new Set(tasks.map(t => getResolvedDept(t.department || '')));
     const categoriesActive = categoriesSet.size;
     const categoriesList = Array.from(categoriesSet);
-    const prevCategories = new Set(previousPeriodTasks.map(t => t.department)).size;
+    const prevCategories = new Set(previousPeriodTasks.map(t => getResolvedDept(t.department))).size;
 
-    const submittersSet = new Set(tasks.filter(t => t.submitterName).map(t => t.submitterName));
+    const submittersSet = new Set(tasks.map(t => getResolvedSubmitter(t.submitterName || '', t.submitterEmail)));
     const activeSubmitters = submittersSet.size;
     const topSubmitters = (() => {
       const counts: Record<string, number> = {};
-      tasks.forEach(t => { if (t.submitterName) counts[t.submitterName] = (counts[t.submitterName] || 0) + 1; });
+      tasks.forEach(t => { 
+        const name = getResolvedSubmitter(t.submitterName || '', t.submitterEmail);
+        counts[name] = (counts[name] || 0) + 1; 
+      });
       return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
     })();
-    const prevSubmitters = new Set(previousPeriodTasks.filter(t => t.submitterName).map(t => t.submitterName)).size;
+    const prevSubmitters = new Set(previousPeriodTasks.map(t => getResolvedSubmitter(t.submitterName || '', t.submitterEmail))).size;
 
     // Most used CDE
     const cdeCounts: Record<string, number> = {};
-    tasks.forEach(t => (t.cde || []).forEach(c => { cdeCounts[c] = (cdeCounts[c] || 0) + 1; }));
+    tasks.forEach(t => (t.vectors || []).forEach(v => { cdeCounts[v.cde] = (cdeCounts[v.cde] || 0) + 1; }));
     const cdeRanked = Object.entries(cdeCounts).sort((a, b) => b[1] - a[1]);
     const mostUsedCDE = cdeRanked[0]?.[0] || '—';
 
@@ -505,7 +525,15 @@ export default function AnalyticsDashboardView({
   // ─── Category Bar Chart Data ─────────────────────────────────
   const categoryData = useMemo(() => {
     const counts: Record<string, number> = {};
-    tasks.forEach(t => { counts[t.department] = (counts[t.department] || 0) + 1; });
+    const getResolvedDept = (raw: string) => {
+      const d = (departments || []).find(dept => dept.id === raw || dept.name === raw);
+      return d ? d.name : (raw || 'General');
+    };
+
+    tasks.forEach(t => { 
+      const name = getResolvedDept(t.department);
+      counts[name] = (counts[name] || 0) + 1; 
+    });
     return Object.entries(counts)
       .map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] }))
       .sort((a, b) => b.value - a.value);
@@ -533,8 +561,17 @@ export default function AnalyticsDashboardView({
   // ─── Submitter Rankings Data ─────────────────────────────────
   const submitterData = useMemo(() => {
     const counts: Record<string, number> = {};
+    const getResolvedSubmitter = (name: string, email?: string) => {
+      const m = (members || []).find(mem => 
+        (email && mem.email.toLowerCase() === email.toLowerCase()) || 
+        (name && mem.name.toLowerCase() === name.toLowerCase())
+      );
+      return m ? m.name : (name || 'Unassigned');
+    };
+
     tasks.forEach(t => {
-      if (t.submitterName) counts[t.submitterName] = (counts[t.submitterName] || 0) + 1;
+      const name = getResolvedSubmitter(t.submitterName, t.submitterEmail);
+      counts[name] = (counts[name] || 0) + 1;
     });
     return Object.entries(counts)
       .map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] }))
@@ -569,7 +606,7 @@ export default function AnalyticsDashboardView({
     if (categoryData.length > 0) {
       const top = categoryData[0];
       const pct = tasks.length > 0 ? ((top.value / tasks.length) * 100).toFixed(0) : 0;
-      result.push({ icon: <Trophy size={16} />, text: `${top.name} leads with ${pct}% of total deliverables (${top.value} submissions)`, color: '#10b981', type: 'success' });
+      result.push({ icon: <Trophy size={16} />, text: `${top.name || 'Unknown'} leads with ${pct}% of total deliverables (${top.value} submissions)`, color: '#10b981', type: 'success' });
     }
     if (submitterData.length > 0) {
       const top = submitterData[0];
@@ -618,7 +655,7 @@ export default function AnalyticsDashboardView({
   const categoryDetails = useMemo(() =>
     kpiStats.categoriesList.slice(0, 5).map(c => {
       const count = categoryData.find(d => d.name === c)?.value || 0;
-      return { label: c, value: `${count} deliverables`, color: categoryData.find(d => d.name === c)?.color };
+      return { label: String(c), value: `${count} deliverables`, color: categoryData.find(d => d.name === c)?.color };
     }), [kpiStats.categoriesList, categoryData]);
 
   const submitterDetails = useMemo(() =>
@@ -771,7 +808,8 @@ export default function AnalyticsDashboardView({
             {(search || 
               (filterDept.length > 0 && !filterDept.includes('All Categories')) || 
               (filterType.length > 0 && !filterType.includes('All Types')) || 
-              (filterCDE.length > 0 && !filterCDE.includes('All Environments'))
+              (filterCDE.length > 0 && !filterCDE.includes('All Environments')) ||
+              (filterPrecinct.length > 0 && !filterPrecinct.includes('All Precincts'))
             ) && (
               <button
                 onClick={() => {
@@ -869,6 +907,7 @@ export default function AnalyticsDashboardView({
       </div>
 
       {/* ══════════ CHARTS GRID — 3 COLUMN COMPACT ══════════ */}
+      <div id="analytics-chart-grid">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
 
         {/* Category Performance Bar Chart */}
@@ -1001,6 +1040,7 @@ export default function AnalyticsDashboardView({
           </motion.div>
         )}
       </div>
+      </div> {/* End #analytics-chart-grid */}
     </motion.div>
   );
 }

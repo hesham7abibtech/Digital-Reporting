@@ -100,10 +100,10 @@ service cloud.firestore {
       allow write: if isAuthenticated() && isAdmin();
     }
 
-    // Broadcasts / News
-    match /broadcasts/{msgId} {
-      allow read: if isAuthenticated() && (isApproved() || isAdmin());
-      allow write: if isAuthenticated() && isAdmin();
+    // Tickets / Support Requests
+    match /tickets/{ticketId} {
+      allow read, update, delete: if isAuthenticated() && isAdmin();
+      allow create: if isAuthenticated();
     }
 
     // Global Fallback (Admin-only catch-all)

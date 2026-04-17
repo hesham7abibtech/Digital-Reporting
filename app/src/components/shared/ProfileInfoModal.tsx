@@ -5,8 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, User, Mail, Briefcase, Camera, 
   Save, Loader2, ShieldCheck, CreditCard,
-  Building2, Hash, UploadCloud, Eye, Image as ImageIcon
+  Building2, Hash, UploadCloud, Eye, Image as ImageIcon, Trash2,
+  Plus
 } from 'lucide-react';
+import Cropper from 'react-easy-crop';
 import { updateUserProfile, uploadFile } from '@/services/FirebaseService';
 import { useToast } from '@/components/shared/EliteToast';
 import { usePathname } from 'next/navigation';
@@ -27,6 +29,10 @@ export default function ProfileInfoModal({ isOpen, onClose, userProfile }: Profi
   const [isUploading, setIsUploading] = useState(false);
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
   const pathname = usePathname();
@@ -59,27 +65,90 @@ export default function ProfileInfoModal({ isOpen, onClose, userProfile }: Profi
     setIsPreviewOpen(true);
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDeletePhoto = () => {
+    setIsAvatarMenuOpen(false);
+    setFormData(prev => ({ ...prev, avatar: '' }));
+    showToast('Photo removed.', 'INFO');
+  };
+
+  const onCropComplete = (croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !userProfile?.uid) return;
+    if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      showToast('INVALID FILE: Please select an image file.', 'ERROR');
+      showToast('Please choose an image file.', 'ERROR');
       return;
     }
 
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      setImageToCrop(reader.result?.toString() || null);
+    });
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const createImage = (url: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      const image = new Image();
+      image.addEventListener('load', () => resolve(image));
+      image.addEventListener('error', (error) => reject(error));
+      image.src = url;
+    });
+
+  const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<Blob | null> => {
+    const image = await createImage(imageSrc);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) return null;
+
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      pixelCrop.width,
+      pixelCrop.height
+    );
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        resolve(blob);
+      }, 'image/jpeg');
+    });
+  };
+
+  const handleCropSave = async () => {
+    if (!imageToCrop || !croppedAreaPixels || !userProfile?.uid) return;
+
     setIsUploading(true);
     try {
+      const croppedBlob = await getCroppedImg(imageToCrop, croppedAreaPixels);
+      if (!croppedBlob) throw new Error('Could not generate cropped image.');
+
+      const file = new File([croppedBlob], `avatar_${Date.now()}.jpg`, { type: 'image/jpeg' });
       const path = `profiles/${userProfile.uid}/avatar_${Date.now()}`;
       const url = await uploadFile(file, path);
+      
       setFormData(prev => ({ ...prev, avatar: url }));
-      showToast('PHOTO UPLOADED: Identity visual synchronized.', 'SUCCESS');
+      showToast('Photo updated.', 'SUCCESS');
+      setImageToCrop(null);
     } catch (error: any) {
       console.error('Upload error:', error);
-      showToast(error.message || 'UPLOAD FAILURE: Could not process identity visual.', 'ERROR');
+      showToast('Could not upload photo.', 'ERROR');
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -90,11 +159,11 @@ export default function ProfileInfoModal({ isOpen, onClose, userProfile }: Profi
     setIsSaving(true);
     try {
       await updateUserProfile(userProfile.uid, formData);
-      showToast('IDENTITY UPDATED: Profile changes synchronized with registry.', 'SUCCESS');
+      showToast('Profile saved.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Profile update error:', error);
-      showToast('SYNC FAILURE: Could not update profile information.', 'ERROR');
+      showToast('Could not save profile.', 'ERROR');
     } finally {
       setIsSaving(false);
     }
@@ -102,13 +171,13 @@ export default function ProfileInfoModal({ isOpen, onClose, userProfile }: Profi
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    padding: '14px 16px 14px 48px',
-    background: 'rgba(0, 63, 73, 0.05)',
-    border: '1px solid rgba(0, 63, 73, 0.1)',
-    borderRadius: 14,
+    padding: '16px 16px 16px 48px',
+    background: 'rgba(0, 63, 73, 0.03)',
+    border: '1px solid rgba(0, 63, 73, 0.15)',
+    borderRadius: 16,
     color: '#003f49',
-    fontSize: 14,
-    fontWeight: 500,
+    fontSize: 15,
+    fontWeight: 600,
     outline: 'none',
     transition: 'all 300ms',
   };
@@ -146,35 +215,44 @@ export default function ProfileInfoModal({ isOpen, onClose, userProfile }: Profi
             style={{
               width: '100%',
               maxWidth: 520,
-              background: '#c6e0e0', // Branded Aqua
-              borderRadius: 28,
-              border: '1px solid rgba(0, 63, 73, 0.2)', // Branded Teal border
+              background: '#FFFFFF', // High contrast white
+              borderRadius: 32,
+              border: '1px solid rgba(0, 63, 73, 0.25)',
               position: 'relative',
               zIndex: 1,
               overflow: 'hidden',
-              boxShadow: '0 30px 100px rgba(0,0,0,0.15), 0 0 40px rgba(0, 63, 73, 0.05)'
+              boxShadow: '0 40px 120px rgba(0,0,0,0.25), 0 0 50px rgba(0, 63, 73, 0.08)'
             }}
           >
-            {/* Header */}
-            <div style={{ padding: '32px 40px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <h2 style={{ fontSize: 24, fontWeight: 900, color: '#002a30', margin: 0, letterSpacing: '-0.02em', textTransform: 'uppercase' }}>Identity Profile</h2>
-                <p style={{ fontSize: 13, color: '#003f49', fontWeight: 600, marginTop: 4 }}>Manage your personal project credentials</p>
+            {/* Branded Header Section */}
+            <div style={{ padding: '32px 40px 24px', position: 'relative', background: 'rgba(255,255,255,0.4)', borderBottom: '1px solid rgba(0, 63, 73, 0.1)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <div style={{ 
+                  display: 'inline-flex', alignItems: 'center', gap: 12, 
+                  padding: '6px 14px', background: 'var(--teal)', borderRadius: 12,
+                  border: '1px solid var(--sunlit-rock)', boxShadow: '0 5px 10px rgba(0, 63, 73, 0.08)'
+                }}>
+                  <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 18, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+                  <div style={{ width: 1, height: 12, background: 'rgba(255, 255, 255, 0.2)' }} />
+                  <img src="/logos/insite_logo.png" alt="INSITE" style={{ height: 14, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+                </div>
+                <button
+                  onClick={onClose}
+                  disabled={isSaving || isUploading}
+                  style={{ 
+                    width: 36, height: 36, borderRadius: 12, 
+                    background: 'rgba(0, 63, 73, 0.05)', border: '1px solid rgba(0, 63, 73, 0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                    color: 'rgba(0, 63, 73, 0.6)', transition: 'all 200ms'
+                  }}
+                >
+                  <X size={18} />
+                </button>
               </div>
-              <button
-                onClick={onClose}
-                disabled={isSaving || isUploading}
-                style={{ 
-                  width: 44, height: 44, borderRadius: 14, 
-                  background: 'rgba(0, 63, 73, 0.05)', border: '1px solid rgba(0, 63, 73, 0.1)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                  color: 'rgba(0, 63, 73, 0.4)', transition: 'all 200ms'
-                }}
-                onMouseEnter={e => e.currentTarget.style.color = '#003f49'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(0, 63, 73, 0.4)'}
-              >
-                <X size={20} />
-              </button>
+              <div>
+                <h2 style={{ fontSize: 22, fontWeight: 900, color: '#002a30', margin: 0, letterSpacing: '0.05em', textTransform: 'uppercase', fontFamily: 'var(--font-primary)' }}>Identity Profile</h2>
+                <p style={{ fontSize: 12, color: 'rgba(0, 63, 73, 0.7)', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Secure Identity Management Terminal</p>
+              </div>
             </div>
 
             <form onSubmit={handleSave} style={{ padding: '32px 40px 40px' }}>
@@ -211,11 +289,11 @@ export default function ProfileInfoModal({ isOpen, onClose, userProfile }: Profi
                     
                     <div style={{ 
                       position: 'absolute', bottom: -5, right: -5, width: 28, height: 28, 
-                      borderRadius: 10, background: '#c6e0e0', border: '2px solid #c6e0e0',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)',
-                      boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+                      borderRadius: 10, background: '#002a30', border: '2px solid #c6e0e0',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D4AF37',
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
                     }}>
-                      {isUploading ? <Loader2 className="animate-spin" size={12} /> : <Camera size={14} />}
+                      {isUploading ? <Loader2 className="animate-spin" size={12} /> : <Camera size={14} style={{ filter: 'drop-shadow(0 0 2px rgba(212, 175, 55, 0.5))' }} />}
                     </div>
 
                     {/* Avatar Menu Dropdown */}
@@ -236,32 +314,63 @@ export default function ProfileInfoModal({ isOpen, onClose, userProfile }: Profi
                               boxShadow: '0 10px 25px rgba(0,0,0,0.3)', zIndex: 100, overflow: 'hidden'
                             }}
                           >
-                            <button
-                              type="button"
-                              onClick={handleViewPhoto}
-                              style={{ 
-                                width: '100%', padding: '10px 14px', border: 'none', background: 'transparent',
-                                color: 'white', fontSize: 13, display: 'flex', alignItems: 'center', gap: 10,
-                                cursor: 'pointer', textAlign: 'left'
-                              }}
-                              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                            >
-                              <Eye size={14} color="var(--accent)" /> View Photo
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleChangePhoto}
-                              style={{ 
-                                width: '100%', padding: '10px 14px', border: 'none', background: 'transparent',
-                                color: 'white', fontSize: 13, display: 'flex', alignItems: 'center', gap: 10,
-                                cursor: 'pointer', textAlign: 'left'
-                              }}
-                              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                            >
-                              <UploadCloud size={14} color="var(--accent)" /> Change Photo
-                            </button>
+                            {!formData.avatar ? (
+                              <button
+                                type="button"
+                                onClick={handleChangePhoto}
+                                style={{ 
+                                  width: '100%', padding: '12px 14px', border: 'none', background: 'transparent',
+                                  color: 'white', fontSize: 13, display: 'flex', alignItems: 'center', gap: 10,
+                                  cursor: 'pointer', textAlign: 'left'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                              >
+                                <Plus size={16} color="var(--accent)" /> Add Profile Picture
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={handleViewPhoto}
+                                  style={{ 
+                                    width: '100%', padding: '10px 14px', border: 'none', background: 'transparent',
+                                    color: 'white', fontSize: 13, display: 'flex', alignItems: 'center', gap: 10,
+                                    cursor: 'pointer', textAlign: 'left'
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                >
+                                  <Eye size={14} color="var(--accent)" /> View Photo
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleChangePhoto}
+                                  style={{ 
+                                    width: '100%', padding: '10px 14px', border: 'none', background: 'transparent',
+                                    color: 'white', fontSize: 13, display: 'flex', alignItems: 'center', gap: 10,
+                                    cursor: 'pointer', textAlign: 'left'
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                >
+                                  <UploadCloud size={14} color="#10b981" /> Change Photo
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleDeletePhoto}
+                                  style={{ 
+                                    width: '100%', padding: '10px 14px', border: 'none', background: 'transparent',
+                                    color: '#f87171', fontSize: 13, display: 'flex', alignItems: 'center', gap: 10,
+                                    cursor: 'pointer', textAlign: 'left', borderTop: '1px solid rgba(255,255,255,0.05)'
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                >
+                                  <Trash2 size={14} /> Delete Photo
+                                </button>
+                              </>
+                            )}
                           </motion.div>
                         </>
                       )}
@@ -352,7 +461,7 @@ export default function ProfileInfoModal({ isOpen, onClose, userProfile }: Profi
                       fontSize: 14, fontWeight: 700 
                     }}
                   >
-                    Abort Changes
+                    Cancel
                   </button>
                   <button
                     type="submit"
@@ -374,7 +483,7 @@ export default function ProfileInfoModal({ isOpen, onClose, userProfile }: Profi
                     ) : (
                       <>
                         <Save size={20} />
-                        Authorize Sync
+                        Save Changes
                       </>
                     )}
                   </button>
@@ -427,6 +536,100 @@ export default function ProfileInfoModal({ isOpen, onClose, userProfile }: Profi
             >
               <X size={24} />
             </button>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+    {/* Image Cropper Modal */}
+    <AnimatePresence>
+      {imageToCrop && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 30000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ position: 'absolute', inset: 0, background: 'rgba(0, 42, 48, 0.8)', backdropFilter: 'blur(20px)' }}
+          />
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            style={{
+              width: '100%',
+              maxWidth: 500,
+              background: '#0c0c14',
+              borderRadius: 28,
+              border: '1px solid rgba(255,255,255,0.1)',
+              position: 'relative',
+              zIndex: 1,
+              overflow: 'hidden',
+              boxShadow: '0 40px 120px rgba(0,0,0,0.6)'
+            }}
+          >
+            <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 900, color: 'white', margin: 0, letterSpacing: '0.02em', textTransform: 'uppercase' }}>Precision Crop</h3>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Normalize identity visual - 1:1 ratio</p>
+              </div>
+              <button 
+                onClick={() => setImageToCrop(null)}
+                style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ position: 'relative', width: '100%', height: 350, background: '#000' }}>
+              <Cropper
+                image={imageToCrop}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+
+            <div style={{ padding: '24px 32px' }}>
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 10, fontWeight: 900, color: 'white', textTransform: 'uppercase', opacity: 0.5 }}>Zoom Intensity</span>
+                  <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)' }}>{Math.round(zoom * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  value={zoom}
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  aria-labelledby="Zoom"
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: 'var(--accent)' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 16 }}>
+                <button
+                  onClick={() => setImageToCrop(null)}
+                  style={{ flex: 1, padding: '14px', borderRadius: 14, background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}
+                >
+                  Discard
+                </button>
+                <button
+                  onClick={handleCropSave}
+                  disabled={isUploading}
+                  style={{ 
+                    flex: 2, padding: '14px', borderRadius: 14, background: 'var(--accent)', color: 'var(--primary)', 
+                    border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 900,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
+                  }}
+                >
+                  {isUploading ? <Loader2 className="animate-spin" size={18} /> : <ImageIcon size={18} />}
+                  Save Photo
+                </button>
+              </div>
+            </div>
           </motion.div>
         </div>
       )}

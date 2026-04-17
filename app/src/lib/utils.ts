@@ -64,3 +64,12 @@ export function getDepartmentColor(dept: string): string {
   };
   return colors[dept] || '#003f49';
 }
+
+export function generateTicketId(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid ambiguous characters
+  let result = 'DR-';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}

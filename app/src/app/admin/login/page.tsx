@@ -22,8 +22,9 @@ import {
   Lock, Mail, Loader2, Globe, ShieldCheck,
   UserPlus, ArrowLeft, User, ShieldAlert,
   ChevronRight, Fingerprint, Database, Cpu,
-  CheckCircle2, Eye, EyeOff, Circle, Briefcase, Home
+  CheckCircle2, Eye, EyeOff, Circle, Briefcase, Home, LifeBuoy
 } from 'lucide-react';
+import TicketRequestModal from '@/components/shared/TicketRequestModal';
 import ParticleBackground from '@/components/layout/ParticleBackground';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'unauthorized';
@@ -51,6 +52,7 @@ function AdminLoginContent() {
   const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
   const [showResetSuccess, setShowResetSuccess] = useState(false);
   const [projectMetadata, setProjectMetadata] = useState<ProjectMetadata | null>(null);
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -90,7 +92,8 @@ function AdminLoginContent() {
 
     // Handle Success and Clearance Check (only for admin sessions)
     if (user && userProfile) {
-      if (!user.emailVerified) {
+      const isVerified = user.emailVerified || userProfile.isVerified === true;
+      if (!isVerified) {
         setError('CLEARANCE BLOCKED: Email not verified. Please verify your identity protocol.');
         auth.signOut();
         sessionStorage.removeItem('admin_session');
@@ -241,12 +244,25 @@ function AdminLoginContent() {
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative', display: 'flex', flexDirection: 'column', background: '#0a1220' }}>
-      {/* Isolated Administrative Branding */}
-      <div style={{ padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255,255,255,0.03)', zIndex: 100 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 18, filter: 'brightness(0) invert(1)' }} />
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.1)' }} />
-          <img src="/logos/insite_logo.png" alt="Insite" style={{ height: 18, filter: 'brightness(0) invert(1)' }} />
+      {/* Isolated Administrative Branding - Slim Professional High Contrast */}
+      <div style={{ padding: '20px 48px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(5, 10, 20, 0.98)', borderBottom: '1px solid var(--sunlit-rock)', zIndex: 100, boxShadow: '0 5px 20px rgba(0,0,0,0.6)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+          <motion.img 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            src="/logos/modon_logo.png" 
+            alt="MODON" 
+            style={{ height: 22, width: 'auto', filter: 'brightness(0) invert(1) contrast(200%)' }} 
+          />
+          <div style={{ width: 1, height: 18, background: 'rgba(208, 171, 130, 0.3)' }} />
+          <motion.img 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+            src="/logos/insite_logo.png" 
+            alt="Insite" 
+            style={{ height: 22, width: 'auto', filter: 'brightness(0) invert(1) contrast(200%)' }} 
+          />
         </div>
       </div>
       <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, overflow: 'hidden' }}>
@@ -264,11 +280,11 @@ function AdminLoginContent() {
           style={{
             width: '100%',
             maxWidth: 480,
-            background: 'rgba(10, 18, 32, 0.85)',
-            backdropFilter: 'blur(40px)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 32,
-            boxShadow: '0 40px 100px -20px rgba(0,0,0,0.8), inset 0 0 40px rgba(0, 63, 73, 0.15)',
+            background: 'rgba(10, 18, 32, 0.95)',
+            backdropFilter: 'blur(50px)',
+            border: '1px solid rgba(212, 175, 55, 0.3)',
+            borderRadius: 36,
+            boxShadow: '0 50px 120px -20px rgba(0,0,0,0.9), inset 0 0 60px rgba(0, 63, 73, 0.2)',
             overflow: 'hidden',
             zIndex: 10,
             position: 'relative'
@@ -298,29 +314,30 @@ function AdminLoginContent() {
               whileHover={{ scale: 1.1, backgroundColor: 'rgba(212, 175, 55, 0.15)', borderColor: 'rgba(212, 175, 55, 0.4)' }}
               whileTap={{ scale: 0.95 }}
               style={{
-                position: 'absolute', top: 24, left: 24, padding: 10,
-                borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)',
-                background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)',
+                position: 'absolute', top: 24, right: 24, padding: 10,
+                borderRadius: 14, border: '1px solid rgba(212, 175, 55, 0.15)',
+                background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(10px)',
                 cursor: 'pointer', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 15px rgba(0,0,0,0.2)', zIndex: 10
+                boxShadow: '0 5px 15px rgba(0,0,0,0.4)', zIndex: 20
               }}
               title="Return to Hub"
             >
               <Home size={18} color="#D4AF37" style={{ filter: 'drop-shadow(0 0 5px rgba(212, 175, 55, 0.4))' }} />
             </motion.button>
 
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
               <motion.div
                 style={{
-                  width: 60, height: 60, borderRadius: 18,
+                  width: 72, height: 72, borderRadius: 22,
                   background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  position: 'relative', overflow: 'hidden'
+                  position: 'relative', overflow: 'hidden',
+                  boxShadow: '0 0 30px rgba(212, 175, 55, 0.3), inset 0 0 15px rgba(255, 255, 255, 0.5)'
                 }}
               >
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(255,255,255,0.2), transparent)', opacity: 0.5 }} />
-                <ShieldCheck size={30} color="white" />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(255,255,255,0.3), transparent)', opacity: 0.6 }} />
+                <ShieldCheck size={36} color="#0a1220" />
               </motion.div>
             </div>
 
@@ -548,6 +565,13 @@ function AdminLoginContent() {
                 </button>
               </div>
             )}
+            
+            <button
+               onClick={() => setIsTicketModalOpen(true)}
+               style={{ background: 'transparent', border: 'none', color: '#D4AF37', fontSize: 11, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, margin: '20px auto 0', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em' }}
+            >
+               <LifeBuoy size={14} /> Engaged Technical Support Cluster
+            </button>
           </div>
 
           <div style={{
@@ -723,6 +747,12 @@ function AdminLoginContent() {
         </AnimatePresence>
 
       </div>
+      <TicketRequestModal 
+        isOpen={isTicketModalOpen} 
+        onClose={() => setIsTicketModalOpen(false)} 
+        defaultReason="Administrative Access Request"
+        defaultMessage="I am requesting administrative clearance for the project Command Center. Please review my identity signature."
+      />
     </div>
   );
 }

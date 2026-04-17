@@ -2,15 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Save, Trash2, User, Mail, Shield, Briefcase, Loader2 } from 'lucide-react';
+import { X, Save, Trash2, User, Mail, Shield, Briefcase, Loader2, Camera, Upload } from 'lucide-react';
 import { TeamMember } from '@/lib/types';
-import { updateUserProfile, deleteUserProfile } from '@/services/FirebaseService';
+import { updateUserProfile, deleteUserProfile, uploadFile } from '@/services/FirebaseService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import { useToast } from '@/components/shared/EliteToast';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { collections } from '@/services/FirebaseService';
 
 interface MemberEditorProps {
   member: TeamMember | null;
@@ -28,12 +29,31 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
     role: 'TEAM_MATE'
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const { showToast } = useToast();
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const uid = (formData as any).uid || formData.id || `temp-${Date.now()}`;
+      const url = await uploadFile(file, `avatars/${uid}`);
+      setFormData(prev => ({ ...prev, avatar: url }));
+      showToast('Member updated successfully.', 'SUCCESS');
+    } catch (err) {
+      console.error('Upload failed:', err);
+      showToast('Could not update member.', 'ERROR');
+    } finally {
+      setIsUploading(false);
+    }
+  };
   
   const [deptsSnapshot] = useCollection(query(collection(db, 'departments'), orderBy('name', 'asc')));
-  const departments = deptsSnapshot?.docs.map(d => (d.data() as any).name) || [];
+  const departments = deptsSnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as any)) || [];
 
   useEffect(() => {
     if (member) {
@@ -45,7 +65,8 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
         email: '',
         avatar: '',
         role: 'TEAM_MATE',
-        department: 'Architecture',
+        department: '',
+        status: 'ACTIVE',
         isOnline: true,
         lastActive: new Date().toISOString()
       });
@@ -59,16 +80,24 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
       if (!formData.id && !(formData as any).uid) throw new Error('No Identity Component Provided');
       const uid = (formData as any).uid || formData.id;
       
-      await updateUserProfile(uid, {
-        name: formData.name,
-        department: formData.department
-      });
-      showToast('Personnel registry synchronized successfully.', 'SUCCESS');
+      const memberRef = doc(collections.members, uid);
+      await setDoc(memberRef, {
+        name: formData.name || '',
+        email: formData.email || '',
+        department: formData.department || '',
+        role: formData.role || 'TEAM_MATE',
+        status: formData.status || 'ACTIVE',
+        avatar: formData.avatar || '',
+        isOnline: formData.isOnline ?? true,
+        lastActive: formData.lastActive ?? new Date().toISOString()
+      }, { merge: true });
+
+      showToast('Member saved successfully.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Failed to save member:', error);
       setErrorMsg(getFirebaseErrorMessage(error));
-      showToast('Synchronization failure. Reference console for logs.', 'ERROR');
+      showToast('Could not save member.', 'ERROR');
     } finally {
       setIsSaving(false);
     }
@@ -78,14 +107,14 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
     if (!member) return;
     try {
       const uid = (member as any).uid || member.id;
-      await deleteUserProfile(uid);
-      showToast('Identity purged from global registry.', 'SUCCESS');
+      await deleteDoc(doc(collections.members, uid));
+      showToast('Member removed successfully.', 'SUCCESS');
       onClose();
     } catch (error) {
-      console.error('Failed to delete member:', error);
+      console.error('Failed to revoke member:', error);
       setErrorMsg(getFirebaseErrorMessage(error));
-      showToast('Purge sequence failed.', 'ERROR');
-      throw error; // Rethrow for modal error handling if needed
+      showToast('Could not remove member.', 'ERROR');
+      throw error;
     }
   };
 
@@ -113,7 +142,7 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
               value={formData.name ?? ''} 
               onChange={e => setFormData({ ...formData, name: e.target.value })} 
               disabled={readOnly}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', color: readOnly ? 'var(--text-muted)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text' }} 
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', color: readOnly ? 'var(--text-muted)' : '#003F49', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text', fontWeight: 600 }} 
             />
           </div>
           <div>
@@ -125,26 +154,71 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
                 value={formData.email ?? ''} 
                 onChange={e => setFormData({ ...formData, email: e.target.value })} 
                 disabled={readOnly}
-                style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', color: readOnly ? 'var(--text-muted)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text' }} 
+                style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', color: readOnly ? 'var(--text-muted)' : '#003F49', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text', fontWeight: 600 }} 
               />
             </div>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase' }}>Functional Category</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase' }}>TASK CATEGORIES</label>
             <select 
-              value={formData.department} 
+              value={departments.find(d => d.id === formData.department || d.name === formData.department)?.id || ''} 
               onChange={e => setFormData({ ...formData, department: e.target.value })} 
               disabled={readOnly}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : '#1a1a24', border: '1px solid var(--border)', color: readOnly ? 'var(--text-muted)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer' }}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: readOnly ? 'var(--text-muted)' : '#003F49', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer', fontWeight: 600 }}
             >
+              <option value="" disabled>Select Task Category</option>
               {departments.length > 0 ? (
                 departments.map(dept => (
-                  <option key={dept} value={dept}>{dept}</option>
+                  <option key={dept.id} value={dept.id}>{dept.name}</option>
                 ))
               ) : (
-                <option value="" disabled>No departments configured</option>
+                <option value="" disabled>No categories available</option>
               )}
             </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--teal)', marginBottom: 12, textTransform: 'uppercase' }}>Identity Asset (Avatar)</label>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+              <div style={{ 
+                width: 64, height: 64, borderRadius: 16, 
+                background: 'rgba(0, 63, 73, 0.05)', 
+                border: '2.5px solid var(--border)', 
+                overflow: 'hidden', flexShrink: 0,
+                position: 'relative',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                {isUploading ? (
+                  <Loader2 size={24} className="animate-spin" color="var(--teal)" />
+                ) : formData.avatar ? (
+                  <img src={formData.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Preview" />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--teal)', fontWeight: 950, fontSize: 24, background: 'rgba(0, 63, 73, 0.08)' }}>
+                    {(formData.name || 'P')[0].toUpperCase()}
+                  </div>
+                )}
+              </div>
+              
+              {!readOnly && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <label 
+                    style={{ 
+                      padding: '10px 16px', borderRadius: 10, 
+                      background: 'var(--teal)', color: 'white', 
+                      fontSize: 12, fontWeight: 800, cursor: isUploading ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      opacity: isUploading ? 0.7 : 1,
+                      transition: 'all 200ms'
+                    }}
+                  >
+                    <Upload size={14} />
+                    {isUploading ? 'Uploading...' : 'Upload Photo'}
+                    <input type="file" accept="image/*" onChange={handleFileUpload} disabled={isUploading} style={{ display: 'none' }} />
+                  </label>
+                  <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: 0, fontWeight: 600 }}>Recommended: Square JPG or PNG (Max 2MB)</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {errorMsg && (

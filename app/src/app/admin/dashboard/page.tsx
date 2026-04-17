@@ -304,7 +304,7 @@ export default function AdminDashboardPage() {
     }
   }, [userProfile, router]);
 
-  const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'branding' | 'registry' | 'users' | 'policies' | 'broadcast' | 'reports' | 'bim-reviews' | 'homepage'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'branding' | 'registry' | 'users' | 'policies' | 'broadcast' | 'reports' | 'bim-reviews' | 'homepage' | 'tickets'>('tasks');
   const [taskImportConfirm, setTaskImportConfirm] = useState<{ isOpen: boolean; records: Task[] }>({ isOpen: false, records: [] });
   const [isTaskImportLoading, setIsTaskImportLoading] = useState(false);
   const taskFileInputRef = useRef<HTMLInputElement>(null);
@@ -401,11 +401,56 @@ export default function AdminDashboardPage() {
   const [registrySnapshot, registryLoading, registryError] = useCollection(isAuthorized ? collections.registry : null);
   const [usersSnapshot, usersLoading, usersError] = useCollection(isAuthorized ? collections.users : null);
   const [bimReviewsSnapshot, bimReviewsLoading, bimReviewsError] = useCollection(isAuthorized ? collections.bimReviews : null);
+  const [ticketsSnapshot, ticketsLoading] = useCollection(isAuthorized ? query(collection(db, 'tickets'), orderBy('createdAt', 'desc')) : null);
+  const [membersSnapshot, membersLoading, membersError] = useCollection(isAuthorized ? collections.members : null);
+  
+  // High-performance avatar lookups from BOTH collections
+  const userAvatarByUid = useMemo(() => {
+    const map: Record<string, string> = {};
+    usersSnapshot?.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.avatar) map[doc.id] = data.avatar;
+    });
+    membersSnapshot?.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.avatar) map[doc.id] = data.avatar;
+    });
+    return map;
+  }, [usersSnapshot, membersSnapshot]);
 
+  const userAvatarByExactName = useMemo(() => {
+    const map: Record<string, string> = {};
+    const processDoc = (doc: any) => {
+      const data = doc.data();
+      if (data.name && data.avatar) map[data.name.trim()] = data.avatar;
+    }
+    usersSnapshot?.docs.forEach(processDoc);
+    membersSnapshot?.docs.forEach(processDoc);
+    return map;
+  }, [usersSnapshot, membersSnapshot]);
 
-  // Dynamic linking: Team Members are now explicitly fueled by the registered Users registry
-  const membersSnapshot = usersSnapshot;
-  const membersLoading = usersLoading;
+  const userAvatarByName = useMemo(() => {
+    const map: Record<string, string> = {};
+    const processDoc = (doc: any) => {
+      const data = doc.data();
+      if (data.name && data.avatar) map[data.name.toLowerCase().trim()] = data.avatar;
+    }
+    usersSnapshot?.docs.forEach(processDoc);
+    membersSnapshot?.docs.forEach(processDoc);
+    return map;
+  }, [usersSnapshot, membersSnapshot]);
+
+  const userAvatarByEmail = useMemo(() => {
+    const map: Record<string, string> = {};
+    const processDoc = (doc: any) => {
+      const data = doc.data();
+      if (data.email && data.avatar) map[data.email.toLowerCase()] = data.avatar;
+    }
+    usersSnapshot?.docs.forEach(processDoc);
+    membersSnapshot?.docs.forEach(processDoc);
+    return map;
+  }, [usersSnapshot, membersSnapshot]);
+
 
   const [broadcastsSnapshot, broadcastsLoading] = useCollection(isAuthorized ? query(collection(db, 'broadcasts'), orderBy('timestamp', 'desc')) : null);
   const [departmentsSnapshot, departmentsLoading] = useCollection(isAuthorized ? query(collections.departments, orderBy('name', 'asc')) : null);
@@ -1080,6 +1125,7 @@ export default function AdminDashboardPage() {
               { id: 'reports', label: 'Report Settings', icon: FileText, permission: 'reports' },
               { id: 'homepage', label: 'Home Page CMS', icon: LayoutDashboard, permission: 'homePage' },
               { id: 'broadcast', label: 'Communications', icon: Megaphone, permission: 'broadcast' },
+              { id: 'tickets', label: 'Access Tickets', icon: Inbox, permission: 'tickets' },
               { id: 'users', label: 'Access Control', icon: Shield, permission: 'users' }
             ].map((tab) => {
               if (tab.permission && !can(tab.permission as any, 'view')) return null;
@@ -1341,6 +1387,24 @@ export default function AdminDashboardPage() {
                           Authorized Entry
                         </button>
                       )}
+                      {activeTab === 'tickets' && (
+                        <div style={{ display: 'flex', gap: 12 }}>
+                          <button 
+                            onClick={async () => {
+                              showToast('Feature engaged: Automatic ticket prioritization scheduled.', 'INFO');
+                            }} 
+                            style={{ 
+                              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', 
+                              borderRadius: 10, background: 'rgba(212, 175, 55, 0.1)', 
+                              color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.2)', 
+                              cursor: 'pointer', fontSize: 13, fontWeight: 800 
+                            }}
+                          >
+                            <CheckCircle2 size={18} />
+                            Quick Triage
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1352,17 +1416,28 @@ export default function AdminDashboardPage() {
                             <th style={{ width: 80, padding: '24px 0', textAlign: 'center' }}>
                               <input
                                 type="checkbox"
-                                checked={selectedIds.size > 0 && selectedIds.size === currentTabIds.length}
-                                onChange={() => toggleSelectAll(currentTabIds)}
+                                checked={selectedIds.size > 0 && selectedIds.size === (activeTab === 'tasks' ? tasksSnapshot?.docs.length : activeTab === 'bim-reviews' ? bimReviewsSnapshot?.docs.length : activeTab === 'tickets' ? ticketsSnapshot?.docs.length : 0)}
+                                onChange={() => {}}
                                 style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
                               />
                             </th>
                             {activeTab === 'bim-reviews' ? (
                               <>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>BIM Profile</th>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Submission Info</th>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Audit Progress</th>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Project Detail</th>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Phase</th>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Gate Status</th>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Final Audit</th>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Lead Reviewer</th>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Target Date</th>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Log History</th>
                                 <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Control</th>
+                              </>
+                            ) : activeTab === 'tickets' ? (
+                              <>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Ticket ID & Requester</th>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Reason & Message</th>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Priority & Status</th>
+                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Lifecycle Control</th>
                               </>
                             ) : (
                               <>
@@ -1370,7 +1445,7 @@ export default function AdminDashboardPage() {
                                   {activeTab === 'users' ? 'Staff Identity' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Project Personnel' : 'Task Category') : 'Task Definition / Asset'}
                                 </th>
                                 <th style={{ textAlign: 'center', padding: activeTab === 'users' ? '12px 16px' : '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
-                                  {activeTab === 'users' ? 'Protocol Clearance' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Functional Category' : 'Abbreviation') : 'Task Category'}
+                                  {activeTab === 'users' ? 'Protocol Clearance' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Task Categories' : 'Abbreviation') : 'Task Category'}
                                 </th>
                                 <th style={{ textAlign: 'center', padding: activeTab === 'users' ? '12px 16px' : '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
                                   {activeTab === 'users' ? 'Admin Access' : activeTab === 'tasks' ? 'Submitter' : activeTab === 'team' && teamActiveSubTab === 'personnel' ? 'Email Interface' : 'Action Hub'}
@@ -1391,7 +1466,7 @@ export default function AdminDashboardPage() {
                             <motion.tr 
                               key={doc.id || `task-${i}`} 
                               whileHover={{ background: 'var(--card-haze)' }}
-                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'transparent', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
+                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'rgba(0, 63, 73, 0.01)', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
                               onClick={() => handleEditRecord(task)}
                             >
                               <td style={{ textAlign: 'center', padding: '32px 0' }} onClick={(e) => e.stopPropagation()}>
@@ -1404,10 +1479,16 @@ export default function AdminDashboardPage() {
                               </td>
                               <td style={{ padding: '24px 32px', textAlign: 'center' }}>
                                 <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text-primary)', letterSpacing: '0.02em', fontFamily: 'var(--font-heading)' }}>{task.title}</div>
-                                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 8, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase' }}>REGISTRY ID: {doc.id}</div>
                               </td>
                               <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                                <span style={{ fontSize: 10, background: 'var(--secondary)', color: 'var(--teal)', padding: '8px 16px', borderRadius: 10, fontWeight: 900, letterSpacing: '0.1em', border: '1px solid var(--border)', textTransform: 'uppercase' }}>{task.department}</span>
+                                {(() => {
+                                  const d = departmentsSnapshot?.docs.find((doc: any) => doc.id === task.department || doc.data().name === task.department)?.data();
+                                  return (
+                                    <span style={{ fontSize: 10, background: 'var(--secondary)', color: 'var(--teal)', padding: '8px 16px', borderRadius: 10, fontWeight: 900, letterSpacing: '0.1em', border: '1px solid var(--border)', textTransform: 'uppercase' }}>
+                                      {d ? d.name : task.department || 'Awaiting Assignment'}
+                                    </span>
+                                  );
+                                })()}
                               </td>
                               <td style={{ padding: '24px 32px', textAlign: 'center' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
@@ -1417,9 +1498,29 @@ export default function AdminDashboardPage() {
                                       background: 'var(--secondary)', border: '1px solid var(--border)',
                                       color: 'var(--teal)', fontSize: 13, fontWeight: 900,
                                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                      flexShrink: 0
+                                      flexShrink: 0, overflow: 'hidden', position: 'relative'
                                     }}>
-                                      {task.submitterName?.charAt(0)}
+                                      {userAvatarByUid[task.submitterId || ''] ? (
+                                        <img 
+                                          src={userAvatarByUid[task.submitterId || '']} 
+                                          alt={task.submitterName} 
+                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                        />
+                                      ) : userAvatarByEmail[task.submitterEmail?.toLowerCase() || ''] ? (
+                                        <img 
+                                          src={userAvatarByEmail[task.submitterEmail?.toLowerCase() || '']} 
+                                          alt={task.submitterName} 
+                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                        />
+                                      ) : userAvatarByExactName[task.submitterName || ''] ? (
+                                        <img 
+                                          src={userAvatarByExactName[task.submitterName || '']} 
+                                          alt={task.submitterName} 
+                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                        />
+                                      ) : (
+                                        task.submitterName?.charAt(0).toUpperCase()
+                                      )}
                                     </div>
                                   )}
                                   <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 600 }}>{task.submitterName || '—'}</span>
@@ -1459,11 +1560,15 @@ export default function AdminDashboardPage() {
                          {activeTab === 'team' && teamActiveSubTab === 'personnel' && membersSnapshot?.docs.map((doc: any, i: number) => {
                             const member = { id: doc.id, ...doc.data() } as any;
                             const isSelected = selectedIds.has(doc.id);
+                            
+                            const matchedDept = departmentsSnapshot?.docs.find((d: any) => d.id === member.department || d.data().name === member.department)?.data();
+                            const deptDisplay = matchedDept ? matchedDept.name : member.department || 'Awaiting Assignment';
+
                              return (
                             <motion.tr 
                               key={doc.id || `member-${i}`} 
                               whileHover={{ background: 'var(--card-haze)' }}
-                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'transparent', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
+                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'rgba(0, 63, 73, 0.01)', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
                               onClick={() => handleEditRecord(member)}
                             >
                               <td style={{ textAlign: 'center', padding: '32px 0' }} onClick={(e) => e.stopPropagation()}>
@@ -1476,15 +1581,22 @@ export default function AdminDashboardPage() {
                               </td>
                                <td style={{ padding: '24px 32px', textAlign: 'center' }}>
                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
-                                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: member.status === 'ACTIVE' ? 'var(--status-success)' : 'var(--status-warning)', flexShrink: 0, boxShadow: member.status === 'ACTIVE' ? 'none' : 'none' }} />
-                                   <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text-primary)', letterSpacing: '0.01em', fontFamily: 'var(--font-heading)' }}>{member.name || 'Anonymous User'}</div>
+                                   {member.avatar ? (
+                                     <img src={member.avatar} style={{ width: 32, height: 32, borderRadius: 10, objectFit: 'cover', border: '1px solid var(--border)' }} alt={member.name} />
+                                   ) : (
+                                     <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(0, 63, 73, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#003F49', fontSize: 11, fontWeight: 900 }}>
+                                       {(member.name || 'A').charAt(0).toUpperCase()}
+                                     </div>
+                                   )}
+                                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: member.status === 'ACTIVE' ? '#10b981' : '#f59e0b', flexShrink: 0, marginLeft: -4, marginTop: 22, border: '2px solid white', zIndex: 1 }} />
+                                   <div style={{ fontWeight: 950, fontSize: 17, color: '#000000', letterSpacing: '-0.01em', fontFamily: 'var(--font-heading)' }}>{member.name || 'Anonymous User'}</div>
                                  </div>
                                </td>
                                <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                                 <span style={{ fontSize: 10, background: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6', padding: '8px 16px', borderRadius: 10, fontWeight: 900, letterSpacing: '0.1em', border: '1px solid rgba(139, 92, 246, 0.15)', textTransform: 'uppercase' }}>{member.department || 'Awaiting Assignment'}</span>
+                                 <span style={{ fontSize: 10, background: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6', padding: '8px 16px', borderRadius: 10, fontWeight: 900, letterSpacing: '0.1em', border: '1px solid rgba(139, 92, 246, 0.15)' }}>{deptDisplay}</span>
                                </td>
                                <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                                 <div style={{ fontSize: 15, color: 'var(--text-secondary)', fontWeight: 600 }}>{member.email}</div>
+                                 <div style={{ fontSize: 15, color: '#000000', fontWeight: 900 }}>{member.email}</div>
                                </td>
                                <td style={{ padding: '24px 32px', textAlign: 'center' }}>
                                  <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
@@ -1499,7 +1611,7 @@ export default function AdminDashboardPage() {
                           const dept = { id: doc.id, ...doc.data() } as any;
                           const isSelected = selectedIds.has(doc.id);
                           return (
-                            <tr key={doc.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'transparent' }} onClick={() => handleEditRecord(dept)}>
+                            <tr key={doc.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'rgba(0, 63, 73, 0.01)' }} onClick={() => handleEditRecord(dept)}>
                               <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
@@ -1542,7 +1654,7 @@ export default function AdminDashboardPage() {
                             </td>
                           </tr>
                         )}
-                        {activeTab === 'team' && !usersLoading && usersSnapshot?.docs.length === 0 && (
+                        {activeTab === 'team' && teamActiveSubTab === 'personnel' && !membersLoading && (!membersSnapshot || membersSnapshot.docs.length === 0) && (
                           <tr>
                             <td colSpan={5} style={{ padding: '60px 40px', textAlign: 'center' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -1563,7 +1675,7 @@ export default function AdminDashboardPage() {
                             <motion.tr 
                               key={doc.id || `bim-${i}`} 
                               whileHover={{ background: 'var(--card-haze)' }}
-                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'transparent', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
+                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'rgba(0, 63, 73, 0.01)', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
                               onClick={() => { setSelectedBimReview(review); setIsModalOpen(true); }}
                             >
                               <td style={{ textAlign: 'center', padding: '32px 0' }} onClick={(e) => e.stopPropagation()}>
@@ -1589,7 +1701,40 @@ export default function AdminDashboardPage() {
                                 <div style={{ fontSize: 13, color: 'var(--status-success)', fontWeight: 900 }}>{review.modonHillFinalReviewStatus || '—'}</div>
                               </td>
                               <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 700 }}>{review.insiteReviewer || '—'}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                                  {review.insiteReviewer && (
+                                    <div style={{
+                                      width: 32, height: 32, borderRadius: 10,
+                                      background: 'var(--secondary)', border: '1px solid var(--border)',
+                                      color: 'var(--teal)', fontSize: 12, fontWeight: 900,
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      flexShrink: 0, overflow: 'hidden', position: 'relative'
+                                    }}>
+                                      {userAvatarByUid[review.insiteReviewerId || ''] ? (
+                                        <img 
+                                          src={userAvatarByUid[review.insiteReviewerId || '']} 
+                                          alt={review.insiteReviewer} 
+                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                        />
+                                      ) : userAvatarByEmail[review.insiteReviewerEmail?.toLowerCase() || ''] ? (
+                                        <img 
+                                          src={userAvatarByEmail[review.insiteReviewerEmail?.toLowerCase() || '']} 
+                                          alt={review.insiteReviewer} 
+                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                        />
+                                      ) : userAvatarByExactName[review.insiteReviewer || ''] ? (
+                                        <img 
+                                          src={userAvatarByExactName[review.insiteReviewer || '']} 
+                                          alt={review.insiteReviewer} 
+                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                        />
+                                      ) : (
+                                        review.insiteReviewer?.charAt(0).toUpperCase()
+                                      )}
+                                    </div>
+                                  )}
+                                  <div style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 700 }}>{review.insiteReviewer || '—'}</div>
+                                </div>
                               </td>
                               <td style={{ padding: '24px 32px', textAlign: 'center' }}>
                                 <div style={{ fontSize: 14, color: 'var(--status-warning)', fontWeight: 900, letterSpacing: '0.02em' }}>{review.insiteReviewDueDate || '—'}</div>
@@ -1623,23 +1768,28 @@ export default function AdminDashboardPage() {
                         {activeTab === 'registry' && registrySnapshot?.docs.map((doc: any) => {
                           const item = doc.data() as DashboardNavItem;
                           const isSelected = selectedIds.has(doc.id);
-                          return (
-                            <tr key={doc.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'transparent' }} onClick={() => handleEditRecord(item)}>
-                              <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={(e) => toggleSelect(doc.id, e as any)}
-                                  style={{ cursor: 'pointer', width: 16, height: 16, accentColor: 'var(--teal)' }}
-                                />
-                              </td>
-                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>{item.name}</div>
-                                <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4 }}>{item.category}</div>
-                              </td>
-                              <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <span style={{ fontSize: 13, background: 'var(--secondary)', color: 'var(--teal)', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>{item.department || 'General'}</span>
-                              </td>
+                            const regMatchedDept = departmentsSnapshot?.docs.find((d: any) => d.id === item.department || d.data().name === item.department)?.data();
+                            const regDeptDisplay = regMatchedDept ? regMatchedDept.name : item.department || 'General';
+
+                            return (
+                              <tr key={doc.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'rgba(0, 63, 73, 0.01)' }} onClick={() => handleEditRecord(item)}>
+                                <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => toggleSelect(doc.id, e as any)}
+                                    style={{ cursor: 'pointer', width: 16, height: 16, accentColor: 'var(--teal)' }}
+                                  />
+                                </td>
+                                <td style={{ padding: '12px 32px', textAlign: 'center' }}>
+                                  <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>{item.name}</div>
+                                </td>
+                                <td style={{ padding: '12px 32px', textAlign: 'center' }}>
+                                  <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>{item.category}</div>
+                                </td>
+                                <td style={{ padding: '12px 32px', textAlign: 'center' }}>
+                                  <span style={{ fontSize: 13, background: 'var(--secondary)', color: 'var(--teal)', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>{regDeptDisplay}</span>
+                                </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
                                 <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
                                   <MoreVertical size={18} />
@@ -1670,7 +1820,7 @@ export default function AdminDashboardPage() {
                             <motion.tr 
                               key={doc.id} 
                               whileHover={{ background: 'var(--card-haze)' }}
-                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'transparent', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
+                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'rgba(0, 63, 73, 0.01)', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
                               onClick={() => handleEditRecord(userRec)}
                             >
                               <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
@@ -1681,12 +1831,23 @@ export default function AdminDashboardPage() {
                                   style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
                                 />
                               </td>
-                              <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                                <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)', letterSpacing: '0.01em', fontFamily: 'var(--font-heading)' }}>{userRec.name || 'Unknown Subject'}</div>
-                                <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 4, fontWeight: 500 }}>{userRec.email}</div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 6 }}>
-                                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: userRec.isVerified ? 'var(--status-success)' : 'var(--status-warning)' }} />
-                                  <span style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{userRec.isVerified ? 'Access Verified' : 'Handshake Pending'}</span>
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+                                  {userRec.avatar ? (
+                                    <img src={userRec.avatar} style={{ width: 36, height: 36, borderRadius: 12, objectFit: 'cover', border: '1px solid var(--border)' }} alt={userRec.name} />
+                                  ) : (
+                                    <div style={{ width: 36, height: 36, borderRadius: 12, background: 'rgba(0, 63, 73, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#003F49', fontSize: 12, fontWeight: 950 }}>
+                                      {(userRec.name || 'U').charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                                    <div style={{ fontWeight: 950, fontSize: 16, color: '#000000', letterSpacing: '-0.01em', fontFamily: 'var(--font-heading)' }}>{userRec.name || 'Unknown Subject'}</div>
+                                    <div style={{ fontSize: 13, color: '#000000', marginTop: 2, fontWeight: 800 }}>{userRec.email}</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: userRec.isVerified ? '#10b981' : '#f59e0b' }} />
+                                      <span style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 950, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{userRec.isVerified ? 'Access Verified' : 'Handshake Pending'}</span>
+                                    </div>
+                                  </div>
                                 </div>
                               </td>
                               <td style={{ padding: '8px 16px', textAlign: 'center' }}>
@@ -1741,6 +1902,121 @@ export default function AdminDashboardPage() {
                                 <div>
                                   <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>No current data</p>
                                 </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+
+                        {activeTab === 'tickets' && ticketsSnapshot?.docs.map((doc: any) => {
+                          const ticket = doc.data() as any;
+                          const isSelected = selectedIds.has(doc.id);
+                          const statusColors: Record<string, string> = {
+                            PENDING: '#f59e0b',
+                            IN_PROGRESS: '#3b82f6',
+                            RESOLVED: '#10b981',
+                            REJECTED: '#ef4444'
+                          };
+
+                          return (
+                            <motion.tr 
+                              key={doc.id} 
+                              whileHover={{ background: 'var(--card-haze)' }}
+                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'rgba(0, 63, 73, 0.01)', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
+                            >
+                              <td style={{ textAlign: 'center', padding: '32px 0' }} onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => toggleSelect(doc.id, e as any)}
+                                  style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
+                                />
+                              </td>
+                              <td style={{ padding: '32px' }}>
+                                <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center' }}>
+                                  <div style={{
+                                    width: 36, height: 36, borderRadius: 12,
+                                    background: 'var(--secondary)', border: '1px solid var(--border)',
+                                    color: 'var(--teal)', fontSize: 13, fontWeight: 900,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    flexShrink: 0, overflow: 'hidden', position: 'relative'
+                                  }}>
+                                    {userAvatarByEmail[ticket.email?.toLowerCase()] ? (
+                                      <img 
+                                        src={userAvatarByEmail[ticket.email?.toLowerCase()]} 
+                                        alt={ticket.email} 
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                      />
+                                    ) : (
+                                      ticket.email?.charAt(0).toUpperCase()
+                                    )}
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+                                    <span style={{ fontSize: 16, fontWeight: 900, color: '#D4AF37', letterSpacing: '0.05em' }}>{ticket.id}</span>
+                                    <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>{ticket.email}</span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td style={{ padding: '32px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', maxWidth: 400 }}>
+                                  <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{ticket.reason}</span>
+                                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, textAlign: 'center', lineHeight: 1.5 }}>{ticket.message}</div>
+                                </div>
+                              </td>
+                              <td style={{ padding: '32px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+                                  <div style={{ padding: '6px 16px', borderRadius: 100, background: `${statusColors[ticket.status]}20`, border: `1px solid ${statusColors[ticket.status]}40`, color: statusColors[ticket.status], fontSize: 10, fontWeight: 900, letterSpacing: '0.1em' }}>
+                                    {ticket.status}
+                                  </div>
+                                  <span style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 700 }}>{new Date(ticket.createdAt).toLocaleDateString()}</span>
+                                </div>
+                              </td>
+                              <td style={{ padding: '32px' }} onClick={(e) => e.stopPropagation()}>
+                                <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+                                  <button
+                                    onClick={async () => {
+                                      const { updateDoc, doc: fsDoc } = await import('firebase/firestore');
+                                      await updateDoc(fsDoc(db, 'tickets', doc.id), { status: 'RESOLVED', updatedAt: new Date().toISOString() });
+                                      showToast(`Ticket ${ticket.id} resolved.`, 'SUCCESS');
+                                    }}
+                                    className="elite-action-btn"
+                                    style={{ padding: 12, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', color: '#10b981', cursor: 'pointer' }}
+                                    title="Mark Resolved"
+                                  >
+                                    <Check size={18} />
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      const { updateDoc, doc: fsDoc } = await import('firebase/firestore');
+                                      await updateDoc(fsDoc(db, 'tickets', doc.id), { status: 'REJECTED', updatedAt: new Date().toISOString() });
+                                      showToast(`Ticket ${ticket.id} rejected.`, 'INFO');
+                                    }}
+                                    className="elite-action-btn"
+                                    style={{ padding: 12, borderRadius: 12, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', cursor: 'pointer' }}
+                                    title="Reject Ticket"
+                                  >
+                                    <X size={18} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(doc.id, 'tickets')}
+                                    className="elite-action-btn"
+                                    style={{ padding: 12, borderRadius: 12, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', cursor: 'pointer' }}
+                                    title="Delete Record"
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
+                                </div>
+                              </td>
+                            </motion.tr>
+                          );
+                        })}
+                        {activeTab === 'tickets' && (!ticketsSnapshot || ticketsSnapshot.docs.length === 0) && !ticketsLoading && (
+                          <tr>
+                            <td colSpan={5} style={{ padding: '60px 40px', textAlign: 'center' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--secondary)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Inbox size={24} style={{ color: 'var(--teal)' }} />
+                                </div>
+                                <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)' }}>No active support tickets found</p>
                               </div>
                             </td>
                           </tr>

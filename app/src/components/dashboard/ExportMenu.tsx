@@ -4,9 +4,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Download, FileText, Table, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Task, ProjectMetadata, BIMReview } from '@/lib/types';
-import { exportToExcel, exportToPDF, exportBimToExcel, exportBimToPDF } from '@/lib/exportUtils';
+import { exportToExcel, exportToPDF, exportBimToExcel, exportBimToPDF, captureChartImages, CapturedChart } from '@/lib/exportUtils';
 import { useToast } from '@/components/shared/EliteToast';
-import ExportConfirmationModal from './ExportConfirmationModal';
+import UnifiedExportModal from './UnifiedExportModal';
 
 interface ExportMenuProps {
   tasks: Task[];
@@ -42,6 +42,8 @@ interface ExportMenuProps {
   // BIM synchronization
   bimReviews?: BIMReview[];
   activeReport?: 'DELIVERABLES' | 'BIM_REVIEWS';
+  departments?: any[];
+  members?: any[];
 }
 
 export default function ExportMenu({ 
@@ -52,10 +54,10 @@ export default function ExportMenu({
   filterPrecinct, setFilterPrecinct, availablePrecincts,
   selectedYear, setSelectedYear, yearOptions,
   selectedMonth, setSelectedMonth, monthOptions,
-  startDate, setStartDate, endDate, setEndDate
+  startDate, setStartDate, endDate, setEndDate,
+  departments = [], members = []
 }: ExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [pendingFormat, setPendingFormat] = useState<'pdf' | 'excel'>('excel');
   
@@ -83,31 +85,32 @@ export default function ExportMenu({
     type: 'pdf' | 'excel', 
     perspective: 'table' | 'dashboard' | 'both', 
     onProgress: (p: number) => void,
-    filters?: { types: string[], cdes: string[] }
+    filters?: { types: string[], cdes: string[], precincts?: string[] },
+    selectedColumns?: string[]
   ) => {
     onProgress(10);
     await new Promise(r => setTimeout(r, 400));
     onProgress(25);
 
     try {
+      // Capture chart images for dashboard perspectives
+      let chartImages: CapturedChart[] = [];
+      if (perspective === 'dashboard' || perspective === 'both') {
+        onProgress(30);
+        chartImages = await captureChartImages('#analytics-chart-grid');
+        onProgress(45);
+      }
+
       let result;
       if (type === 'excel') {
         await new Promise(r => setTimeout(r, 600));
         onProgress(60);
-        if (activeReport === 'BIM_REVIEWS') {
-          result = await exportBimToExcel(bimReviews, projectMetadata, dateRangeText, perspective);
-        } else {
-          result = await exportToExcel(tasks, projectMetadata, dateRangeText, perspective, filters);
-        }
+        result = await exportToExcel(tasks, projectMetadata, dateRangeText, perspective, filters, chartImages);
         onProgress(90);
       } else {
         await new Promise(r => setTimeout(r, 800));
         onProgress(55);
-        if (activeReport === 'BIM_REVIEWS') {
-          result = await exportBimToPDF(bimReviews, projectMetadata, dateRangeText, perspective);
-        } else {
-          result = await exportToPDF(tasks, projectMetadata, dateRangeText, perspective, filters);
-        }
+        result = await exportToPDF(tasks, projectMetadata, dateRangeText, perspective, filters, chartImages);
         onProgress(85);
       }
       
@@ -127,7 +130,6 @@ export default function ExportMenu({
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setIsOpen(!isOpen)}
-        disabled={isExporting}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -139,7 +141,7 @@ export default function ExportMenu({
           color: 'var(--aqua)',
           fontSize: 12,
           fontWeight: 800,
-          cursor: isExporting ? 'not-allowed' : 'pointer',
+          cursor: 'pointer',
           transition: 'all 200ms',
           boxShadow: '0 4px 15px rgba(0, 63, 73, 0.15)',
           outline: 'none',
@@ -226,16 +228,27 @@ export default function ExportMenu({
         )}
       </AnimatePresence>
 
-      <ExportConfirmationModal 
+      <UnifiedExportModal 
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleConfirmGeneration}
         format={pendingFormat}
+        reportType="DELIVERABLES"
         tasks={tasks}
         projectMetadata={projectMetadata}
         dateRangeText={dateRangeText}
         filterMode={filterMode}
         setFilterMode={setFilterMode}
+        selectedYear={selectedYear}
+        setSelectedYear={setSelectedYear}
+        yearOptions={yearOptions}
+        selectedMonth={selectedMonth}
+        setSelectedMonth={setSelectedMonth}
+        monthOptions={monthOptions}
+        startDate={startDate}
+        setStartDate={setStartDate}
+        endDate={endDate}
+        setEndDate={setEndDate}
         filterDept={filterDept}
         setFilterDept={setFilterDept}
         availableDepts={availableDepts}
@@ -248,16 +261,8 @@ export default function ExportMenu({
         filterPrecinct={filterPrecinct}
         setFilterPrecinct={setFilterPrecinct}
         availablePrecincts={availablePrecincts}
-        selectedYear={selectedYear}
-        setSelectedYear={setSelectedYear}
-        yearOptions={yearOptions}
-        selectedMonth={selectedMonth}
-        setSelectedMonth={setSelectedMonth}
-        monthOptions={monthOptions}
-        startDate={startDate}
-        setStartDate={setStartDate}
-        endDate={endDate}
-        setEndDate={setEndDate}
+        departments={departments}
+        members={members}
       />
     </div>
   );

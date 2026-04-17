@@ -25,7 +25,7 @@ export default function CompletedTasks({ onTaskClick, tasks: externalTasks }: { 
   const remainingRows = completedTasks.slice(PREVIEW_ROWS);
 
   const thStyle: React.CSSProperties = {
-    padding: '10px 14px', textAlign: 'center', fontSize: 12, fontWeight: 600,
+    padding: '10px 14px', textAlign: 'center', fontSize: 14.5, fontWeight: 950,
     color: '#c9a227', textTransform: 'uppercase', letterSpacing: '0.06em',
   };
 

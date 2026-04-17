@@ -67,7 +67,7 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
             setTimeout(() => setIsReceiving(false), 2000);
             
             if (docs[0].type === 'NOTIF') {
-              showToast(`DECRYPTED PACKET: ${docs[0].title}`, docs[0].severity === 'CRITICAL' ? 'ERROR' : 'INFO');
+              showToast(`Notification: ${docs[0].title}`, docs[0].severity === 'CRITICAL' ? 'ERROR' : 'INFO');
             }
           }
         }
@@ -457,18 +457,18 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
                       exit={{ opacity: 0, y: 8, scale: 0.98 }}
                       style={{
                         position: 'absolute', top: '140%', right: 0, width: 220,
-                        background: '#c6e0e0', backdropFilter: 'blur(32px)',
-                        border: '1px solid rgba(0, 63, 73, 0.2)', borderRadius: 18,
-                        boxShadow: '0 25px 80px rgba(0,0,0,0.15), 0 0 50px rgba(0, 63, 73, 0.05)',
+                        background: '#0c0c14', backdropFilter: 'blur(32px)',
+                        border: '1px solid rgba(255,255,255,0.08)', borderRadius: 18,
+                        boxShadow: '0 25px 80px rgba(0,0,0,0.5), 0 0 50px rgba(212, 175, 55, 0.05)',
                         overflow: 'hidden', zIndex: 6000
                       }}
                     >
-                      <div style={{ padding: '16px', background: 'rgba(0, 63, 73, 0.08)', borderBottom: '1px solid rgba(0, 63, 73, 0.15)' }}>
-                        <p style={{ fontSize: 10, fontWeight: 900, color: '#002a30', textTransform: 'uppercase', letterSpacing: '0.2em', margin: '0 0 4px' }}>Session Active</p>
-                        <p style={{ fontSize: 13, color: '#003f49', fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{userProfile.email}</p>
+                      <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <p style={{ fontSize: 9, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.2em', margin: '0 0 4px' }}>Session Active</p>
+                        <p style={{ fontSize: 13, color: 'white', fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{userProfile.email}</p>
                       </div>
 
-                      <div style={{ padding: 8 }}>
+                      <div style={{ padding: 6 }}>
                         {[
                           { icon: <Info size={16} />, label: 'Profile Info', onClick: () => setIsProfileModalOpen(true) },
                         ].map((item, i) => (
@@ -476,14 +476,14 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
                             key={i}
                             onClick={() => { item.onClick(); setShowUserMenu(false); }}
                             style={{
-                              width: '100%', padding: '12px 14px', borderRadius: 12,
+                              width: '100%', padding: '10px 14px', borderRadius: 12,
                               border: 'none', background: 'transparent',
-                              color: '#002a30', fontSize: 14, fontWeight: 700,
+                              color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 700,
                               display: 'flex', alignItems: 'center', gap: 12,
                               cursor: 'pointer', transition: 'all 200ms ease'
                             }}
-                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0, 63, 73, 0.1)'; e.currentTarget.style.color = '#000'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#002a30'; }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'white'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
                           >
                             <span style={{ color: 'var(--accent)' }}>{item.icon}</span>
                             {item.label}
@@ -491,18 +491,19 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
                         ))}
                       </div>
 
-                      <div style={{ padding: 8, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ padding: 6, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
                         <button
                           onClick={() => { setIsLogoutModalOpen(true); setShowUserMenu(false); }}
                           style={{
-                            width: '100%', padding: '12px 14px', borderRadius: 12,
-                            border: 'none', background: 'rgba(239, 68, 68, 0.05)',
-                            color: '#ef4444', fontSize: 13, fontWeight: 700,
+                            width: '100%', padding: '10px 14px', borderRadius: 12,
+                            border: 'none', background: 'rgba(239, 68, 68, 0.1)',
+                            color: '#f87171', fontSize: 13, fontWeight: 800,
                             display: 'flex', alignItems: 'center', gap: 12,
-                            cursor: 'pointer', transition: 'all 200ms ease'
+                            cursor: 'pointer', transition: 'all 200ms ease',
+                            letterSpacing: '0.01em'
                           }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
                         >
                           <LogOut size={16} />
                           Sign Out System

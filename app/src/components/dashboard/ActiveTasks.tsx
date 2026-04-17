@@ -12,6 +12,7 @@ import { useTimeZone } from '@/context/TimeZoneContext';
 import EliteDropdown from '@/components/dashboard/EliteDropdown';
 import { useTableColumns, ColumnDef } from '@/hooks/useTableColumns';
 import ColumnSettingsDropdown from '@/components/dashboard/ColumnSettingsDropdown';
+import type { TeamMember } from '@/lib/types';
 
 type SortField = 'title' | 'status' | 'completion' | 'submittingDate' | 'id' | 'department' | 'submitterName' | 'deliverableType' | 'cde' | 'precinct';
 type SortDir = 'asc' | 'desc';
@@ -95,14 +96,22 @@ const PREVIEW_ROWS = 5;
 
 function TaskRow({ 
   task, index, onClick, visibleColumns, isCustomized, 
-  filterType = [], filterCDE = [] 
+  filterType = [], filterCDE = [], members = [], departments = []
 }: { 
   task: Task; index: number; onClick?: (task: Task) => void, visibleColumns: ColumnDef<SortField>[], isCustomized: boolean,
-  filterType?: string[], filterCDE?: string[]
+  filterType?: string[], filterCDE?: string[], members?: TeamMember[], departments?: Department[]
 }) {
   const { formatDate } = useTimeZone();
 
   const isVisible = (id: string) => visibleColumns.some(c => c.id === id);
+
+  // Resolve submitter avatar
+  const submitterProfile = (members || []).find((m: TeamMember) => 
+    (task.submitterId && m.id === task.submitterId) || 
+    (task.submitterEmail && m.email.toLowerCase() === task.submitterEmail.toLowerCase()) ||
+    (task.submitterName && m.name.toLowerCase() === task.submitterName.toLowerCase())
+  );
+  const avatarUrl = submitterProfile?.avatar;
 
   return (
     <motion.tr
@@ -139,9 +148,14 @@ function TaskRow({
             padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle',
             whiteSpace: isCustomized ? 'normal' : 'nowrap',
           }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: getDepartmentColor(task.department) }}>
-              {task.department}
-            </span>
+            {(() => {
+              const d = (departments || []).find((dept: Department) => dept.id === task.department || dept.name === task.department);
+              return (
+                <span style={{ fontSize: 13, fontWeight: 600, color: getDepartmentColor(d?.name || task.department) }}>
+                  {d ? d.name : task.department || 'General'}
+                </span>
+              );
+            })()}
           </td>
         );
         
@@ -158,19 +172,32 @@ function TaskRow({
 
         if (col.id === 'submitterName') return (
           <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              {task.submitterName && (
-                <div style={{ width: 24, height: 24, borderRadius: '6px', background: 'var(--accent)', border: '1px solid var(--accent)', color: 'var(--teal)', fontSize: 10, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 0 10px rgba(197, 160, 89, 0.3)' }}>
-                  {task.submitterName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+              {(submitterProfile?.name || task.submitterName) && (
+                <div style={{ 
+                  width: 26, height: 26, borderRadius: '8px', 
+                  background: avatarUrl ? 'transparent' : 'var(--accent)', 
+                  border: '1px solid var(--accent)', 
+                  color: 'var(--teal)', fontSize: 10, fontWeight: 900, 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  flexShrink: 0, boxShadow: '0 0 10px rgba(197, 160, 89, 0.3)',
+                  overflow: 'hidden'
+                }}>
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt={submitterProfile?.name || task.submitterName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    (submitterProfile?.name || task.submitterName || '??').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                  )}
                 </div>
               )}
-              <span style={{ 
-                fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)',
-                whiteSpace: isCustomized ? 'normal' : 'nowrap',
-                wordBreak: isCustomized ? 'break-word' : 'normal'
-              }}>
-                {task.submitterName || '—'}
-              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                <span style={{ 
+                  fontSize: 13, fontWeight: 700, color: 'var(--text-primary)',
+                  whiteSpace: isCustomized ? 'normal' : 'nowrap',
+                }}>
+                  {submitterProfile?.name || task.submitterName || '—'}
+                </span>
+              </div>
             </div>
           </td>
         );
@@ -352,7 +379,9 @@ export default function ActiveTasks({
   availableCDEs = [],
   filterPrecinct = [],
   setFilterPrecinct,
-  availablePrecincts = []
+  availablePrecincts = [],
+  members = [],
+  departments = []
 }: {
   tasks?: Task[];
   onTaskClick?: (task: Task) => void;
@@ -370,6 +399,8 @@ export default function ActiveTasks({
   filterPrecinct?: string[];
   setFilterPrecinct?: (v: string[]) => void;
   availablePrecincts?: string[];
+  members?: TeamMember[];
+  departments?: Department[];
 }) {
   const activeTasksInitial = useMemo(() => {
     // Note: dataToFilter passed from parent is already filtered by Date, Dept, Status, and Search.
@@ -491,9 +522,11 @@ export default function ActiveTasks({
               settings={settings}
               onToggle={toggleColumnVisibility}
               onReset={resetSettings}
+              hasChanges={isCustomized}
             />
 
             {(search || 
+              (filterDept.length > 0 && !filterDept.includes('All Categories')) ||
               (filterType.length > 0 && !filterType.includes('All Types')) || 
               (filterCDE.length > 0 && !filterCDE.includes('All Environments')) ||
               (filterPrecinct.length > 0 && !filterPrecinct.includes('All Precincts'))
@@ -606,15 +639,13 @@ export default function ActiveTasks({
                     onDrop={(e) => {
                       e.preventDefault();
                       e.currentTarget.style.background = 'transparent';
-                      const sourceId = e.dataTransfer.setData('text/plain', ''); // Clean up
-                      // ... rest of logic
                     }}
                     style={{ ...thStyle, color: '#000000', textAlign: 'center', position: 'sticky', top: 0, zIndex: 50, background: 'var(--accent)', borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }}
                   >
                     <div onClick={() => toggleSort(col.field)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' }}>
-                      <span style={{ whiteSpace: 'nowrap', color: '#000000' }}>{col.label}</span>
+                      <span style={{ fontSize: 14.5, fontWeight: 950, color: '#000000', whiteSpace: 'nowrap' }}>{col.label}</span>
                       <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginLeft: 8 }}>
-                        <ArrowUpDown size={12} style={{ color: sortField === col.field ? '#000000' : 'rgba(0, 0, 0, 0.4)' }} />
+                        <ArrowUpDown size={14} style={{ color: sortField === col.field ? '#000000' : 'rgba(0, 0, 0, 0.4)' }} />
                       </span>
                     </div>
                     <ResizeHandle columnWidth={col.width || 120} onWidthChange={(w) => updateColumnWidth(col.id, w)} />
@@ -633,6 +664,8 @@ export default function ActiveTasks({
                   isCustomized={isCustomized}
                   filterType={filterType}
                   filterCDE={filterCDE}
+                  members={members}
+                  departments={departments}
                 />
               ))}
               <AnimatePresence initial={false}>
@@ -646,6 +679,8 @@ export default function ActiveTasks({
                     isCustomized={isCustomized}
                     filterType={filterType}
                     filterCDE={filterCDE}
+                    members={members}
+                    departments={departments}
                   />
                 ))}
               </AnimatePresence>

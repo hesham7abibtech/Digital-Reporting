@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
+import SecurityAccessDenied from '@/components/shared/SecurityAccessDenied';
 
 
 export default function AdminLayout({
@@ -18,15 +19,11 @@ export default function AdminLayout({
   const isAdmin = userProfile?.isAdmin === true;
 
   useEffect(() => {
-    if (!loading && !isLoginPage) {
-      if (!user) {
-        router.push('/admin/login');
-      } else if (userProfile && !isAdmin) {
-        // Force them to the login form even if globally authenticated as non-admin
-        router.push('/admin/login');
-      }
+    // SECURITY HANDSHAKE: Ensure authentication is active for all admin routes except login
+    if (!loading && !isLoginPage && !user) {
+      router.push('/admin/login');
     }
-  }, [user, userProfile, loading, isAdmin, isLoginPage, router]);
+  }, [user, loading, isLoginPage, router]);
 
   // Always show children on login page
   if (isLoginPage) return <>{children}</>;
@@ -39,15 +36,21 @@ export default function AdminLayout({
     );
   }
 
+  // Identity Hydration Check
   if (user && !userProfile) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0f' }}>
         <div style={{ textAlign: 'center' }}>
           <Loader2 className="animate-spin" size={32} color="#D4AF37" style={{ margin: '0 auto 16px' }} />
-          <p style={{ color: 'var(--text-dim)', fontSize: 14 }}>Verifying credentials...</p>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: 700, letterSpacing: '0.05em' }}>VERIFYING SECURITY CLEARANCE...</p>
         </div>
       </div>
     );
+  }
+
+  // Access Denied Intercept
+  if (user && !isAdmin) {
+    return <SecurityAccessDenied />;
   }
 
   if (!user || !isAdmin) {

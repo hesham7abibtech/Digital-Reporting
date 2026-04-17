@@ -53,6 +53,7 @@ export const collections = {
   broadcasts: collection(db, 'broadcasts'),
   bimReviews: collection(db, 'bimReviews'),
   diagnostics: collection(db, 'diagnostics'),
+  tickets: collection(db, 'tickets'),
 };
 
 
@@ -116,6 +117,20 @@ export async function upsertTask(task: Task) {
 
 export async function deleteTask(id: string) {
   await deleteDoc(doc(db, 'tasks', id));
+}
+
+export async function atomicRenumberTask(oldId: string, newTask: Task) {
+  const batch = writeBatch(db);
+  const oldRef = doc(collections.tasks, oldId);
+  const newRef = doc(collections.tasks, newTask.id);
+  
+  batch.delete(oldRef);
+  batch.set(newRef, sanitizeData({
+    ...newTask,
+    updatedAt: new Date().toISOString()
+  }));
+  
+  await batch.commit();
 }
 
 export async function upsertMember(member: TeamMember) {
@@ -349,17 +364,27 @@ export async function updateProjectMetadata(data: any) {
 
 export async function updateMetadataSuggestions(types: string[], cdes: string[]) {
   const metaDoc = doc(db, 'settings', 'taskMetadata');
-  const snapshot = await getDoc(metaDoc);
-  const currentData = snapshot.exists() ? snapshot.data() : { deliverableTypes: [], cdeEnvironments: [] };
-  
-  const updatedTypes = Array.from(new Set([...(currentData.deliverableTypes || []), ...types]));
-  const updatedCdes = Array.from(new Set([...(currentData.cdeEnvironments || []), ...cdes]));
-  
-  await setDoc(metaDoc, {
-    deliverableTypes: updatedTypes,
-    cdeEnvironments: updatedCdes,
-    updatedAt: new Date().toISOString()
-  }, { merge: true });
+  try {
+    const snapshot = await getDoc(metaDoc);
+    const currentData = snapshot.exists() ? snapshot.data() : { deliverableTypes: [], cdeEnvironments: [] };
+    
+    const currentTypes = (currentData.deliverableTypes || []) as string[];
+    const currentCdes = (currentData.cdeEnvironments || []) as string[];
+    
+    // Check if new entries actually need to be added
+    const newTypes = types.filter(t => t && !currentTypes.includes(t));
+    const newCdes = cdes.filter(c => c && !currentCdes.includes(c));
+    
+    if (newTypes.length === 0 && newCdes.length === 0) return; // Skip redundant write
+    
+    await setDoc(metaDoc, {
+      deliverableTypes: Array.from(new Set([...currentTypes, ...newTypes])),
+      cdeEnvironments: Array.from(new Set([...currentCdes, ...newCdes])),
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+  } catch (err) {
+    console.error('Metadata update failure (non-critical):', err);
+  }
 }
 
 // ─── Home Page CMS Helpers ─────────────────────────────────────────

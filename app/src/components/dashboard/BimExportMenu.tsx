@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Download, FileText, Table, ChevronDown, Loader2 } from 'lucide-react';
+import { Download, FileText, Table, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BIMReview, ProjectMetadata } from '@/lib/types';
-import { exportBimToExcel, exportBimToPDF } from '@/lib/exportUtils';
+import { exportBimToExcel, exportBimToPDF, captureChartImages, CapturedChart } from '@/lib/exportUtils';
 import { useToast } from '@/components/shared/EliteToast';
-import BimExportConfirmationModal from './BimExportConfirmationModal';
+import UnifiedExportModal from './UnifiedExportModal';
 
 interface BimExportMenuProps {
   bimReviews: BIMReview[];
@@ -32,8 +32,18 @@ interface BimExportMenuProps {
 
   // Global mode and dates
   filterMode: 'monthly' | 'custom' | 'all';
+  setFilterMode?: (mode: 'monthly' | 'custom' | 'all') => void;
   selectedYear: number;
+  setSelectedYear?: (y: number) => void;
+  yearOptions?: { label: string, value: number }[];
   selectedMonth: number;
+  setSelectedMonth?: (m: number) => void;
+  monthOptions?: { label: string, value: number }[];
+  startDate?: string;
+  setStartDate?: (s: string) => void;
+  endDate?: string;
+  setEndDate?: (s: string) => void;
+  members?: any[];
 }
 
 export default function BimExportMenu({ 
@@ -42,10 +52,12 @@ export default function BimExportMenu({
   filterStatus, setFilterStatus, availableStatuses,
   filterStakeholder, setFilterStakeholder, availableStakeholders,
   filterReviewer, setFilterReviewer, availableReviewers,
-  filterMode, selectedYear, selectedMonth
+  filterMode, setFilterMode, selectedYear, setSelectedYear, yearOptions,
+  selectedMonth, setSelectedMonth, monthOptions,
+  startDate, setStartDate, endDate, setEndDate,
+  members = []
 }: BimExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [pendingFormat, setPendingFormat] = useState<'pdf' | 'excel'>('excel');
   
@@ -68,19 +80,33 @@ export default function BimExportMenu({
     setIsOpen(false);
   };
 
-  const handleConfirmGeneration = async (type: 'pdf' | 'excel', perspective: 'table' | 'dashboard' | 'both', selectedColumns: string[], onProgress: (p: number) => void) => {
+  const handleConfirmGeneration = async (
+    type: 'pdf' | 'excel', 
+    perspective: 'table' | 'dashboard' | 'both', 
+    onProgress: (p: number) => void,
+    filters?: { types: string[], cdes: string[] },
+    selectedColumns?: string[]
+  ) => {
     onProgress(10);
     try {
+      // Capture chart images for dashboard perspectives
+      let chartImages: CapturedChart[] = [];
+      if (perspective === 'dashboard' || perspective === 'both') {
+        onProgress(20);
+        chartImages = await captureChartImages('#bim-analytics-charts');
+        onProgress(35);
+      }
+
       let result;
       if (type === 'excel') {
         await new Promise(r => setTimeout(r, 600));
         onProgress(40);
-        result = await exportBimToExcel(bimReviews, projectMetadata, dateRangeText, perspective, selectedColumns);
+        result = await exportBimToExcel(bimReviews, projectMetadata, dateRangeText, perspective, selectedColumns, chartImages);
         onProgress(90);
       } else {
         await new Promise(r => setTimeout(r, 800));
         onProgress(40);
-        result = await exportBimToPDF(bimReviews, projectMetadata, dateRangeText, perspective, selectedColumns);
+        result = await exportBimToPDF(bimReviews, projectMetadata, dateRangeText, perspective, selectedColumns, chartImages);
         onProgress(90);
       }
       return result;
@@ -96,7 +122,6 @@ export default function BimExportMenu({
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setIsOpen(!isOpen)}
-        disabled={isExporting}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -108,7 +133,7 @@ export default function BimExportMenu({
           color: '#FFFFFF',
           fontSize: 12,
           fontWeight: 950,
-          cursor: isExporting ? 'not-allowed' : 'pointer',
+          cursor: 'pointer',
           transition: 'all 200ms',
           boxShadow: '0 8px 30px rgba(0, 63, 73, 0.2)',
           outline: 'none',
@@ -172,29 +197,40 @@ export default function BimExportMenu({
         )}
       </AnimatePresence>
 
-      <BimExportConfirmationModal 
+      <UnifiedExportModal 
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleConfirmGeneration}
         format={pendingFormat}
+        reportType="BIM_REVIEWS"
         bimReviews={bimReviews}
         projectMetadata={projectMetadata}
         dateRangeText={dateRangeText}
+        filterMode={filterMode}
+        setFilterMode={setFilterMode || (() => {})}
+        selectedYear={selectedYear}
+        setSelectedYear={setSelectedYear || (() => {})}
+        yearOptions={yearOptions || []}
+        selectedMonth={selectedMonth}
+        setSelectedMonth={setSelectedMonth || (() => {})}
+        monthOptions={monthOptions || []}
+        startDate={startDate || ''}
+        setStartDate={setStartDate || (() => {})}
+        endDate={endDate || ''}
+        setEndDate={setEndDate || (() => {})}
         filterStage={filterStage}
         setFilterStage={setFilterStage}
         availableStages={availableStages}
+        filterStatus={filterStatus}
+        setFilterStatus={setFilterStatus}
+        availableStatuses={availableStatuses}
         filterStakeholder={filterStakeholder}
         setFilterStakeholder={setFilterStakeholder}
         availableStakeholders={availableStakeholders}
         filterReviewer={filterReviewer}
         setFilterReviewer={setFilterReviewer}
         availableReviewers={availableReviewers}
-        filterStatus={filterStatus}
-        setFilterStatus={setFilterStatus}
-        availableStatuses={availableStatuses}
-        filterMode={filterMode}
-        selectedYear={selectedYear}
-        selectedMonth={selectedMonth}
+        members={members}
       />
     </div>
   );

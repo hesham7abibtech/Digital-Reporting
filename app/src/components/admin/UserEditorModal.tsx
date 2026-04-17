@@ -79,15 +79,16 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
         isApproved: formData.isApproved,
         isAdmin: formData.isAdmin,
         access: formData.access,
+        avatar: formData.avatar,
         policyId: formData.isAdmin ? formData.policyId : null,
         updatedAt: new Date().toISOString()
       });
-      showToast('Security credentials updated.', 'SUCCESS');
+      showToast('User saved successfully.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Failed to update user:', error);
       setErrorMsg(getFirebaseErrorMessage(error));
-      showToast('Access control update failure.', 'ERROR');
+      showToast('Could not save user.', 'ERROR');
     } finally {
       setIsSaving(false);
     }
@@ -97,12 +98,12 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
     if (!userRecord) return;
     try {
       await deleteUserProfile(userRecord.uid);
-      showToast('User access revoked and purged.', 'SUCCESS');
+      showToast('User deleted successfully.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Failed to delete user:', error);
       setErrorMsg(getFirebaseErrorMessage(error));
-      showToast('Access revocation failed.', 'ERROR');
+      showToast('Could not delete user.', 'ERROR');
       throw error;
     }
   };

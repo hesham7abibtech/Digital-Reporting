@@ -38,7 +38,7 @@ export default function DepartmentEditorModal({ department, isOpen, onClose, can
 
   const handleSave = async () => {
     if (!formData.name || !formData.abbreviation) {
-      showToast('Validation Error: Name and Abbreviation are mandatory.', 'ERROR');
+      showToast('Please enter a name and abbreviation.', 'ERROR');
       return;
     }
 
@@ -49,11 +49,11 @@ export default function DepartmentEditorModal({ department, isOpen, onClose, can
         name: formData.name,
         abbreviation: formData.abbreviation.toUpperCase().trim()
       });
-      showToast('Operational category synchronized.', 'SUCCESS');
+      showToast('Category saved successfully.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Failed to save category:', error);
-      showToast('Category synchronization failure.', 'ERROR');
+      showToast('Could not save category.', 'ERROR');
     } finally {
       setIsSaving(false);
     }
@@ -63,11 +63,11 @@ export default function DepartmentEditorModal({ department, isOpen, onClose, can
     if (!department) return;
     try {
       await deleteDepartment(department.id);
-      showToast('Category purged from production protocols.', 'SUCCESS');
+      showToast('Category deleted successfully.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Failed to delete category:', error);
-      showToast('Purge sequence failed.', 'ERROR');
+      showToast('Could not delete category.', 'ERROR');
     }
   };
 
@@ -78,13 +78,13 @@ export default function DepartmentEditorModal({ department, isOpen, onClose, can
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0, 63, 73, 0.3)', backdropFilter: 'blur(12px)' }} />
       <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ width: '100%', maxWidth: 450, background: 'var(--cotton)', border: '1px solid var(--border)', borderRadius: 28, position: 'relative', zIndex: 1, overflow: 'hidden' }}>
         <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontSize: 22, fontWeight: 900, color: 'var(--teal)', letterSpacing: '-0.02em', margin: 0 }}>Category Registry Entry</h2>
+          <h2 style={{ fontSize: 22, fontWeight: 900, color: 'var(--teal)', letterSpacing: '-0.02em', margin: 0 }}>Category Details</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={24} /></button>
         </div>
 
         <div style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 900, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full Category Name</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 900, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Category Name</label>
             <div style={{ position: 'relative' }}>
               <Building2 size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(212, 175, 55, 0.4)' }} />
               <input 
@@ -98,7 +98,7 @@ export default function DepartmentEditorModal({ department, isOpen, onClose, can
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 900, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Protocol Abbreviation</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 900, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Abbreviation</label>
             <div style={{ position: 'relative' }}>
               <Tag size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(212, 175, 55, 0.4)' }} />
               <input 
@@ -110,7 +110,7 @@ export default function DepartmentEditorModal({ department, isOpen, onClose, can
                 style={{ width: '100%', padding: '14px 16px 14px 42px', borderRadius: 12, background: 'var(--section-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', outline: 'none', fontSize: 14, fontWeight: 800, letterSpacing: '0.1em' }} 
               />
             </div>
-            <p style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 8 }}>Used for generating automated Task IDs (e.g., REH-BIM-123)</p>
+            <p style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 8 }}>Used for generating task IDs (e.g., REH-BIM-123)</p>
           </div>
         </div>
 
@@ -128,7 +128,7 @@ export default function DepartmentEditorModal({ department, isOpen, onClose, can
           </button>
           
           <div style={{ display: 'flex', gap: 12 }}>
-            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, background: 'var(--section-bg)', color: 'var(--teal)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Discard</button>
+            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, background: 'var(--section-bg)', color: 'var(--teal)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Cancel</button>
             <button 
               onClick={handleSave} 
               disabled={isSaving} 
@@ -140,7 +140,7 @@ export default function DepartmentEditorModal({ department, isOpen, onClose, can
               }}
             >
               {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-              SYNC CATEGORY
+              SAVE CATEGORY
             </button>
           </div>
         </div>

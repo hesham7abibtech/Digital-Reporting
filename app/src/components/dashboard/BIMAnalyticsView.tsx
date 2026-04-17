@@ -406,6 +406,30 @@ export default function BIMAnalyticsView({
             {setFilterReviewer && (
               <EliteDropdown value={filterReviewer} options={availableReviewers.map(s => ({ label: s, value: s }))} onChange={setFilterReviewer} menuLabel="Reviewer" isMulti allLabel="All Reviewers" />
             )}
+            {(search || 
+              (filterStage.length > 0 && !filterStage.includes('All Stages')) ||
+              (filterStatus.length > 0 && !filterStatus.includes('All Statuses')) ||
+              (filterStakeholder.length > 0 && !filterStakeholder.includes('All Stakeholders')) ||
+              (filterReviewer.length > 0 && !filterReviewer.includes('All Reviewers'))
+            ) && (
+              <button
+                onClick={() => {
+                  if (setSearch) setSearch('');
+                  if (setFilterStage) setFilterStage([]);
+                  if (setFilterStatus) setFilterStatus([]);
+                  if (setFilterStakeholder) setFilterStakeholder([]);
+                  if (setFilterReviewer) setFilterReviewer([]);
+                }}
+                style={{
+                  padding: '10px 16px', borderRadius: 10,
+                  background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)',
+                  fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s'
+                }}
+              >
+                <RefreshCw size={14} />
+                Reset All
+              </button>
+            )}
           </div>
         </div>
       </GlassCard>
@@ -444,6 +468,7 @@ export default function BIMAnalyticsView({
         />
       </div>
 
+      <div id="bim-analytics-charts">
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 14 }}>
         <GlassCard padding="none">
           <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(0, 63, 73, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -563,6 +588,7 @@ export default function BIMAnalyticsView({
           </div>
         </GlassCard>
       </div>
+      </div> {/* End #bim-analytics-charts */}
     </motion.div>
   );
 }

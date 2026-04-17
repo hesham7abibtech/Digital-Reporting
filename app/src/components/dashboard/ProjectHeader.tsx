@@ -180,7 +180,7 @@ export default function ProjectHeader({
                   color: activeReport === 'DELIVERABLES' ? '#000000' : '#FFFFFF', 
                   textTransform: 'uppercase', letterSpacing: '0.08em' 
                 }}>
-                  Deliverables Registry
+                  Deliverables Registry Report
                 </span>
               </button>
             )}
@@ -207,14 +207,14 @@ export default function ProjectHeader({
                   color: activeReport === 'BIM_REVIEWS' ? '#000000' : '#FFFFFF', 
                   textTransform: 'uppercase', letterSpacing: '0.08em' 
                 }}>
-                  BIM Reviews
+                  BIM Reviews Report
                 </span>
               </button>
             )}
 
             {project?.headerBadges?.filter(b => {
               if (!b.isVisible) return false;
-              if (b.isAutomated) return true; // Always show automated badges
+              if (b.isAutomated) return b.id !== 'task-count'; // Show automated badges except count
               
               const label = (b.label || '').toUpperCase();
               // Exclude manual duplicates that match our primary navigation buttons or contain common typos
@@ -232,11 +232,7 @@ export default function ProjectHeader({
               if (badge.isAutomated) {
                 if (badge.id === 'date-range') displayText = dateRangeText || 'MONTHLY PERFORMANCE';
 
-                if (badge.id === 'task-count') {
-                  const label = activeReport === 'DELIVERABLES' ? 'Deliverables' : 'BIM Reviews';
-                  const count = activeReport === 'DELIVERABLES' ? (tasks?.length || 0) : bimReviewsCount;
-                  displayText = `${label} Count: ${count}`;
-                }
+
               }
 
 
@@ -274,12 +270,7 @@ export default function ProjectHeader({
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4AF37', boxShadow: '0 0 10px #D4AF37' }} className="animate-pulse" />
                   <span style={{ fontSize: 13, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{dateRangeText || 'MONTHLY PERFORMANCE'}</span>
                 </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '6px 18px', borderRadius: 9999, background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)', marginLeft: 0, backdropFilter: 'blur(10px)' }}>
-                  <Cpu size={14} style={{ color: '#818cf8', filter: 'drop-shadow(0 0 5px rgba(99, 102, 241, 0.4))' }} />
-                  <span style={{ fontSize: 13, fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    {activeReport === 'DELIVERABLES' ? 'Deliverables' : 'BIM Reviews'} Count: <span style={{ color: '#fff', marginLeft: 4, fontSize: 15, fontWeight: 900 }}>{activeReport === 'DELIVERABLES' ? (tasks?.length || 0) : bimReviewsCount}</span>
-                  </span>
-                </span>
+
 
               </>
             )}

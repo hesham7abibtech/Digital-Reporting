@@ -22,10 +22,8 @@ import {
   Hash,
   CheckCircle2,
   AlertCircle,
-  Plus,
   Trash2,
-  Edit2,
-  Upload
+  Edit2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import GlassCard from '@/components/shared/GlassCard';
@@ -33,6 +31,7 @@ import EliteDropdown from '@/components/dashboard/EliteDropdown';
 import { BIMReview } from '@/lib/types';
 import { useTableColumns, ColumnDef } from '@/hooks/useTableColumns';
 import ColumnSettingsDropdown from '@/components/dashboard/ColumnSettingsDropdown';
+import type { TeamMember } from '@/lib/types';
 
 type SortField = keyof BIMReview;
 type SortDir = 'asc' | 'desc';
@@ -121,7 +120,8 @@ function ReviewRow({
   isCustomized,
   isAdminOrOwner,
   onEdit,
-  onDelete
+  onDelete,
+  members = []
 }: {
   item: BIMReview;
   index: number;
@@ -130,11 +130,12 @@ function ReviewRow({
   isAdminOrOwner: boolean;
   onEdit?: (r: BIMReview) => void;
   onDelete?: (r: BIMReview) => void;
+  members?: TeamMember[];
 }) {
   const formatTextWithLinks = (text: string) => {
     if (!text) return text;
     const parts = text.split(/(\(https?:\/\/[^)]+\))/g);
-    return parts.map((part, i) => {
+    return parts.map((part: string, i: number) => {
       if (part.startsWith('(http')) {
         const url = part.slice(1, -1);
         return (
@@ -174,6 +175,14 @@ function ReviewRow({
       return part;
     });
   };
+ 
+  // Resolve reviewer avatar
+  const reviewerProfile = (members || []).find((m: TeamMember) => 
+    (item.insiteReviewerId && m.id === item.insiteReviewerId) || 
+    (item.insiteReviewerEmail && m.email.toLowerCase() === item.insiteReviewerEmail.toLowerCase()) ||
+    (item.insiteReviewer && m.name.toLowerCase() === item.insiteReviewer.toLowerCase())
+  );
+  const avatarUrl = reviewerProfile?.avatar;
 
   const getStatusColor = (status: string) => {
     const s = (status || '').toUpperCase();
@@ -275,8 +284,24 @@ function ReviewRow({
         if (col.id === 'insiteReviewer') return (
           <td key={col.id} style={{ ...cellStyle }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-              <User size={12} style={{ opacity: 0.9 }} color="#003f49" />
-              <span style={{ fontSize: 11, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{item.insiteReviewer || '—'}</span>
+              <div style={{ 
+                width: 24, height: 24, borderRadius: '6px', 
+                background: avatarUrl ? 'transparent' : 'rgba(0, 63, 73, 0.05)', 
+                border: '1px solid rgba(0, 63, 73, 0.2)', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                flexShrink: 0, overflow: 'hidden'
+              }}>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={item.insiteReviewer} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <User size={12} style={{ opacity: 0.9 }} color="#003f49" />
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                <span style={{ fontSize: 11, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  {reviewerProfile?.name || item.insiteReviewer || '—'}
+                </span>
+              </div>
             </div>
           </td>
         );
@@ -446,7 +471,8 @@ export default function BIMReviewsTable({
   onEdit,
   onDelete,
   onNew,
-  onImport
+  onImport,
+  members = []
 }: {
   data: BIMReview[];
   isLoading: boolean;
@@ -468,6 +494,7 @@ export default function BIMReviewsTable({
   onDelete?: (review: BIMReview) => void;
   onNew?: () => void;
   onImport?: () => void;
+  members?: TeamMember[];
 }) {
   const { userProfile } = useAuth();
   const isAdminOrOwner = userProfile?.isAdmin || userProfile?.role === 'OWNER';
@@ -499,11 +526,11 @@ export default function BIMReviewsTable({
     else { setSortField(field); setSortDir('asc'); }
   };
 
-  const isAnyFilterActive = search ||
-    (filterStage.length > 0) ||
-    (filterStatus.length > 0) ||
-    (filterStakeholder.length > 0) ||
-    (filterReviewer.length > 0);
+  const isAnyFilterActive = !!search ||
+    (filterStage.length > 0 && !filterStage.includes('All Stages')) ||
+    (filterStatus.length > 0 && !filterStatus.includes('All Statuses')) ||
+    (filterStakeholder.length > 0 && !filterStakeholder.includes('All Stakeholders')) ||
+    (filterReviewer.length > 0 && !filterReviewer.includes('All Reviewers'));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginTop: -8 }}>
@@ -534,36 +561,6 @@ export default function BIMReviewsTable({
               style={{ ...headerInputStyle, background: 'rgba(255, 255, 255, 0.8)', color: '#003f49', borderColor: 'rgba(0, 63, 73, 0.25)', fontWeight: 600 }}
             />
           </div>
-
-          {isAdminOrOwner && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 20 }}>
-              <div style={{ width: 1, height: 24, background: 'rgba(0, 63, 73, 0.12)' }} />
-              <button
-                onClick={onImport}
-                title="Import Intelligence Matrix"
-                style={{
-                  padding: '8px 16px', borderRadius: 10, background: 'rgba(212, 175, 55, 0.1)',
-                  color: '#C5A059', border: '1.5px solid rgba(212, 175, 55, 0.2)',
-                  fontSize: 10, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-                  textTransform: 'uppercase', letterSpacing: '0.05em'
-                }}
-              >
-                <Upload size={14} /> IMPORT
-              </button>
-              <button
-                onClick={onNew}
-                title="Initiate New Matrix Record"
-                style={{
-                  padding: '8px 16px', borderRadius: 10, background: 'var(--teal)',
-                  color: 'white', border: 'none',
-                  fontSize: 10, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-                  textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 4px 12px rgba(0, 63, 73, 0.2)'
-                }}
-              >
-                <Plus size={14} /> NEW ENTRY
-              </button>
-            </div>
-          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginLeft: 'auto' }}>
 
@@ -610,6 +607,7 @@ export default function BIMReviewsTable({
               settings={settings}
               onToggle={toggleColumnVisibility}
               onReset={resetSettings}
+              hasChanges={isCustomized}
             />
 
             {isAnyFilterActive && (
@@ -638,6 +636,7 @@ export default function BIMReviewsTable({
                 }}
               >
                 <RefreshCw size={14} />
+                Reset Filters
               </button>
             )}
 
@@ -661,6 +660,7 @@ export default function BIMReviewsTable({
                 }}
               >
                 <ArrowUpDown size={14} />
+                Reset Layout
               </button>
             )}
           </div>
@@ -733,8 +733,8 @@ export default function BIMReviewsTable({
                     style={{ ...thStyle, textAlign: 'center', position: 'sticky', top: 0, zIndex: 100, background: 'var(--accent)', borderBottom: '1px solid rgba(0,0,0,0.1)', transition: 'background 0.2s', overflow: 'hidden' }}
                   >
                     <div onClick={() => toggleSort(col.field)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', overflow: 'hidden' }}>
-                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#003f49', fontWeight: 950, letterSpacing: '0.02em', textShadow: '0 1px 2px rgba(255,255,255,0.4)' }}>{col.label}</span>
-                      <ArrowUpDown size={11} style={{ color: '#003f49', opacity: sortField === col.field ? 1 : 0.6, flexShrink: 0 }} />
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#003f49', fontSize: 14.5, fontWeight: 950, letterSpacing: '0.02em', textShadow: '0 1px 2px rgba(255,255,255,0.4)' }}>{col.label}</span>
+                      <ArrowUpDown size={14} style={{ color: '#003f49', opacity: sortField === col.field ? 1 : 0.6, flexShrink: 0 }} />
                     </div>
                     <ResizeHandle columnWidth={col.width || 120} onWidthChange={(w) => updateColumnWidth(col.id, w)} />
                   </th>
@@ -752,6 +752,7 @@ export default function BIMReviewsTable({
                   isAdminOrOwner={isAdminOrOwner}
                   onEdit={onEdit}
                   onDelete={onDelete}
+                  members={members}
                 />
               ))}
             </tbody>

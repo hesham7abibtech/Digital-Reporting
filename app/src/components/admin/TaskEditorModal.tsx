@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, Trash2, Calendar, Search, ChevronDown, Check, Plus, Link, Shield, Lock, Clock, CheckCircle2, Globe, FileCode, Loader2, UserCheck, Activity, Tag, Building2 } from 'lucide-react';
 import { Task, TaskStatus, TaskLink, Department, NetworkVector } from '@/lib/types';
-import { upsertTask, deleteTask, updateMetadataSuggestions } from '@/services/FirebaseService';
+import { upsertTask, deleteTask, updateMetadataSuggestions, atomicRenumberTask } from '@/services/FirebaseService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import { useToast } from '@/components/shared/EliteToast';
@@ -26,7 +26,7 @@ const statuses: TaskStatus[] = ['NOT_STARTED', 'IN_PROGRESS', 'PENDING_REVIEW', 
 
 // Helpers for Date-only display (YYYY-MM-DD)
 const toLocalISO = (utcString: string | null | undefined, timeZone: string) => {
-  if (!utcString) return new Date().toISOString().split('T')[0];
+  if (!utcString) return '';
   try {
     const date = new Date(utcString);
     const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -58,12 +58,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
     deptsSnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as Department)) || [],
     [deptsSnapshot]);
 
-  const [usersSnapshot] = useCollection(query(collection(db, 'users'), orderBy('name', 'asc')));
-  const personnel = useMemo<string[]>(() => {
-    const names = usersSnapshot?.docs.map((d: any) => (d.data() as any).name as string) || [];
-    return Array.from(new Set(names.filter(Boolean)));
-  }, [usersSnapshot]);
-
+  const [membersSnapshot] = useCollection(query(collection(db, 'members'), orderBy('name', 'asc')));
   const [formData, setFormData] = useState<Partial<Task>>({
     title: '',
     description: '',
@@ -78,13 +73,47 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
     submittingDate: new Date().toISOString(),
     pendingReviewDate: null,
     submitterName: '',
+    submitterEmail: '',
+    submitterId: '',
     precinct: ''
   });
+
+  const personnel = useMemo<{ name: string; email: string; id: string; status?: string; department: string }[]>(() => {
+    const list = (membersSnapshot?.docs
+      .map((d: any) => {
+        const data = d.data();
+        return { 
+          name: data.name || 'Anonymous', 
+          email: data.email || '',
+          id: d.id,
+          status: data.status,
+          department: data.department || ''
+        };
+      }) || []);
+
+    // Only show ACTIVE project team members within the selected department (or legacy members without status)
+    const selectedDept = departments.find(d => d.id === formData.department || d.name === formData.department);
+    const selectedDeptId = selectedDept?.id;
+    const selectedDeptName = selectedDept?.name;
+
+    return list.filter(p => {
+      const isStatusValid = p.status === 'ACTIVE' || !p.status;
+      
+      // Real-time filtering based on category ID (Normalized) or Name (Legacy)
+      const matchesId = selectedDeptId && p.department === selectedDeptId;
+      const matchesName = selectedDeptName && p.department?.toLowerCase() === selectedDeptName.toLowerCase();
+      const respondsToDepartment = matchesId || matchesName;
+      
+      return isStatusValid && respondsToDepartment;
+    });
+  }, [membersSnapshot, formData.department, departments]);
+
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { showToast } = useToast();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [newVector, setNewVector] = useState<Partial<NetworkVector>>({ type: '', cde: '', label: '', url: '' });
+  const [showErrors, setShowErrors] = useState(false);
   const originalIdRef = useRef<string | null>(null);
 
   const [metadataSnapshot] = useDocument(doc(db, 'settings', 'taskMetadata'));
@@ -96,9 +125,10 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
     };
   }, [metadataSnapshot]);
 
-  const getAbbr = useCallback((name: string) => {
-    const d = departments.find(dept => dept.name === name);
-    return d?.abbreviation || (name ? name.slice(0, 3).toUpperCase() : '???');
+  const getAbbr = useCallback((identifier: string) => {
+    // Lookup by ID first, then by name
+    const d = departments.find(dept => dept.id === identifier || dept.name === identifier);
+    return d?.abbreviation || (identifier ? identifier.slice(0, 3).toUpperCase() : '???');
   }, [departments]);
 
   const generateNewId = useCallback((deptName: string) => {
@@ -135,6 +165,8 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         vectors: task.vectors || [],
         submittingDate: task.submittingDate || (task as any).actualEndDate || (task as any).actualStartDate || new Date().toISOString(),
         submitterName: task.submitterName || '',
+        submitterEmail: task.submitterEmail || '',
+        submitterId: task.submitterId || '',
         precinct: task.precinct || '',
       });
 
@@ -157,14 +189,13 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
       }
     } else if (isOpen) {
       originalIdRef.current = null;
-      const defaultDept = departments.length > 0 ? departments[0].name : 'BIM';
-      const newId = generateNewId(defaultDept);
+      const newId = generateNewId('BIM'); // Prefix still needs a fallback for generating the numeric part
       setFormData({
         id: newId,
         title: '',
         description: '',
-        department: defaultDept,
-        status: 'NOT_STARTED',
+        department: '',
+        status: '' as any,
         completion: 0,
         attachments: 0,
         files: [],
@@ -175,16 +206,27 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         fileShareLink: '',
         deliverableType: [],
         cde: [],
-        submittingDate: new Date().toISOString(),
+        submittingDate: '',
         pendingReviewDate: null,
         submitterName: '',
+        submitterEmail: '',
+        submitterId: '',
         precinct: '',
         updatedAt: new Date().toISOString(),
       });
+      setShowErrors(false);
     }
   }, [task, isOpen, departments, tasks, generateNewId]);
 
   const handleSave = async () => {
+    // Blocking Validation for Mandatory Fields
+    const hasVectors = (formData.vectors || []).length > 0;
+    if (!formData.title?.trim() || !formData.department || !formData.precinct?.trim() || !formData.submitterId || !formData.status || !formData.submittingDate || !hasVectors) {
+      setShowErrors(true);
+      showToast('Please fill in all fields. Only Notes are optional.', 'ERROR');
+      return;
+    }
+
     setIsSaving(true);
     setErrorMsg(null);
     try {
@@ -193,20 +235,25 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         updatedAt: new Date().toISOString(),
       } as Task;
 
-      // Update global suggestions
+      // Update global suggestions (Non-blocking background sync)
       if (formData.deliverableType || formData.cde) {
-        await updateMetadataSuggestions(formData.deliverableType || [], formData.cde || []);
+        updateMetadataSuggestions(formData.deliverableType || [], formData.cde || []);
       }
 
       const idChanged = originalIdRef.current && finalTask.id !== originalIdRef.current;
-      await upsertTask(finalTask);
-      if (idChanged && originalIdRef.current) await deleteTask(originalIdRef.current);
-      showToast('Task asset synchronized successfully.', 'SUCCESS');
+      
+      if (idChanged && originalIdRef.current) {
+        await atomicRenumberTask(originalIdRef.current, finalTask);
+      } else {
+        await upsertTask(finalTask);
+      }
+      
+      showToast('Task saved successfully.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Failed to save task:', error);
       setErrorMsg(getFirebaseErrorMessage(error));
-      showToast('Access denied or sync failure.', 'ERROR');
+      showToast('Could not save task. Please try again.', 'ERROR');
     } finally {
       setIsSaving(false);
     }
@@ -216,12 +263,12 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
     if (!task) return;
     try {
       await deleteTask(task.id);
-      showToast('Task record successfully terminated.', 'SUCCESS');
+      showToast('Task deleted successfully.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Failed to delete task:', error);
       setErrorMsg(getFirebaseErrorMessage(error));
-      showToast('Termination protocol failed.', 'ERROR');
+      showToast('Could not delete task.', 'ERROR');
       throw error;
     }
   };
@@ -274,9 +321,13 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                 value={formData.title ?? ''} 
                 onChange={e => setFormData({ ...formData, title: e.target.value })} 
                 disabled={isActuallyReadOnly} 
-                style={{ width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.12)', color: '#0a1220', fontSize: 15, fontWeight: 800, outline: 'none', transition: 'all 200ms', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }} 
-                onFocus={e => e.target.style.borderColor = '#003F49'}
-                onBlur={e => e.target.style.borderColor = 'rgba(0, 0, 0, 0.12)'}
+                style={{ 
+                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', 
+                  border: (showErrors && !formData.title?.trim()) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)', 
+                  color: '#0a1220', fontSize: 15, fontWeight: 800, outline: 'none', transition: 'all 200ms', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' 
+                }} 
+                onFocus={e => e.target.style.borderColor = (showErrors && !formData.title?.trim()) ? '#ef4444' : '#003F49'}
+                onBlur={e => e.target.style.borderColor = (showErrors && !formData.title?.trim()) ? '#ef4444' : 'rgba(0, 0, 0, 0.12)'}
                 placeholder="Identify system requirements..." 
               />
             </div>
@@ -292,7 +343,11 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                 value={toLocalISO(formData.submittingDate || '', formData.timeZone || '')} 
                 onChange={e => setFormData({ ...formData, submittingDate: fromLocalISO(e.target.value, formData.timeZone || '') })} 
                 disabled={isActuallyReadOnly}
-                style={{ width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.12)', color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none' }} 
+                style={{ 
+                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', 
+                  border: (showErrors && !formData.submittingDate) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)', 
+                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none' 
+                }} 
               />
             </div>
 
@@ -307,24 +362,32 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                 value={formData.precinct ?? ''} 
                 onChange={e => setFormData({ ...formData, precinct: e.target.value })} 
                 disabled={isActuallyReadOnly} 
-                style={{ width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.12)', color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none' }} 
+                style={{ 
+                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', 
+                  border: (showErrors && !formData.precinct?.trim()) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)', 
+                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none' 
+                }} 
                 placeholder="e.g. Precinct 1, North Zone..." 
               />
             </div>
 
-            {/* Task Category */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <Tag size={12} color="#003F49" />
                 <span style={{ fontSize: 10, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Task Category</span>
               </div>
               <select 
-                value={formData.department} 
+                value={departments.find(d => d.id === formData.department || d.name === formData.department)?.id || ''} 
                 onChange={e => handleDeptChange(e.target.value)} 
                 disabled={isActuallyReadOnly}
-                style={{ width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.12)', color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none', appearance: 'none' }}
+                style={{ 
+                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', 
+                  border: (showErrors && !formData.department) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)', 
+                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none', appearance: 'none' 
+                }}
               >
-                {departments.map(d => (<option key={d.id} value={d.name}>{d.name} ({d.abbreviation})</option>))}
+                <option value="">Select Category</option>
+                {departments.map(d => (<option key={d.id} value={d.id}>{d.name}</option>))}
               </select>
             </div>
 
@@ -335,13 +398,27 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                 <span style={{ fontSize: 10, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Submitter Signature</span>
               </div>
               <select 
-                value={formData.submitterName || ''} 
-                onChange={e => setFormData({ ...formData, submitterName: e.target.value })} 
-                disabled={isActuallyReadOnly}
-                style={{ width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.12)', color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none' }}
+                value={formData.submitterId || ''} 
+                onChange={e => {
+                  const selected = personnel.find(p => p.id === e.target.value);
+                  setFormData({ 
+                    ...formData, 
+                    submitterId: e.target.value,
+                    submitterEmail: selected ? selected.email : '',
+                    submitterName: selected ? selected.name : '' 
+                  });
+                }} 
+                disabled={isActuallyReadOnly || !formData.department}
+                style={{ 
+                  width: '100%', padding: '14px 18px', borderRadius: 14, 
+                  background: (!formData.department || isActuallyReadOnly) ? 'rgba(0,0,0,0.02)' : '#ffffff', 
+                  border: (showErrors && !formData.submitterId) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)', 
+                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none', 
+                  cursor: (!formData.department || isActuallyReadOnly) ? 'not-allowed' : 'pointer' 
+                }}
               >
-                <option value="">Unassigned Personnel</option>
-                {personnel.map(name => (<option key={name} value={name}>{name}</option>))}
+                <option value="">{formData.department ? 'Unassigned Personnel' : 'Select Task Category First'}</option>
+                {personnel.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
               </select>
             </div>
 
@@ -355,16 +432,24 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                 value={formData.status} 
                 onChange={e => setFormData({ ...formData, status: e.target.value as TaskStatus })} 
                 disabled={isActuallyReadOnly}
-                style={{ width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.12)', color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none' }}
+                style={{ 
+                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', 
+                  border: (showErrors && !formData.status) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)', 
+                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none' 
+                }}
               >
+                <option value="">Select Status</option>
                 {statuses.map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
               </select>
             </div>
           </div>
 
           {/* Network Vector Terminal */}
-          <div style={{ padding: '24px', borderRadius: 24, background: 'rgba(0, 63, 73, 0.02)', border: '1.5px solid rgba(0, 63, 73, 0.1)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+          <div style={{ 
+            padding: '12px 24px', borderRadius: 24, background: 'rgba(0, 63, 73, 0.02)', 
+            border: (showErrors && (!formData.vectors || formData.vectors.length === 0)) ? '2px solid #ef4444' : '1.5px solid rgba(0, 63, 73, 0.1)' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
               <div style={{ width: 40, height: 40, borderRadius: 12, background: '#003F49', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', boxShadow: '0 8px 20px rgba(0, 63, 73, 0.2)' }}>
                 <Link size={20} />
               </div>
@@ -451,9 +536,9 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                         };
                         setFormData({ ...formData, vectors: [...(formData.vectors || []), vector] });
                         setNewVector({ type: '', cde: '', label: '', url: '' });
-                        showToast('Deliverable Vector Linked.', 'SUCCESS');
+                        showToast('Link added successfully.', 'SUCCESS');
                       } else {
-                        showToast('Complete (Type, CDE, URL) required.', 'INFO');
+                        showToast('Please fill in all link details.', 'INFO');
                       }
                     }} 
                     style={{ padding: '12px 24px', borderRadius: 12, background: '#003F49', color: '#ffffff', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 4px 12px rgba(0, 63, 73, 0.2)' }}
@@ -468,7 +553,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
           {/* Notes */}
           <div style={{ gridColumn: 'span 2' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <span style={{ fontSize: 10, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Administrative Intelligence</span>
+              <span style={{ fontSize: 10, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Notes (Optional)</span>
             </div>
             <textarea 
               value={formData.description ?? ''} 

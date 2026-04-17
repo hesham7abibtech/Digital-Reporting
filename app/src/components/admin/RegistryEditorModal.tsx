@@ -60,12 +60,12 @@ export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, c
     setErrorMsg(null);
     try {
       await upsertRegistryItem(formData as DashboardNavItem);
-      showToast('Registry asset synchronized.', 'SUCCESS');
+      showToast('Item saved successfully.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Failed to save registry item:', error);
       setErrorMsg(getFirebaseErrorMessage(error));
-      showToast('Registry synchronization failure.', 'ERROR');
+      showToast('Could not save item.', 'ERROR');
     } finally {
       setIsSaving(false);
     }
@@ -75,12 +75,12 @@ export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, c
     if (!item) return;
     try {
       await deleteRegistryItem(item.id);
-      showToast('Asset purged from portal registry.', 'SUCCESS');
+      showToast('Item deleted successfully.', 'SUCCESS');
       onClose();
     } catch (error) {
       console.error('Failed to delete item:', error);
       setErrorMsg(getFirebaseErrorMessage(error));
-      showToast('Registry purge sequence failed.', 'ERROR');
+      showToast('Could not delete item.', 'ERROR');
       throw error;
     }
   };
@@ -192,14 +192,14 @@ export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, c
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase' }}>Task Category</label>
               <select 
-                value={formData.department || ''} 
+                value={availableDepartments?.find(d => d.id === formData.department || d.name === formData.department)?.id || ''} 
                 onChange={e => setFormData({ ...formData, department: e.target.value })} 
                 disabled={readOnly}
                 style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(20,20,30,1)', border: '1px solid var(--border)', color: readOnly ? 'var(--text-dim)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer' }}
               >
                 <option value="">Select Category</option>
                 {availableDepartments?.map(dept => (
-                  <option key={dept.id} value={dept.name}>{dept.name}</option>
+                  <option key={dept.id} value={dept.id}>{dept.name}</option>
                 ))}
               </select>
             </div>

@@ -22,8 +22,9 @@ import {
   Lock, Mail, Loader2, Globe, ShieldCheck,
   UserPlus, ArrowLeft, User, ShieldAlert,
   ChevronRight, Fingerprint, Database, Cpu,
-  CheckCircle2, Eye, EyeOff, Circle, Briefcase, Home
+  CheckCircle2, Eye, EyeOff, Circle, Briefcase, Home, LifeBuoy
 } from 'lucide-react';
+import TicketRequestModal from '@/components/shared/TicketRequestModal';
 
 type AuthMode = 'login' | 'register' | 'forgot-password';
 
@@ -55,6 +56,7 @@ function LoginContent() {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendStatus, setResendStatus] = useState<'idle' | 'sent' | 'error'>('idle');
   const [resendTimer, setResendTimer] = useState(0);
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
 
   // Real-time Verification Observer
   useEffect(() => {
@@ -301,10 +303,10 @@ function LoginContent() {
   }
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '14px 16px 14px 44px', borderRadius: 14,
-    background: 'rgba(0, 63, 73, 0.04)', border: '1px solid rgba(0, 63, 73, 0.12)',
-    color: 'var(--teal)', fontSize: 14, outline: 'none', transition: 'all 300ms',
-    fontWeight: 500,
+    width: '100%', padding: '16px 16px 16px 44px', borderRadius: 16,
+    background: 'rgba(255, 255, 255, 0.6)', border: '1px solid rgba(0, 63, 73, 0.15)',
+    color: 'var(--teal)', fontSize: 15, outline: 'none', transition: 'all 300ms',
+    fontWeight: 600, boxShadow: 'inset 0 2px 4px rgba(0, 63, 73, 0.02)',
   };
 
   return (
@@ -314,8 +316,9 @@ function LoginContent() {
       padding: 20, position: 'relative', overflow: 'hidden'
     }}>
       {/* Ambient Decorations */}
-      <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0, 63, 73, 0.06) 0%, transparent 70%)', filter: 'blur(60px)' }} />
-      <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(208, 171, 130, 0.08) 0%, transparent 70%)', filter: 'blur(60px)' }} />
+      <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(208, 171, 130, 0.12) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+      <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0, 63, 73, 0.1) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '120%', height: '120%', background: 'radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 80%)', pointerEvents: 'none' }} />
 
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.97 }}
@@ -332,39 +335,57 @@ function LoginContent() {
         }}
       >
         <div style={{ padding: '32px 36px 28px' }}>
-          {/* Home Button */}
+          {/* Home Button - Repositioned to Top-Right to avoid collision with logos */}
           <motion.button
             onClick={() => router.push('/')}
-            whileHover={{ scale: 1.08, background: 'rgba(0, 63, 73, 0.08)' }}
+            whileHover={{ scale: 1.08, background: 'rgba(0, 63, 73, 0.08)', borderColor: 'var(--teal)' }}
             whileTap={{ scale: 0.95 }}
             style={{
-              position: 'absolute', top: 20, left: 20, padding: 10,
-              borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.1)',
-              background: 'rgba(0, 63, 73, 0.04)', cursor: 'pointer',
+              position: 'absolute', top: 20, right: 20, padding: 8,
+              borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.08)',
+              background: 'rgba(0, 63, 73, 0.03)', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 20,
             }}
             title="Back to Home"
           >
             <Home size={16} color="var(--teal)" />
           </motion.button>
 
-          {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          {/* Slim Branded Insignia - Final Proportional Scaling */}
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
             <div style={{
-              width: 56, height: 56, borderRadius: 16, margin: '0 auto 16px',
-              background: 'linear-gradient(135deg, var(--teal) 0%, #005663 100%)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 8px 24px rgba(0, 63, 73, 0.2)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 28,
+              padding: '10px 24px', background: 'var(--teal)', borderRadius: 16,
+              boxShadow: '0 10px 30px rgba(0, 63, 73, 0.15)', 
+              border: '1px solid var(--sunlit-rock)', 
+              width: 'max-content', margin: '0 auto',
             }}>
-              <ShieldCheck size={28} color="var(--cotton)" />
+              <motion.img 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                src="/logos/modon_logo.png" 
+                alt="MODON" 
+                style={{ height: 26, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} 
+              />
+              <div style={{ width: 1, height: 20, background: 'rgba(255, 255, 255, 0.2)' }} />
+              <motion.img 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 }}
+                src="/logos/insite_logo.png" 
+                alt="INSITE" 
+                style={{ height: 22, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} 
+              />
             </div>
             <h1 className="brand-heading" style={{
-              fontSize: 22, color: 'var(--teal)', margin: '0 0 6px',
-              letterSpacing: '0.12em',
+              fontSize: 24, color: 'var(--teal)', margin: '0 0 6px',
+              letterSpacing: '0.15em', fontWeight: 900,
+              textTransform: 'uppercase',
             }}>
               {mode === 'login' ? 'Access Portal' : mode === 'register' ? 'Create Account' : 'Reset Password'}
             </h1>
-            <p style={{ color: 'var(--text-dim)', fontSize: 13, margin: 0, fontWeight: 500 }}>
+            <p style={{ color: 'var(--text-dim)', fontSize: 11, margin: 0, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', opacity: 0.7 }}>
               {mode === 'login' ? 'Sign in to access the reporting dashboard' :
                 mode === 'register' ? 'Register for project access' :
                   'Enter your email to receive a reset link'}
@@ -481,6 +502,12 @@ function LoginContent() {
               style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '0 auto' }}>
               {mode === 'login' ? <><UserPlus size={14} /> Don&apos;t have an account? Register</> :
                 <><ArrowLeft size={14} /> Back to Sign In</>}
+            </button>
+            
+            <button
+              onClick={() => setIsTicketModalOpen(true)}
+              style={{ background: 'none', border: 'none', color: 'var(--teal)', fontSize: 11, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '32px auto 0', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <LifeBuoy size={14} /> Need Technical Support?
             </button>
           </div>
         </div>
@@ -704,6 +731,12 @@ function LoginContent() {
           </div>
         )}
       </AnimatePresence>
+      <TicketRequestModal 
+        isOpen={isTicketModalOpen} 
+        onClose={() => setIsTicketModalOpen(false)} 
+        defaultReason="Login Portal Support"
+        defaultMessage="I am experiencing issues accessing my account. Please provide technical assistance."
+      />
     </div>
   );
 }

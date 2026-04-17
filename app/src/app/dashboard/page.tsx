@@ -225,31 +225,57 @@ export default function Dashboard() {
 
   // Dynamic filter options based on tasks in the selected date range
   const availableDepts = useMemo(() => {
-    const depts = new Set(dateFilteredTasks.map(t => t.department));
-    return ['All Categories', ...Array.from(depts).sort()];
-  }, [dateFilteredTasks]);
+    let hasEmpty = false;
+    const rawDepts = new Set(dateFilteredTasks.map(t => {
+      if (!t.department) hasEmpty = true;
+      return t.department;
+    }));
+    const resolved = Array.from(rawDepts).filter(Boolean).map(raw => {
+      const d = syncedDepartments.find(sd => sd.id === raw || sd.name === raw);
+      return d ? d.name : (raw || 'General');
+    });
+    const result = Array.from(new Set(resolved)).sort();
+    if (hasEmpty) result.unshift('(Empty)');
+    return result;
+  }, [dateFilteredTasks, syncedDepartments]);
 
   const availableTypes = useMemo(() => {
-    const types = new Set(dateFilteredTasks.flatMap(t => {
+    let hasEmpty = false;
+    const rawTypes = new Set(dateFilteredTasks.flatMap(t => {
       const legacy = (Array.isArray(t.deliverableType) ? t.deliverableType : [t.deliverableType]).filter((v): v is string => !!v);
       const vector = (t.vectors || []).map(v => v.type);
-      return [...legacy, ...vector];
+      const combined = [...legacy, ...vector];
+      if (combined.length === 0) hasEmpty = true;
+      return combined;
     }));
-    return ['All Types', ...Array.from(types).sort()];
+    const result = Array.from(rawTypes).sort();
+    if (hasEmpty) result.unshift('(Empty)');
+    return result;
   }, [dateFilteredTasks]);
 
   const availableCDEs = useMemo(() => {
-    const cdes = new Set(dateFilteredTasks.flatMap(t => {
+    let hasEmpty = false;
+    const rawCdes = new Set(dateFilteredTasks.flatMap(t => {
       const legacy = (Array.isArray(t.cde) ? t.cde : [t.cde]).filter((v): v is string => !!v);
       const vector = (t.vectors || []).map(v => v.cde);
-      return [...legacy, ...vector];
+      const combined = [...legacy, ...vector];
+      if (combined.length === 0) hasEmpty = true;
+      return combined;
     }));
-    return ['All Environments', ...Array.from(cdes).sort()];
+    const result = Array.from(rawCdes).sort();
+    if (hasEmpty) result.unshift('(Empty)');
+    return result;
   }, [dateFilteredTasks]);
   
   const availablePrecincts = useMemo(() => {
-    const precincts = new Set(dateFilteredTasks.map(t => t.precinct).filter((v): v is string => !!v));
-    return ['All Precincts', ...Array.from(precincts).sort()];
+    let hasEmpty = false;
+    const rawPrecincts = new Set(dateFilteredTasks.map(t => {
+      if (!t.precinct) hasEmpty = true;
+      return t.precinct;
+    }).filter((v): v is string => !!v));
+    const result = Array.from(rawPrecincts).sort();
+    if (hasEmpty) result.unshift('(Empty)');
+    return result;
   }, [dateFilteredTasks]);
 
   // Reset filters if they are no longer available in the new pool
@@ -316,7 +342,12 @@ export default function Dashboard() {
 
     // Apply Department filter
     if (filterDept.length > 0 && !filterDept.includes('All Categories')) {
-      result = result.filter(t => filterDept.includes(t.department));
+      result = result.filter(t => {
+        if (filterDept.includes('(Empty)') && (!t.department || t.department.trim() === '')) return true;
+        const d = syncedDepartments.find(sd => sd.id === t.department || sd.name === t.department);
+        const resolvedName = d ? d.name : (t.department || 'General');
+        return filterDept.includes(resolvedName);
+      });
     }
 
     // Apply Deliverable Type filter
@@ -325,6 +356,7 @@ export default function Dashboard() {
         const legacy = (Array.isArray(t.deliverableType) ? t.deliverableType : [t.deliverableType]).filter((v): v is string => !!v);
         const vector = (t.vectors || []).map(v => v.type);
         const combined = [...legacy, ...vector];
+        if (filterType.includes('(Empty)') && combined.length === 0) return true;
         return combined.some(type => filterType.includes(type));
       });
     }
@@ -335,70 +367,100 @@ export default function Dashboard() {
         const legacy = (Array.isArray(t.cde) ? t.cde : [t.cde]).filter((v): v is string => !!v);
         const vector = (t.vectors || []).map(v => v.cde);
         const combined = [...legacy, ...vector];
+        if (filterCDE.includes('(Empty)') && combined.length === 0) return true;
         return combined.some(env => filterCDE.includes(env));
       });
     }
 
     // Apply Precinct filter
     if (filterPrecinct.length > 0 && !filterPrecinct.includes('All Precincts')) {
-      result = result.filter(t => filterPrecinct.includes(t.precinct || ''));
+      result = result.filter(t => {
+        if (filterPrecinct.includes('(Empty)') && (!t.precinct || t.precinct.trim() === '')) return true;
+        return filterPrecinct.includes(t.precinct || '');
+      });
     }
 
     // Apply Search filter
     if (search) {
       const q = search.toLowerCase();
-      result = result.filter(t =>
-        t.title.toLowerCase().includes(q) ||
-        t.department.toLowerCase().includes(q) ||
-        t.id.toLowerCase().includes(q)
-      );
-    }
-    return result;
-  }, [dateFilteredTasks, filterDept, filterType, filterCDE, search]);
-
-
-
-  const filteredBimReviews = useMemo(() => {
-    let result = syncedBimReviews;
-
-    // Apply Date Filter
-    if (filterMode !== 'all') {
-      let rangeStart: Date;
-      let rangeEnd: Date;
-
-      if (filterMode === 'custom') {
-        rangeStart = startDate ? new Date(startDate) : new Date('1970-01-01');
-        rangeEnd = endDate ? new Date(endDate) : new Date('2099-12-31');
-      } else {
-        rangeStart = new Date(selectedYear, selectedMonth, 1);
-        rangeEnd = new Date(selectedYear, selectedMonth + 1, 0);
-      }
-      rangeStart.setHours(0, 0, 0, 0);
-      rangeEnd.setHours(23, 59, 59, 999);
-
-      result = result.filter(review => {
-        const d = parseBimDate(review.submissionDate);
-        if (!d) return false;
-        return d >= rangeStart && d <= rangeEnd;
+      result = result.filter(t => {
+        const d = syncedDepartments.find(sd => sd.id === t.department || sd.name === t.department);
+        const resolvedName = d ? d.name : (t.department || 'General');
+        return t.title.toLowerCase().includes(q) ||
+               resolvedName.toLowerCase().includes(q) ||
+               t.id.toLowerCase().includes(q);
       });
     }
+    return result;
+  }, [dateFilteredTasks, filterDept, filterType, filterCDE, filterPrecinct, search, syncedDepartments]);
+
+
+
+  const dateFilteredBimReviews = useMemo(() => {
+    let result = syncedBimReviews;
+    if (filterMode === 'all') return result;
+
+    let rangeStart: Date;
+    let rangeEnd: Date;
+
+    if (filterMode === 'custom') {
+      rangeStart = startDate ? new Date(startDate) : new Date('1970-01-01');
+      rangeEnd = endDate ? new Date(endDate) : new Date('2099-12-31');
+    } else {
+      rangeStart = new Date(selectedYear, selectedMonth, 1);
+      rangeEnd = new Date(selectedYear, selectedMonth + 1, 0);
+    }
+    rangeStart.setHours(0, 0, 0, 0);
+    rangeEnd.setHours(23, 59, 59, 999);
 
     return result.filter(review => {
+      const d = parseBimDate(review.submissionDate);
+      if (!d) return false;
+      return d >= rangeStart && d <= rangeEnd;
+    });
+  }, [syncedBimReviews, filterMode, startDate, endDate, selectedMonth, selectedYear]);
+
+  const filteredBimReviews = useMemo(() => {
+    return dateFilteredBimReviews.filter(review => {
       const searchStr = bimSearch.toLowerCase();
+      
+      // Resolve reviewer name for search/matching
+      const m = syncedMembers.find(sm => 
+        (review.insiteReviewerId && sm.id === review.insiteReviewerId) || 
+        (review.insiteReviewerEmail && sm.email.toLowerCase() === review.insiteReviewerEmail.toLowerCase()) ||
+        (review.insiteReviewer && sm.name.toLowerCase() === review.insiteReviewer.toLowerCase())
+      );
+      const resolvedReviewer = m ? m.name : (review.insiteReviewer || '—');
+
       const matchesSearch = !bimSearch ||
         review.submissionDescription.toLowerCase().includes(searchStr) ||
         review.project.toLowerCase().includes(searchStr) ||
         review.stakeholder.toLowerCase().includes(searchStr) ||
-        review.insiteReviewer.toLowerCase().includes(searchStr);
+        resolvedReviewer.toLowerCase().includes(searchStr);
 
-      const matchesStage = bimFilterStage.length === 0 || bimFilterStage.includes(review.designStage);
-      const matchesStatus = bimFilterStatus.length === 0 || bimFilterStatus.includes(review.insiteBimReviewStatus);
-      const matchesStakeholder = bimFilterStakeholder.length === 0 || bimFilterStakeholder.includes(review.stakeholder);
-      const matchesReviewer = bimFilterReviewer.length === 0 || bimFilterReviewer.includes(review.insiteReviewer);
+      const matchesStage = bimFilterStage.length === 0 || 
+                          bimFilterStage.includes('All Stages') || 
+                          (bimFilterStage.includes('(Empty)') && (!review.designStage || review.designStage === '')) ||
+                          bimFilterStage.includes(review.designStage);
+      
+      const matchesStatus = bimFilterStatus.length === 0 || 
+                           bimFilterStatus.includes('All Statuses') || 
+                           (bimFilterStatus.includes('(Empty)') && (!review.insiteBimReviewStatus || review.insiteBimReviewStatus === '')) ||
+                           bimFilterStatus.includes(review.insiteBimReviewStatus);
+      
+      const matchesStakeholder = bimFilterStakeholder.length === 0 || 
+                                bimFilterStakeholder.includes('All Stakeholders') || 
+                                (bimFilterStakeholder.includes('(Empty)') && (!review.stakeholder || review.stakeholder === '')) ||
+                                bimFilterStakeholder.includes(review.stakeholder);
+      
+      const matchesReviewer = bimFilterReviewer.length === 0 || 
+                             bimFilterReviewer.includes('All Reviewers') || 
+                             (bimFilterReviewer.includes('(Empty)') && (resolvedReviewer === '—' || !resolvedReviewer)) ||
+                             bimFilterReviewer.includes(resolvedReviewer);
 
       return matchesSearch && matchesStage && matchesStatus && matchesStakeholder && matchesReviewer;
     });
-  }, [syncedBimReviews, bimSearch, bimFilterStage, bimFilterStatus, bimFilterStakeholder, bimFilterReviewer, filterMode, selectedMonth, selectedYear, startDate, endDate]);
+  }, [syncedBimReviews, bimSearch, bimFilterStage, bimFilterStatus, bimFilterStakeholder, bimFilterReviewer, filterMode, selectedMonth, selectedYear, startDate, endDate, syncedMembers]);
 
   // Snapshot for previous period to calculate growth
   const previousPeriodBimReviews = useMemo(() => {
@@ -431,11 +493,44 @@ export default function Dashboard() {
   }, [syncedBimReviews, selectedMonth, selectedYear, startDate, endDate, filterMode]);
 
   // Available BIM Filter Options
-  const availableBimStages = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.designStage))).filter(Boolean).sort(), [syncedBimReviews]);
-  const availableBimStatuses = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.insiteBimReviewStatus))).filter(Boolean).sort(), [syncedBimReviews]);
-  const availableBimStakeholders = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.stakeholder).filter(Boolean))).sort(), [syncedBimReviews]);
-  const availableBimPrecincts = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.precinct).filter(Boolean))).sort(), [syncedBimReviews]);
-  const availableBimReviewers = useMemo(() => Array.from(new Set(syncedBimReviews.map(r => r.insiteReviewer).filter(Boolean))).sort(), [syncedBimReviews]);
+  const availableBimStages = useMemo(() => {
+    const raw = Array.from(new Set(dateFilteredBimReviews.map(r => r.designStage))).filter(Boolean).sort();
+    const hasEmpty = dateFilteredBimReviews.some(r => !r.designStage);
+    return hasEmpty ? ['(Empty)', ...raw] : raw;
+  }, [dateFilteredBimReviews]);
+
+  const availableBimStatuses = useMemo(() => {
+    const raw = Array.from(new Set(dateFilteredBimReviews.map(r => r.insiteBimReviewStatus))).filter(Boolean).sort();
+    const hasEmpty = dateFilteredBimReviews.some(r => !r.insiteBimReviewStatus);
+    return hasEmpty ? ['(Empty)', ...raw] : raw;
+  }, [dateFilteredBimReviews]);
+
+  const availableBimStakeholders = useMemo(() => {
+    const raw = Array.from(new Set(dateFilteredBimReviews.map(r => r.stakeholder))).filter(Boolean).sort();
+    const hasEmpty = dateFilteredBimReviews.some(r => !r.stakeholder);
+    return hasEmpty ? ['(Empty)', ...raw] : raw;
+  }, [dateFilteredBimReviews]);
+
+  const availableBimPrecincts = useMemo(() => {
+    const raw = Array.from(new Set(dateFilteredBimReviews.map(r => r.precinct))).filter(Boolean).sort();
+    const hasEmpty = dateFilteredBimReviews.some(r => !r.precinct);
+    return hasEmpty ? ['(Empty)', ...raw] : raw;
+  }, [dateFilteredBimReviews]);
+  const availableBimReviewers = useMemo(() => {
+    let hasEmpty = false;
+    const raw = new Set(dateFilteredBimReviews.map(r => {
+      const m = syncedMembers.find(sm => 
+        (r.insiteReviewerId && sm.id === r.insiteReviewerId) || 
+        (r.insiteReviewerEmail && sm.email.toLowerCase() === r.insiteReviewerEmail.toLowerCase()) ||
+        (r.insiteReviewer && sm.name.toLowerCase() === r.insiteReviewer.toLowerCase())
+      );
+      if (!m && !r.insiteReviewer) hasEmpty = true;
+      return m ? m.name : (r.insiteReviewer || '—');
+    }));
+    const sorted = Array.from(raw).filter(v => v !== '—').sort();
+    const result = hasEmpty || Array.from(raw).includes('—') ? ['(Empty)', ...sorted] : sorted;
+    return result;
+  }, [dateFilteredBimReviews, syncedMembers]);
 
 
   const handleTaskClick = (task: Task) => {
@@ -457,7 +552,7 @@ export default function Dashboard() {
         const json = XLSX.utils.sheet_to_json(worksheet);
 
         if (json.length === 0) {
-          showToast('Packet analysis failure: Data stream is empty.', 'INFO');
+          showToast('No records found in the file.', 'INFO');
           return;
         }
 
@@ -503,7 +598,7 @@ export default function Dashboard() {
         setBimImportConfirm({ isOpen: true, records: mappedRecords });
       } catch (err) {
         console.error('BIM Import Failure:', err);
-        showToast('Digital transport integrity error: Ingestion failed.', 'ERROR');
+        showToast('Import failed. Please try again.', 'ERROR');
       } finally {
         if (bimFileInputRef.current) bimFileInputRef.current.value = '';
       }
@@ -515,10 +610,10 @@ export default function Dashboard() {
     setIsBimImportLoading(true);
     try {
       await bulkUpsertBimReviews(bimImportConfirm.records, strategy as any);
-      showToast(`Intelligence Matrix synchronized: ${bimImportConfirm.records.length} records ingested.`, 'SUCCESS');
+      showToast(`${bimImportConfirm.records.length} records imported successfully.`, 'SUCCESS');
       setBimImportConfirm({ isOpen: false, records: [] });
     } catch (err) {
-      showToast('Administrative protocol failure: Batch commit interrupted.', 'ERROR');
+      showToast('Could not save records. Please try again.', 'ERROR');
     } finally {
       setIsBimImportLoading(false);
     }
@@ -528,10 +623,10 @@ export default function Dashboard() {
     if (!bimToDelete) return;
     try {
       await deleteBimReview(bimToDelete.id);
-      showToast('Matrix record permanently purged from repository.', 'SUCCESS');
+      showToast('Record deleted successfully.', 'SUCCESS');
       setBimToDelete(null);
     } catch (err) {
-      showToast('Security blockade: Delete operation failed.', 'ERROR');
+      showToast('Could not delete record.', 'ERROR');
     }
   };
 
@@ -629,7 +724,7 @@ export default function Dashboard() {
                   </div>
                   <h2 style={{ fontSize: 13, fontWeight: 900, color: '#003f49', letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>
                     {activeReport === 'DELIVERABLES' ? 'Deliverables Registry' : 'BIM Review Matrix'} — <span style={{ color: 'var(--teal)' }}>
-                      {filterDateText}
+                      {activeReport === 'DELIVERABLES' ? filteredTasks.length : filteredBimReviews.length} ITEMS
                     </span>
                   </h2>
                 </div>
@@ -775,59 +870,70 @@ export default function Dashboard() {
 
                   <div style={{ width: 1, height: 24, background: 'rgba(0, 63, 73, 0.1)' }} />
 
-                  {/* Elite Export System */}
-                  {activeReport === 'DELIVERABLES' ? (
-                    <ExportMenu
-                      tasks={filteredTasks}
-                      projectMetadata={syncedProject || undefined}
-                      dateRangeText={filterDateText}
-                      filterMode={filterMode}
-                      setFilterMode={setFilterMode}
-                      filterDept={filterDept}
-                      setFilterDept={setFilterDept}
-                      availableDepts={availableDepts}
-                      selectedYear={selectedYear}
-                      setSelectedYear={setSelectedYear}
-                      yearOptions={yearOptions}
-                      selectedMonth={selectedMonth}
-                      setSelectedMonth={setSelectedMonth}
-                      monthOptions={monthOptions}
-                      startDate={startDate}
-                      setStartDate={setStartDate}
-                      endDate={endDate}
-                      setEndDate={setEndDate}
-                      filterType={filterType}
-                      setFilterType={setFilterType}
-                      availableTypes={availableTypes}
-                      filterCDE={filterCDE}
-                      setFilterCDE={setFilterCDE}
-                      availableCDEs={availableCDEs}
-                      filterPrecinct={filterPrecinct}
-                      setFilterPrecinct={setFilterPrecinct}
-                      availablePrecincts={availablePrecincts}
-                    />
-                  ) : (
-                    <BimExportMenu
-                      bimReviews={filteredBimReviews}
-                      projectMetadata={syncedProject || undefined}
-                      dateRangeText={filterDateText}
-                      filterStage={bimFilterStage}
-                      setFilterStage={setBimFilterStage}
-                      availableStages={availableBimStages}
-                      filterStatus={bimFilterStatus}
-                      setFilterStatus={setBimFilterStatus}
-                      availableStatuses={availableBimStatuses}
-                      filterStakeholder={bimFilterStakeholder}
-                      setFilterStakeholder={setBimFilterStakeholder}
-                      availableStakeholders={availableBimStakeholders}
-                      filterReviewer={bimFilterReviewer}
-                      setFilterReviewer={setBimFilterReviewer}
-                      availableReviewers={availableBimReviewers}
-                      filterMode={filterMode}
-                      selectedYear={selectedYear}
-                      selectedMonth={selectedMonth}
-                    />
-                  )}
+                      {activeReport === 'DELIVERABLES' ? (
+                        <ExportMenu
+                          tasks={filteredTasks}
+                          projectMetadata={syncedProject || undefined}
+                          dateRangeText={filterDateText}
+                          filterMode={filterMode}
+                          setFilterMode={setFilterMode}
+                          filterDept={filterDept}
+                          setFilterDept={setFilterDept}
+                          availableDepts={availableDepts}
+                          selectedYear={selectedYear}
+                          setSelectedYear={setSelectedYear}
+                          yearOptions={yearOptions}
+                          selectedMonth={selectedMonth}
+                          setSelectedMonth={setSelectedMonth}
+                          monthOptions={monthOptions}
+                          startDate={startDate}
+                          setStartDate={setStartDate}
+                          endDate={endDate}
+                          setEndDate={setEndDate}
+                          filterType={filterType}
+                          setFilterType={setFilterType}
+                          availableTypes={availableTypes}
+                          filterCDE={filterCDE}
+                          setFilterCDE={setFilterCDE}
+                          availableCDEs={availableCDEs}
+                          filterPrecinct={filterPrecinct}
+                          setFilterPrecinct={setFilterPrecinct}
+                          availablePrecincts={availablePrecincts}
+                          departments={syncedDepartments}
+                          members={syncedMembers}
+                        />
+                      ) : (
+                        <BimExportMenu
+                          bimReviews={filteredBimReviews}
+                          projectMetadata={syncedProject || undefined}
+                          dateRangeText={filterDateText}
+                          filterStage={bimFilterStage}
+                          setFilterStage={setBimFilterStage}
+                          availableStages={availableBimStages}
+                          filterStatus={bimFilterStatus}
+                          setFilterStatus={setBimFilterStatus}
+                          availableStatuses={availableBimStatuses}
+                          filterStakeholder={bimFilterStakeholder}
+                          setFilterStakeholder={setBimFilterStakeholder}
+                          availableStakeholders={availableBimStakeholders}
+                          filterReviewer={bimFilterReviewer}
+                          setFilterReviewer={setBimFilterReviewer}
+                          availableReviewers={availableBimReviewers}
+                          filterMode={filterMode}
+                          setFilterMode={setFilterMode}
+                          selectedYear={selectedYear}
+                          setSelectedYear={setSelectedYear}
+                          yearOptions={yearOptions}
+                          selectedMonth={selectedMonth}
+                          setSelectedMonth={setSelectedMonth}
+                          monthOptions={monthOptions}
+                          startDate={startDate}
+                          setStartDate={setStartDate}
+                          endDate={endDate}
+                          setEndDate={setEndDate}
+                          members={syncedMembers}
+                        />
+                      )}
                 </div>
               </div>
 
@@ -867,7 +973,7 @@ export default function Dashboard() {
                           onDelete={(review: any) => setBimToDelete(review)}
                           onNew={() => { setSelectedBimReview(null); setIsBimModalOpen(true); }}
                           onImport={() => bimFileInputRef.current?.click()}
-
+                          members={syncedMembers}
                         />
                       ) : (
                         <ActiveTasks
@@ -887,6 +993,8 @@ export default function Dashboard() {
                           filterPrecinct={filterPrecinct}
                           setFilterPrecinct={setFilterPrecinct}
                           availablePrecincts={availablePrecincts}
+                          members={syncedMembers}
+                          departments={syncedDepartments}
                         />
                       )}
                     </motion.div>
@@ -936,6 +1044,8 @@ export default function Dashboard() {
                           setFilterPrecinct={setFilterPrecinct}
                           availablePrecincts={availablePrecincts}
                           onTaskClick={handleTaskClick}
+                          departments={syncedDepartments}
+                          members={syncedMembers}
                         />
                       )}
                     </motion.div>
@@ -958,6 +1068,8 @@ export default function Dashboard() {
         task={selectedTask ? (syncedTasks.find(t => t.id === selectedTask.id) || selectedTask) : null}
         onClose={() => setSelectedTask(null)}
         activeFilters={{ types: filterType, cdes: filterCDE }}
+        members={syncedMembers}
+        departments={syncedDepartments}
       />
 
       <input 

@@ -21,8 +21,11 @@ const auth = getAuth(app);
 let db: ReturnType<typeof getFirestore>;
 if (typeof window !== "undefined") {
   try {
+    // We use initializeFirestore with persistentMultipleTabManager to support 
+    // concurrent tabs. Experimental long-polling helps with enterprise network stability.
     db = initializeFirestore(app, {
-      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+      experimentalAutoDetectLongPolling: true
     });
   } catch (err) {
     // Fallback if already initialized (Next.js Fast Refresh behavior)
