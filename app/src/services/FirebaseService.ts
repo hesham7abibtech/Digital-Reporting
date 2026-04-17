@@ -207,28 +207,57 @@ export async function bulkUpsertBimReviews(reviews: any[], strategy: 'OVERWRITE'
  */
 export async function bulkUpsertTasks(tasks: Task[], strategy: 'OVERWRITE' | 'APPEND') {
   const batch = writeBatch(db);
+  const { getDocs } = await import('firebase/firestore');
 
   if (strategy === 'OVERWRITE') {
-    const { getDocs } = await import('firebase/firestore');
+    // 1. Purge existing records for a fresh slate
     const snapshot = await getDocs(collections.tasks);
     snapshot.docs.forEach(d => batch.delete(d.ref));
-  }
 
-  tasks.forEach((task) => {
-    // Generate/Normalize ID
-    const taskId = task.id || `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const taskDoc = doc(collections.tasks, taskId);
+    // 2. Fetch departments for intelligent ID re-coding
+    const deptsSnapshot = await getDocs(collections.departments);
+    const departments = deptsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as any));
     
-    const cleanData = sanitizeData({
-      ...task,
-      id: taskId,
-      updatedAt: new Date().toISOString(),
-      createdAt: task.createdAt || new Date().toISOString(),
-      status: task.status || 'NOT_STARTED',
-      completion: task.completion ?? 0
+    // 3. Track sequential counters per department abbreviation
+    const counters: Record<string, number> = {};
+
+    tasks.forEach((task) => {
+      // Normalize department lookup
+      const d = departments.find((dept: any) => dept.id === task.department || dept.name === task.department);
+      const abbr = d?.abbreviation || (task.department ? String(task.department).slice(0, 3).toUpperCase() : 'GEN');
+      
+      if (!counters[abbr]) counters[abbr] = 100;
+      const sequentialId = `REH - ${abbr} - ${counters[abbr]}`;
+      counters[abbr]++;
+
+      const taskDoc = doc(collections.tasks, sequentialId);
+      const cleanData = sanitizeData({
+        ...task,
+        id: sequentialId,
+        updatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(), // Fresh import, fresh record
+        status: task.status || 'NOT_STARTED',
+        completion: task.completion ?? 0
+      });
+      batch.set(taskDoc, cleanData, { merge: true });
     });
-    batch.set(taskDoc, cleanData, { merge: true });
-  });
+  } else {
+    // Simple Append mode
+    tasks.forEach((task) => {
+      const taskId = task.id || `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const taskDoc = doc(collections.tasks, taskId);
+      
+      const cleanData = sanitizeData({
+        ...task,
+        id: taskId,
+        updatedAt: new Date().toISOString(),
+        createdAt: task.createdAt || new Date().toISOString(),
+        status: task.status || 'NOT_STARTED',
+        completion: task.completion ?? 0
+      });
+      batch.set(taskDoc, cleanData, { merge: true });
+    });
+  }
 
   await batch.commit();
 }

@@ -355,11 +355,11 @@ function LoginContent() {
           {/* Slim Branded Insignia - Final Proportional Scaling */}
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
             <div style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 28,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 16,
               padding: '10px 24px', background: 'var(--teal)', borderRadius: 16,
               boxShadow: '0 10px 30px rgba(0, 63, 73, 0.15)', 
               border: '1px solid var(--sunlit-rock)', 
-              width: 'max-content', margin: '0 auto',
+              width: 'max-content', margin: '0 auto 12px',
             }}>
               <motion.img 
                 initial={{ opacity: 0, scale: 0.9 }}

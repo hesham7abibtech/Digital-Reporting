@@ -56,6 +56,7 @@ import { db } from '@/lib/firebase';
 import GlassCard from '@/components/shared/GlassCard';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { Task, TaskStatus, TeamMember, DashboardNavItem, ProjectMetadata, Department, ReportSummaryField, HeaderBadge, BIMReview } from '@/lib/types';
+import { PRECINCTS, TASK_STATUS_OPTIONS } from '@/lib/constants';
 import TaskEditorModal from '@/components/admin/TaskEditorModal';
 import MemberEditorModal from '@/components/admin/MemberEditorModal';
 import RegistryEditorModal from '@/components/admin/RegistryEditorModal';
@@ -571,6 +572,10 @@ export default function AdminDashboardPage() {
     departmentsSnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as Department)) || [],
     [departmentsSnapshot]);
 
+  const memoizedMembers = useMemo(() =>
+    membersSnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as TeamMember)) || [],
+    [membersSnapshot]);
+
   const handleManualSync = async () => {
     setIsSavingReport(true);
     try {
@@ -798,13 +803,16 @@ export default function AdminDashboardPage() {
       
       const columns = [
         { header: 'ID', key: 'id', width: 25 },
-        { header: 'Asset / Task Title', key: 'title', width: 50 },
+        { header: 'Task Definition / Asset', key: 'title', width: 50 },
+        { header: 'Project Precinct', key: 'precinct', width: 25 },
         { header: 'Task Category', key: 'department', width: 20 },
+        { header: 'Operational Status', key: 'status', width: 25 },
         { header: 'Submitter', key: 'submitterName', width: 25 },
         { header: 'Submission Date', key: 'submittingDate', width: 20 },
         { header: 'Deliverable Type', key: 'deliverableType', width: 25 },
-        { header: 'CDE', key: 'cde', width: 20 },
-        { header: 'Description', key: 'description', width: 40 }
+        { header: 'CDE Node', key: 'cde', width: 20 },
+        { header: 'Link Label', key: 'linkLabel', width: 25 },
+        { header: 'URL', key: 'url', width: 40 }
       ];
       
       sheet.columns = columns;
@@ -813,16 +821,54 @@ export default function AdminDashboardPage() {
       headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF003F49' } };
       headerRow.alignment = { horizontal: 'center' };
+
+      // Add Data Validations for dropdowns
+      const deptNames = memoizedDepartments.map(d => d.name);
+      
+      // Precinct Dropdown (Column C)
+      (sheet as any).dataValidations.add('C2:C500', {
+        type: 'list',
+        allowBlank: true,
+        formulae: [`"${PRECINCTS.join(',')}"`],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Precinct',
+        error: 'Please select a precinct from the list.'
+      });
+
+      // Category Dropdown (Column D)
+      if (deptNames.length > 0) {
+        (sheet as any).dataValidations.add('D2:D500', {
+          type: 'list',
+          allowBlank: true,
+          formulae: [`"${deptNames.join(',')}"`],
+          showErrorMessage: true,
+          errorTitle: 'Invalid Category',
+          error: 'Please select a valid Task Category.'
+        });
+      }
+
+      // Status Dropdown (Column E)
+      (sheet as any).dataValidations.add('E2:E500', {
+        type: 'list',
+        allowBlank: true,
+        formulae: [`"${TASK_STATUS_OPTIONS.join(',')}"`],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Status',
+        error: 'Please select an operational status from the list.'
+      });
       
       sheet.addRow({
         id: 'T-001 (Optional)',
         title: 'Sample Asset Title',
-        department: 'Architecture',
+        precinct: PRECINCTS[0],
+        department: deptNames[0] || 'BIM',
+        status: TASK_STATUS_OPTIONS[0],
         submitterName: 'John Doe',
         submittingDate: '11-APR-2026',
         deliverableType: 'RVT | IFC',
         cde: 'ACC | BIM360',
-        description: 'Sample administrative note.'
+        linkLabel: 'Access Description',
+        url: 'https://...'
       });
 
       const buffer = await workbook.xlsx.writeBuffer();
@@ -857,7 +903,7 @@ export default function AdminDashboardPage() {
           return;
         }
 
-        const expectedHeaders = ['Asset / Task Title', 'Task Category', 'Submitter', 'Submission Date'];
+        const expectedHeaders = ['Task Definition / Asset', 'Task Category', 'Submitter', 'Submission Date'];
         const firstRow = json[0];
         const missingHeaders = expectedHeaders.filter(h => !Object.keys(firstRow).includes(h));
         
@@ -876,27 +922,90 @@ export default function AdminDashboardPage() {
           return isNaN(parsed.getTime()) ? String(val) : parsed.toISOString();
         };
 
-        const mappedTasks = json.map((row: any) => ({
-          id: String(row['ID'] || '').replace(' (Optional)', '').trim(),
-          title: String(row['Asset / Task Title'] || ''),
-          department: String(row['Task Category'] || ''),
-          submitterName: String(row['Submitter'] || ''),
-          submittingDate: normalizeExcelDate(row['Submission Date']),
-          deliverableType: row['Deliverable Type'] ? String(row['Deliverable Type']).split('|').map(s => s.trim()) : [],
-          cde: row['CDE'] ? String(row['CDE']).split('|').map(s => s.trim()) : [],
-          description: row['Description'] || '',
-          status: 'NOT_STARTED' as TaskStatus,
-          completion: 0,
-          attachments: 0,
-          files: [],
-          links: [],
-          tags: [],
-          fileZone: 'INTERNAL',
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          fileShareLink: '',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }));
+        const mapStatusToInternal = (extStatus: string): TaskStatus => {
+          const s = String(extStatus || '').toUpperCase().replace(/\s+/g, '_');
+          if (['NOT_STARTED', 'IN_PROGRESS', 'PENDING_REVIEW', 'COMPLETED', 'DELAYED', 'BLOCKED'].includes(s)) {
+            return s as TaskStatus;
+          }
+          return 'NOT_STARTED';
+        };
+
+        const nextIdsByPrefix: Record<string, number> = {};
+        const getImportNextId = (deptName: string) => {
+          const dept = memoizedDepartments.find(d => d.id === deptName || d.name === deptName);
+          const abbr = dept?.abbreviation || (deptName ? deptName.slice(0, 3).toUpperCase() : 'GEN');
+          const prefix = `REH - ${abbr} - `;
+          
+          if (!nextIdsByPrefix[prefix]) {
+            const deptTasks = memoizedTasks.filter(t => t.id?.startsWith(prefix)) || [];
+            let maxNum = 99;
+            if (deptTasks.length > 0) {
+              const nums = deptTasks.map(t => {
+                const parts = t.id.split(' - ');
+                return parseInt(parts[parts.length - 1]);
+              }).filter(n => !isNaN(n));
+              maxNum = Math.max(...nums, 99);
+            }
+            nextIdsByPrefix[prefix] = maxNum + 1;
+          }
+          
+          const newId = `${prefix}${nextIdsByPrefix[prefix]}`;
+          nextIdsByPrefix[prefix]++;
+          return newId;
+        };
+
+        const mappedTasks = json.map((row: any) => {
+          const category = String(row['Task Category'] || '');
+          const importId = String(row['ID'] || '').replace(' (Optional)', '').trim();
+          
+          const vectorType = String(row['Deliverable Type'] || '');
+          const vectorCde = String(row['CDE Node'] || '');
+          const vectorLabel = String(row['Link Label'] || '');
+          const vectorUrl = String(row['URL'] || '');
+
+          const vectors = [];
+          if (vectorUrl) {
+            vectors.push({
+              id: `vec-${Date.now()}-${Math.random()}`,
+              type: vectorType || 'UNSPECIFIED',
+              cde: vectorCde || 'UNSPECIFIED',
+              label: vectorLabel || vectorType || 'Access Link',
+              url: vectorUrl
+            });
+          }
+
+          const rawSubmitter = String(row['Submitter'] || '').trim();
+          const matchedMember = memoizedMembers.find(m => 
+            m.name?.toLowerCase().trim() === rawSubmitter.toLowerCase() ||
+            m.email?.toLowerCase().trim() === rawSubmitter.toLowerCase()
+          );
+
+          return {
+            id: importId && !importId.startsWith('T-001') ? importId : getImportNextId(category),
+            title: String(row['Task Definition / Asset'] || ''),
+            precinct: row['Project Precinct'] || '',
+            department: category,
+            status: mapStatusToInternal(row['Operational Status'] || 'NOT STARTED'),
+            submitterName: matchedMember ? matchedMember.name : rawSubmitter,
+            submitterId: matchedMember ? matchedMember.id : '',
+            submitterEmail: matchedMember ? matchedMember.email : '',
+            submittingDate: normalizeExcelDate(row['Submission Date']),
+            deliverableType: vectorType ? vectorType.split('|').map(s => s.trim()) : [],
+            cde: vectorCde ? vectorCde.split('|').map(s => s.trim()) : [],
+            fileShareLink: vectorUrl,
+            description: '',
+            completion: mapStatusToInternal(row['Operational Status'] || '') === 'COMPLETED' ? 100 : 0,
+            attachments: 0,
+            files: [],
+            links: [],
+            vectors: vectors,
+            tags: [],
+            fileZone: 'INTERNAL',
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+        });
 
         setTaskImportConfirm({ isOpen: true, records: mappedTasks as Task[] });
       } catch (err) {
@@ -1441,17 +1550,26 @@ export default function AdminDashboardPage() {
                               </>
                             ) : (
                               <>
-                                <th style={{ textAlign: 'center', padding: activeTab === 'users' ? '12px 16px' : '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
-                                  {activeTab === 'users' ? 'Staff Identity' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Project Personnel' : 'Task Category') : 'Task Definition / Asset'}
+                                {activeTab === 'tasks' && (
+                                  <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 120 }}>ID</th>
+                                )}
+                                <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', width: 400 }}>
+                                  {activeTab === 'users' ? 'Staff Identity' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Project Personnel' : 'Task Category') : (activeTab === 'tasks' ? 'Task Name' : 'Task Definition / Asset')}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: activeTab === 'users' ? '12px 16px' : '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
-                                  {activeTab === 'users' ? 'Protocol Clearance' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Task Categories' : 'Abbreviation') : 'Task Category'}
+                                <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 200 }}>
+                                  {activeTab === 'users' ? 'Protocol Clearance' : 'Project Precinct'}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: activeTab === 'users' ? '12px 16px' : '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
-                                  {activeTab === 'users' ? 'Admin Access' : activeTab === 'tasks' ? 'Submitter' : activeTab === 'team' && teamActiveSubTab === 'personnel' ? 'Email Interface' : 'Action Hub'}
+                                <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 130 }}>
+                                  {activeTab === 'users' ? 'Admin Access' : 'Task Category'}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: activeTab === 'users' ? '12px 16px' : '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
-                                  {activeTab === 'users' ? 'Feature Modules' : activeTab === 'tasks' ? 'Submission Date' : 'Control'}
+                                <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 160 }}>
+                                  {activeTab === 'users' ? 'Feature Modules' : 'Operational Status'}
+                                </th>
+                                <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 180 }}>
+                                  {activeTab === 'tasks' ? 'Submitter' : 'Action Hub'}
+                                </th>
+                                <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 150 }}>
+                                  {activeTab === 'tasks' ? 'Submission Date' : 'Control'}
                                 </th>
                               </>
                             )}
@@ -1477,59 +1595,92 @@ export default function AdminDashboardPage() {
                                   style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
                                 />
                               </td>
-                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                                <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text-primary)', letterSpacing: '0.02em', fontFamily: 'var(--font-heading)' }}>{task.title}</div>
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 700, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{task.id || '—'}</div>
                               </td>
-                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                                <div style={{ 
+                                  fontWeight: 800, 
+                                  fontSize: 13, 
+                                  color: 'var(--text-primary)', 
+                                  letterSpacing: '0.01em', 
+                                  fontFamily: 'var(--font-heading)',
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
+                                  lineHeight: '1.4',
+                                  width: '400px',
+                                  margin: '0 auto'
+                                }}>{task.title}</div>
+                              </td>
+                              {/* Project Precinct */}
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                                {task.precinct ? (
+                                  <span style={{ fontSize: 10, background: 'rgba(0, 63, 73, 0.05)', color: 'var(--text-primary)', padding: '6px 12px', borderRadius: 8, fontWeight: 800, letterSpacing: '0.05em', border: '1px solid var(--border)' }}>
+                                    {task.precinct}
+                                  </span>
+                                ) : (
+                                  <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>—</span>
+                                )}
+                              </td>
+                              {/* Task Category */}
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
                                 {(() => {
-                                  const d = departmentsSnapshot?.docs.find((doc: any) => doc.id === task.department || doc.data().name === task.department)?.data();
+                                  const d = memoizedDepartments.find(dept => dept.id === task.department || dept.name === task.department);
                                   return (
                                     <span style={{ fontSize: 10, background: 'var(--secondary)', color: 'var(--teal)', padding: '8px 16px', borderRadius: 10, fontWeight: 900, letterSpacing: '0.1em', border: '1px solid var(--border)', textTransform: 'uppercase' }}>
-                                      {d ? d.name : task.department || 'Awaiting Assignment'}
+                                      {d ? d.name : task.department || '—'}
                                     </span>
                                   );
                                 })()}
                               </td>
-                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                              {/* Operational Status */}
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                                <span style={{ 
+                                  fontSize: 10, 
+                                  fontWeight: 900, 
+                                  letterSpacing: '0.08em', 
+                                  padding: '6px 12px', 
+                                  borderRadius: 8,
+                                  color: '#ffffff',
+                                  background: task.status === 'COMPLETED' ? 'var(--status-success)' : 
+                                             task.status === 'BLOCKED' ? 'var(--status-error)' :
+                                             task.status === 'DELAYED' ? 'var(--status-warning)' :
+                                             'var(--primary-light)',
+                                  textTransform: 'uppercase'
+                                }}>
+                                  {task.status?.replace(/_/g, ' ') || 'NOT STARTED'}
+                                </span>
+                              </td>
+                              {/* Submitter */}
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
                                   {task.submitterName && (
                                     <div style={{
-                                      width: 36, height: 36, borderRadius: 12,
+                                      width: 32, height: 32, borderRadius: 10,
                                       background: 'var(--secondary)', border: '1px solid var(--border)',
-                                      color: 'var(--teal)', fontSize: 13, fontWeight: 900,
+                                      color: 'var(--teal)', fontSize: 12, fontWeight: 900,
                                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                      flexShrink: 0, overflow: 'hidden', position: 'relative'
+                                      flexShrink: 0, overflow: 'hidden'
                                     }}>
                                       {userAvatarByUid[task.submitterId || ''] ? (
-                                        <img 
-                                          src={userAvatarByUid[task.submitterId || '']} 
-                                          alt={task.submitterName} 
-                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                        />
-                                      ) : userAvatarByEmail[task.submitterEmail?.toLowerCase() || ''] ? (
-                                        <img 
-                                          src={userAvatarByEmail[task.submitterEmail?.toLowerCase() || '']} 
-                                          alt={task.submitterName} 
-                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                        />
-                                      ) : userAvatarByExactName[task.submitterName || ''] ? (
-                                        <img 
-                                          src={userAvatarByExactName[task.submitterName || '']} 
-                                          alt={task.submitterName} 
-                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                        />
+                                        <img src={userAvatarByUid[task.submitterId || '']} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                       ) : (
-                                        task.submitterName?.charAt(0).toUpperCase()
+                                        task.submitterName.charAt(0).toUpperCase()
                                       )}
                                     </div>
                                   )}
-                                  <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 600 }}>{task.submitterName || '—'}</span>
+                                  <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>{task.submitterName || '—'}</span>
                                 </div>
                               </td>
-                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 800, letterSpacing: '0.05em' }}>{task.submittingDate || '—'}</div>
+                              {/* Submission Date - Date Only */}
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 800, letterSpacing: '0.05em' }}>
+                                  {formatDate(task.submittingDate)}
+                                </div>
                               </td>
-                              <td style={{ padding: '24px 32px', textAlign: 'center' }} onClick={(e) => { e.stopPropagation(); handleEditRecord(task); }}>
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }} onClick={(e) => { e.stopPropagation(); handleEditRecord(task); }}>
                                 <MoreVertical size={20} color="var(--text-muted)" />
                               </td>
                             </motion.tr>
@@ -1642,7 +1793,7 @@ export default function AdminDashboardPage() {
 
                         {activeTab === 'team' && teamActiveSubTab === 'departments' && !departmentsLoading && (departmentsSnapshot?.docs.length || 0) === 0 && (
                           <tr>
-                            <td colSpan={5} style={{ padding: '60px 40px', textAlign: 'center' }}>
+                            <td colSpan={7} style={{ padding: '60px 40px', textAlign: 'center' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
                                 <div style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--secondary)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                   <Building2 size={24} style={{ color: 'var(--teal)' }} />
@@ -1656,7 +1807,7 @@ export default function AdminDashboardPage() {
                         )}
                         {activeTab === 'team' && teamActiveSubTab === 'personnel' && !membersLoading && (!membersSnapshot || membersSnapshot.docs.length === 0) && (
                           <tr>
-                            <td colSpan={5} style={{ padding: '60px 40px', textAlign: 'center' }}>
+                            <td colSpan={7} style={{ padding: '60px 40px', textAlign: 'center' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
                                 <div style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--secondary)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                   <Users size={24} style={{ color: 'var(--teal)' }} />

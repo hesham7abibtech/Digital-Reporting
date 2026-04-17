@@ -36,8 +36,10 @@ export default function TicketRequestModal({
   const { user } = useAuth();
   const { showToast } = useToast();
   
-  const [reason, setReason] = useState(defaultReason);
-  const [message, setMessage] = useState(defaultMessage);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [reason, setReason] = useState('');
+  const [message, setMessage] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedId, setSubmittedId] = useState<string | null>(null);
@@ -50,7 +52,12 @@ export default function TicketRequestModal({
 
   const effectiveEmail = user?.email || guestEmail;
   const isEmailValid = user ? true : validateEmail(guestEmail);
-  const isFormValid = isEmailValid && !!reason && !!message;
+  const isFormValid =
+    isEmailValid &&
+    firstName.trim().length > 0 &&
+    lastName.trim().length > 0 &&
+    reason.trim().length > 0 &&
+    message.trim().length > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,9 +70,11 @@ export default function TicketRequestModal({
       await addDoc(collection(db, 'tickets'), {
         id: ticketId,
         uid: user?.uid || 'GUEST',
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         email: effectiveEmail,
-        reason,
-        message,
+        reason: reason.trim(),
+        message: message.trim(),
         status: 'PENDING',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -93,6 +102,11 @@ export default function TicketRequestModal({
   const handleResetAndClose = () => {
     setSubmittedId(null);
     setIsCopied(false);
+    setFirstName('');
+    setLastName('');
+    setReason('');
+    setMessage('');
+    setGuestEmail('');
     onClose();
   };
 
@@ -124,7 +138,7 @@ export default function TicketRequestModal({
           boxShadow: '0 40px 100px rgba(0, 63, 73, 0.15), inset 0 0 80px rgba(255, 255, 255, 0.4)',
         }}
       >
-        <div style={{ padding: '40px 40px 48px' }}>
+        <div style={{ padding: '20px 30px 34px' }}>
           {/* Close Button */}
           {!submittedId && (
             <button 
@@ -143,12 +157,12 @@ export default function TicketRequestModal({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
               >
-                <div style={{ marginBottom: 44, textAlign: 'center' }}>
+                <div style={{ marginBottom: 22, textAlign: 'center' }}>
                   <div style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 14, marginBottom: 28,
+                    display: 'inline-flex', alignItems: 'center', gap: 14,
                     padding: '8px 20px', background: 'var(--teal)', borderRadius: 14,
                     border: '1px solid var(--sunlit-rock)', boxShadow: '0 6px 15px rgba(0, 63, 73, 0.08)',
-                    margin: '0 auto' 
+                    margin: '0 auto 10px'
                   }}>
                     <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 18, width: 'auto', filter: 'brightness(0) invert(1)' }} />
                     <div style={{ width: 1, height: 14, background: 'rgba(255, 255, 255, 0.2)' }} />
@@ -170,11 +184,44 @@ export default function TicketRequestModal({
                   </div>
                 </div>
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label style={{ fontSize: 11, fontWeight: 900, color: '#002a30', textTransform: 'uppercase', letterSpacing: '0.15em' }}>First Name</label>
+                      <input
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="First name"
+                        required
+                        style={{
+                          padding: '12px 14px', background: 'white',
+                          border: '1px solid rgba(0, 63, 73, 0.15)', borderRadius: 12,
+                          color: 'var(--teal)', fontSize: 14, fontWeight: 600, outline: 'none',
+                          boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.02)'
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label style={{ fontSize: 11, fontWeight: 900, color: '#002a30', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Last Name</label>
+                      <input
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Last name"
+                        required
+                        style={{
+                          padding: '12px 14px', background: 'white',
+                          border: '1px solid rgba(0, 63, 73, 0.15)', borderRadius: 12,
+                          color: 'var(--teal)', fontSize: 14, fontWeight: 600, outline: 'none',
+                          boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.02)'
+                        }}
+                      />
+                    </div>
+                  </div>
+
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <label style={{ fontSize: 11, fontWeight: 900, color: '#002a30', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Email Identity</label>
                     <div style={{ 
-                      padding: '14px 16px', background: 'white', 
+                      padding: '12px 14px', background: 'white', 
                       border: `1px solid ${guestEmail && !isEmailValid ? '#B45309' : 'rgba(0, 63, 73, 0.15)'}`, borderRadius: 14,
                       display: 'flex', alignItems: 'center', gap: 10,
                       boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.02)',
@@ -212,7 +259,7 @@ export default function TicketRequestModal({
                       placeholder="e.g. Admin Access Request"
                       required
                       style={{ 
-                        padding: '14px 16px', background: 'white', 
+                        padding: '12px 14px', background: 'white', 
                         border: '1px solid rgba(0, 63, 73, 0.15)', borderRadius: 14,
                         color: 'var(--teal)', fontSize: 14, fontWeight: 600, outline: 'none',
                         boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.02)'
@@ -230,7 +277,7 @@ export default function TicketRequestModal({
                         required
                         rows={4}
                         style={{ 
-                          width: '100%', padding: '14px 16px', background: 'white', 
+                          width: '100%', padding: '12px 14px', background: 'white', 
                           border: '1px solid rgba(0, 63, 73, 0.15)', borderRadius: 14,
                           color: 'var(--teal)', fontSize: 14, fontWeight: 600, outline: 'none', resize: 'none',
                           boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.02)'
@@ -244,12 +291,12 @@ export default function TicketRequestModal({
                     type="submit" 
                     disabled={isSubmitting || !isFormValid}
                     style={{ 
-                      width: '100%', padding: '16px', borderRadius: 14, 
+                      width: '100%', padding: '14px', borderRadius: 14, 
                       background: isFormValid ? 'var(--teal)' : 'rgba(0, 63, 73, 0.2)',
                       color: 'white', fontSize: 14, fontWeight: 900, border: 'none',
                       cursor: (isSubmitting || !isFormValid) ? 'not-allowed' : 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                      marginTop: 8, boxShadow: isFormValid ? '0 10px 20px rgba(0, 63, 73, 0.15)' : 'none',
+                      marginTop: 4, boxShadow: isFormValid ? '0 10px 20px rgba(0, 63, 73, 0.15)' : 'none',
                       textTransform: 'uppercase', letterSpacing: '0.05em',
                       transition: 'all 300ms'
                     }}

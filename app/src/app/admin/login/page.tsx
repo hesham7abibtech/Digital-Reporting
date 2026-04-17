@@ -245,7 +245,7 @@ function AdminLoginContent() {
   return (
     <div style={{ minHeight: '100vh', position: 'relative', display: 'flex', flexDirection: 'column', background: '#0a1220' }}>
       {/* Isolated Administrative Branding - Slim Professional High Contrast */}
-      <div style={{ padding: '20px 48px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(5, 10, 20, 0.98)', borderBottom: '1px solid var(--sunlit-rock)', zIndex: 100, boxShadow: '0 5px 20px rgba(0,0,0,0.6)' }}>
+      <div style={{ padding: '20px 48px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(5, 10, 20, 0.98)', borderBottom: '1px solid var(--sunlit-rock)', zIndex: 100, boxShadow: '0 5px 20px rgba(0,0,0,0.6)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
           <motion.img 
             initial={{ opacity: 0, scale: 0.9 }}

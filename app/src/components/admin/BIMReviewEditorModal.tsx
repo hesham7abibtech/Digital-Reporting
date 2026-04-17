@@ -6,9 +6,10 @@ import { X, Save, Shield, Info, Link as LinkIcon, Calendar, Hash, User, Building
 import GlassCard from '@/components/shared/GlassCard';
 import { BIMReview } from '@/lib/types';
 import { upsertBimReview } from '@/services/FirebaseService';
-import { db } from '@/lib/firebase';
+import EliteDatePicker from '@/components/shared/EliteDatePicker';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
+import { db } from '@/lib/firebase';
 
 interface BIMReviewEditorModalProps {
   isOpen: boolean;
@@ -278,29 +279,19 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Submission Date</label>
-                      <div style={{ position: 'relative' }}>
-                        <Calendar size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                        <input
-                          type="text"
-                          value={formData.submissionDate || ''}
-                          onChange={(e) => setFormData({ ...formData, submissionDate: e.target.value })}
-                          placeholder="DD-MMM-YY"
-                          style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
-                        />
-                      </div>
+                      <EliteDatePicker
+                        value={formData.submissionDate || ''}
+                        onChange={val => setFormData({ ...formData, submissionDate: val })}
+                        disabled={readOnly}
+                      />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>InSite Review Due Date</label>
-                      <div style={{ position: 'relative' }}>
-                        <Calendar size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                        <input
-                          type="text"
-                          value={formData.insiteReviewDueDate || ''}
-                          onChange={(e) => setFormData({ ...formData, insiteReviewDueDate: e.target.value })}
-                          placeholder="DD-MMM-YY"
-                          style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
-                        />
-                      </div>
+                      <EliteDatePicker
+                        value={formData.insiteReviewDueDate || ''}
+                        onChange={val => setFormData({ ...formData, insiteReviewDueDate: val })}
+                        disabled={readOnly}
+                      />
                     </div>
                   </div>
 

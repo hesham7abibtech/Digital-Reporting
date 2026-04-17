@@ -25,7 +25,7 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
         padding: '4px 12px',
         borderRadius: 9999,
         fontSize: 13,
-        fontWeight: 500,
+        fontWeight: 700,
         color: c.color,
         background: c.bg,
         whiteSpace: 'nowrap',

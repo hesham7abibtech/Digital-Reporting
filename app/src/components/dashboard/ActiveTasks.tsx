@@ -18,15 +18,15 @@ type SortField = 'title' | 'status' | 'completion' | 'submittingDate' | 'id' | '
 type SortDir = 'asc' | 'desc';
 
 const INITIAL_COLUMNS: ColumnDef<SortField>[] = [
-  { id: 'id', field: 'id', label: 'ID', align: 'center', priority: 'high', defaultWidth: 100, alwaysVisible: true },
-  { id: 'title', field: 'title', label: 'Task Name', align: 'center', priority: 'high', defaultWidth: 160, alwaysVisible: true },
-  { id: 'department', field: 'department', label: 'Task Category', align: 'center', priority: 'medium', defaultWidth: 190 },
-  { id: 'precinct', field: 'precinct', label: 'Precinct', align: 'center', priority: 'medium', defaultWidth: 150 },
-  { id: 'submitterName', field: 'submitterName', label: 'Submitter', align: 'center', priority: 'medium', defaultWidth: 180 },
-  { id: 'submittingDate', field: 'submittingDate', label: 'Submission Date', align: 'center', priority: 'medium', defaultWidth: 180 },
-  { id: 'deliverableType', field: 'deliverableType', label: 'Deliverable Type', align: 'center', priority: 'medium', defaultWidth: 210 },
-  { id: 'cde', field: 'cde', label: 'CDE', align: 'center', priority: 'low', defaultWidth: 150 },
-  { id: 'links', field: 'id', label: 'Deliverables Links', align: 'center', priority: 'low', defaultWidth: 220 }
+  { id: 'id', field: 'id', label: 'ID', align: 'center', priority: 'high', defaultWidth: 82, alwaysVisible: true },
+  { id: 'title', field: 'title', label: 'Task Name', align: 'center', priority: 'high', defaultWidth: 260, alwaysVisible: true },
+  { id: 'department', field: 'department', label: 'Task Category', align: 'center', priority: 'medium', defaultWidth: 130 },
+  { id: 'precinct', field: 'precinct', label: 'Precinct', align: 'center', priority: 'medium', defaultWidth: 110 },
+  { id: 'submitterName', field: 'submitterName', label: 'Submitter', align: 'center', priority: 'medium', defaultWidth: 130 },
+  { id: 'submittingDate', field: 'submittingDate', label: 'Submission Date', align: 'center', priority: 'medium', defaultWidth: 118 },
+  { id: 'deliverableType', field: 'deliverableType', label: 'Deliverable Type', align: 'center', priority: 'medium', defaultWidth: 128 },
+  { id: 'cde', field: 'cde', label: 'CDE', align: 'center', priority: 'low', defaultWidth: 104 },
+  { id: 'links', field: 'id', label: 'Deliverables Links', align: 'center', priority: 'low', defaultWidth: 160 }
 ];
 
 function ResizeHandle({ columnWidth, onWidthChange }: { columnWidth: number, onWidthChange: (w: number) => void }) {
@@ -91,9 +91,6 @@ function ResizeHandle({ columnWidth, onWidthChange }: { columnWidth: number, onW
 }
 
 
-const PREVIEW_ROWS = 5;
-
-
 function TaskRow({ 
   task, index, onClick, visibleColumns, isCustomized, 
   filterType = [], filterCDE = [], members = [], departments = []
@@ -126,32 +123,51 @@ function TaskRow({
       {visibleColumns.map(col => {
         if (col.id === 'id') return (
           <td key={col.id} style={{ 
-            padding: '12px 14px', fontSize: 13, color: 'var(--text-dim)', fontWeight: 500, textAlign: 'center', verticalAlign: 'middle', 
-            whiteSpace: isCustomized ? 'normal' : 'nowrap', 
-            wordBreak: isCustomized ? 'break-all' : 'normal' 
+            padding: '12px 14px', fontSize: 13, color: 'var(--text-dim)', fontWeight: 600, textAlign: 'center', verticalAlign: 'middle', 
+            whiteSpace: 'nowrap', 
+            wordBreak: 'normal' 
           }}>
             {task.id}
           </td>
         );
 
         if (col.id === 'title') return (
-          <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
+          <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle', maxWidth: col.width || 320 }}>
             <p style={{ 
               fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', margin: 0, 
-              whiteSpace: isCustomized ? 'normal' : 'nowrap', 
-              wordBreak: isCustomized ? 'break-word' : 'normal' 
+              whiteSpace: 'normal', 
+              wordBreak: 'break-word',
+              lineHeight: 1.4
             }}>{task.title}</p>
           </td>
         );
         if (col.id === 'department') return (
           <td key={col.id} style={{ 
             padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle',
-            whiteSpace: isCustomized ? 'normal' : 'nowrap',
+            whiteSpace: 'nowrap'
           }}>
             {(() => {
               const d = (departments || []).find((dept: Department) => dept.id === task.department || dept.name === task.department);
+              const deptColor = getDepartmentColor(d?.name || task.department);
               return (
-                <span style={{ fontSize: 13, fontWeight: 600, color: getDepartmentColor(d?.name || task.department) }}>
+                <span style={{ 
+                  fontSize: 11,
+                  fontWeight: 900,
+                  padding: '5px 12px',
+                  background: `${deptColor}14`,
+                  border: `1.5px solid ${deptColor}66`,
+                  color: '#003f49',
+                  borderRadius: '10px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                  whiteSpace: 'nowrap',
+                  boxShadow: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 'fit-content',
+                  maxWidth: '100%'
+                }}>
                   {d ? d.name : task.department || 'General'}
                 </span>
               );
@@ -162,7 +178,7 @@ function TaskRow({
         if (col.id === 'precinct') return (
           <td key={col.id} style={{ 
             padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle',
-            whiteSpace: isCustomized ? 'normal' : 'nowrap',
+            whiteSpace: 'nowrap',
           }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
               {task.precinct || '—'}
@@ -193,7 +209,7 @@ function TaskRow({
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                 <span style={{ 
                   fontSize: 13, fontWeight: 700, color: 'var(--text-primary)',
-                  whiteSpace: isCustomized ? 'normal' : 'nowrap',
+                  whiteSpace: 'nowrap',
                 }}>
                   {submitterProfile?.name || task.submitterName || '—'}
                 </span>
@@ -233,7 +249,7 @@ function TaskRow({
 
           return (
             <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
-              <div style={{ display: 'flex', flexWrap: isCustomized ? 'wrap' : 'nowrap', justifyContent: 'center', gap: 6 }}>
+              <div style={{ display: 'flex', flexWrap: 'nowrap', justifyContent: 'center', gap: 6 }}>
                 {allTypes.map((type, i) => (
                   <span key={i} style={{ 
                     fontSize: 10, fontWeight: 950, padding: '4px 14px', 
@@ -272,7 +288,7 @@ function TaskRow({
 
           return (
             <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
-              <div style={{ display: 'flex', flexWrap: isCustomized ? 'wrap' : 'nowrap', justifyContent: 'center', gap: 6 }}>
+              <div style={{ display: 'flex', flexWrap: 'nowrap', justifyContent: 'center', gap: 6 }}>
                 {allCdes.map((env, i) => (
                   <span key={i} style={{ 
                     fontSize: 10, fontWeight: 950, padding: '4px 14px', 
@@ -318,7 +334,7 @@ function TaskRow({
 
           return (
             <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: isCustomized ? 'wrap' : 'nowrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'nowrap' }}>
                 {allLinks.slice(0, 3).map((link) => (
                   <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ 
                     color: 'var(--teal)', background: 'var(--sunlit-rock)', 
@@ -407,9 +423,8 @@ export default function ActiveTasks({
     return dataToFilter;
   }, [dataToFilter]);
 
-  const [sortField, setSortField] = useState<SortField>('id');
+  const [sortField, setSortField] = useState<SortField>('department');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
-  const [expanded, setExpanded] = useState(false);
 
   const {
     columns: visibleColumns,
@@ -442,28 +457,24 @@ export default function ActiveTasks({
     return result;
   }, [sortField, sortDir, activeTasksInitial]);
 
-  const previewRows = filtered.slice(0, PREVIEW_ROWS);
-  const remainingRows = filtered.slice(PREVIEW_ROWS);
-
   const toggleSort = (field: SortField) => {
     if (sortField === field) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
     else { setSortField(field); setSortDir('asc'); }
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} style={{ marginTop: -8 }}>
-      <GlassCard style={{ padding: 0, overflow: 'visible', gap: 0 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} style={{ marginTop: 0, height: '100%', minHeight: 0, overflow: 'hidden' }}>
+      <GlassCard style={{ padding: 0, overflow: 'hidden', gap: 0, height: '100%', minHeight: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0, height: '100%', minHeight: 0 }}>
         <div style={{
           padding: '12px 20px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(198, 224, 224, 0.1)',
+          borderBottom: '1px solid rgba(0, 63, 73, 0.15)',
           flexWrap: 'wrap',
           gap: 16,
-          position: 'relative',
-          background: 'rgba(255, 255, 255, 0.45)',
+          background: 'rgba(251, 250, 245, 0.99)',
           borderRadius: '16px 16px 0 0'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', width: '100%', gap: 16 }}>
@@ -581,7 +592,17 @@ export default function ActiveTasks({
           </div>
         </div>
 
-        <div style={{ overflowX: 'auto', paddingBottom: 4 }} className="elite-scrollbar">
+        <div
+          style={{
+            overflowX: isCustomized ? 'auto' : 'hidden',
+            overflowY: 'auto',
+            paddingBottom: 4,
+            flex: 1,
+            minHeight: 0,
+            maxHeight: 'calc(100vh - 305px)'
+          }}
+          className="elite-scrollbar"
+        >
           <style>{`
             .elite-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
             .elite-scrollbar::-webkit-scrollbar-track { background: rgba(0, 63, 73, 0.05); border-radius: 10px; }
@@ -602,16 +623,33 @@ export default function ActiveTasks({
             .elite-column-dividers td:not(:last-child) {
               border-right: 1.5px solid rgba(0, 63, 73, 0.15) !important;
             }
-            .elite-column-dividers td, .elite-column-dividers th {
-              word-wrap: break-word;
-              overflow-wrap: break-word;
-            }
           `}</style>
-          <table className="elite-column-dividers" style={{ width: '100%', borderCollapse: 'collapse', tableLayout: isCustomized ? 'fixed' : 'auto', minWidth: isCustomized ? 'max-content' : '100%' }}>
+          <table className="elite-column-dividers" style={{ width: isCustomized ? 'max-content' : '100%', borderCollapse: 'collapse', tableLayout: isCustomized ? 'fixed' : 'auto', minWidth: '100%' }}>
             <colgroup>
-              {visibleColumns.map(col => (
-                <col key={col.id} style={{ width: isCustomized ? col.width : (col.id === 'title' ? 'auto' : '1px') }} />
-              ))}
+              {visibleColumns.map(col => {
+                if (isCustomized) {
+                  return <col key={col.id} style={{ width: col.id === 'title' ? 'auto' : col.width || '1px' }} />;
+                }
+
+                // In default view, keep semantic columns content-fitted and let title absorb remaining width.
+                const contentFitColumns = new Set([
+                  'id',
+                  'department',
+                  'precinct',
+                  'submitterName',
+                  'submittingDate',
+                  'deliverableType',
+                  'cde',
+                  'links'
+                ]);
+
+                return (
+                  <col
+                    key={col.id}
+                    style={{ width: col.id === 'title' ? 'auto' : (contentFitColumns.has(col.id) ? '1%' : undefined) }}
+                  />
+                );
+              })}
             </colgroup>
             <thead>
               <tr style={{ background: 'var(--accent)', borderBottom: '1px solid var(--border)' }}>
@@ -639,13 +677,29 @@ export default function ActiveTasks({
                     onDrop={(e) => {
                       e.preventDefault();
                       e.currentTarget.style.background = 'transparent';
+                      const sourceId = e.dataTransfer.getData('text/plain');
+                      if (sourceId && sourceId !== col.id) {
+                        reorderColumn(sourceId, col.id);
+                      }
                     }}
-                    style={{ ...thStyle, color: '#000000', textAlign: 'center', position: 'sticky', top: 0, zIndex: 50, background: 'var(--accent)', borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }}
+                    style={{ ...thStyle, color: '#000000', textAlign: 'center', background: 'var(--accent)', borderBottom: '1px solid var(--border)', transition: 'background 0.2s', position: 'sticky', top: 0, zIndex: 50 }}
                   >
                     <div onClick={() => toggleSort(col.field)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' }}>
-                      <span style={{ fontSize: 14.5, fontWeight: 950, color: '#000000', whiteSpace: 'nowrap' }}>{col.label}</span>
+                      <span style={{ fontSize: 12.5, fontWeight: 950, color: '#000000', whiteSpace: 'nowrap' }}>{col.label}</span>
                       <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginLeft: 8 }}>
-                        <ArrowUpDown size={14} style={{ color: sortField === col.field ? '#000000' : 'rgba(0, 0, 0, 0.4)' }} />
+                        {sortField === col.field ? (
+                          sortDir === 'asc' ? (
+                            <motion.div animate={{ rotate: 0 }} initial={{ rotate: 180 }}>
+                              <ChevronDown size={14} style={{ color: '#003f49', strokeWidth: 4 }} />
+                            </motion.div>
+                          ) : (
+                            <motion.div animate={{ rotate: 180 }} initial={{ rotate: 0 }}>
+                              <ChevronDown size={14} style={{ color: '#003f49', strokeWidth: 4 }} />
+                            </motion.div>
+                          )
+                        ) : (
+                          <ArrowUpDown size={14} style={{ color: 'rgba(0, 0, 0, 0.25)', opacity: 0.5 }} />
+                        )}
                       </span>
                     </div>
                     <ResizeHandle columnWidth={col.width || 120} onWidthChange={(w) => updateColumnWidth(col.id, w)} />
@@ -654,7 +708,7 @@ export default function ActiveTasks({
               </tr>
             </thead>
             <tbody>
-              {previewRows.map((task, i) => (
+              {filtered.map((task, i) => (
                 <TaskRow 
                   key={task.id} 
                   task={task} 
@@ -668,42 +722,9 @@ export default function ActiveTasks({
                   departments={departments}
                 />
               ))}
-              <AnimatePresence initial={false}>
-                {expanded && remainingRows.map((task, i) => (
-                  <TaskRow 
-                    key={task.id} 
-                    task={task} 
-                    index={PREVIEW_ROWS + i} 
-                    onClick={onTaskClick} 
-                    visibleColumns={visibleColumns}
-                    isCustomized={isCustomized}
-                    filterType={filterType}
-                    filterCDE={filterCDE}
-                    members={members}
-                    departments={departments}
-                  />
-                ))}
-              </AnimatePresence>
             </tbody>
           </table>
         </div>
-
-        {remainingRows.length > 0 && (
-          <button
-            onClick={() => setExpanded(!expanded)}
-            style={{
-              width: '100%', padding: '12px 0', border: 'none', cursor: 'pointer',
-              background: 'var(--aqua)', fontSize: 13, fontWeight: 800, color: 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              borderRadius: '0 0 10px 10px', transition: 'all 200ms',
-              textTransform: 'uppercase', letterSpacing: '0.1em'
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = '#d9eded'}
-            onMouseLeave={e => e.currentTarget.style.background = 'var(--aqua)'}
-          >
-            {expanded ? 'Show less' : `Show all ${filtered.length} tasks`}
-            <ChevronDown size={14} style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 200ms' }} />
-          </button>
-        )}
 
         {filtered.length === 0 && (
           <div style={{ padding: '48px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>

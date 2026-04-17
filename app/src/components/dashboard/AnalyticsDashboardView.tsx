@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import {
   Database, Users, FolderOpen, CloudCog, CalendarClock, TrendingUp,
-  TrendingDown, Minus, Lightbulb, AlertTriangle, Crown, Trophy, Zap,
+  Lightbulb, AlertTriangle, Crown, Trophy, Zap,
   Search, CircleDot, RefreshCw
 } from 'lucide-react';
 import GlassCard from '@/components/shared/GlassCard';
@@ -211,7 +211,7 @@ interface ChartCardProps {
   subtitle?: string;
   children: React.ReactNode;
   delay?: number;
-  height?: number;
+  height?: number | string;
   titleColor?: string;
 }
 
@@ -240,8 +240,8 @@ function ChartCard({ title, subtitle, children, delay = 0, height = 200, titleCo
         </div>
         <div style={{ 
           width: '100%', 
-          height: `${height}px`, 
-          minHeight: `${height}px`,
+          height: typeof height === 'number' ? `${height}px` : height,
+          minHeight: typeof height === 'number' ? `${height}px` : height,
           padding: '2px 8px 10px', 
           position: 'relative', 
           overflow: 'hidden' 
@@ -264,8 +264,6 @@ function KPICard({ label, value, icon, color, trend, pctChange, suffix, delay, d
   tooltipDetails?: { label: string; value: string; color?: string }[];
 }) {
   const [isHovered, setIsHovered] = useState(false);
-  const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
-  const trendColor = trend === 'up' ? '#10b981' : trend === 'down' ? '#f43f5e' : '#64748b';
 
   return (
     <motion.div
@@ -274,7 +272,7 @@ function KPICard({ label, value, icon, color, trend, pctChange, suffix, delay, d
       transition={{ delay, duration: 0.4 }}
       className="glass-card"
       style={{ 
-        padding: '14px 16px', 
+        padding: '10px 12px', 
         position: 'relative', 
         overflow: 'visible', 
         cursor: 'pointer',
@@ -293,31 +291,24 @@ function KPICard({ label, value, icon, color, trend, pctChange, suffix, delay, d
         pointerEvents: 'none'
       }} />
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
         <div style={{
-          width: 30, height: 30, borderRadius: 8,
+          width: 28, height: 28, borderRadius: 8,
           background: `${color}15`, color,
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
           {icon}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 3, color: trendColor }}>
-          <TrendIcon size={12} />
-          <span style={{ fontSize: 11, fontWeight: 600 }}>{pctChange}%</span>
-        </div>
-      </div>
-
-      <div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
           {displayValue ? (
-            <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>{displayValue}</span>
+            <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>{displayValue}</span>
           ) : (
-            <AnimatedCounter value={value} className="text-xl font-black text-[#003f49]" />
+            <AnimatedCounter value={value} className="text-lg font-black text-[#003f49]" />
           )}
-          {suffix && <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-dim)' }}>{suffix}</span>}
+          {suffix && <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-dim)' }}>{suffix}</span>}
         </div>
-        <p style={{ fontSize: 11, color: '#003f49', marginTop: 3, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
       </div>
+      <p style={{ fontSize: 10, color: '#003f49', marginTop: 3, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
 
       {/* ── Hover Tooltip ── */}
       <AnimatePresence>
@@ -440,6 +431,9 @@ export default function AnalyticsDashboardView({
   members = []
 }: AnalyticsDashboardViewProps) {
   const { formatDate } = useTimeZone();
+  const topChartContentHeight = 'clamp(140px, calc((100vh - 360px) / 2), 220px)';
+  const bottomChartContentHeight = 'clamp(140px, calc((100vh - 360px) / 2), 220px)';
+  const insightCardHeight = `calc(${bottomChartContentHeight} + 46px)`;
 
   // ─── KPI Computations ────────────────────────────────────────
   const kpiStats = useMemo(() => {
@@ -696,11 +690,12 @@ export default function AnalyticsDashboardView({
 
   return (
     <motion.div
+      id="analytics-dashboard-export-root"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.35 }}
-      style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+      style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
     >
       {/* ══════════ DASHBOARD FILTER BAR ══════════ */}
         <div style={{
@@ -834,7 +829,7 @@ export default function AnalyticsDashboardView({
         </div>
 
       {/* ══════════ KPI SUMMARY CARDS ══════════ */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8 }}>
         <KPICard
           label="Total Deliverables"
           value={kpiStats.totalDeliverables}
@@ -908,10 +903,10 @@ export default function AnalyticsDashboardView({
 
       {/* ══════════ CHARTS GRID — 3 COLUMN COMPACT ══════════ */}
       <div id="analytics-chart-grid">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
 
         {/* Category Performance Bar Chart */}
-        <ChartCard title="Category Performance" subtitle={`${categoryData.length} categories tracked`} delay={0.1} height={200} titleColor="#C5A059">
+        <ChartCard title="Category Performance" subtitle={`${categoryData.length} categories tracked`} delay={0.1} height={topChartContentHeight} titleColor="#C5A059">
           {categoryData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={50}>
               <BarChart data={categoryData} barSize={16} margin={{ top: 4, right: 8, bottom: 0, left: -10 }}>
@@ -928,7 +923,7 @@ export default function AnalyticsDashboardView({
         </ChartCard>
 
         {/* Submission Timeline */}
-        <ChartCard title="Submission Timeline" subtitle={`${timelineData.length} months of data`} delay={0.15} height={200} titleColor="#C5A059">
+        <ChartCard title="Submission Timeline" subtitle={`${timelineData.length} months of data`} delay={0.15} height={topChartContentHeight} titleColor="#C5A059">
           {timelineData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={50}>
               <AreaChart data={timelineData} margin={{ top: 4, right: 8, bottom: 0, left: -10 }}>
@@ -952,7 +947,7 @@ export default function AnalyticsDashboardView({
         </ChartCard>
 
         {/* Top Submitters */}
-        <ChartCard title="Top Submitters" subtitle={`${submitterData.length} active contributors`} delay={0.2} height={200} titleColor="#C5A059">
+        <ChartCard title="Top Submitters" subtitle={`${submitterData.length} active contributors`} delay={0.2} height={topChartContentHeight} titleColor="#C5A059">
           {submitterData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={50}>
               <BarChart data={submitterData} layout="vertical" barSize={12} margin={{ top: 0, right: 8, bottom: 0, left: 0 }}>
@@ -970,10 +965,10 @@ export default function AnalyticsDashboardView({
       </div>
 
       {/* ══════════ BOTTOM ROW — DONUTS + INSIGHTS ══════════ */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
 
         {/* Deliverable Types Donut */}
-        <ChartCard title="Deliverable Types" subtitle={`${typeData.length} types identified`} delay={0.25} height={190} titleColor="#C5A059">
+        <ChartCard title="Deliverable Types" subtitle={`${typeData.length} types identified`} delay={0.25} height={bottomChartContentHeight} titleColor="#C5A059">
           {typeData.length > 0 ? (
             <InteractivePieChart
               data={typeData}
@@ -984,7 +979,7 @@ export default function AnalyticsDashboardView({
         </ChartCard>
 
         {/* CDE Usage Donut */}
-        <ChartCard title="CDE Environment Usage" subtitle={`${cdeData.length} environments in use`} delay={0.3} height={190} titleColor="#C5A059">
+        <ChartCard title="CDE Environment Usage" subtitle={`${cdeData.length} environments in use`} delay={0.3} height={bottomChartContentHeight} titleColor="#C5A059">
           {cdeData.length > 0 ? (
             <InteractivePieChart
               data={cdeData}
@@ -1001,14 +996,14 @@ export default function AnalyticsDashboardView({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 0.4 }}
           >
-            <GlassCard padding="none" hover={false} style={{ height: 294 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, padding: '12px 16px 0' }}>
+            <GlassCard padding="none" hover={false} style={{ height: insightCardHeight }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, padding: '10px 14px 0' }}>
                 <div style={{ width: 30, height: 30, borderRadius: 10, background: 'rgba(208, 171, 130, 0.15)', color: '#d0ab82', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Lightbulb size={18} />
                 </div>
                 <h3 className="brand-heading" style={{ fontSize: 14, color: '#d0ab82', margin: 0, fontWeight: 950, letterSpacing: '0.1em' }}>AI STRATEGY INSIGHTS</h3>
               </div>
-              <div style={{ padding: '8px 14px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ padding: '6px 12px 12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
                 {insights.map((insight, i) => (
                   <motion.div
                     key={i}

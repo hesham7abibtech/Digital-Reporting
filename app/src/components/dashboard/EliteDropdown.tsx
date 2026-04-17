@@ -286,21 +286,21 @@ export default function EliteDropdown({
           background: 'rgba(255, 255, 255, 0.65)',
           border: `1.5px solid ${GOLD}`,
           color: TEAL,
-          fontSize: 13,
+          fontSize: 11,
           fontWeight: 800,
           cursor: 'pointer',
           outline: 'none',
           boxShadow: isOpen ? '0 0 30px rgba(0, 0, 0, 0.2)' : 'none',
           transition: 'all 0.2s ease',
-          minWidth: 150,
+          minWidth: 128,
           width: fullWidth ? '100%' : 'auto',
           justifyContent: 'space-between',
           position: 'relative'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative', zIndex: 1, minWidth: 0 }}>
           <Sparkles size={16} style={{ opacity: 1, color: GOLD }} />
-          <span style={{ textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: 13, fontWeight: 1000 }}>{getLabel()}</span>
+          <span style={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: 11, fontWeight: 950, whiteSpace: 'nowrap' }}>{getLabel()}</span>
         </div>
         
         <motion.div

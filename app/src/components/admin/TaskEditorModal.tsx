@@ -11,6 +11,8 @@ import { useToast } from '@/components/shared/EliteToast';
 import { useCollection, useDocument } from 'react-firebase-hooks/firestore';
 import { collection, query, orderBy, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import EliteDatePicker from '@/components/shared/EliteDatePicker';
+import { PRECINCTS } from '@/lib/constants';
 
 interface TaskEditorProps {
   task: Task | null;
@@ -82,8 +84,8 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
     const list = (membersSnapshot?.docs
       .map((d: any) => {
         const data = d.data();
-        return { 
-          name: data.name || 'Anonymous', 
+        return {
+          name: data.name || 'Anonymous',
           email: data.email || '',
           id: d.id,
           status: data.status,
@@ -98,12 +100,12 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
 
     return list.filter(p => {
       const isStatusValid = p.status === 'ACTIVE' || !p.status;
-      
+
       // Real-time filtering based on category ID (Normalized) or Name (Legacy)
       const matchesId = selectedDeptId && p.department === selectedDeptId;
       const matchesName = selectedDeptName && p.department?.toLowerCase() === selectedDeptName.toLowerCase();
       const respondsToDepartment = matchesId || matchesName;
-      
+
       return isStatusValid && respondsToDepartment;
     });
   }, [membersSnapshot, formData.department, departments]);
@@ -133,12 +135,12 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
 
   const generateNewId = useCallback((deptName: string) => {
     const abbr = getAbbr(deptName);
-    const deptPrefix = `REH-${abbr}-`;
+    const deptPrefix = `REH - ${abbr} - `;
     const deptTasks = (tasks || []).filter(t => t.id?.startsWith(deptPrefix));
     let nextCount = 100;
     if (deptTasks.length > 0) {
       const counts = deptTasks.map(t => {
-        const parts = t.id.split('-');
+        const parts = t.id.split(' - ');
         const lastPart = parts[parts.length - 1];
         const num = parseInt(lastPart);
         return isNaN(num) ? 0 : num;
@@ -175,7 +177,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         const legacyLinks = task.links || [];
         const legacyTypes = task.deliverableType || [];
         const legacyCdes = task.cde || [];
-        
+
         if (legacyLinks.length > 0) {
           const migratedVectors: NetworkVector[] = legacyLinks.map((link, i) => ({
             id: link.id || `migrated-${i}-${Date.now()}`,
@@ -241,13 +243,13 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
       }
 
       const idChanged = originalIdRef.current && finalTask.id !== originalIdRef.current;
-      
+
       if (idChanged && originalIdRef.current) {
         await atomicRenumberTask(originalIdRef.current, finalTask);
       } else {
         await upsertTask(finalTask);
       }
-      
+
       showToast('Task saved successfully.', 'SUCCESS');
       onClose();
     } catch (error) {
@@ -316,21 +318,22 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <span style={{ fontSize: 10, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Unified Task Title</span>
               </div>
-              <input 
-                type="text" 
-                value={formData.title ?? ''} 
-                onChange={e => setFormData({ ...formData, title: e.target.value })} 
-                disabled={isActuallyReadOnly} 
-                style={{ 
-                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', 
-                  border: (showErrors && !formData.title?.trim()) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)', 
-                  color: '#0a1220', fontSize: 15, fontWeight: 800, outline: 'none', transition: 'all 200ms', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' 
-                }} 
+              <input
+                type="text"
+                value={formData.title ?? ''}
+                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                disabled={isActuallyReadOnly}
+                style={{
+                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff',
+                  border: (showErrors && !formData.title?.trim()) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)',
+                  color: '#0a1220', fontSize: 15, fontWeight: 800, outline: 'none', transition: 'all 200ms', boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+                }}
                 onFocus={e => e.target.style.borderColor = (showErrors && !formData.title?.trim()) ? '#ef4444' : '#003F49'}
                 onBlur={e => e.target.style.borderColor = (showErrors && !formData.title?.trim()) ? '#ef4444' : 'rgba(0, 0, 0, 0.12)'}
-                placeholder="Identify system requirements..." 
+                placeholder="Enter task name"
               />
             </div>
+
 
             {/* Submission Date */}
             <div>
@@ -338,16 +341,11 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                 <Calendar size={12} color="#D4AF37" />
                 <span style={{ fontSize: 10, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Submission Date</span>
               </div>
-              <input 
-                type="date" 
-                value={toLocalISO(formData.submittingDate || '', formData.timeZone || '')} 
-                onChange={e => setFormData({ ...formData, submittingDate: fromLocalISO(e.target.value, formData.timeZone || '') })} 
+              <EliteDatePicker
+                value={formData.submittingDate || ''}
+                onChange={val => setFormData({ ...formData, submittingDate: val })}
                 disabled={isActuallyReadOnly}
-                style={{ 
-                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', 
-                  border: (showErrors && !formData.submittingDate) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)', 
-                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none' 
-                }} 
+                error={showErrors && !formData.submittingDate}
               />
             </div>
 
@@ -357,18 +355,24 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                 <Building2 size={12} color="#003F49" />
                 <span style={{ fontSize: 10, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Project Precinct</span>
               </div>
-              <input 
-                type="text" 
-                value={formData.precinct ?? ''} 
-                onChange={e => setFormData({ ...formData, precinct: e.target.value })} 
-                disabled={isActuallyReadOnly} 
-                style={{ 
-                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', 
-                  border: (showErrors && !formData.precinct?.trim()) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)', 
-                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none' 
-                }} 
-                placeholder="e.g. Precinct 1, North Zone..." 
-              />
+              <div style={{ position: 'relative' }}>
+                <select
+                  value={formData.precinct ?? ''}
+                  onChange={e => setFormData({ ...formData, precinct: e.target.value })}
+                  disabled={isActuallyReadOnly}
+                  style={{
+                    width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff',
+                    border: (showErrors && !formData.precinct?.trim()) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)',
+                    color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none', appearance: 'none'
+                  }}
+                >
+                  <option value="">Select Precinct</option>
+                  {PRECINCTS.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+                <div style={{ position: 'absolute', right: 18, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#003F49', opacity: 0.5 }}>
+                  <ChevronDown size={16} />
+                </div>
+              </div>
             </div>
 
             <div>
@@ -376,14 +380,14 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                 <Tag size={12} color="#003F49" />
                 <span style={{ fontSize: 10, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Task Category</span>
               </div>
-              <select 
-                value={departments.find(d => d.id === formData.department || d.name === formData.department)?.id || ''} 
-                onChange={e => handleDeptChange(e.target.value)} 
+              <select
+                value={departments.find(d => d.id === formData.department || d.name === formData.department)?.id || ''}
+                onChange={e => handleDeptChange(e.target.value)}
                 disabled={isActuallyReadOnly}
-                style={{ 
-                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', 
-                  border: (showErrors && !formData.department) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)', 
-                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none', appearance: 'none' 
+                style={{
+                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff',
+                  border: (showErrors && !formData.department) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)',
+                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none', appearance: 'none'
                 }}
               >
                 <option value="">Select Category</option>
@@ -397,24 +401,24 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                 <UserCheck size={12} color="#D4AF37" />
                 <span style={{ fontSize: 10, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Submitter Signature</span>
               </div>
-              <select 
-                value={formData.submitterId || ''} 
+              <select
+                value={formData.submitterId || ''}
                 onChange={e => {
                   const selected = personnel.find(p => p.id === e.target.value);
-                  setFormData({ 
-                    ...formData, 
+                  setFormData({
+                    ...formData,
                     submitterId: e.target.value,
                     submitterEmail: selected ? selected.email : '',
-                    submitterName: selected ? selected.name : '' 
+                    submitterName: selected ? selected.name : ''
                   });
-                }} 
+                }}
                 disabled={isActuallyReadOnly || !formData.department}
-                style={{ 
-                  width: '100%', padding: '14px 18px', borderRadius: 14, 
-                  background: (!formData.department || isActuallyReadOnly) ? 'rgba(0,0,0,0.02)' : '#ffffff', 
-                  border: (showErrors && !formData.submitterId) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)', 
-                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none', 
-                  cursor: (!formData.department || isActuallyReadOnly) ? 'not-allowed' : 'pointer' 
+                style={{
+                  width: '100%', padding: '14px 18px', borderRadius: 14,
+                  background: (!formData.department || isActuallyReadOnly) ? 'rgba(0,0,0,0.02)' : '#ffffff',
+                  border: (showErrors && !formData.submitterId) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)',
+                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none',
+                  cursor: (!formData.department || isActuallyReadOnly) ? 'not-allowed' : 'pointer'
                 }}
               >
                 <option value="">{formData.department ? 'Unassigned Personnel' : 'Select Task Category First'}</option>
@@ -428,14 +432,14 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                 <Activity size={12} color="#003F49" />
                 <span style={{ fontSize: 10, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Operational Status</span>
               </div>
-              <select 
-                value={formData.status} 
-                onChange={e => setFormData({ ...formData, status: e.target.value as TaskStatus })} 
+              <select
+                value={formData.status}
+                onChange={e => setFormData({ ...formData, status: e.target.value as TaskStatus })}
                 disabled={isActuallyReadOnly}
-                style={{ 
-                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff', 
-                  border: (showErrors && !formData.status) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)', 
-                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none' 
+                style={{
+                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff',
+                  border: (showErrors && !formData.status) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)',
+                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none'
                 }}
               >
                 <option value="">Select Status</option>
@@ -445,9 +449,9 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
           </div>
 
           {/* Network Vector Terminal */}
-          <div style={{ 
-            padding: '12px 24px', borderRadius: 24, background: 'rgba(0, 63, 73, 0.02)', 
-            border: (showErrors && (!formData.vectors || formData.vectors.length === 0)) ? '2px solid #ef4444' : '1.5px solid rgba(0, 63, 73, 0.1)' 
+          <div style={{
+            padding: '12px 24px', borderRadius: 24, background: 'rgba(0, 63, 73, 0.02)',
+            border: (showErrors && (!formData.vectors || formData.vectors.length === 0)) ? '2px solid #ef4444' : '1.5px solid rgba(0, 63, 73, 0.1)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
               <div style={{ width: 40, height: 40, borderRadius: 12, background: '#003F49', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', boxShadow: '0 8px 20px rgba(0, 63, 73, 0.2)' }}>
@@ -462,10 +466,10 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
             {/* Vector Entries */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
               {(formData.vectors || []).map((vector, idx) => (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  key={vector.id || idx} 
+                  key={vector.id || idx}
                   style={{
                     display: 'grid', gridTemplateColumns: 'minmax(120px, 1fr) minmax(100px, 0.8fr) minmax(200px, 2fr) auto',
                     gap: 16, alignItems: 'center', padding: '14px 20px', background: '#ffffff', borderRadius: 16,
@@ -483,12 +487,12 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#0a1220', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {vector.label}
                   </div>
-                  <button 
+                  <button
                     onClick={() => {
                       const newVectors = [...(formData.vectors || [])];
                       newVectors.splice(idx, 1);
                       setFormData({ ...formData, vectors: newVectors });
-                    }} 
+                    }}
                     style={{ background: 'rgba(239, 68, 68, 0.05)', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 8, borderRadius: 8, display: 'flex' }}
                   >
                     <Trash2 size={14} />
@@ -521,10 +525,10 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                     <input type="text" placeholder="Access Description" value={newVector.label} onChange={e => setNewVector({ ...newVector, label: e.target.value })} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: '#F9F8F2', border: '1px solid rgba(0, 0, 0, 0.1)', color: '#0a1220', fontSize: 13, fontWeight: 700, outline: 'none' }} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <label style={{ fontSize: 9, fontWeight: 950, color: '#0a1220', textTransform: 'uppercase', opacity: 0.6 }}>Vector URL</label>
+                    <label style={{ fontSize: 9, fontWeight: 950, color: '#0a1220', textTransform: 'uppercase', opacity: 0.6 }}>URL</label>
                     <input type="url" placeholder="https://..." value={newVector.url} onChange={e => setNewVector({ ...newVector, url: e.target.value })} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: '#F9F8F2', border: '1px solid rgba(0, 0, 0, 0.1)', color: '#0a1220', fontSize: 13, fontWeight: 700, outline: 'none' }} />
                   </div>
-                  <button 
+                  <button
                     onClick={() => {
                       if (newVector.type && newVector.cde && newVector.url) {
                         const vector: NetworkVector = {
@@ -540,7 +544,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                       } else {
                         showToast('Please fill in all link details.', 'INFO');
                       }
-                    }} 
+                    }}
                     style={{ padding: '12px 24px', borderRadius: 12, background: '#003F49', color: '#ffffff', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 4px 12px rgba(0, 63, 73, 0.2)' }}
                   >
                     Connect Vector
@@ -555,13 +559,13 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <span style={{ fontSize: 10, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Notes (Optional)</span>
             </div>
-            <textarea 
-              value={formData.description ?? ''} 
-              onChange={e => setFormData({ ...formData, description: e.target.value })} 
-              disabled={isActuallyReadOnly} 
-              rows={3} 
-              style={{ width: '100%', padding: '14px 18px', borderRadius: 18, background: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.12)', color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none', resize: 'none', transition: 'all 200ms' }} 
-              placeholder="Additional operational parameters..." 
+            <textarea
+              value={formData.description ?? ''}
+              onChange={e => setFormData({ ...formData, description: e.target.value })}
+              disabled={isActuallyReadOnly}
+              rows={3}
+              style={{ width: '100%', padding: '14px 18px', borderRadius: 18, background: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.12)', color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none', resize: 'none', transition: 'all 200ms' }}
+              placeholder="Additional operational parameters..."
               onFocus={e => e.target.style.borderColor = '#003F49'}
               onBlur={e => e.target.style.borderColor = 'rgba(0, 0, 0, 0.12)'}
             />
@@ -576,12 +580,12 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
           <div style={{ display: 'flex', gap: 12 }}>
             <button onClick={onClose} style={{ padding: '12px 24px', borderRadius: 14, background: '#ffffff', color: '#003F49', border: '1px solid rgba(0, 63, 73, 0.15)', cursor: 'pointer', fontSize: 13, fontWeight: 800, transition: 'all 200ms' }}>Dismiss</button>
             {!isActuallyReadOnly && (
-              <button 
-                onClick={handleSave} 
-                disabled={isSaving} 
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
                 style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 32px', borderRadius: 14, background: 'linear-gradient(to right, #003F49, #005663)', color: '#ffffff', border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 950, boxShadow: '0 8px 24px rgba(0, 63, 73, 0.25)', textTransform: 'uppercase', letterSpacing: '0.05em' }}
               >
-                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} 
+                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                 {isSaving ? 'Synching...' : 'Commit Changes'}
               </button>
             )}

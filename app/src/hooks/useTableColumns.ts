@@ -12,6 +12,8 @@ export interface ColumnDef<TField = string> {
   minWidth?: number;
   maxWidth?: number;
   alwaysVisible?: boolean;
+  width?: number;
+  visible?: boolean;
 }
 
 export interface ColumnSettings {

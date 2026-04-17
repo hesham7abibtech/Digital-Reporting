@@ -23,6 +23,7 @@ import { useTimeZone } from '@/context/TimeZoneContext';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
 import { useAuth } from '@/context/AuthContext';
 import { useRegistryView } from '@/hooks/useRegistryView';
+import { PRECINCTS } from '@/lib/constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Globe, CalendarRange, X, Calendar, Database, TableProperties, BarChart3, Trash2, Edit2, Plus, Download } from 'lucide-react';
 import { useEffect, useRef } from 'react';
@@ -270,10 +271,10 @@ export default function Dashboard() {
   const availablePrecincts = useMemo(() => {
     let hasEmpty = false;
     const rawPrecincts = new Set(dateFilteredTasks.map(t => {
-      if (!t.precinct) hasEmpty = true;
+      if (!t.precinct || t.precinct.trim() === '') hasEmpty = true;
       return t.precinct;
-    }).filter((v): v is string => !!v));
-    const result = Array.from(rawPrecincts).sort();
+    }));
+    const result = Array.from(rawPrecincts).filter(Boolean).sort() as string[];
     if (hasEmpty) result.unshift('(Empty)');
     return result;
   }, [dateFilteredTasks]);
@@ -637,7 +638,7 @@ export default function Dashboard() {
   }, [filterMode, selectedMonth, selectedYear, startDate, endDate, months]);
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative' }}>
+    <div style={{ height: '100vh', position: 'relative', overflow: 'hidden' }}>
       <BrandedLoader isLoading={!minLoadingComplete || isLoading} />
 
       <ParticleBackground />
@@ -645,9 +646,10 @@ export default function Dashboard() {
       <div style={{
         position: 'relative',
         zIndex: 1000,
-        minHeight: '100vh',
+        height: '100vh',
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
         opacity: (!minLoadingComplete || isLoading) ? 0 : 1,
         transition: 'opacity 0.8s ease-in-out'
       }}>
@@ -657,7 +659,7 @@ export default function Dashboard() {
           isNotificationOpen={notifOpen}
         />
 
-        <main style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 'calc(100vh - 100px)' }}>
+        <main style={{ flex: 1, padding: '0 20px 8px', display: 'flex', flexDirection: 'column', gap: 0, minHeight: 0, overflow: 'hidden' }}>
           {/* Restricted Access Overlay */}
           {!isLoading && userProfile && !userProfile.access?.deliverablesRegistry && !userProfile.access?.bimReviews ? (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -685,255 +687,263 @@ export default function Dashboard() {
             </div>
           ) : !isLoading && (
             <>
-              <ProjectHeader
-                project={syncedProject || undefined}
-                members={syncedMembers}
-                tasks={filteredTasks}
-                dateRangeText={filterDateText}
-                activeReport={activeReport}
-                onReportChange={handleReportChange}
-                bimReviewsCount={syncedBimReviews.length}
-              />
-
-
-
+              {/* Sticky Control Area */}
               <div style={{
-                padding: '12px 24px',
-                background: 'rgba(255, 255, 255, 0.4)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(0, 63, 73, 0.12)',
-                borderRadius: 20,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 20,
-                marginBottom: 16,
-                flexWrap: 'nowrap',
-                overflow: 'visible',
                 position: 'relative',
-                zIndex: 3000,
-                boxShadow: '0 4px 20px rgba(0, 63, 73, 0.05)'
+                zIndex: 50,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+                paddingTop: 4,
+                paddingBottom: 8,
+                marginTop: 0,
+                pointerEvents: 'auto'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div style={{
-                    width: 38, height: 38, borderRadius: 12,
-                    background: 'rgba(0, 63, 73, 0.08)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: '1px solid rgba(0, 63, 73, 0.2)'
-                  }}>
-                    <CalendarRange size={16} color="var(--teal)" />
-                  </div>
-                  <h2 style={{ fontSize: 13, fontWeight: 900, color: '#003f49', letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>
-                    {activeReport === 'DELIVERABLES' ? 'Deliverables Registry' : 'BIM Review Matrix'} — <span style={{ color: 'var(--teal)' }}>
-                      {activeReport === 'DELIVERABLES' ? filteredTasks.length : filteredBimReviews.length} ITEMS
-                    </span>
-                  </h2>
+                <div>
+                  <ProjectHeader
+                    project={syncedProject || undefined}
+                    members={syncedMembers}
+                    tasks={filteredTasks}
+                    dateRangeText={filterDateText}
+                    activeReport={activeReport}
+                    onReportChange={handleReportChange}
+                    bimReviewsCount={syncedBimReviews.length}
+                  />
                 </div>
 
-
-
-
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 'auto', flexShrink: 0 }}>
-                  {/* Mode Switcher */}
-                  <div style={{
-                    display: 'flex', background: 'rgba(255, 255, 255, 0.7)', padding: 3, borderRadius: 12,
-                    border: '1px solid rgba(0, 63, 73, 0.2)', position: 'relative'
-                  }}>
-                    {['all', 'monthly', 'custom'].map((mode) => (
-                      <button
-                        key={mode}
-                        onClick={() => setFilterMode(mode as any)}
-                        style={{
-                          padding: '6px 16px', borderRadius: 10, fontSize: 10, fontWeight: 900,
-                          textTransform: 'uppercase', letterSpacing: '0.05em', border: 'none',
-                          cursor: 'pointer', position: 'relative', zIndex: 1,
-                          background: filterMode === mode ? 'var(--teal)' : 'transparent',
-                          color: filterMode === mode ? 'white' : '#003f49',
-                          transition: 'all 0.3s ease',
-                          opacity: filterMode === mode ? 1 : 0.7
-                        }}
-                      >
-                        {filterMode === mode && (
-                          <motion.div
-                            layoutId="mode-bg"
-                            style={{
-                              position: 'absolute', inset: 0, background: 'var(--teal)',
-                              borderRadius: 9, border: '1px solid rgba(212, 175, 55, 0.2)',
-                              zIndex: -1
-                            }}
-                          />
-                        )}
-                        {mode === 'all' ? 'All Time' : mode === 'monthly' ? 'Monthly' : 'Custom'}
-                      </button>
-                    ))}
+                <div style={{
+                  padding: '10px 16px',
+                  background: 'rgba(251, 250, 245, 0.98)', // Premium solid cotton base for sticky logic
+                  backdropFilter: 'blur(40px)',
+                  border: '1px solid rgba(0, 63, 73, 0.15)',
+                  borderRadius: 20,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  rowGap: 8,
+                  flexWrap: 'wrap',
+                  overflow: 'visible',
+                  position: 'relative',
+                  boxShadow: '0 12px 40px rgba(0, 63, 73, 0.12)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+                    <div style={{
+                      width: 38, height: 38, borderRadius: 12,
+                      background: 'rgba(0, 63, 73, 0.08)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: '1px solid rgba(0, 63, 73, 0.2)'
+                    }}>
+                      <CalendarRange size={16} color="var(--teal)" />
+                    </div>
+                    <h2 style={{ fontSize: 13, fontWeight: 900, color: '#003f49', letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>
+                      {activeReport === 'DELIVERABLES' ? 'Deliverables Registry' : 'BIM Review Matrix'} — <span style={{ color: 'var(--teal)' }}>
+                        {activeReport === 'DELIVERABLES' ? filteredTasks.length : filteredBimReviews.length} ITEMS
+                      </span>
+                    </h2>
                   </div>
 
-                  <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.06)' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto', flexShrink: 0, flexWrap: 'wrap', rowGap: 8, justifyContent: 'flex-end', alignContent: 'flex-start' }}>
+                    {/* Mode Switcher */}
+                    <div style={{
+                      display: 'flex', background: 'rgba(255, 255, 255, 0.7)', padding: 3, borderRadius: 12,
+                      border: '1px solid rgba(0, 63, 73, 0.2)', position: 'relative'
+                    }}>
+                      {['all', 'monthly', 'custom'].map((mode) => (
+                        <button
+                          key={mode}
+                          onClick={() => setFilterMode(mode as any)}
+                          style={{
+                            padding: '6px 16px', borderRadius: 10, fontSize: 10, fontWeight: 900,
+                            textTransform: 'uppercase', letterSpacing: '0.05em', border: 'none',
+                            cursor: 'pointer', position: 'relative', zIndex: 1,
+                            background: filterMode === mode ? 'var(--teal)' : 'transparent',
+                            color: filterMode === mode ? 'white' : '#003f49',
+                            transition: 'all 0.3s ease',
+                            opacity: filterMode === mode ? 1 : 0.7
+                          }}
+                        >
+                          {filterMode === mode && (
+                            <motion.div
+                              layoutId="mode-bg"
+                              style={{
+                                position: 'absolute', inset: 0, background: 'var(--teal)',
+                                borderRadius: 9, border: '1px solid rgba(212, 175, 55, 0.2)',
+                                zIndex: -1
+                              }}
+                            />
+                          )}
+                          {mode === 'all' ? 'All Time' : mode === 'monthly' ? 'Monthly' : 'Custom'}
+                        </button>
+                      ))}
+                    </div>
 
-                  <AnimatePresence mode="wait">
-                    {filterMode === 'monthly' ? (
-                      <motion.div
-                        key="monthly-ctrls"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 12, zIndex: 2000 }}
-                      >
-                        <EliteDropdown
-                          value={selectedYear}
-                          options={yearOptions}
-                          onChange={setSelectedYear}
-                          menuLabel="Year"
-                        />
-                        <EliteDropdown
-                          value={selectedMonth}
-                          options={monthOptions}
-                          onChange={setSelectedMonth}
-                          menuLabel="Month"
-                        />
-                      </motion.div>
-                    ) : filterMode === 'custom' ? (
-                      <motion.div
-                        key="custom-ctrls"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 12px', background: 'rgba(0, 63, 73, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.1)' }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <Calendar size={12} color="var(--teal)" />
-                          <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>From</span>
-                          <input
-                            type="date"
-                            value={startDate}
-                            onChange={e => setStartDate(e.target.value)}
-                            style={{ background: 'none', border: 'none', color: 'var(--teal)', fontSize: 11, fontWeight: 700, outline: 'none', cursor: 'pointer' }}
+                    <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.06)' }} />
+
+                    <AnimatePresence mode="wait">
+                      {filterMode === 'monthly' ? (
+                        <motion.div
+                          key="monthly-ctrls"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 12, zIndex: 2000 }}
+                        >
+                          <EliteDropdown
+                            value={selectedYear}
+                            options={yearOptions}
+                            onChange={setSelectedYear}
+                            menuLabel="Year"
                           />
-                        </div>
-                        <div style={{ width: 1, height: 16, background: 'rgba(0, 63, 73, 0.1)' }} />
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <Calendar size={12} color="var(--teal)" />
-                          <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>To</span>
-                          <input
-                            type="date"
-                            value={endDate}
-                            onChange={e => setEndDate(e.target.value)}
-                            style={{ background: 'none', border: 'none', color: 'var(--teal)', fontSize: 11, fontWeight: 700, outline: 'none', cursor: 'pointer' }}
+                          <EliteDropdown
+                            value={selectedMonth}
+                            options={monthOptions}
+                            onChange={setSelectedMonth}
+                            menuLabel="Month"
                           />
-                        </div>
-                        {(startDate || endDate) && (
-                          <button
-                            onClick={() => { setStartDate(''); setEndDate(''); }}
-                            style={{ background: 'rgba(212, 175, 55, 0.15)', border: 'none', borderRadius: 4, padding: '2px 6px', color: '#D4AF37', cursor: 'pointer', display: 'flex', marginLeft: 4 }}
-                          >
-                            <X size={12} />
-                          </button>
+                        </motion.div>
+                      ) : filterMode === 'custom' ? (
+                        <motion.div
+                          key="custom-ctrls"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 12px', background: 'rgba(0, 63, 73, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.1)' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Calendar size={12} color="var(--teal)" />
+                            <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>From</span>
+                            <input
+                              type="date"
+                              value={startDate}
+                              onChange={e => setStartDate(e.target.value)}
+                              style={{ background: 'none', border: 'none', color: 'var(--teal)', fontSize: 11, fontWeight: 700, outline: 'none', cursor: 'pointer' }}
+                            />
+                          </div>
+                          <div style={{ width: 1, height: 16, background: 'rgba(0, 63, 73, 0.1)' }} />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Calendar size={12} color="var(--teal)" />
+                            <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>To</span>
+                            <input
+                              type="date"
+                              value={endDate}
+                              onChange={e => setEndDate(e.target.value)}
+                              style={{ background: 'none', border: 'none', color: 'var(--teal)', fontSize: 11, fontWeight: 700, outline: 'none', cursor: 'pointer' }}
+                            />
+                          </div>
+                          {(startDate || endDate) && (
+                            <button
+                              onClick={() => { setStartDate(''); setEndDate(''); }}
+                              style={{ background: 'rgba(212, 175, 55, 0.15)', border: 'none', borderRadius: 4, padding: '2px 6px', color: '#D4AF37', cursor: 'pointer', display: 'flex', marginLeft: 4 }}
+                            >
+                              <X size={12} />
+                            </button>
+                          )}
+                        </motion.div>
+                      ) : null}
+                    </AnimatePresence>
+
+                    <div style={{ width: 1, height: 24, background: 'rgba(0, 63, 73, 0.1)' }} />
+
+                    {/* Integrated View Navigator */}
+                    <div style={{
+                      display: 'flex', background: 'rgba(255, 255, 255, 0.7)', padding: 3, borderRadius: 10, border: '1px solid rgba(0, 63, 73, 0.2)'
+                    }}>
+                      {[
+                        { key: 'table' as const, label: 'Table View', icon: <TableProperties size={13} /> },
+                        { key: 'dashboard' as const, label: 'Dashboard', icon: <BarChart3 size={13} /> },
+                      ].map((tab) => (
+                        <button
+                          key={tab.key}
+                          onClick={() => setActiveView(tab.key)}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: 8,
+                            fontSize: 10,
+                            fontWeight: 900,
+                            border: 'none',
+                            cursor: 'pointer',
+                            background: activeView === tab.key ? 'var(--teal)' : 'transparent',
+                            color: activeView === tab.key ? 'var(--aqua)' : '#003f49',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            transition: 'all 0.3s ease',
+                            opacity: activeView === tab.key ? 1 : 0.7
+                          }}
+                        >
+                          {tab.icon}
+                          {tab.label.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div style={{ width: 1, height: 24, background: 'rgba(0, 63, 73, 0.1)' }} />
+
+                        {activeReport === 'DELIVERABLES' ? (
+                          <ExportMenu
+                            tasks={filteredTasks}
+                            projectMetadata={syncedProject || undefined}
+                            dateRangeText={filterDateText}
+                            filterMode={filterMode}
+                            setFilterMode={setFilterMode}
+                            filterDept={filterDept}
+                            setFilterDept={setFilterDept}
+                            availableDepts={availableDepts}
+                            selectedYear={selectedYear}
+                            setSelectedYear={setSelectedYear}
+                            yearOptions={yearOptions}
+                            selectedMonth={selectedMonth}
+                            setSelectedMonth={setSelectedMonth}
+                            monthOptions={monthOptions}
+                            startDate={startDate}
+                            setStartDate={setStartDate}
+                            endDate={endDate}
+                            setEndDate={setEndDate}
+                            filterType={filterType}
+                            setFilterType={setFilterType}
+                            availableTypes={availableTypes}
+                            filterCDE={filterCDE}
+                            setFilterCDE={setFilterCDE}
+                            availableCDEs={availableCDEs}
+                            filterPrecinct={filterPrecinct}
+                            setFilterPrecinct={setFilterPrecinct}
+                            availablePrecincts={availablePrecincts}
+                            departments={syncedDepartments}
+                            members={syncedMembers}
+                          />
+                        ) : (
+                          <BimExportMenu
+                            bimReviews={filteredBimReviews}
+                            projectMetadata={syncedProject || undefined}
+                            dateRangeText={filterDateText}
+                            filterStage={bimFilterStage}
+                            setFilterStage={setBimFilterStage}
+                            availableStages={availableBimStages}
+                            filterStatus={bimFilterStatus}
+                            setFilterStatus={setBimFilterStatus}
+                            availableStatuses={availableBimStatuses}
+                            filterStakeholder={bimFilterStakeholder}
+                            setFilterStakeholder={setBimFilterStakeholder}
+                            availableStakeholders={availableBimStakeholders}
+                            filterReviewer={bimFilterReviewer}
+                            setFilterReviewer={setBimFilterReviewer}
+                            availableReviewers={availableBimReviewers}
+                            filterMode={filterMode}
+                            setFilterMode={setFilterMode}
+                            selectedYear={selectedYear}
+                            setSelectedYear={setSelectedYear}
+                            yearOptions={yearOptions}
+                            selectedMonth={selectedMonth}
+                            setSelectedMonth={setSelectedMonth}
+                            monthOptions={monthOptions}
+                            startDate={startDate}
+                            setStartDate={setStartDate}
+                            endDate={endDate}
+                            setEndDate={setEndDate}
+                            members={syncedMembers}
+                          />
                         )}
-                      </motion.div>
-                    ) : null}
-                  </AnimatePresence>
-
-                  <div style={{ width: 1, height: 24, background: 'rgba(0, 63, 73, 0.1)' }} />
-
-                  {/* Integrated View Navigator */}
-                  <div style={{
-                    display: 'flex', background: 'rgba(255, 255, 255, 0.7)', padding: 3, borderRadius: 10, border: '1px solid rgba(0, 63, 73, 0.2)'
-                  }}>
-                    {[
-                      { key: 'table' as const, label: 'Table View', icon: <TableProperties size={13} /> },
-                      { key: 'dashboard' as const, label: 'Dashboard', icon: <BarChart3 size={13} /> },
-                    ].map((tab) => (
-                      <button
-                        key={tab.key}
-                        onClick={() => setActiveView(tab.key)}
-                        style={{
-                          padding: '6px 14px',
-                          borderRadius: 8,
-                          fontSize: 10,
-                          fontWeight: 900,
-                          border: 'none',
-                          cursor: 'pointer',
-                          background: activeView === tab.key ? 'var(--teal)' : 'transparent',
-                          color: activeView === tab.key ? 'var(--aqua)' : '#003f49',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          transition: 'all 0.3s ease',
-                          opacity: activeView === tab.key ? 1 : 0.7
-                        }}
-                      >
-                        {tab.icon}
-                        {tab.label.toUpperCase()}
-                      </button>
-                    ))}
                   </div>
-
-                  <div style={{ width: 1, height: 24, background: 'rgba(0, 63, 73, 0.1)' }} />
-
-                      {activeReport === 'DELIVERABLES' ? (
-                        <ExportMenu
-                          tasks={filteredTasks}
-                          projectMetadata={syncedProject || undefined}
-                          dateRangeText={filterDateText}
-                          filterMode={filterMode}
-                          setFilterMode={setFilterMode}
-                          filterDept={filterDept}
-                          setFilterDept={setFilterDept}
-                          availableDepts={availableDepts}
-                          selectedYear={selectedYear}
-                          setSelectedYear={setSelectedYear}
-                          yearOptions={yearOptions}
-                          selectedMonth={selectedMonth}
-                          setSelectedMonth={setSelectedMonth}
-                          monthOptions={monthOptions}
-                          startDate={startDate}
-                          setStartDate={setStartDate}
-                          endDate={endDate}
-                          setEndDate={setEndDate}
-                          filterType={filterType}
-                          setFilterType={setFilterType}
-                          availableTypes={availableTypes}
-                          filterCDE={filterCDE}
-                          setFilterCDE={setFilterCDE}
-                          availableCDEs={availableCDEs}
-                          filterPrecinct={filterPrecinct}
-                          setFilterPrecinct={setFilterPrecinct}
-                          availablePrecincts={availablePrecincts}
-                          departments={syncedDepartments}
-                          members={syncedMembers}
-                        />
-                      ) : (
-                        <BimExportMenu
-                          bimReviews={filteredBimReviews}
-                          projectMetadata={syncedProject || undefined}
-                          dateRangeText={filterDateText}
-                          filterStage={bimFilterStage}
-                          setFilterStage={setBimFilterStage}
-                          availableStages={availableBimStages}
-                          filterStatus={bimFilterStatus}
-                          setFilterStatus={setBimFilterStatus}
-                          availableStatuses={availableBimStatuses}
-                          filterStakeholder={bimFilterStakeholder}
-                          setFilterStakeholder={setBimFilterStakeholder}
-                          availableStakeholders={availableBimStakeholders}
-                          filterReviewer={bimFilterReviewer}
-                          setFilterReviewer={setBimFilterReviewer}
-                          availableReviewers={availableBimReviewers}
-                          filterMode={filterMode}
-                          setFilterMode={setFilterMode}
-                          selectedYear={selectedYear}
-                          setSelectedYear={setSelectedYear}
-                          yearOptions={yearOptions}
-                          selectedMonth={selectedMonth}
-                          setSelectedMonth={setSelectedMonth}
-                          monthOptions={monthOptions}
-                          startDate={startDate}
-                          setStartDate={setStartDate}
-                          endDate={endDate}
-                          setEndDate={setEndDate}
-                          members={syncedMembers}
-                        />
-                      )}
                 </div>
               </div>
 
@@ -941,7 +951,7 @@ export default function Dashboard() {
 
 
               {/* ══════════ CONDITIONAL VIEW RENDERING ══════════ */}
-              <div style={{ marginTop: 12 }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4, minHeight: 0, overflow: 'hidden' }}>
                 <AnimatePresence mode="wait">
                   {activeView === 'table' ? (
                     <motion.div
@@ -950,6 +960,7 @@ export default function Dashboard() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.25 }}
+                      style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
                     >
                       {activeReport === 'BIM_REVIEWS' ? (
                         <BIMReviewsTable
@@ -1005,6 +1016,7 @@ export default function Dashboard() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.25 }}
+                      style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}
                     >
                       {activeReport === 'BIM_REVIEWS' ? (
                         <BIMAnalyticsView
@@ -1057,7 +1069,7 @@ export default function Dashboard() {
           )}
         </main>
 
-        <footer style={{ padding: '10px 24px', borderTop: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
+        <footer style={{ padding: '8px 24px', borderTop: '1px solid rgba(255,255,255,0.04)', textAlign: 'center', flexShrink: 0 }}>
           <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>© 2026 Insite (KEO) — REH Command Center v1.0 - Powred By :Digital Reporting Support</p>
         </footer>
       </div>

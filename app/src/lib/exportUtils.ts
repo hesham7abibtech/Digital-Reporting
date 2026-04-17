@@ -2,6 +2,7 @@ import * as ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Task, ProjectMetadata, BIMReview } from './types';
+import { PRECINCTS, TASK_STATUS_OPTIONS, TASK_DELIVERABLE_TYPES, TASK_CDE_OPTIONS } from './constants';
 
 // ─── Constants ──────────────────────────────────────────────────────────
 const MAX_COL_WIDTH = 60;
@@ -126,11 +127,93 @@ export interface CapturedChart {
   title?: string;
 }
 
+interface ChartCaptureOptions {
+  mode?: 'cards' | 'full-dashboard';
+  title?: string;
+}
+
+interface PdfChartTheme {
+  panelBg: [number, number, number];
+  panelBorder: [number, number, number];
+  titleColor: [number, number, number];
+}
+
+function buildPdfChartTheme(metadata?: ProjectMetadata): PdfChartTheme {
+  const accent = hexToRgb(metadata?.reportAccentColor || '#D4AF37');
+  const titleColor = hexToRgb(metadata?.reportHeaderTextColor || '#1E293B');
+  return {
+    panelBg: [250, 252, 255],
+    panelBorder: [Math.max(30, accent[0] - 20), Math.max(30, accent[1] - 20), Math.max(30, accent[2] - 20)],
+    titleColor
+  };
+}
+
+function drawPdfChartGallery(
+  doc: jsPDF,
+  chartImages: CapturedChart[],
+  metadata: ProjectMetadata | undefined,
+  title: string,
+  subtitle: string
+) {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const theme = buildPdfChartTheme(metadata);
+
+  doc.addPage();
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, pageWidth, pageHeight, 'F');
+  doc.setTextColor(...theme.titleColor);
+  doc.setFontSize(15);
+  doc.setFont('helvetica', 'bold');
+  doc.text(title, 15, 20);
+  doc.setTextColor(100, 116, 139);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(subtitle, 15, 27);
+
+  let y = 34;
+  const panelX = 12;
+  const panelW = pageWidth - 24;
+
+  for (const chart of chartImages) {
+    const baseW = Math.max(1, chart.width / 2);
+    const baseH = Math.max(1, chart.height / 2);
+    const contentW = panelW - 8;
+    const scale = Math.min(contentW / baseW, 170 / baseH);
+    const drawW = baseW * scale;
+    const drawH = baseH * scale;
+    const panelH = drawH + 14 + (chart.title ? 7 : 0);
+
+    if (y + panelH > pageHeight - 14) {
+      doc.addPage();
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      y = 14;
+    }
+
+    doc.setDrawColor(...theme.panelBorder);
+    doc.setFillColor(...theme.panelBg);
+    doc.roundedRect(panelX, y, panelW, panelH, 3, 3, 'FD');
+
+    if (chart.title) {
+      doc.setTextColor(...theme.titleColor);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text(chart.title.toUpperCase(), panelX + 6, y + 6);
+    }
+
+    const imgX = panelX + (panelW - drawW) / 2;
+    const imgY = y + (chart.title ? 9 : 5);
+    doc.addImage(chart.imageData, 'PNG', imgX, imgY, drawW, drawH);
+    y += panelH + 6;
+  }
+}
+
 /**
  * Captures chart DOM elements as high-resolution PNG images.
  * Uses html2canvas to render the actual DOM as displayed in the browser.
  */
-export async function captureChartImages(containerSelector: string): Promise<CapturedChart[]> {
+export async function captureChartImages(containerSelector: string, options: ChartCaptureOptions = {}): Promise<CapturedChart[]> {
   try {
     const html2canvas = (await import('html2canvas')).default;
     const container = document.querySelector(containerSelector);
@@ -139,14 +222,29 @@ export async function captureChartImages(containerSelector: string): Promise<Cap
       return [];
     }
 
+    if (options.mode === 'full-dashboard') {
+      const canvas = await html2canvas(container as HTMLElement, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: null,
+        logging: false,
+      });
+      return [{
+        imageData: canvas.toDataURL('image/png'),
+        width: canvas.width,
+        height: canvas.height,
+        title: options.title || 'Dashboard View'
+      }];
+    }
+
     // Find all chart card elements within the container
     const chartCards = container.querySelectorAll('.recharts-responsive-container');
     if (chartCards.length === 0) {
       // Fallback: capture the entire container as one image
       const canvas = await html2canvas(container as HTMLElement, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
-        backgroundColor: '#ffffff',
+        backgroundColor: null,
         logging: false,
       });
       return [{
@@ -168,12 +266,12 @@ export async function captureChartImages(containerSelector: string): Promise<Cap
       
       try {
         const canvas = await html2canvas(card, {
-          scale: 2,
+          scale: 3,
           useCORS: true,
-          backgroundColor: '#ffffff',
+          backgroundColor: null,
           logging: false,
         });
-        const titleEl = card.querySelector('h3');
+        const titleEl = card.querySelector('h3') || card.querySelector('h2');
         images.push({
           imageData: canvas.toDataURL('image/png'),
           width: canvas.width,
@@ -202,14 +300,15 @@ export async function captureChartImages(containerSelector: string): Promise<Cap
 export function getDynamicExportColumns(metadataExcluded: string[], format: 'excel' | 'pdf' = 'excel') {
   const baseColumns = [
     { id: 'id', excelLabel: 'ID', pdfLabel: 'UID', width: 25 },
-    { id: 'title', excelLabel: 'Asset / Task Title', pdfLabel: 'ASSET TITLE', width: 50 },
+    { id: 'title', excelLabel: 'Task Definition / Asset', pdfLabel: 'ASSET TITLE', width: 50 },
     { id: 'department', excelLabel: 'Task Category', pdfLabel: 'TASK CATEGORY', width: 20 },
-    { id: 'precinct', excelLabel: 'Precinct', pdfLabel: 'PRECINCT', width: 20 },
+    { id: 'precinct', excelLabel: 'Project Precinct', pdfLabel: 'PRECINCT', width: 25 },
+    { id: 'status', excelLabel: 'Operational Status', pdfLabel: 'OPERATIONAL STATUS', width: 20 },
     { id: 'submitterName', excelLabel: 'Submitter', pdfLabel: 'SUBMITTER', width: 25 },
     { id: 'submittingDate', excelLabel: 'Submission Date', pdfLabel: 'SUBMISSION DATE', width: 20 },
     { id: 'deliverableType', excelLabel: 'Deliverable Type', pdfLabel: 'DELIVERABLE TYPE', width: 25 },
     { id: 'cde', excelLabel: 'CDE', pdfLabel: 'CDE', width: 20 },
-    { id: 'links', excelLabel: 'Deliverables Links', pdfLabel: 'DELIVERABLES LINKS', width: 35 }
+    { id: 'links', excelLabel: 'Deliverable Link', pdfLabel: 'DELIVERABLE LINK', width: 35 }
   ];
 
   // Read the user's saved column settings from localStorage
@@ -389,6 +488,7 @@ export async function exportToExcel(
         else if (c.id === 'title') rowData.push(t.title);
         else if (c.id === 'department') rowData.push(t.department);
         else if (c.id === 'precinct') rowData.push(t.precinct || '-');
+        else if (c.id === 'status') rowData.push((t.status || 'NOT_STARTED').replace(/_/g, ' ').toUpperCase());
         else if (c.id === 'submitterName') rowData.push(t.submitterName || '-');
         else if (c.id === 'submittingDate') rowData.push(formatReportDate(t.submittingDate));
         else if (c.id === 'deliverableType') rowData.push(fData.types.join(' | '));
@@ -476,6 +576,47 @@ export async function exportToExcel(
     // ── Auto-filter on all columns ──
     dataSheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: headers.length } };
 
+    // ── Apply Data Validations ──
+    const validationSheet = workbook.addWorksheet('LookupData', { state: 'hidden' });
+    
+    // Precincts
+    PRECINCTS.forEach((p, i) => validationSheet.getCell(i + 1, 1).value = p);
+    const precinctRange = `LookupData!$A$1:$A$${PRECINCTS.length}`;
+    
+    // Statuses
+    TASK_STATUS_OPTIONS.forEach((s, i) => validationSheet.getCell(i + 1, 2).value = s);
+    const statusRange = `LookupData!$B$1:$B$${TASK_STATUS_OPTIONS.length}`;
+
+    // Deliverable Types
+    TASK_DELIVERABLE_TYPES.forEach((t, i) => validationSheet.getCell(i + 1, 3).value = t);
+    const typeRange = `LookupData!$C$1:$C$${TASK_DELIVERABLE_TYPES.length}`;
+
+    visibleColumns.forEach((col, idx) => {
+      const colLetter = String.fromCharCode(65 + idx);
+      const validationRange = {
+        type: 'list',
+        allowBlank: true,
+        showErrorMessage: true,
+        errorTitle: 'Invalid Data Selection',
+        error: 'Please select a value from the authorized dropdown list.'
+      } as any;
+
+      if (col.id === 'precinct') {
+        validationRange.formulae = [precinctRange];
+      } else if (col.id === 'status') {
+        validationRange.formulae = [statusRange];
+      } else if (col.id === 'deliverableType') {
+        validationRange.formulae = [typeRange];
+      } else {
+        return;
+      }
+
+      // Apply to first 1000 rows
+      for (let i = 2; i <= 1000; i++) {
+        dataSheet.getCell(`${colLetter}${i}`).dataValidation = validationRange;
+      }
+    });
+
     return dataSheet;
   };
 
@@ -562,8 +703,12 @@ export async function exportToExcel(
     if (chartImages && chartImages.length > 0) {
       const chartSheet = workbook.addWorksheet('Dashboard Charts');
       let currentRow = 1;
+      chartSheet.columns = [{ width: 8 }, { width: 90 }, { width: 8 }];
+      chartSheet.views = [{ zoomScale: 140, showGridLines: false }];
 
-      chartSheet.addRow(['DASHBOARD VISUAL ANALYTICS']).font = { bold: true, size: 14, color: { argb: 'FFD4AF37' } };
+      const heading = chartSheet.addRow(['', 'DASHBOARD VISUAL ANALYTICS', '']);
+      heading.font = { bold: true, size: 15, color: { argb: 'FF1E293B' } };
+      chartSheet.mergeCells(1, 2, 1, 3);
       currentRow = 3;
 
       for (const chart of chartImages) {
@@ -574,19 +719,28 @@ export async function exportToExcel(
           });
           
           // Scale to fit within reasonable bounds (max 700px width in Excel)
-          const maxWidth = 700;
+          // Keep dashboard captures highly readable in Excel even at 100% zoom.
+          const maxWidth = 1800;
           const scale = Math.min(1, maxWidth / (chart.width / 2)); // divided by 2 because scale:2
           const displayWidth = (chart.width / 2) * scale;
           const displayHeight = (chart.height / 2) * scale;
 
           if (chart.title) {
-            chartSheet.getRow(currentRow).getCell(1).value = chart.title.toUpperCase();
-            chartSheet.getRow(currentRow).getCell(1).font = { bold: true, size: 11, color: { argb: 'FF1E293B' } };
+            chartSheet.getRow(currentRow).getCell(2).value = chart.title.toUpperCase();
+            chartSheet.getRow(currentRow).getCell(2).font = { bold: true, size: 11, color: { argb: 'FF334155' } };
             currentRow++;
           }
 
+          for (let r = currentRow; r <= currentRow + Math.ceil(displayHeight / 20); r++) {
+            for (let c = 2; c <= 3; c++) {
+              const cell = chartSheet.getRow(r).getCell(c);
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+              cell.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+            }
+          }
+
           chartSheet.addImage(imageId, {
-            tl: { col: 0, row: currentRow - 1 },
+            tl: { col: 1.1, row: currentRow - 0.8 },
             ext: { width: displayWidth, height: displayHeight }
           });
 
@@ -719,6 +873,18 @@ export async function exportToPDF(
 
   // ── Dashboard Page ──
   const drawDashboard = () => {
+    // Capture-first: if live dashboard images are available, use them as the primary export output.
+    if (chartImages && chartImages.length > 0) {
+      drawPdfChartGallery(
+        doc,
+        chartImages,
+        metadata,
+        'ANALYTICS VISUAL REPORT',
+        `Captured from live ${tasks.length}-record dashboard view`
+      );
+      return;
+    }
+
     doc.addPage();
     doc.setFillColor(255, 255, 255);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
@@ -816,52 +982,6 @@ export async function exportToPDF(
       }
     });
 
-    // ── Embed Chart Images ──
-    if (chartImages && chartImages.length > 0) {
-      doc.addPage();
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-      doc.setTextColor(30, 41, 59);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('ANALYTICS VISUAL REPORT', 15, 25);
-
-      let imgY = 35;
-      const maxImgWidth = pageWidth - 30;
-
-      for (const chart of chartImages) {
-        try {
-          // Calculate scaled dimensions
-          const originalW = chart.width / 2; // html2canvas scale:2
-          const originalH = chart.height / 2;
-          const scale = Math.min(1, maxImgWidth / originalW, (pageHeight - imgY - 25) / originalH);
-          const displayW = originalW * scale;
-          const displayH = originalH * scale;
-
-          // Check if we need a new page
-          if (imgY + displayH > pageHeight - 20) {
-            doc.addPage();
-            doc.setFillColor(255, 255, 255);
-            doc.rect(0, 0, pageWidth, pageHeight, 'F');
-            imgY = 20;
-          }
-
-          if (chart.title) {
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 41, 59);
-            doc.text(chart.title.toUpperCase(), 15, imgY);
-            imgY += 5;
-          }
-
-          doc.addImage(chart.imageData, 'PNG', 15, imgY, displayW, displayH);
-          imgY += displayH + 12;
-        } catch (err) {
-          console.warn('Failed to embed chart in PDF:', err);
-        }
-      }
-    }
   };
 
   // ── Table Registry Page ──
@@ -1203,7 +1323,10 @@ export async function exportBimToExcel(
     if (chartImages && chartImages.length > 0) {
       const chartSheet = workbook.addWorksheet('BIM Charts');
       let currentRow = 1;
-      chartSheet.addRow(['BIM ANALYTICS CHARTS']).font = { bold: true, size: 14, color: { argb: 'FFD4AF37' } };
+      chartSheet.columns = [{ width: 8 }, { width: 90 }, { width: 8 }];
+      chartSheet.views = [{ zoomScale: 140, showGridLines: false }];
+      chartSheet.addRow(['', 'BIM ANALYTICS CHARTS', '']).font = { bold: true, size: 15, color: { argb: 'FF1E293B' } };
+      chartSheet.mergeCells(1, 2, 1, 3);
       currentRow = 3;
 
       for (const chart of chartImages) {
@@ -1212,18 +1335,26 @@ export async function exportBimToExcel(
             base64: chart.imageData.split(',')[1],
             extension: 'png',
           });
-          const maxWidth = 700;
+          // Keep dashboard captures highly readable in Excel even at 100% zoom.
+          const maxWidth = 1800;
           const scale = Math.min(1, maxWidth / (chart.width / 2));
           const displayWidth = (chart.width / 2) * scale;
           const displayHeight = (chart.height / 2) * scale;
 
           if (chart.title) {
-            chartSheet.getRow(currentRow).getCell(1).value = chart.title.toUpperCase();
-            chartSheet.getRow(currentRow).getCell(1).font = { bold: true, size: 11 };
+            chartSheet.getRow(currentRow).getCell(2).value = chart.title.toUpperCase();
+            chartSheet.getRow(currentRow).getCell(2).font = { bold: true, size: 11, color: { argb: 'FF334155' } };
             currentRow++;
           }
+          for (let r = currentRow; r <= currentRow + Math.ceil(displayHeight / 20); r++) {
+            for (let c = 2; c <= 3; c++) {
+              const cell = chartSheet.getRow(r).getCell(c);
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+              cell.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+            }
+          }
           chartSheet.addImage(imageId, {
-            tl: { col: 0, row: currentRow - 1 },
+            tl: { col: 1.1, row: currentRow - 0.8 },
             ext: { width: displayWidth, height: displayHeight }
           });
           currentRow += Math.ceil(displayHeight / 20) + 2;
@@ -1278,6 +1409,18 @@ export async function exportBimToPDF(
   };
 
   const drawDashboard = () => {
+    // Capture-first: if live dashboard images are available, use them as the primary export output.
+    if (chartImages && chartImages.length > 0) {
+      drawPdfChartGallery(
+        doc,
+        chartImages,
+        metadata,
+        'BIM ANALYTICS CHARTS',
+        `Captured from live BIM dashboard (${reviews.length} reviews)`
+      );
+      return;
+    }
+
     if (!reviews.length) return;
     const analytics = getBimDashboardAnalytics(reviews);
 
@@ -1328,46 +1471,6 @@ export async function exportBimToPDF(
       columnStyles: { 0: { halign: 'left' }, 1: { halign: 'right' }, 2: { halign: 'right' } }
     });
 
-    // Chart Images
-    if (chartImages && chartImages.length > 0) {
-      doc.addPage();
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, pageWidth, pageHeight, 'F');
-      doc.setTextColor(30, 41, 59);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('BIM ANALYTICS CHARTS', 15, 25);
-
-      let imgY = 35;
-      const maxImgWidth = pageWidth - 30;
-      for (const chart of chartImages) {
-        try {
-          const originalW = chart.width / 2;
-          const originalH = chart.height / 2;
-          const scale = Math.min(1, maxImgWidth / originalW, (pageHeight - imgY - 25) / originalH);
-          const displayW = originalW * scale;
-          const displayH = originalH * scale;
-
-          if (imgY + displayH > pageHeight - 20) {
-            doc.addPage();
-            doc.setFillColor(255, 255, 255);
-            doc.rect(0, 0, pageWidth, pageHeight, 'F');
-            imgY = 20;
-          }
-          if (chart.title) {
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30, 41, 59);
-            doc.text(chart.title.toUpperCase(), 15, imgY);
-            imgY += 5;
-          }
-          doc.addImage(chart.imageData, 'PNG', 15, imgY, displayW, displayH);
-          imgY += displayH + 12;
-        } catch (err) {
-          console.warn('Failed to embed BIM chart in PDF:', err);
-        }
-      }
-    }
   };
 
   const drawTable = () => {

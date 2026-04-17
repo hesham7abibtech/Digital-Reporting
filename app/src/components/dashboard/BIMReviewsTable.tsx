@@ -533,23 +533,21 @@ export default function BIMReviewsTable({
     (filterReviewer.length > 0 && !filterReviewer.includes('All Reviewers'));
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginTop: -8 }}>
-      {/* Table Interface Header */}
-      <div style={{
-        padding: '12px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: 16,
-        position: 'relative',
-        zIndex: 500,
-        background: 'rgba(255, 255, 255, 0.6)',
-        borderBottom: '1px solid rgba(0, 63, 73, 0.2)',
-        borderRadius: '24px 24px 0 0',
-        backdropFilter: 'blur(20px)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.05)'
-      }}>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} style={{ marginTop: 0, height: '100%', minHeight: 0, overflow: 'hidden' }}>
+      <GlassCard style={{ padding: 0, overflow: 'hidden', gap: 0, height: '100%', minHeight: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0, height: '100%', minHeight: 0 }}>
+          {/* Table Interface Header */}
+          <div style={{
+            padding: '12px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 16,
+            background: 'rgba(251, 250, 245, 0.99)',
+            borderBottom: '1px solid rgba(0, 63, 73, 0.15)',
+            borderRadius: '16px 16px 0 0'
+          }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', width: '100%', gap: 16 }}>
           <div style={{ position: 'relative' }}>
             <Search size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#003f49' }} />
@@ -664,11 +662,10 @@ export default function BIMReviewsTable({
               </button>
             )}
           </div>
+          </div>
         </div>
-      </div>
 
-      <GlassCard padding="none">
-        <div style={{ maxHeight: 'calc(100vh - 380px)', overflowY: 'auto', overflowX: 'auto', paddingBottom: 4, position: 'relative' }} className="elite-scrollbar">
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'auto', paddingBottom: 4, position: 'relative', overscrollBehavior: 'contain' }} className="elite-scrollbar">
           <style>{`
             .elite-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
             .elite-scrollbar::-webkit-scrollbar-track { background: rgba(0, 63, 73, 0.05); border-radius: 10px; }
@@ -688,15 +685,12 @@ export default function BIMReviewsTable({
             .elite-column-dividers td:not(:last-child) { border-right: 1px solid rgba(198, 224, 224, 0.12) !important; }
           `}</style>
 
-          <table className="elite-column-dividers" style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: 'max-content' }}>
+          <table className="elite-column-dividers" style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
             <colgroup>
               {visibleColumns.map((col, index) => {
-                // By omitting the width on the final column, Chromium's tableLayout: 'fixed' will natively 
-                // dump all remaining pixels of the 100% container into it, destroying the gap perfectly.
-                const isFinal = index === visibleColumns.length - 1;
                 const w = col.width || INITIAL_COLUMNS.find(c => c.id === col.id)?.defaultWidth || 150;
                 return (
-                  <col key={col.id} style={{ width: isFinal ? undefined : w }} />
+                  <col key={col.id} style={{ width: w }} />
                 );
               })}
             </colgroup>
@@ -781,7 +775,8 @@ export default function BIMReviewsTable({
             </div>
           )}
         </div>
+        </div>
       </GlassCard>
-    </div>
+    </motion.div>
   );
 }

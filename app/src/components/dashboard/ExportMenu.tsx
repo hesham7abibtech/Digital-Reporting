@@ -97,7 +97,10 @@ export default function ExportMenu({
       let chartImages: CapturedChart[] = [];
       if (perspective === 'dashboard' || perspective === 'both') {
         onProgress(30);
-        chartImages = await captureChartImages('#analytics-chart-grid');
+        chartImages = await captureChartImages('#analytics-dashboard-export-root', {
+          mode: 'full-dashboard',
+          title: 'Deliverables Analytics Dashboard'
+        });
         onProgress(45);
       }
 
@@ -169,10 +172,10 @@ export default function ExportMenu({
             transition={{ duration: 0.2, ease: 'easeOut' }}
             style={{
               position: 'absolute',
-              top: '100%',
+              bottom: '100%',
               right: 0,
-              marginTop: 8,
-              zIndex: 1000,
+              marginBottom: 8,
+              zIndex: 4200,
               width: 240,
               background: '#003f49',
               backdropFilter: 'blur(20px)',
