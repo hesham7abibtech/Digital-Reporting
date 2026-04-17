@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import {
   Database, Users, FolderOpen, CloudCog, CalendarClock, TrendingUp,
-  Lightbulb, AlertTriangle, Crown, Trophy, Zap,
+  TrendingDown, Lightbulb, AlertTriangle, Crown, Trophy, Zap,
   Search, CircleDot, RefreshCw
 } from 'lucide-react';
 import GlassCard from '@/components/shared/GlassCard';
