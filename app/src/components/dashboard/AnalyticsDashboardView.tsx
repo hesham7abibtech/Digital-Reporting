@@ -570,7 +570,7 @@ export default function AnalyticsDashboardView({
     };
 
     tasks.forEach(t => {
-      const name = getResolvedSubmitter(t.submitterName, t.submitterEmail);
+      const name = getResolvedSubmitter(t.submitterName || '', t.submitterEmail);
       counts[name] = (counts[name] || 0) + 1;
     });
     return Object.entries(counts)
