@@ -118,13 +118,23 @@ export default function ProjectHeader({
                   textShadow: '0 2px 12px rgba(0,0,0,0.6)'
                 }}
               >
-                {project?.title || 'Digital'} — <span style={{ color: '#FFFFFF', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>{project?.projectName || 'Command Center'}</span>
+                {project?.title && (
+                  <>
+                    {project.title}
+                    {project.projectName && ' — '}
+                  </>
+                )}
+                {project?.projectName && (
+                  <span style={{ color: '#FFFFFF', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+                    {project.projectName}
+                  </span>
+                )}
               </h1>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14, fontSize: 13, fontWeight: 600, letterSpacing: '0.01em' }}>
-              {(project?.subtitles && project.subtitles.length > 0) ? (
+              {(project?.subtitles && project.subtitles.length > 0) &&
                 project.subtitles.map((sub, idx) => (
                   <React.Fragment key={`sub-${idx}`}>
                     {idx > 0 && <span style={{ color: 'var(--text-dim)', fontWeight: 300 }}>|</span>}
@@ -142,16 +152,13 @@ export default function ProjectHeader({
                       </span>
                   </React.Fragment>
                 ))
-              ) : (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#F8F9FA', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
-                  <Activity size={14} style={{ color: 'var(--accent)' }} />
-                  Digital Project Hub
+              }
+              {project?.location && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#FFFFFF', fontWeight: 800, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
+                  <MapPin size={14} style={{ color: '#FF4C4F' }} />
+                  {project.location}
                 </span>
               )}
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#FFFFFF', fontWeight: 800, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
-                <MapPin size={14} style={{ color: '#FF4C4F' }} />
-                {project?.location || 'Digital Sector'}
-              </span>
 
             </div>
           </div>
