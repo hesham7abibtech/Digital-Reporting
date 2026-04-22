@@ -127,6 +127,7 @@ export default function Dashboard() {
   const [bimFilterStatus, setBimFilterStatus] = useState<string[]>([]);
   const [bimFilterStakeholder, setBimFilterStakeholder] = useState<string[]>([]);
   const [bimFilterReviewer, setBimFilterReviewer] = useState<string[]>([]);
+  const [bimFilterPrecinct, setBimFilterPrecinct] = useState<string[]>([]);
 
 
 
@@ -459,9 +460,14 @@ export default function Dashboard() {
                              (bimFilterReviewer.includes('(Empty)') && (resolvedReviewer === '—' || !resolvedReviewer)) ||
                              bimFilterReviewer.includes(resolvedReviewer);
 
-      return matchesSearch && matchesStage && matchesStatus && matchesStakeholder && matchesReviewer;
+      const matchesPrecinct = bimFilterPrecinct.length === 0 || 
+                             bimFilterPrecinct.includes('All Precincts') || 
+                             (bimFilterPrecinct.includes('(Empty)') && (!review.precinct || review.precinct.trim() === '')) ||
+                             bimFilterPrecinct.includes(review.precinct || '');
+
+      return matchesSearch && matchesStage && matchesStatus && matchesStakeholder && matchesReviewer && matchesPrecinct;
     });
-  }, [syncedBimReviews, bimSearch, bimFilterStage, bimFilterStatus, bimFilterStakeholder, bimFilterReviewer, filterMode, selectedMonth, selectedYear, startDate, endDate, syncedMembers]);
+  }, [syncedBimReviews, bimSearch, bimFilterStage, bimFilterStatus, bimFilterStakeholder, bimFilterReviewer, bimFilterPrecinct, filterMode, selectedMonth, selectedYear, startDate, endDate, syncedMembers]);
 
   // Snapshot for previous period to calculate growth
   const previousPeriodBimReviews = useMemo(() => {
@@ -587,6 +593,7 @@ export default function Dashboard() {
             modonHillFinalReviewStatus: row['Modon/Hill Final Review Status'] || '',
             onAcc: row['On ACC'] || 'NOT SHARED',
             project: lastProject,
+            precinct: row['Precinct'] || '',
             reviewNumber: row['Review Number'] ? String(row['Review Number']) : '',
             stakeholder: row['Stakeholder'] || '',
             submissionCategory: row['Submission Category'] 
@@ -980,6 +987,9 @@ export default function Dashboard() {
                           filterReviewer={bimFilterReviewer}
                           setFilterReviewer={setBimFilterReviewer}
                           availableReviewers={availableBimReviewers}
+                          filterPrecinct={bimFilterPrecinct}
+                          setFilterPrecinct={setBimFilterPrecinct}
+                          availablePrecincts={availableBimPrecincts}
                           onEdit={(review: any) => { setSelectedBimReview(review); setIsBimModalOpen(true); }}
                           onDelete={(review: any) => setBimToDelete(review)}
                           onNew={() => { setSelectedBimReview(null); setIsBimModalOpen(true); }}
@@ -1036,6 +1046,9 @@ export default function Dashboard() {
                           filterReviewer={bimFilterReviewer}
                           setFilterReviewer={setBimFilterReviewer}
                           availableReviewers={availableBimReviewers}
+                          filterPrecinct={bimFilterPrecinct}
+                          setFilterPrecinct={setBimFilterPrecinct}
+                          availablePrecincts={availableBimPrecincts}
                         />
                       ) : (
                         <AnalyticsDashboardView

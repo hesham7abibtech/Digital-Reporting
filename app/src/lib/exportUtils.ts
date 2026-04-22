@@ -1136,6 +1136,7 @@ export async function exportToPDF(
 export function getBimExportColumns(metadataExcluded: string[], format: 'excel' | 'pdf' = 'excel') {
   const baseColumns = [
     { id: 'project', excelLabel: 'Project', pdfLabel: 'PROJECT', width: 30 },
+    { id: 'precinct', excelLabel: 'Precinct', pdfLabel: 'PRECINCT', width: 25 },
     { id: 'stakeholder', excelLabel: 'Stakeholder', pdfLabel: 'STAKEHOLDER', width: 25 },
     { id: 'reviewNumber', excelLabel: 'Review No.', pdfLabel: 'REV NO', width: 15 },
     { id: 'submissionDescription', excelLabel: 'Submission Description', pdfLabel: 'DESCRIPTION', width: 50 },

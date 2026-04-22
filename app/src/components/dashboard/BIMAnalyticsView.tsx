@@ -219,6 +219,9 @@ interface BIMAnalyticsViewProps {
   filterReviewer?: string[];
   setFilterReviewer?: (v: string[]) => void;
   availableReviewers?: string[];
+  filterPrecinct?: string[];
+  setFilterPrecinct?: (v: string[]) => void;
+  availablePrecincts?: string[];
 }
 
 export default function BIMAnalyticsView({
@@ -237,7 +240,10 @@ export default function BIMAnalyticsView({
   availableStakeholders = [],
   filterReviewer = [],
   setFilterReviewer,
-  availableReviewers = []
+  availableReviewers = [],
+  filterPrecinct = [],
+  setFilterPrecinct,
+  availablePrecincts = []
 }: BIMAnalyticsViewProps) {
   const { formatDate } = useTimeZone();
   const SECTION_GAP = 10;
@@ -406,11 +412,15 @@ export default function BIMAnalyticsView({
             {setFilterReviewer && (
               <EliteDropdown value={filterReviewer} options={availableReviewers.map(s => ({ label: s, value: s }))} onChange={setFilterReviewer} menuLabel="Reviewer" isMulti allLabel="All Reviewers" />
             )}
+            {setFilterPrecinct && (
+              <EliteDropdown value={filterPrecinct} options={availablePrecincts.map(s => ({ label: s, value: s }))} onChange={setFilterPrecinct} menuLabel="Precinct" isMulti allLabel="All Precincts" />
+            )}
             {(search ||
               (filterStage.length > 0 && !filterStage.includes('All Stages')) ||
               (filterStatus.length > 0 && !filterStatus.includes('All Statuses')) ||
               (filterStakeholder.length > 0 && !filterStakeholder.includes('All Stakeholders')) ||
-              (filterReviewer.length > 0 && !filterReviewer.includes('All Reviewers'))
+              (filterReviewer.length > 0 && !filterReviewer.includes('All Reviewers')) ||
+              (filterPrecinct.length > 0 && !filterPrecinct.includes('All Precincts'))
             ) && (
                 <button
                   onClick={() => {
@@ -419,6 +429,7 @@ export default function BIMAnalyticsView({
                     if (setFilterStatus) setFilterStatus([]);
                     if (setFilterStakeholder) setFilterStakeholder([]);
                     if (setFilterReviewer) setFilterReviewer([]);
+                    if (setFilterPrecinct) setFilterPrecinct([]);
                   }}
                   style={{
                     padding: '10px 16px', borderRadius: 10,

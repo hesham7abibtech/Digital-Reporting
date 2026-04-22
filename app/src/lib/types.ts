@@ -327,6 +327,7 @@ export interface BIMReview {
   modonHillFinalReviewStatus: string;
   onAcc: string; // "SHARED" | "NOT SHARED" 
   project: string;
+  precinct?: string;
   reviewNumber?: string;
   stakeholder: string;
   submissionCategory: string[]; // array of categories

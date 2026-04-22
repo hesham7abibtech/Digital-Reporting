@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Shield, Info, Link as LinkIcon, Calendar, Hash, User, Building2, Layers, Tag as TagIcon } from 'lucide-react';
+import { X, Save, Shield, Info, Link as LinkIcon, Calendar, Hash, User, Building2, Layers, Tag as TagIcon, MapPin } from 'lucide-react';
 import GlassCard from '@/components/shared/GlassCard';
 import { BIMReview } from '@/lib/types';
 import { upsertBimReview } from '@/services/FirebaseService';
@@ -10,6 +10,7 @@ import EliteDatePicker from '@/components/shared/EliteDatePicker';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { db } from '@/lib/firebase';
+import { PRECINCTS } from '@/lib/constants';
 
 interface BIMReviewEditorModalProps {
   isOpen: boolean;
@@ -37,6 +38,7 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
     modonHillFinalReviewStatus: '',
     onAcc: 'NOT SHARED',
     project: '',
+    precinct: '',
     reviewNumber: '',
     stakeholder: '',
     submissionCategory: [],
@@ -93,6 +95,7 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
         modonHillFinalReviewStatus: '',
         onAcc: 'NOT SHARED',
         project: '',
+        precinct: '',
         reviewNumber: '',
         stakeholder: '',
         submissionCategory: [],
@@ -162,7 +165,7 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {/* Primary Identification */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Project</label>
+                  <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Project Identifier</label>
                   <div style={{ position: 'relative' }}>
                     <Building2 size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                     <input
@@ -172,6 +175,23 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
                       placeholder="e.g. REH-MD01-DP01 (AED NORTH PLOTS)"
                       style={{ width: '100%', padding: '10px 14px 10px 36px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 14, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
                     />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Precinct</label>
+                  <div style={{ position: 'relative' }}>
+                    <MapPin size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                    <select
+                      value={formData.precinct || ''}
+                      onChange={(e) => setFormData({ ...formData, precinct: e.target.value })}
+                      style={{ width: '100%', padding: '10px 14px 10px 36px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 14, color: 'var(--text-primary)', fontSize: 15, outline: 'none', appearance: 'none' }}
+                    >
+                      <option value="">Select Precinct</option>
+                      {PRECINCTS.map(p => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
