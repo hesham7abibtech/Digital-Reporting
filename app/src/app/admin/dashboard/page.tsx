@@ -1516,7 +1516,6 @@ export default function AdminDashboardPage() {
                       )}
                     </div>
                   </div>
-
                   <div style={{ overflowX: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'broadcast' || activeTab === 'homepage') ? 'hidden' : 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'broadcast' || activeTab === 'homepage') ? 'fixed' : 'auto' }}>
                       {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'broadcast' && activeTab !== 'homepage' && !(activeTab === 'users' && activeSubTab === 'policies') && (
@@ -1525,8 +1524,8 @@ export default function AdminDashboardPage() {
                             <th style={{ width: 80, padding: '24px 0', textAlign: 'center' }}>
                               <input
                                 type="checkbox"
-                                checked={selectedIds.size > 0 && selectedIds.size === (activeTab === 'tasks' ? tasksSnapshot?.docs.length : activeTab === 'bim-reviews' ? bimReviewsSnapshot?.docs.length : activeTab === 'tickets' ? ticketsSnapshot?.docs.length : 0)}
-                                onChange={() => {}}
+                                checked={currentTabIds.length > 0 && currentTabIds.every(id => selectedIds.has(id))}
+                                onChange={() => toggleSelectAll(currentTabIds)}
                                 style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
                               />
                             </th>
@@ -1557,20 +1556,29 @@ export default function AdminDashboardPage() {
                                   {activeTab === 'users' ? 'Staff Identity' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Project Personnel' : 'Task Category') : (activeTab === 'tasks' ? 'Task Name' : 'Task Definition / Asset')}
                                 </th>
                                 <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 200 }}>
-                                  {activeTab === 'users' ? 'Protocol Clearance' : 'Project Precinct'}
+                                  {activeTab === 'users' ? 'Protocol Clearance' : (activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Department' : 'Abbreviation') : (activeTab === 'registry' ? 'Category' : 'Project Precinct'))}
                                 </th>
                                 <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 130 }}>
-                                  {activeTab === 'users' ? 'Admin Access' : 'Task Category'}
+                                  {activeTab === 'users' ? 'Admin Access' : (activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Email' : 'Last Updated') : (activeTab === 'registry' ? 'Department' : 'Task Category'))}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 160 }}>
-                                  {activeTab === 'users' ? 'Feature Modules' : 'Operational Status'}
+                                <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: activeTab === 'users' ? 240 : 160 }}>
+                                  {activeTab === 'users' ? 'Feature Modules' : (activeTab === 'tasks' ? 'Operational Status' : 'Control')}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 180 }}>
-                                  {activeTab === 'tasks' ? 'Submitter' : 'Action Hub'}
-                                </th>
-                                <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 150 }}>
-                                  {activeTab === 'tasks' ? 'Submission Date' : 'Control'}
-                                </th>
+                                {(activeTab === 'tasks' || activeTab === 'users') && (
+                                  <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: activeTab === 'tasks' ? 180 : 150 }}>
+                                    {activeTab === 'tasks' ? 'Submitter' : 'Control'}
+                                  </th>
+                                )}
+                                {activeTab === 'tasks' && (
+                                  <>
+                                    <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 150 }}>
+                                      Submission Date
+                                    </th>
+                                    <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 120 }}>
+                                      Control
+                                    </th>
+                                  </>
+                                )}
                               </>
                             )}
                           </tr>

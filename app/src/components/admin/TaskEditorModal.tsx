@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Trash2, Calendar, Search, ChevronDown, Check, Plus, Link, Shield, Lock, Clock, CheckCircle2, Globe, FileCode, Loader2, UserCheck, Activity, Tag, Building2 } from 'lucide-react';
+import { X, Save, Trash2, Calendar, Search, ChevronDown, Check, Plus, Link, Shield, Lock, Clock, CheckCircle2, Globe, FileCode, Loader2, UserCheck, Activity, Tag, Building2, Pencil } from 'lucide-react';
 import { Task, TaskStatus, TaskLink, Department, NetworkVector } from '@/lib/types';
 import { upsertTask, deleteTask, updateMetadataSuggestions, atomicRenumberTask } from '@/services/FirebaseService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
@@ -116,6 +116,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [newVector, setNewVector] = useState<Partial<NetworkVector>>({ type: '', cde: '', label: '', url: '' });
   const [showErrors, setShowErrors] = useState(false);
+  const [editIndex, setEditIndex] = useState<number | null>(null);
   const originalIdRef = useRef<string | null>(null);
 
   const [metadataSnapshot] = useDocument(doc(db, 'settings', 'taskMetadata'));
@@ -471,9 +472,9 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                   animate={{ opacity: 1, y: 0 }}
                   key={vector.id || idx}
                   style={{
-                    display: 'grid', gridTemplateColumns: 'minmax(120px, 1fr) minmax(100px, 0.8fr) minmax(200px, 2fr) auto',
-                    gap: 16, alignItems: 'center', padding: '14px 20px', background: '#ffffff', borderRadius: 16,
-                    border: '1px solid rgba(0, 0, 0, 0.08)', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)'
+                    display: 'grid', gridTemplateColumns: 'minmax(120px, 1fr) minmax(100px, 0.8fr) minmax(200px, 2fr) auto auto',
+                    gap: 16, alignItems: 'center', padding: '14px 20px', background: editIndex === idx ? 'rgba(212, 175, 55, 0.05)' : '#ffffff', borderRadius: 16,
+                    border: editIndex === idx ? '1px solid #D4AF37' : '1px solid rgba(0, 0, 0, 0.08)', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -487,16 +488,31 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#0a1220', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {vector.label}
                   </div>
-                  <button
-                    onClick={() => {
-                      const newVectors = [...(formData.vectors || [])];
-                      newVectors.splice(idx, 1);
-                      setFormData({ ...formData, vectors: newVectors });
-                    }}
-                    style={{ background: 'rgba(239, 68, 68, 0.05)', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 8, borderRadius: 8, display: 'flex' }}
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => {
+                        setNewVector({ ...vector });
+                        setEditIndex(idx);
+                      }}
+                      style={{ background: 'rgba(0, 63, 73, 0.05)', border: 'none', color: '#003F49', cursor: 'pointer', padding: 8, borderRadius: 8, display: 'flex', transition: 'all 200ms' }}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        const newVectors = [...(formData.vectors || [])];
+                        newVectors.splice(idx, 1);
+                        setFormData({ ...formData, vectors: newVectors });
+                        if (editIndex === idx) {
+                          setEditIndex(null);
+                          setNewVector({ type: '', cde: '', label: '', url: '' });
+                        }
+                      }}
+                      style={{ background: 'rgba(239, 68, 68, 0.05)', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 8, borderRadius: 8, display: 'flex' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </motion.div>
               ))}
               {(!formData.vectors || formData.vectors.length === 0) && (
@@ -528,27 +544,49 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                     <label style={{ fontSize: 9, fontWeight: 950, color: '#0a1220', textTransform: 'uppercase', opacity: 0.6 }}>URL</label>
                     <input type="url" placeholder="https://..." value={newVector.url} onChange={e => setNewVector({ ...newVector, url: e.target.value })} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: '#F9F8F2', border: '1px solid rgba(0, 0, 0, 0.1)', color: '#0a1220', fontSize: 13, fontWeight: 700, outline: 'none' }} />
                   </div>
-                  <button
-                    onClick={() => {
-                      if (newVector.type && newVector.cde && newVector.url) {
-                        const vector: NetworkVector = {
-                          id: `vec-${Date.now()}`,
-                          type: newVector.type,
-                          cde: newVector.cde,
-                          label: newVector.label || newVector.type,
-                          url: newVector.url
-                        };
-                        setFormData({ ...formData, vectors: [...(formData.vectors || []), vector] });
-                        setNewVector({ type: '', cde: '', label: '', url: '' });
-                        showToast('Link added successfully.', 'SUCCESS');
-                      } else {
-                        showToast('Please fill in all link details.', 'INFO');
-                      }
-                    }}
-                    style={{ padding: '12px 24px', borderRadius: 12, background: '#003F49', color: '#ffffff', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 4px 12px rgba(0, 63, 73, 0.2)' }}
-                  >
-                    Connect Vector
-                  </button>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    {editIndex !== null && (
+                      <button
+                        onClick={() => {
+                          setEditIndex(null);
+                          setNewVector({ type: '', cde: '', label: '', url: '' });
+                        }}
+                        style={{ padding: '12px 24px', borderRadius: 12, background: 'transparent', color: '#003F49', border: '1px solid rgba(0, 63, 73, 0.15)', cursor: 'pointer', fontSize: 11, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        if (newVector.type && newVector.cde && newVector.url) {
+                          const vector: NetworkVector = {
+                            id: editIndex !== null ? (formData.vectors?.[editIndex]?.id || `vec-${Date.now()}`) : `vec-${Date.now()}`,
+                            type: newVector.type,
+                            cde: newVector.cde,
+                            label: newVector.label || newVector.type,
+                            url: newVector.url
+                          };
+                          
+                          const newVectors = [...(formData.vectors || [])];
+                          if (editIndex !== null) {
+                            newVectors[editIndex] = vector;
+                          } else {
+                            newVectors.push(vector);
+                          }
+                          
+                          setFormData({ ...formData, vectors: newVectors });
+                          setNewVector({ type: '', cde: '', label: '', url: '' });
+                          setEditIndex(null);
+                          showToast(editIndex !== null ? 'Link updated successfully.' : 'Link added successfully.', 'SUCCESS');
+                        } else {
+                          showToast('Please fill in all link details.', 'INFO');
+                        }
+                      }}
+                      style={{ padding: '12px 24px', borderRadius: 12, background: '#003F49', color: '#ffffff', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 4px 12px rgba(0, 63, 73, 0.2)' }}
+                    >
+                      {editIndex !== null ? 'Update Vector' : 'Connect Vector'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
