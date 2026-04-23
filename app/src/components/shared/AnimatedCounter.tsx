@@ -76,10 +76,10 @@ export default function AnimatedCounter({
   }, [value]);
 
   return (
-    <span className={`font-mono-data ${className}`}>
-      {prefix}
-      {Math.round(displayValue).toFixed(decimals)}
-      {suffix}
+    <span className={`font-mono-data ${className}`} style={{ display: 'inline-flex', alignItems: 'baseline' }}>
+      {prefix && <span style={{ marginRight: '0.1em' }}>{prefix}</span>}
+      <span>{Math.round(displayValue).toFixed(decimals)}</span>
+      {suffix && <span style={{ marginLeft: '0.05em' }}>{suffix}</span>}
     </span>
   );
 }

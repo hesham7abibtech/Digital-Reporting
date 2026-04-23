@@ -67,7 +67,7 @@ export default function LiveMetrics({ items }: LiveMetricsProps) {
 
                 transition={{ delay: 0.2 + i * 0.12, duration: 0.6, ease: 'easeOut' }}
                 style={{
-                  padding: '32px 24px', borderRadius: 22, textAlign: 'center',
+                  padding: '16px 12px', borderRadius: 20, textAlign: 'center',
                   background: 'rgba(249, 248, 242, 0.06)',
                   backdropFilter: 'blur(12px)',
                   border: '1px solid rgba(249, 248, 242, 0.08)',
@@ -85,20 +85,20 @@ export default function LiveMetrics({ items }: LiveMetricsProps) {
                 }}
               >
                 <div style={{
-                  width: 48, height: 48, borderRadius: 14,
+                  width: 44, height: 44, borderRadius: 14,
                   background: 'rgba(208, 171, 130, 0.12)',
                   border: '1px solid rgba(208, 171, 130, 0.2)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  margin: '0 auto 18px',
+                  margin: '0 auto 14px',
                 }}>
-                  <Icon size={22} color="var(--sunlit-rock)" />
+                  <Icon size={20} color="var(--sunlit-rock)" />
                 </div>
 
-                <div style={{ fontSize: 'clamp(30px, 4vw, 42px)', fontWeight: 900, color: 'var(--cotton)', lineHeight: 1, marginBottom: 8, fontFamily: 'var(--font-mono)' }}>
-                  <AnimatedCounter value={metric.value} duration={2000} suffix={metric.suffix || ''} startCounting={gridInView} />
+                <div style={{ fontSize: 'clamp(28px, 3.5vw, 36px)', fontWeight: 900, color: 'var(--cotton)', lineHeight: 1, marginBottom: 6, fontFamily: 'var(--font-mono)' }}>
+                  <AnimatedCounter value={metric.value} duration={2000} prefix={metric.prefix || ''} suffix={metric.suffix || ''} startCounting={gridInView} />
                 </div>
 
-                <p style={{ fontSize: 12, fontWeight: 700, color: 'rgba(249, 248, 242, 0.5)', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(249, 248, 242, 0.5)', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>
                   {metric.label}
                 </p>
               </motion.div>

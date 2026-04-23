@@ -172,10 +172,10 @@ export default function ExportMenu({
             transition={{ duration: 0.2, ease: 'easeOut' }}
             style={{
               position: 'absolute',
-              bottom: '100%',
+              top: '100%',
               right: 0,
-              marginBottom: 8,
-              zIndex: 4200,
+              marginTop: 8,
+              zIndex: 9999,
               width: 240,
               background: '#003f49',
               backdropFilter: 'blur(20px)',

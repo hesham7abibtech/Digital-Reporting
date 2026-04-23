@@ -158,10 +158,10 @@ export default function BimExportMenu({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: 10, zIndex: 4200, width: 280, background: '#003f49', backdropFilter: 'blur(32px)', border: '1.5px solid rgba(255, 255, 255, 0.1)', borderRadius: 24, boxShadow: '0 25px 60px rgba(0, 0, 0, 0.4)', padding: 12, overflow: 'hidden' }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            style={{ position: 'absolute', top: '100%', right: 0, marginTop: 10, zIndex: 9999, width: 280, background: '#003f49', backdropFilter: 'blur(32px)', border: '1.5px solid rgba(255, 255, 255, 0.1)', borderRadius: 24, boxShadow: '0 25px 60px rgba(0, 0, 0, 0.4)', padding: 12, overflow: 'hidden' }}
           >
             <div style={{ padding: '8px 12px 4px 12px', fontSize: 10, fontWeight: 900, color: 'rgba(255, 255, 255, 0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               Select Output Format

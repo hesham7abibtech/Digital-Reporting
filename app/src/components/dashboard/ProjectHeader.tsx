@@ -221,7 +221,7 @@ export default function ProjectHeader({
 
             {project?.headerBadges?.filter(b => {
               if (!b.isVisible) return false;
-              if (b.isAutomated) return b.id !== 'task-count'; // Show automated badges except count
+              if (b.isAutomated) return false; // Hide all automated badges
               
               const label = (b.label || '').toUpperCase();
               // Exclude manual duplicates that match our primary navigation buttons or contain common typos
@@ -230,17 +230,8 @@ export default function ProjectHeader({
               return true;
             }).map((badge) => {
 
-
-              let displayText = badge.label;
+              const displayText = badge.label;
               const color = badge.color || '#D4AF37';
-
-
-              // Handle Automated Data Injection
-              if (badge.isAutomated) {
-                if (badge.id === 'date-range') displayText = dateRangeText || 'MONTHLY PERFORMANCE';
-
-
-              }
 
 
               return (
@@ -249,7 +240,7 @@ export default function ProjectHeader({
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 8,
                     padding: '8px 20px', borderRadius: 10,
-                    background: badge.id === 'task-count' ? 'var(--teal)' : 'rgba(0, 63, 73, 0.6)', 
+                    background: 'rgba(0, 63, 73, 0.6)', 
                     border: `1px solid rgba(255, 255, 255, 0.2)`,
                     backdropFilter: 'blur(10px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
@@ -258,9 +249,9 @@ export default function ProjectHeader({
                   <div style={{ 
                     width: 6, height: 6, borderRadius: '50%', 
                     background: color,
-                  }} className={badge.id === 'date-range' ? "animate-pulse" : ""} />
+                  }} />
                   <span style={{ 
-                    fontSize: 12, fontWeight: 950, color: badge.id === 'task-count' ? 'var(--aqua)' : '#FFFFFF', 
+                    fontSize: 12, fontWeight: 950, color: '#FFFFFF', 
                     textTransform: 'uppercase', letterSpacing: '0.08em' 
                   }}>
                     {displayText}
@@ -269,18 +260,7 @@ export default function ProjectHeader({
               );
             })}
 
-            {/* Legacy Fallback if no badges defined */}
-            {(!project?.headerBadges || project.headerBadges.length === 0) && (
-              <>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 9999, background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.3)', marginLeft: 0 }}>
 
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4AF37', boxShadow: '0 0 10px #D4AF37' }} className="animate-pulse" />
-                  <span style={{ fontSize: 13, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{dateRangeText || 'MONTHLY PERFORMANCE'}</span>
-                </span>
-
-
-              </>
-            )}
           </div>
         </div>
 

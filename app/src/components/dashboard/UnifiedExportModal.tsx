@@ -464,7 +464,7 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
                               boxShadow: filterMode === mode ? '0 4px 12px rgba(0, 63, 73, 0.2)' : 'none',
                             }}
                           >
-                            {mode === 'all' ? 'All Time' : mode}
+                            {mode === 'all' ? 'Project Lifecycle' : mode}
                           </button>
                         ))}
                       </div>

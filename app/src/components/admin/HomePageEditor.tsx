@@ -15,6 +15,7 @@ import type { HomePageConfig, HomeMetricItem, HomeModuleItem, HomeGalleryImage }
 import { DEFAULT_CONFIG } from '@/hooks/useHomePageData';
 
 const ICON_OPTIONS = ['FileText', 'Layers', 'Box', 'BarChart3', 'Database', 'Globe', 'Shield', 'Activity', 'Cpu', 'Zap'];
+const SOCIAL_ICON_OPTIONS = ['Linkedin', 'Twitter', 'Facebook', 'Instagram', 'Youtube', 'Github', 'Globe'];
 
 const sectionStyle: React.CSSProperties = {
   padding: '32px',
@@ -52,7 +53,20 @@ export default function HomePageEditor({ showToast }: Props) {
 
   useEffect(() => {
     if (snapshot?.exists() && !initialized) {
-      setConfig({ ...DEFAULT_CONFIG, ...snapshot.data() } as HomePageConfig);
+      const remoteData = snapshot.data();
+      setConfig({
+        ...DEFAULT_CONFIG,
+        ...remoteData,
+        hero: { ...DEFAULT_CONFIG.hero, ...(remoteData.hero || {}) },
+        overview: { ...DEFAULT_CONFIG.overview, ...(remoteData.overview || {}) },
+        trust: { 
+          ...DEFAULT_CONFIG.trust, 
+          ...(remoteData.trust || {}),
+          logos: (remoteData.trust?.logos?.length > 0) ? remoteData.trust.logos : DEFAULT_CONFIG.trust.logos
+        },
+        footer: { ...DEFAULT_CONFIG.footer, ...(remoteData.footer || {}) },
+        dashboardPreview: { ...DEFAULT_CONFIG.dashboardPreview, ...(remoteData.dashboardPreview || {}) }
+      } as HomePageConfig);
       setInitialized(true);
     } else if (!snapshot?.exists() && !loading && !initialized) {
       setInitialized(true);
@@ -106,6 +120,8 @@ export default function HomePageEditor({ showToast }: Props) {
     { id: 'metrics', label: 'Metrics', icon: <BarChart3 size={16} /> },
     { id: 'modules', label: 'Modules', icon: <Grid size={16} /> },
     { id: 'gallery', label: 'Gallery', icon: <Layout size={16} /> },
+    { id: 'trust', label: 'Trusted Partners', icon: <Shield size={16} /> },
+    { id: 'footer', label: 'Footer Content', icon: <Globe size={16} /> },
     { id: 'preview', label: 'Dashboard Preview', icon: <Eye size={16} /> },
   ];
 
@@ -256,23 +272,35 @@ export default function HomePageEditor({ showToast }: Props) {
           <h3 style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 24px' }}>Public Metrics</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {config.metrics.items.map((metric, i) => (
-              <div key={metric.id} style={{
-                padding: 20, borderRadius: 16,
-                background: 'var(--section-bg)', border: '1px solid var(--border)',
-                display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto auto', gap: 12, alignItems: 'center',
-              }}>
+                <div key={metric.id} style={{
+                  padding: 16, borderRadius: 16,
+                  background: 'var(--section-bg)', border: '1px solid var(--border)',
+                  display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 0.4fr 0.4fr 1fr auto auto', gap: 8, alignItems: 'center',
+                }}>
                 <input style={inputStyle} placeholder="Label" value={metric.label}
                   onChange={e => {
                     const items = [...config.metrics.items];
                     items[i] = { ...items[i], label: e.target.value };
                     autoSave({ ...config, metrics: { items } });
                   }} />
-                <input style={inputStyle} type="number" placeholder="Value" value={metric.value}
-                  onChange={e => {
-                    const items = [...config.metrics.items];
-                    items[i] = { ...items[i], value: parseInt(e.target.value) || 0 };
-                    autoSave({ ...config, metrics: { items } });
-                  }} />
+                  <input style={inputStyle} type="number" placeholder="Value" value={metric.value}
+                    onChange={e => {
+                      const items = [...config.metrics.items];
+                      items[i] = { ...items[i], value: parseInt(e.target.value) || 0 };
+                      autoSave({ ...config, metrics: { items } });
+                    }} />
+                  <input style={inputStyle} placeholder="Pre" title="Prefix" value={metric.prefix || ''}
+                    onChange={e => {
+                      const items = [...config.metrics.items];
+                      items[i] = { ...items[i], prefix: e.target.value };
+                      autoSave({ ...config, metrics: { items } });
+                    }} />
+                  <input style={inputStyle} placeholder="Suf" title="Suffix" value={metric.suffix || ''}
+                    onChange={e => {
+                      const items = [...config.metrics.items];
+                      items[i] = { ...items[i], suffix: e.target.value };
+                      autoSave({ ...config, metrics: { items } });
+                    }} />
                 <select style={{ ...inputStyle, cursor: 'pointer' }} value={metric.icon}
                   onChange={e => {
                     const items = [...config.metrics.items];
@@ -410,6 +438,262 @@ export default function HomePageEditor({ showToast }: Props) {
                 }
               }} />
           </label>
+        </div>
+      )}
+      
+      {/* Trust Section Editor */}
+      {activeSection === 'trust' && (
+        <div style={sectionStyle}>
+          <h3 style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 24px' }}>Trusted Partners</h3>
+
+          <label style={labelStyle}>Trust Statement</label>
+          <textarea rows={3} style={textareaStyle} value={config.trust.statement}
+            onChange={e => autoSave({ ...config, trust: { ...config.trust, statement: e.target.value } })} />
+
+          <div style={{ marginTop: 24 }}>
+            <label style={labelStyle}>Partner Logos</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
+              {config.trust.logos.map((logo, i) => (
+                <div key={logo.id} style={{
+                  padding: 12, borderRadius: 14, background: 'var(--section-bg)',
+                  border: '1px solid var(--border)', position: 'relative',
+                  display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center',
+                  opacity: logo.isVisible === false ? 0.6 : 1
+                }}>
+                  <div style={{ 
+                    width: '100%', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                    background: '#fff', borderRadius: 8, padding: 8, position: 'relative', overflow: 'hidden',
+                    border: '1px solid var(--border)'
+                  }}>
+                    <img src={logo.url} alt={logo.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                    <label style={{
+                      position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      opacity: 0, cursor: 'pointer', transition: 'opacity 200ms',
+                    }} className="hover-overlay">
+                      <Upload size={14} color="#fff" />
+                      <input type="file" accept="image/*" style={{ display: 'none' }}
+                        onChange={async e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const url = await uploadFile(file, `homepage/trust-${Date.now()}`);
+                            const logos = [...config.trust.logos];
+                            logos[i] = { ...logos[i], url };
+                            autoSave({ ...config, trust: { ...config.trust, logos } });
+                            showToast('Logo updated.', 'SUCCESS');
+                          } catch (err) {
+                            showToast('Update failed.', 'ERROR');
+                          }
+                        }} />
+                    </label>
+                  </div>
+                  
+                  <style>{`
+                    div:hover > div > .hover-overlay { opacity: 1 !important; }
+                  `}</style>
+
+                  <div style={{ display: 'flex', gap: 4, width: '100%' }}>
+                    <input style={{ ...inputStyle, fontSize: 11, padding: '6px 10px', flex: 1 }} placeholder="Partner Name" value={logo.name}
+                      onChange={e => {
+                        const logos = [...config.trust.logos];
+                        logos[i] = { ...logos[i], name: e.target.value };
+                        autoSave({ ...config, trust: { ...config.trust, logos } });
+                      }} />
+                    <button onClick={() => {
+                      const logos = [...config.trust.logos];
+                      logos[i] = { ...logos[i], isVisible: logo.isVisible === false };
+                      autoSave({ ...config, trust: { ...config.trust, logos } });
+                    }} style={{ 
+                      padding: 8, borderRadius: 8, 
+                      background: logo.isVisible !== false ? 'rgba(16,185,129,0.1)' : 'var(--section-bg)', 
+                      border: `1px solid ${logo.isVisible !== false ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.08)'}`, 
+                      color: logo.isVisible !== false ? '#10b981' : 'var(--text-secondary)', 
+                      cursor: 'pointer' 
+                    }}>
+                      {logo.isVisible !== false ? <Eye size={12} /> : <EyeOff size={12} />}
+                    </button>
+                  </div>
+
+                  <input style={{ ...inputStyle, fontSize: 11, padding: '6px 10px' }} placeholder="Website URL (Optional)" value={logo.linkUrl || ''}
+                    onChange={e => {
+                      const logos = [...config.trust.logos];
+                      logos[i] = { ...logos[i], linkUrl: e.target.value };
+                      autoSave({ ...config, trust: { ...config.trust, logos } });
+                    }} />
+                  <button onClick={() => {
+                    const logos = config.trust.logos.filter((_, idx) => idx !== i);
+                    autoSave({ ...config, trust: { ...config.trust, logos } });
+                  }} style={{
+                    position: 'absolute', top: -8, right: -8, width: 24, height: 24, borderRadius: 12,
+                    background: '#ef4444', border: '2px solid var(--body-bg)', color: '#fff',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                  }}>
+                    <Trash2 size={10} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <label style={{
+              padding: '14px', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              background: 'var(--section-bg)', border: '1px dashed var(--border)',
+              color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            }}>
+              <Upload size={14} /> Upload Partner Logo
+              <input type="file" accept="image/*" style={{ display: 'none' }}
+                onChange={async e => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const url = await uploadFile(file, `homepage/trust-${Date.now()}`);
+                    const logos = [...config.trust.logos, { id: `trust-${Date.now()}`, url, name: file.name.split('.')[0] }];
+                    autoSave({ ...config, trust: { ...config.trust, logos } });
+                    showToast('Partner logo added.', 'SUCCESS');
+                  } catch (err) {
+                    showToast('Upload failed.', 'ERROR');
+                  }
+                }} />
+            </label>
+          </div>
+        </div>
+      )}
+
+      {/* Footer Section Editor */}
+      {activeSection === 'footer' && (
+        <div style={sectionStyle}>
+          <h3 style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 24px' }}>Footer Content</h3>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+            <div>
+              <label style={labelStyle}>About Title</label>
+              <input style={inputStyle} value={config.footer.aboutTitle}
+                onChange={e => autoSave({ ...config, footer: { ...config.footer, aboutTitle: e.target.value } })} />
+            </div>
+            <div>
+              <label style={labelStyle}>System Version</label>
+              <input style={inputStyle} value={config.footer.version}
+                onChange={e => autoSave({ ...config, footer: { ...config.footer, version: e.target.value } })} />
+            </div>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>About Description</label>
+            <textarea rows={2} style={textareaStyle} value={config.footer.aboutDescription}
+              onChange={e => autoSave({ ...config, footer: { ...config.footer, aboutDescription: e.target.value } })} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 16 }}>
+            <div>
+              <label style={labelStyle}>Contact Email</label>
+              <input style={inputStyle} value={config.footer.contactEmail}
+                onChange={e => autoSave({ ...config, footer: { ...config.footer, contactEmail: e.target.value } })} />
+            </div>
+            <div>
+              <label style={labelStyle}>Website URL</label>
+              <input style={inputStyle} value={config.footer.contactWebsite}
+                onChange={e => autoSave({ ...config, footer: { ...config.footer, contactWebsite: e.target.value } })} />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Contact Address</label>
+              <input style={inputStyle} value={config.footer.contactAddress}
+                onChange={e => autoSave({ ...config, footer: { ...config.footer, contactAddress: e.target.value } })} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Contact Address Hyperlink (Optional)</label>
+              <input style={inputStyle} value={config.footer.contactAddressLink || ''}
+                placeholder="Custom Google Maps link or location URL"
+                onChange={e => autoSave({ ...config, footer: { ...config.footer, contactAddressLink: e.target.value } })} />
+            </div>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Copyright Text</label>
+            <input style={inputStyle} value={config.footer.copyright}
+              onChange={e => autoSave({ ...config, footer: { ...config.footer, copyright: e.target.value } })} />
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Platform Tagline (Bottom Right)</label>
+            <input style={inputStyle} value={config.footer.platformName}
+              onChange={e => autoSave({ ...config, footer: { ...config.footer, platformName: e.target.value } })} />
+          </div>
+
+          {/* System Links Editor */}
+          <div style={{ marginTop: 24 }}>
+            <label style={labelStyle}>System Links</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {config.footer.systemItems?.map((item, i) => (
+                <div key={item.id} style={{ display: 'flex', gap: 8 }}>
+                  <input style={{ ...inputStyle, flex: 1 }} placeholder="Label" value={item.label}
+                    onChange={e => {
+                      const systemItems = [...config.footer.systemItems];
+                      systemItems[i] = { ...systemItems[i], label: e.target.value };
+                      autoSave({ ...config, footer: { ...config.footer, systemItems } });
+                    }} />
+                  <input style={{ ...inputStyle, flex: 2 }} placeholder="URL" value={item.url}
+                    onChange={e => {
+                      const systemItems = [...config.footer.systemItems];
+                      systemItems[i] = { ...systemItems[i], url: e.target.value };
+                      autoSave({ ...config, footer: { ...config.footer, systemItems } });
+                    }} />
+                  <button onClick={() => {
+                    const systemItems = config.footer.systemItems.filter((_, idx) => idx !== i);
+                    autoSave({ ...config, footer: { ...config.footer, systemItems } });
+                  }} style={{ padding: '0 12px', borderRadius: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', cursor: 'pointer' }}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+              <button onClick={() => {
+                const systemItems = [...(config.footer.systemItems || []), { id: `sys-${Date.now()}`, label: 'New Link', url: '#' }];
+                autoSave({ ...config, footer: { ...config.footer, systemItems } });
+              }} style={{ padding: '10px', borderRadius: 12, background: 'var(--section-bg)', border: '1px dashed var(--border)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Plus size={14} /> Add System Link
+              </button>
+            </div>
+          </div>
+
+          {/* Social Links Editor */}
+          <div style={{ marginTop: 24 }}>
+            <label style={labelStyle}>Social Links</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {config.footer.socialLinks?.map((link, i) => (
+                <div key={link.id} style={{ display: 'flex', gap: 8 }}>
+                  <select style={{ ...inputStyle, flex: 1, cursor: 'pointer' }} value={link.icon}
+                    onChange={e => {
+                      const socialLinks = [...config.footer.socialLinks];
+                      socialLinks[i] = { ...socialLinks[i], icon: e.target.value };
+                      autoSave({ ...config, footer: { ...config.footer, socialLinks } });
+                    }}>
+                    {SOCIAL_ICON_OPTIONS.map(ic => <option key={ic} value={ic}>{ic}</option>)}
+                  </select>
+                  <input style={{ ...inputStyle, flex: 2 }} placeholder="URL" value={link.url}
+                    onChange={e => {
+                      const socialLinks = [...config.footer.socialLinks];
+                      socialLinks[i] = { ...socialLinks[i], url: e.target.value };
+                      autoSave({ ...config, footer: { ...config.footer, socialLinks } });
+                    }} />
+                  <button onClick={() => {
+                    const socialLinks = config.footer.socialLinks.filter((_, idx) => idx !== i);
+                    autoSave({ ...config, footer: { ...config.footer, socialLinks } });
+                  }} style={{ padding: '0 12px', borderRadius: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', cursor: 'pointer' }}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+              <button onClick={() => {
+                const socialLinks = [...(config.footer.socialLinks || []), { id: `soc-${Date.now()}`, label: 'Social', url: '#', icon: 'Linkedin' }];
+                autoSave({ ...config, footer: { ...config.footer, socialLinks } });
+              }} style={{ padding: '10px', borderRadius: 12, background: 'var(--section-bg)', border: '1px dashed var(--border)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Plus size={14} /> Add Social Link
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

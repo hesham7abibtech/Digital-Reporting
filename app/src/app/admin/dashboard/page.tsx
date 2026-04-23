@@ -41,7 +41,13 @@ import {
   Table,
   FileText,
   Layers,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Type,
+  Activity,
+  Upload,
+  Grid,
+  Zap,
+  EyeOff
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -463,6 +469,9 @@ export default function AdminDashboardPage() {
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [selectedDepartment, setSelectedDepartment] = useState<any | null>(null);
   const [selectedBimReview, setSelectedBimReview] = useState<BIMReview | null>(null);
+  const [ticketToResolve, setTicketToResolve] = useState<any | null>(null);
+  const [ticketToReject, setTicketToReject] = useState<any | null>(null);
+  const [ticketToDelete, setTicketToDelete] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
 
@@ -514,9 +523,9 @@ export default function AdminDashboardPage() {
   // Sync header badges exactly once initially
   if (projectData && !initializedBadges) {
     const defaultBadges: HeaderBadge[] = [
-      { id: 'status-line', label: 'Protocol Status Line', color: projectData.statusColor || '#f59e0b', isVisible: true, isAutomated: true },
-      { id: 'date-range', label: 'Operational Period', color: '#D4AF37', isVisible: true, isAutomated: true },
-      { id: 'task-count', label: 'Deliverables Count', color: '#818cf8', isVisible: true, isAutomated: true }
+      { id: 'status-line', label: 'SECURITY SPECTRUM', color: projectData.statusColor || '#f59e0b', isVisible: true, isAutomated: true },
+      { id: 'date-range', label: 'MONTHLY PERFORMANCE', color: '#D4AF37', isVisible: true, isAutomated: true },
+      { id: 'task-count', label: 'DELIVERABLES REGISTRY', color: '#818cf8', isVisible: true, isAutomated: true }
     ];
     setLocalHeaderBadges(projectData.headerBadges || defaultBadges);
     setInitializedBadges(true);
@@ -784,11 +793,13 @@ export default function AdminDashboardPage() {
 
   const handleDelete = async (id: string, collection: string) => {
     try {
-      if (collection === 'tasks') await deleteDoc(doc(db, 'tasks', id));
-      if (collection === 'members') await deleteDoc(doc(db, 'members', id));
-      if (collection === 'registry') await deleteDoc(doc(db, 'registry', id));
-      if (collection === 'departments') await deleteDoc(doc(db, 'departments', id));
-      if (collection === 'bim-reviews') await deleteDoc(doc(db, 'bimReviews', id));
+      const { deleteDoc, doc: fsDoc } = await import('firebase/firestore');
+      if (collection === 'tasks') await deleteDoc(fsDoc(db, 'tasks', id));
+      else if (collection === 'members') await deleteDoc(fsDoc(db, 'members', id));
+      else if (collection === 'registry') await deleteDoc(fsDoc(db, 'registry', id));
+      else if (collection === 'departments') await deleteDoc(fsDoc(db, 'departments', id));
+      else if (collection === 'bim-reviews') await deleteDoc(fsDoc(db, 'bimReviews', id));
+      else if (collection === 'tickets') await deleteDoc(fsDoc(db, 'tickets', id));
       showToast('Administrative protocol: Asset record terminated.', 'SUCCESS');
     } catch (err) {
       showToast('Security system failure: Record deletion denied.', 'ERROR');
@@ -1475,7 +1486,7 @@ export default function AdminDashboardPage() {
                         </>
                       )}
 
-                      {activeTab !== 'users' && activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'broadcast' && can(activeTab as any, 'edit') && (
+                      {(activeTab === 'tasks' || activeTab === 'team' || activeTab === 'registry' || activeTab === 'bim-reviews') && can(activeTab as any, 'edit') && (
                         <button 
                           onClick={handleNewRecord} 
                           style={{ 
@@ -2132,11 +2143,7 @@ export default function AdminDashboardPage() {
                               <td style={{ padding: '32px' }} onClick={(e) => e.stopPropagation()}>
                                 <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
                                   <button
-                                    onClick={async () => {
-                                      const { updateDoc, doc: fsDoc } = await import('firebase/firestore');
-                                      await updateDoc(fsDoc(db, 'tickets', doc.id), { status: 'RESOLVED', updatedAt: new Date().toISOString() });
-                                      showToast(`Ticket ${ticket.id} resolved.`, 'SUCCESS');
-                                    }}
+                                    onClick={() => setTicketToResolve({ id: doc.id, ticketId: ticket.id })}
                                     className="elite-action-btn"
                                     style={{ padding: 12, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', color: '#10b981', cursor: 'pointer' }}
                                     title="Mark Resolved"
@@ -2144,11 +2151,7 @@ export default function AdminDashboardPage() {
                                     <Check size={18} />
                                   </button>
                                   <button
-                                    onClick={async () => {
-                                      const { updateDoc, doc: fsDoc } = await import('firebase/firestore');
-                                      await updateDoc(fsDoc(db, 'tickets', doc.id), { status: 'REJECTED', updatedAt: new Date().toISOString() });
-                                      showToast(`Ticket ${ticket.id} rejected.`, 'INFO');
-                                    }}
+                                    onClick={() => setTicketToReject({ id: doc.id, ticketId: ticket.id })}
                                     className="elite-action-btn"
                                     style={{ padding: 12, borderRadius: 12, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', cursor: 'pointer' }}
                                     title="Reject Ticket"
@@ -2156,7 +2159,7 @@ export default function AdminDashboardPage() {
                                     <X size={18} />
                                   </button>
                                   <button
-                                    onClick={() => handleDelete(doc.id, 'tickets')}
+                                    onClick={() => setTicketToDelete({ id: doc.id, ticketId: ticket.id })}
                                     className="elite-action-btn"
                                     style={{ padding: 12, borderRadius: 12, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', cursor: 'pointer' }}
                                     title="Delete Record"
@@ -2243,43 +2246,60 @@ export default function AdminDashboardPage() {
                                     setIsBrandingUpdating(false);
                                   }
                                 }}
-                                style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}
+                                style={{ display: 'flex', flexDirection: 'column', gap: 32 }}
                               >
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                  <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Project Sector / Category</label>
-                                  <input
-                                    name="title"
-                                    value={localTitle}
-                                    onChange={(e) => setLocalTitle(e.target.value)}
-                                    placeholder="e.g. Infrastructure Hub"
-                                    style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', transition: 'all 200ms' }}
-                                  />
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                  <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Primary Project Name</label>
-                                  <input
-                                    name="projectName"
-                                    value={localProjectName}
-                                    onChange={(e) => setLocalProjectName(e.target.value)}
-                                    placeholder="e.g. North Sector Expansion"
-                                    style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', transition: 'all 200ms' }}
-                                  />
-                                </div>
-
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 24, gridColumn: 'span 2', padding: 32, background: 'var(--section-bg)', border: '1px solid var(--section-bg)', borderRadius: 28, marginTop: 12 }}>
+                                {/* Section 1: Core Project Identity */}
+                                <div style={{ 
+                                  padding: 32, background: 'var(--secondary)', border: '1px solid var(--border)', 
+                                  borderRadius: 28, display: 'flex', flexDirection: 'column', gap: 24 
+                                }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--teal)' }} />
-                                    <h3 style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Global Project Identity & Metadata</h3>
+                                    <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(208,171,130,0.1)', border: '1px solid rgba(208,171,130,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      <Type size={20} color="var(--sunlit-rock)" />
+                                    </div>
+                                    <div>
+                                      <h3 style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Core Project Identity</h3>
+                                      <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '4px 0 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Primary metadata for the project ecosystem</p>
+                                    </div>
                                   </div>
 
                                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-                                    {/* Subtitles Section */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                                      <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Subtitles</label>
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                      <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Project Sector / Category</label>
+                                      <input
+                                        name="title"
+                                        value={localTitle}
+                                        onChange={(e) => setLocalTitle(e.target.value)}
+                                        placeholder="e.g. Infrastructure Hub"
+                                        style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', transition: 'all 200ms' }}
+                                      />
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                      <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Primary Project Name</label>
+                                      <input
+                                        name="projectName"
+                                        value={localProjectName}
+                                        onChange={(e) => setLocalProjectName(e.target.value)}
+                                        placeholder="e.g. North Sector Expansion"
+                                        style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', transition: 'all 200ms' }}
+                                      />
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                      <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Region / Location</label>
+                                      <div style={{ position: 'relative' }}>
+                                        <MapPin size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--border)' }} />
+                                        <input 
+                                          value={localLocation} 
+                                          onChange={(e) => setLocalLocation(e.target.value)} 
+                                          style={{ width: '100%', padding: '16px 16px 16px 44px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }} 
+                                        />
+                                      </div>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                      <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Project Subtitles</label>
+                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                                         {subtitleList.map((sub, idx) => (
-                                          <div key={sub.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 12px', background: 'var(--section-bg)', border: '1px solid var(--section-bg)', borderRadius: 12 }}>
-                                            <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--border)', width: 16 }}>{idx + 1}</span>
+                                          <div key={sub.id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 12px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12 }}>
                                             <input
                                               value={sub.text}
                                               onChange={(e) => {
@@ -2287,270 +2307,330 @@ export default function AdminDashboardPage() {
                                                 newList[idx].text = e.target.value;
                                                 setSubtitleList(newList);
                                               }}
-                                              style={{ flex: 1, background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
+                                              style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: 13, outline: 'none', width: 140 }}
+                                              placeholder="Subtitle text..."
                                             />
                                             <button type="button" onClick={() => setSubtitleList(prev => prev.filter((_, i) => i !== idx))} disabled={idx === 0} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: idx === 0 ? 0 : 0.6 }}><X size={14} /></button>
                                           </div>
                                         ))}
-                                        <button type="button" onClick={() => setSubtitleList([...subtitleList, { id: `sub-${Date.now()}`, text: '' }])} style={{ padding: '8px 16px', borderRadius: 10, background: 'var(--secondary)', border: '1px dashed var(--border)', color: 'var(--teal)', fontSize: 10, fontWeight: 800, cursor: 'pointer' }}>+ ADD SUBTITLE</button>
-                                      </div>
-                                    </div>
-
-                                    {/* Region & Status Section */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                        <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Region</label>
-                                        <div style={{ position: 'relative' }}>
-                                          <MapPin size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--border)' }} />
-                                          <input value={localLocation} onChange={(e) => setLocalLocation(e.target.value)} style={{ width: '100%', padding: '12px 16px 12px 40px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }} />
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    {/* Atmospheric Branding Section */}
-                                      <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 24, padding: 32, background: 'var(--secondary)', border: '1px solid var(--border)', borderRadius: 28, marginTop: 12 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--teal)' }} />
-                                            <h3 style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Atmospheric Branding (Header Banner)</h3>
-                                          </div>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--border)', padding: '6px 14px', borderRadius: 10, border: '1px solid var(--border)' }}>
-                                            <ImageIcon size={14} color="var(--teal)" />
-                                            <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>REQUIRED SIZE: 2400 X 200 PX</span>
-                                          </div>
-                                        </div>
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1.2fr) 1fr', gap: 32 }}>
-                                          {/* Banner Management */}
-                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                                            <div 
-                                              style={{ 
-                                                width: '100%', minHeight: 140, borderRadius: 16, border: '1px dashed var(--teal)', 
-                                                background: 'var(--section-bg)', overflow: 'hidden', position: 'relative',
-                                                display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start',
-                                                padding: '24px 32px'
-                                              }}
-                                            >
-                                              {headerBgFile || localBgUrl || projectData?.headerBgUrl ? (
-                                                <>
-                                                  <img 
-                                                    src={localBgUrl || projectData?.headerBgUrl} 
-                                                    style={{ 
-                                                      position: 'absolute',
-                                                      inset: 0,
-                                                      width: '100%', 
-                                                      height: '100%', 
-                                                      objectFit: 'cover', 
-                                                      objectPosition: `${bgPosX}% ${bgPosY}%`,
-                                                      opacity: bgOpacity / 100 
-                                                    }} 
-                                                    alt="Header Preview" 
-                                                  />
-                                                  {/* Dashboard Simulation Overlay */}
-                                                  <div style={{ position: 'relative', zIndex: 1, pointerEvents: 'none' }}>
-                                                    <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', opacity: 0.6 }}>{localProjectName || projectData?.projectName}</div>
-                                                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', marginTop: 4, letterSpacing: '0.1em' }}>PROJECT TERMINAL PREVIEW</div>
-                                                  </div>
-                                                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', display: 'flex', alignItems: 'flex-end', padding: 16 }}>
-                                                    <button 
-                                                      type="button" 
-                                                      onClick={() => document.getElementById('header-bg-input')?.click()}
-                                                      style={{ background: 'var(--teal)', border: 'none', color: 'var(--surface)', padding: '8px 16px', borderRadius: 8, fontSize: 11, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                                                    >
-                                                      <ImageIcon size={14} /> REPLACE ASSET
-                                                    </button>
-                                                  </div>
-                                                </>
-                                              ) : (
-                                                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                                                  <ImageIcon size={32} color="var(--border)" />
-                                                  <button 
-                                                    type="button" 
-                                                    onClick={() => document.getElementById('header-bg-input')?.click()}
-                                                    style={{ background: 'var(--border)', border: '1px solid var(--border)', color: 'var(--teal)', padding: '10px 24px', borderRadius: 10, fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
-                                                  >
-                                                    UPLOAD BANNER
-                                                  </button>
-                                                </div>
-                                              )}
-                                              <input 
-                                                id="header-bg-input" 
-                                                type="file" 
-                                                accept="image/*" 
-                                                onChange={(e) => {
-                                                  const file = e.target.files?.[0];
-                                                  if (file) {
-                                                    const reader = new FileReader();
-                                                    reader.onload = () => {
-                                                      setCropperSource(reader.result as string);
-                                                      setShowCropper(true);
-                                                    };
-                                                    reader.readAsDataURL(file);
-                                                  }
-                                                }}
-                                                style={{ display: 'none' }} 
-                                              />
-                                            </div>
-                                            <p style={{ fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.5 }}>
-                                              Select a high-resolution panorama. The system will initiate a precision crop to ensure technical aspect ratio alignment.
-                                            </p>
-                                          </div>
-
-                                          {/* Sliders */}
-                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: '12px 24px', background: 'var(--section-bg)', borderRadius: 20 }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Atmospheric Opacity</label>
-                                                <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>{bgOpacity}%</span>
-                                              </div>
-                                              <input type="range" min="0" max="100" value={bgOpacity} onChange={(e) => setBgOpacity(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--teal)' }} />
-                                            </div>
-
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Vertical Focus Offset (Y)</label>
-                                                <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>{bgPosY}%</span>
-                                              </div>
-                                              <input type="range" min="0" max="100" value={bgPosY} onChange={(e) => setBgPosY(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--teal)' }} />
-                                            </div>
-
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Horizontal Alignment (X)</label>
-                                                <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>{bgPosX}%</span>
-                                              </div>
-                                              <input type="range" min="0" max="100" value={bgPosX} onChange={(e) => setBgPosX(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--teal)' }} />
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                    {/* Partner Logo Registry Section (Elite Vector Hub) */}
-                                    <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 24, padding: 32, background: 'var(--secondary)', border: '1px solid var(--border)', borderRadius: 28, marginTop: 12 }}>
-                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--teal)' }} />
-                                          <h3 style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Partner Logo Registry (Top Bar Display)</h3>
-                                        </div>
-                                        <button 
-                                          type="button" 
-                                          onClick={() => document.getElementById('partner-logo-input')?.click()} 
-                                          style={{ 
-                                            padding: '8px 16px', borderRadius: 10, background: 'var(--teal)', 
-                                            border: 'none', color: 'var(--surface)', fontSize: 11, fontWeight: 900, 
-                                            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 
-                                          }}
-                                        >
-                                          <Plus size={14} /> ADD PARTNER LOGO
-                                        </button>
-                                        <input 
-                                          id="partner-logo-input" 
-                                          type="file" 
-                                          multiple 
-                                          accept="image/*" 
-                                          onChange={handlePartnerLogoSelect} 
-                                          style={{ display: 'none' }} 
-                                        />
-                                      </div>
-
-                                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-                                        {partnerLogosList.map((logo, idx) => (
-                                          <motion.div 
-                                            key={logo.id} 
-                                            layout 
-                                            initial={{ opacity: 0, scale: 0.9 }} 
-                                            animate={{ opacity: 1, scale: 1 }} 
-                                            style={{ 
-                                              padding: 20, background: 'var(--section-bg)', 
-                                              border: '1px solid var(--section-bg)', borderRadius: 24, 
-                                              position: 'relative', display: 'flex', flexDirection: 'column', 
-                                              alignItems: 'center', gap: 20,
-                                              boxShadow: '0 10px 20px var(--section-bg)'
-                                            }}
-                                          >
-                                            <div style={{ width: '100%', height: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', borderRadius: 16, padding: 16, border: '1px solid var(--secondary)' }}>
-                                              <img src={logo.url} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', filter: 'drop-shadow(0 0 8px var(--border))' }} alt="Partner" />
-                                            </div>
-                                            <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                                              <button type="button" onClick={() => movePartnerLogo(idx, 'up')} disabled={idx === 0} style={{ flex: 1, padding: '8px', background: 'var(--section-bg)', border: '1px solid var(--section-bg)', borderRadius: 10, color: 'var(--teal)', cursor: 'pointer', opacity: idx === 0 ? 0.2 : 0.8 }} title="Move Left"><ChevronLeft size={16} /></button>
-                                              <button type="button" onClick={() => movePartnerLogo(idx, 'down')} disabled={idx === partnerLogosList.length - 1} style={{ flex: 1, padding: '8px', background: 'var(--section-bg)', border: '1px solid var(--section-bg)', borderRadius: 10, color: 'var(--teal)', cursor: 'pointer', opacity: idx === partnerLogosList.length - 1 ? 0.2 : 0.8 }} title="Move Right"><ChevronRight size={16} /></button>
-                                              <button type="button" onClick={() => removePartnerLogo(idx)} style={{ flex: 1, padding: '8px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', borderRadius: 10, color: '#ef4444', cursor: 'pointer' }} title="Purge Logo"><Trash2 size={16} /></button>
-                                            </div>
-                                          </motion.div>
-                                        ))}
-                                        {partnerLogosList.length === 0 && (
-                                          <div style={{ gridColumn: 'span 4', padding: '40px', textAlign: 'center', background: 'rgba(255,255,255,0.01)', border: '1px dashed var(--section-bg)', borderRadius: 20 }}>
-                                            <ImageIcon size={32} style={{ color: 'var(--border)', marginBottom: 12 }} />
-                                            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>No partner identity vectors registered. Upload logos to populate the Top Bar.</p>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {/* Badges Section */}
-                                    <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
-                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Insight Badges</label>
-                                        <button type="button" onClick={() => setLocalHeaderBadges([...localHeaderBadges, { id: `manual-${Date.now()}`, label: 'New Insight', color: 'var(--teal)', isVisible: true }])} style={{ padding: '4px 12px', borderRadius: 8, background: 'var(--border)', border: '1px solid var(--border)', color: 'var(--teal)', fontSize: 10, fontWeight: 900, cursor: 'pointer' }}>+ ADD BADGE</button>
-                                      </div>
-                                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-                                        {localHeaderBadges.map((badge, idx) => (
-                                          <div key={badge.id} style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.01)', border: '1px solid var(--section-bg)', display: 'flex', gap: 12, alignItems: 'center' }}>
-                                            <input type="color" value={badge.color} onChange={(e) => {
-                                              const newList = [...localHeaderBadges];
-                                              newList[idx].color = e.target.value;
-                                              setLocalHeaderBadges(newList);
-                                            }} style={{ width: 24, height: 24, padding: 0, border: 'none', background: 'none', cursor: 'pointer', borderRadius: '50%' }} />
-                                            <input value={badge.label} onChange={(e) => {
-                                              const newList = [...localHeaderBadges];
-                                              newList[idx].label = e.target.value;
-                                              setLocalHeaderBadges(newList);
-                                            }} style={{ flex: 1, background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: 13, outline: 'none', fontWeight: 600 }} />
-                                            <button type="button" onClick={() => {
-                                              const newList = [...localHeaderBadges];
-                                              newList[idx].isVisible = !newList[idx].isVisible;
-                                              setLocalHeaderBadges(newList);
-                                            }} style={{ background: badge.isVisible ? 'rgba(16, 185, 129, 0.1)' : 'var(--section-bg)', color: badge.isVisible ? '#10b981' : 'var(--text-secondary)', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 9, fontWeight: 900 }}>{badge.isVisible ? 'LIVE' : 'HID'} {badge.isVisible ? <Check size={10} /> : <X size={10} />}</button>
-                                            {!badge.isAutomated && (
-                                              <button type="button" onClick={() => setLocalHeaderBadges(localHeaderBadges.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.6 }}><X size={14} /></button>
-                                            )}
-                                          </div>
-                                        ))}
+                                        <button type="button" onClick={() => setSubtitleList([...subtitleList, { id: `sub-${Date.now()}`, text: '' }])} style={{ padding: '8px 16px', borderRadius: 12, background: 'var(--border)', border: '1px solid var(--border)', color: 'var(--teal)', fontSize: 10, fontWeight: 900, cursor: 'pointer' }}>+ ADD SUBTITLE</button>
                                       </div>
                                     </div>
                                   </div>
                                 </div>
 
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, gridColumn: 'span 2', padding: 24, background: 'var(--secondary)', border: '1px solid var(--border)', borderRadius: 20 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Authorized Domain Spectrum (Access Control)</label>
-                                    <span style={{ fontSize: 10, color: 'rgba(212, 175, 55, 0.5)', fontWeight: 700 }}>RESTRICTS NEW REGISTRATIONS</span>
+                                {/* Section 2: Visual Atmosphere */}
+                                <div style={{ 
+                                  padding: 32, background: 'var(--secondary)', border: '1px solid var(--border)', 
+                                  borderRadius: 28, display: 'flex', flexDirection: 'column', gap: 24 
+                                }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                      <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <ImageIcon size={20} color="#3b82f6" />
+                                      </div>
+                                      <div>
+                                        <h3 style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Atmospheric Branding (Header)</h3>
+                                        <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '4px 0 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Banner visuals and cinematic backdrop controls</p>
+                                      </div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.03)', padding: '8px 16px', borderRadius: 12, border: '1px solid var(--border)' }}>
+                                      <Activity size={14} color="var(--teal)" />
+                                      <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>OPTIMAL: 2400 X 200 PX</span>
+                                    </div>
                                   </div>
 
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, padding: 16, background: 'var(--section-bg)', borderRadius: 12, border: '1px solid var(--section-bg)' }}>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 32 }}>
+                                    {/* Banner Preview & Upload */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                      <div 
+                                        style={{ 
+                                          width: '100%', minHeight: 180, borderRadius: 20, border: '1px dashed var(--teal)', 
+                                          background: 'var(--section-bg)', overflow: 'hidden', position: 'relative',
+                                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                        }}
+                                      >
+                                        {headerBgFile || localBgUrl || projectData?.headerBgUrl ? (
+                                          <>
+                                            <img 
+                                              src={localBgUrl || projectData?.headerBgUrl} 
+                                              style={{ 
+                                                position: 'absolute', inset: 0, width: '100%', height: '100%', 
+                                                objectFit: 'cover', objectPosition: `${bgPosX}% ${bgPosY}%`,
+                                                opacity: bgOpacity / 100 
+                                              }} 
+                                              alt="Header Preview" 
+                                            />
+                                            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)', display: 'flex', alignItems: 'flex-end', padding: 20 }}>
+                                              <button 
+                                                type="button" 
+                                                onClick={() => document.getElementById('header-bg-input')?.click()}
+                                                style={{ background: 'var(--teal)', border: 'none', color: '#ffffff', padding: '10px 20px', borderRadius: 12, fontSize: 11, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 16px rgba(20, 184, 166, 0.3)' }}
+                                              >
+                                                <ImageIcon size={14} /> REPLACE BANNER ASSET
+                                              </button>
+                                            </div>
+                                          </>
+                                        ) : (
+                                          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+                                            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                              <Upload size={32} color="var(--border)" />
+                                            </div>
+                                            <button 
+                                              type="button" 
+                                              onClick={() => document.getElementById('header-bg-input')?.click()}
+                                              style={{ background: 'var(--border)', border: '1px solid var(--border)', color: 'var(--teal)', padding: '12px 32px', borderRadius: 14, fontSize: 13, fontWeight: 900, cursor: 'pointer' }}
+                                            >
+                                              UPLOAD CINEMATIC BANNER
+                                            </button>
+                                          </div>
+                                        )}
+                                        <input 
+                                          id="header-bg-input" type="file" accept="image/*" 
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                              const reader = new FileReader();
+                                              reader.onload = () => { setCropperSource(reader.result as string); setShowCropper(true); };
+                                              reader.readAsDataURL(file);
+                                            }
+                                          }}
+                                          style={{ display: 'none' }} 
+                                        />
+                                      </div>
+                                      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px solid var(--border)' }}>
+                                        <Shield size={16} color="var(--teal)" style={{ marginTop: 2 }} />
+                                        <p style={{ fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.6, margin: 0 }}>
+                                          System supports ultra-high-resolution panoramas. Precision cropping will be applied to maintain strict terminal aspect ratios.
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    {/* Sliders & Controls */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: 24, background: 'var(--section-bg)', borderRadius: 20, border: '1px solid var(--border)' }}>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                          <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Atmospheric Opacity</label>
+                                          <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>{bgOpacity}%</span>
+                                        </div>
+                                        <input type="range" min="0" max="100" value={bgOpacity} onChange={(e) => setBgOpacity(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--teal)', height: 4 }} />
+                                      </div>
+
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                          <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Vertical Focus Offset (Y)</label>
+                                          <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>{bgPosY}%</span>
+                                        </div>
+                                        <input type="range" min="0" max="100" value={bgPosY} onChange={(e) => setBgPosY(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--teal)', height: 4 }} />
+                                      </div>
+
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                          <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Horizontal Alignment (X)</label>
+                                          <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>{bgPosX}%</span>
+                                        </div>
+                                        <input type="range" min="0" max="100" value={bgPosX} onChange={(e) => setBgPosX(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--teal)', height: 4 }} />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Section 3: Partner Registry */}
+                                <div style={{ 
+                                  padding: 32, background: 'var(--secondary)', border: '1px solid var(--border)', 
+                                  borderRadius: 28, display: 'flex', flexDirection: 'column', gap: 24 
+                                }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                      <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Grid size={20} color="#10b981" />
+                                      </div>
+                                      <div>
+                                        <h3 style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Partner Logo Registry</h3>
+                                        <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '4px 0 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Managing entity branding for the top-tier display</p>
+                                      </div>
+                                    </div>
+                                    <button 
+                                      type="button" 
+                                      onClick={() => document.getElementById('partner-logo-input')?.click()} 
+                                      style={{ 
+                                        padding: '12px 28px', borderRadius: 14, background: 'var(--teal)', 
+                                        border: 'none', color: '#ffffff', fontSize: 12, fontWeight: 900, 
+                                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, 
+                                        boxShadow: '0 8px 20px rgba(16,185,129,0.25)',
+                                        letterSpacing: '0.05em'
+                                      }}
+                                    >
+                                      <Plus size={16} /> REGISTER NEW LOGO
+                                    </button>
+                                    <input id="partner-logo-input" type="file" multiple accept="image/*" onChange={handlePartnerLogoSelect} style={{ display: 'none' }} />
+                                  </div>
+
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
+                                    {partnerLogosList.map((logo, idx) => (
+                                      <motion.div 
+                                        key={logo.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} 
+                                        style={{ 
+                                          padding: 24, background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 24, 
+                                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, boxShadow: '0 10px 20px rgba(0,0,0,0.2)'
+                                        }}
+                                      >
+                                        <div style={{ width: '100%', height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1d1f', borderRadius: 18, padding: 20, border: '1px solid rgba(255,255,255,0.05)', boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.2)' }}>
+                                          <img src={logo.url} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.1))' }} alt="Partner" />
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                                          <button type="button" onClick={() => movePartnerLogo(idx, 'up')} disabled={idx === 0} style={{ flex: 1, padding: '10px', background: 'var(--secondary)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--teal)', cursor: 'pointer', opacity: idx === 0 ? 0.2 : 1 }}><ChevronLeft size={16} /></button>
+                                          <button type="button" onClick={() => movePartnerLogo(idx, 'down')} disabled={idx === partnerLogosList.length - 1} style={{ flex: 1, padding: '10px', background: 'var(--secondary)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--teal)', cursor: 'pointer', opacity: idx === partnerLogosList.length - 1 ? 0.2 : 1 }}><ChevronRight size={16} /></button>
+                                          <button type="button" onClick={() => removePartnerLogo(idx)} style={{ flex: 1, padding: '10px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', borderRadius: 12, color: '#ef4444', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                        </div>
+                                      </motion.div>
+                                    ))}
+                                    {partnerLogosList.length === 0 && (
+                                      <div style={{ gridColumn: 'span 4', padding: '60px', textAlign: 'center', background: 'rgba(255,255,255,0.01)', border: '2px dashed var(--border)', borderRadius: 24 }}>
+                                        <ImageIcon size={48} style={{ color: 'var(--border)', marginBottom: 16, opacity: 0.5 }} />
+                                        <p style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600, margin: 0 }}>No partner identity vectors registered.</p>
+                                        <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8 }}>Upload logos to populate the Project Terminal top bar.</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Section 4: Insight Badges */}
+                                <div style={{ 
+                                  padding: 32, background: 'var(--secondary)', border: '1px solid var(--border)', 
+                                  borderRadius: 28, display: 'flex', flexDirection: 'column', gap: 24 
+                                }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                      <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Zap size={20} color="var(--sunlit-rock)" />
+                                      </div>
+                                      <div>
+                                        <h3 style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Project Insight Badges</h3>
+                                        <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '4px 0 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dynamic status tags and informational highlight labels</p>
+                                      </div>
+                                    </div>
+                                    <button 
+                                      type="button" 
+                                      onClick={() => setLocalHeaderBadges([...localHeaderBadges, { id: `manual-${Date.now()}`, label: 'New Insight', color: 'var(--teal)', isVisible: true }])} 
+                                      style={{ padding: '10px 20px', borderRadius: 12, background: 'var(--teal)', border: 'none', color: '#ffffff', fontSize: 11, fontWeight: 900, cursor: 'pointer', letterSpacing: '0.05em' }}
+                                    >
+                                      + CREATE NEW BADGE
+                                    </button>
+                                  </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 20 }}>
+                                      {localHeaderBadges.map((badge, idx) => (
+                                        <motion.div 
+                                          key={badge.id} 
+                                          whileHover={{ scale: 1.01, boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}
+                                          style={{ 
+                                            padding: '20px 24px', borderRadius: 24, background: 'var(--section-bg)', 
+                                            border: '1px solid var(--border)', display: 'flex', gap: 18, alignItems: 'center', 
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)', transition: 'all 0.3s ease'
+                                          }}
+                                        >
+                                          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <input type="color" value={badge.color} onChange={(e) => {
+                                              const newList = [...localHeaderBadges];
+                                              newList[idx].color = e.target.value;
+                                              setLocalHeaderBadges(newList);
+                                            }} style={{ width: 44, height: 44, padding: 0, border: 'none', background: 'none', cursor: 'pointer', borderRadius: '50%', position: 'absolute', opacity: 0, zIndex: 10 }} />
+                                            <div style={{ 
+                                              padding: '8px 16px', borderRadius: 10, background: 'rgba(0, 63, 73, 0.4)', 
+                                              border: '1px solid rgba(255, 255, 255, 0.2)', display: 'flex', alignItems: 'center', gap: 8,
+                                              backdropFilter: 'blur(10px)', minWidth: 120, position: 'relative'
+                                            }}>
+                                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: badge.color, boxShadow: `0 0 10px ${badge.color}` }} className="animate-pulse" />
+                                              <span style={{ fontSize: 11, fontWeight: 900, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                {badge.label === 'New Insight' ? 'PREVIEW' : (badge.label === 'DEILVARABLES REPOERT' ? 'Deliverables Report' : badge.label)}
+                                              </span>
+                                            </div>
+                                          </div>
+                                          <input 
+                                            value={badge.label === 'DEILVARABLES REPOERT' ? 'Deliverables Report' : (badge.label === 'New Insight' ? '' : badge.label)} 
+                                            placeholder="Enter Badge Label..." 
+                                            onChange={(e) => {
+                                              const newList = [...localHeaderBadges];
+                                              newList[idx].label = e.target.value;
+                                              setLocalHeaderBadges(newList);
+                                            }} 
+                                            style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: 13, outline: 'none', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.12em' }} 
+                                          />
+                                          <button 
+                                            type="button" 
+                                            onClick={() => {
+                                              const newList = [...localHeaderBadges];
+                                              newList[idx].isVisible = !newList[idx].isVisible;
+                                              setLocalHeaderBadges(newList);
+                                            }} 
+                                            style={{ 
+                                              minWidth: 100,
+                                              background: badge.isVisible ? 'rgba(16, 185, 129, 0.15)' : 'rgba(100, 116, 139, 0.1)', 
+                                              color: badge.isVisible ? '#10b981' : '#64748b', 
+                                              border: '1px solid ' + (badge.isVisible ? 'rgba(16, 185, 129, 0.3)' : 'rgba(100, 116, 139, 0.2)'), 
+                                              borderRadius: 12, padding: '10px 16px', fontSize: 11, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 
+                                            }}
+                                          >
+                                            {badge.isVisible ? 'ACTIVE' : 'STAGED'}
+                                            {badge.isVisible ? <Check size={14} /> : <EyeOff size={14} />}
+                                          </button>
+                                          <button type="button" onClick={() => setLocalHeaderBadges(localHeaderBadges.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.6, padding: 8 }}><Trash2 size={18} /></button>
+                                        </motion.div>
+                                      ))}
+                                      {localHeaderBadges.length === 0 && (
+                                        <div style={{ gridColumn: 'span 2', padding: '40px', textAlign: 'center', background: 'rgba(255,255,255,0.01)', border: '2px dashed var(--border)', borderRadius: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                                          <Zap size={32} style={{ color: 'var(--border)', opacity: 0.5 }} />
+                                          <p style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600, margin: 0 }}>No active insight protocols registered.</p>
+                                          <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0 }}>Add status badges to populate the Project Terminal header interface.</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                </div>
+
+                                {/* Section 5: Security Spectrum */}
+                                <div style={{ 
+                                  padding: 32, background: 'var(--secondary)', border: '1px solid var(--border)', 
+                                  borderRadius: 28, display: 'flex', flexDirection: 'column', gap: 24 
+                                }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                                    <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      <Shield size={20} color="#ef4444" />
+                                    </div>
+                                    <div>
+                                      <h3 style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Authorized Identity Spectrum</h3>
+                                      <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '4px 0 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Access control restricting registrations to specific email domains</p>
+                                    </div>
+                                  </div>
+
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, padding: 24, background: 'var(--section-bg)', borderRadius: 20, border: '1px solid var(--border)' }}>
                                     {localAllowedDomains.length === 0 && (
-                                      <div style={{ fontSize: 12, color: 'var(--border)', fontWeight: 500, fontStyle: 'italic' }}>No domain restrictions active — All identities allowed.</div>
+                                      <div style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 500, fontStyle: 'italic', padding: '8px 0' }}>No domain restrictions active — All verified identities allowed.</div>
                                     )}
                                     {localAllowedDomains.map((domain, idx) => (
                                       <motion.div
-                                        key={domain}
-                                        initial={{ scale: 0.8, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'var(--border)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--teal)', fontSize: 12, fontWeight: 700 }}
+                                        key={domain} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                                        style={{ 
+                                          display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px', 
+                                          background: 'var(--border)', border: '1px solid var(--border)', borderRadius: 16, 
+                                          color: 'var(--teal)', fontSize: 13, fontWeight: 900,
+                                          boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
+                                          letterSpacing: '0.02em'
+                                        }}
                                       >
-                                        <Globe size={12} />
+                                        <Globe size={14} />
                                         @{domain}
                                         <button
-                                          type="button"
-                                          onClick={() => setLocalAllowedDomains(prev => prev.filter((_, i) => i !== idx))}
-                                          style={{ background: 'transparent', border: 'none', color: 'var(--teal)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 2, opacity: 0.6 }}
+                                          type="button" onClick={() => setLocalAllowedDomains(prev => prev.filter((_, i) => i !== idx))}
+                                          style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 2, marginLeft: 6, opacity: 0.8 }}
                                         >
-                                          <X size={12} />
+                                          <X size={14} />
                                         </button>
                                       </motion.div>
                                     ))}
 
-                                    <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+                                    <div style={{ flex: 1, minWidth: 280, display: 'flex', alignItems: 'center', background: 'var(--border)', borderRadius: 14, padding: '0 16px', border: '1px solid var(--border)' }}>
+                                      <Plus size={16} color="var(--teal)" style={{ marginRight: 12 }} />
                                       <input
                                         value={domainInput}
                                         onChange={(e) => setDomainInput(e.target.value)}
@@ -2565,37 +2645,40 @@ export default function AdminDashboardPage() {
                                           }
                                         }}
                                         placeholder="Add authorized domain (e.g. keoic.com)..."
-                                        style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13, outline: 'none', padding: '4px 0' }}
+                                        style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 14, outline: 'none', padding: '14px 0', fontWeight: 600 }}
                                       />
                                     </div>
                                   </div>
-                                  <p style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 4 }}>Press <span style={{ color: 'var(--text-primary)' }}>Enter</span> to add a domain signature to the spectrum.</p>
+                                  <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0 }}>
+                                    Press <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>ENTER</span> to register a new domain signature to the security spectrum.
+                                  </p>
                                 </div>
 
-                                <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+                                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40 }}>
                                   <motion.button
-                                    whileHover={{ scale: 1.02, boxShadow: '0 15px 30px var(--teal)' }}
+                                    whileHover={{ scale: 1.01, boxShadow: '0 15px 35px rgba(20, 184, 166, 0.3)' }}
                                     whileTap={{ scale: 0.98 }}
                                     type="submit"
                                     disabled={isBrandingUpdating}
                                     style={{
-                                      padding: '16px 48px',
-                                      background: isBrandingUpdating ? 'rgba(212, 175, 55, 0.5)' : 'var(--teal)',
-                                      color: 'var(--surface)', border: 'none', borderRadius: 16, fontWeight: 900,
+                                      padding: '18px 64px',
+                                      background: isBrandingUpdating ? 'rgba(20, 184, 166, 0.4)' : 'var(--teal)',
+                                      color: '#ffffff', border: 'none', borderRadius: 20, fontWeight: 900,
                                       cursor: isBrandingUpdating ? 'not-allowed' : 'pointer',
-                                      fontSize: 15, letterSpacing: '0.05em',
-                                      boxShadow: '0 8px 16px var(--teal)',
-                                      display: 'flex', alignItems: 'center', gap: 12
+                                      fontSize: 14, letterSpacing: '0.15em',
+                                      boxShadow: '0 10px 25px rgba(20, 184, 166, 0.2)',
+                                      display: 'flex', alignItems: 'center', gap: 12, textTransform: 'uppercase',
+                                      transition: 'all 0.3s ease'
                                     }}
                                   >
                                     {isBrandingUpdating ? (
                                       <>
-                                        <Loader2 size={20} className="animate-spin" />
+                                        <Loader2 size={24} className="animate-spin" />
                                         SYNCHRONIZING ASSETS...
                                       </>
                                     ) : (
                                       <>
-                                        <CheckCircle2 size={20} />
+                                        <CheckCircle2 size={24} />
                                         UPDATE PROJECT IDENTITY
                                       </>
                                     )}
@@ -2638,7 +2721,7 @@ export default function AdminDashboardPage() {
                                           style={{
                                             padding: '10px 24px', borderRadius: 12, border: 'none',
                                             background: saveSuccess ? '#10b981' : 'var(--teal)',
-                                            color: 'var(--surface)', fontSize: 11, fontWeight: 900,
+                                            color: '#ffffff', fontSize: 11, fontWeight: 900,
                                             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
                                             transition: 'all 200ms', opacity: isSavingReport ? 0.7 : 1,
                                             boxShadow: saveSuccess ? '0 0 20px rgba(16, 185, 129, 0.2)' : '0 10px 20px var(--border)'
@@ -3360,10 +3443,60 @@ export default function AdminDashboardPage() {
                   if (!broadcastToDelete) return;
                   await deleteDoc(doc(db, 'broadcasts', broadcastToDelete.id));
                   showToast('Transmission purged securely.', 'SUCCESS');
+                  setBroadcastToDelete(null);
                 }}
                 title="Purge Transmission"
                 message={`Authorize the definitive eradication of "${broadcastToDelete?.title}"? This will be instantly removed from the live dashboard and cannot be reversed.`}
                 confirmLabel="Execute Purge"
+                severity="DANGER"
+              />
+            )}
+
+            {ticketToResolve && (
+              <EliteConfirmModal
+                isOpen={!!ticketToResolve}
+                onClose={() => setTicketToResolve(null)}
+                onConfirm={async () => {
+                  const { updateDoc, doc: fsDoc } = await import('firebase/firestore');
+                  await updateDoc(fsDoc(db, 'tickets', ticketToResolve.id), { status: 'RESOLVED', updatedAt: new Date().toISOString() });
+                  showToast(`Ticket ${ticketToResolve.ticketId} resolved.`, 'SUCCESS');
+                  setTicketToResolve(null);
+                }}
+                title="Authorize Clearance"
+                message={`Authorize the resolution and approval of Access Ticket ${ticketToResolve.ticketId}? This will grant the requested protocols.`}
+                confirmLabel="Confirm Resolution"
+                severity="SUCCESS"
+              />
+            )}
+
+            {ticketToReject && (
+              <EliteConfirmModal
+                isOpen={!!ticketToReject}
+                onClose={() => setTicketToReject(null)}
+                onConfirm={async () => {
+                  const { updateDoc, doc: fsDoc } = await import('firebase/firestore');
+                  await updateDoc(fsDoc(db, 'tickets', ticketToReject.id), { status: 'REJECTED', updatedAt: new Date().toISOString() });
+                  showToast(`Ticket ${ticketToReject.ticketId} rejected.`, 'INFO');
+                  setTicketToReject(null);
+                }}
+                title="Deny Access"
+                message={`Formally deny and reject Access Ticket ${ticketToReject.ticketId}? This action will terminate the request.`}
+                confirmLabel="Confirm Rejection"
+                severity="WARNING"
+              />
+            )}
+
+            {ticketToDelete && (
+              <EliteConfirmModal
+                isOpen={!!ticketToDelete}
+                onClose={() => setTicketToDelete(null)}
+                onConfirm={async () => {
+                  await handleDelete(ticketToDelete.id, 'tickets');
+                  setTicketToDelete(null);
+                }}
+                title="Eradicate Ticket"
+                message={`Authorize the permanent eradication of Access Ticket ${ticketToDelete.ticketId}? This record will be purged from the security database.`}
+                confirmLabel="Execute Eradication"
                 severity="DANGER"
               />
             )}
@@ -3393,8 +3526,8 @@ export default function AdminDashboardPage() {
         onConfirm={handleCommitTaskImport}
         isLoading={isTaskImportLoading}
         records={taskImportConfirm.records}
-      />
-          </AnimatePresence>
+      />      </AnimatePresence>
+ 
 
           {/* Header Background Cropper Protocol */}
           {showCropper && cropperSource && (

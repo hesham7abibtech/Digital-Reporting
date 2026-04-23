@@ -369,6 +369,7 @@ export interface HomeMetricItem {
   id: string;
   label: string;
   value: number;
+  prefix?: string;
   suffix?: string;
   icon: string;
   isVisible: boolean;
@@ -392,8 +393,31 @@ export interface HomeModuleItem {
 
 export interface HomeTrustLogo {
   id: string;
-  url: string;
+  url: string; // Image URL
   name: string;
+  linkUrl?: string; // Optional external website URL
+  isVisible?: boolean;
+}
+
+export interface HomeFooterLink {
+  id: string;
+  label: string;
+  url: string;
+  icon?: string; // lucide icon name
+}
+
+export interface HomeFooterConfig {
+  aboutTitle: string;
+  aboutDescription: string;
+  contactEmail: string;
+  contactAddress: string;
+  contactAddressLink?: string;
+  contactWebsite: string;
+  systemItems: HomeFooterLink[];
+  socialLinks: HomeFooterLink[];
+  version: string;
+  copyright: string;
+  platformName: string;
 }
 
 export interface HomePageConfig {
@@ -411,6 +435,7 @@ export interface HomePageConfig {
     logos: HomeTrustLogo[];
     statement: string;
   };
+  footer: HomeFooterConfig;
   updatedAt: string;
 }
 

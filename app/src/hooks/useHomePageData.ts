@@ -32,10 +32,10 @@ const DEFAULT_CONFIG: HomePageConfig = {
   },
   metrics: {
     items: [
-      { id: 'm1', label: 'Total Deliverables', value: 2480, suffix: '+', icon: 'FileText', isVisible: true },
-      { id: 'm2', label: 'Active Disciplines', value: 12, suffix: '', icon: 'Layers', isVisible: true },
-      { id: 'm3', label: 'BIM Models Reviewed', value: 856, suffix: '+', icon: 'Box', isVisible: true },
-      { id: 'm4', label: 'Reports Generated', value: 1240, suffix: '+', icon: 'BarChart3', isVisible: true },
+      { id: 'm1', label: 'Total Deliverables', value: 2480, prefix: '', suffix: '+', icon: 'FileText', isVisible: true },
+      { id: 'm2', label: 'Active Disciplines', value: 12, prefix: '', suffix: '', icon: 'Layers', isVisible: true },
+      { id: 'm3', label: 'BIM Models Reviewed', value: 856, prefix: '', suffix: '+', icon: 'Box', isVisible: true },
+      { id: 'm4', label: 'Reports Generated', value: 1240, prefix: '', suffix: '+', icon: 'BarChart3', isVisible: true },
     ],
   },
   gallery: {
@@ -57,8 +57,31 @@ const DEFAULT_CONFIG: HomePageConfig = {
     overlayText: 'Login to unlock full insights',
   },
   trust: {
-    logos: [],
+    logos: [
+      { id: 't1', name: 'MODON', url: '/logos/modon.png', linkUrl: '' },
+      { id: 't2', name: 'KEO International', url: '/logos/keo.png', linkUrl: '' },
+      { id: 't3', name: 'Insite International', url: '/logos/insite.png', linkUrl: '' },
+    ],
     statement: 'Trusted by leading developers, consultants, and government authorities across the Middle East\'s most ambitious mega-projects.',
+  },
+  footer: {
+    aboutTitle: 'Digital Reporting',
+    aboutDescription: 'Enterprise-grade digital project management and reporting platform for mega-scale real estate and construction projects.',
+    contactEmail: 'Hesham.habib@insiteinternational.com',
+    contactAddress: 'North Coast, Egypt – Mediterranean',
+    contactWebsite: 'www.insiteinternational.com',
+    systemItems: [
+      { id: 's1', label: 'Enterprise Security', url: '#' },
+      { id: 's2', label: 'Cloud Infrastructure', url: '#' },
+      { id: 's3', label: 'Privacy Policy', url: '#' },
+    ],
+    socialLinks: [
+      { id: 'sl1', label: 'LinkedIn', url: '#', icon: 'Linkedin' },
+      { id: 'sl2', label: 'Twitter', url: '#', icon: 'Twitter' },
+    ],
+    version: 'Platform v2.0',
+    copyright: 'Insite International (KEO) — All rights reserved.',
+    platformName: 'Digital Reporting Platform — Ras El Hekma Command Center',
   },
   updatedAt: new Date().toISOString(),
 };

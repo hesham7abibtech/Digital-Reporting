@@ -639,7 +639,7 @@ export default function Dashboard() {
   };
 
   const filterDateText = useMemo(() => {
-    if (filterMode === 'all') return 'All Time';
+    if (filterMode === 'all') return '';
     if (filterMode === 'monthly') return `${months[selectedMonth]} ${selectedYear}`;
     return (startDate || endDate ? `${startDate || 'Start'} to ${endDate || 'Present'}` : 'Custom Range');
   }, [filterMode, selectedMonth, selectedYear, startDate, endDate, months]);
@@ -779,7 +779,7 @@ export default function Dashboard() {
                               }}
                             />
                           )}
-                          {mode === 'all' ? 'All Time' : mode === 'monthly' ? 'Monthly' : 'Custom'}
+                          {mode === 'all' ? 'Lifecycle' : mode === 'monthly' ? 'Monthly' : 'Custom'}
                         </button>
                       ))}
                     </div>

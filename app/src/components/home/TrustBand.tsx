@@ -2,9 +2,10 @@
 
 import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
+import { HomeTrustLogo } from '@/lib/types';
 
 interface TrustBandProps {
-  logos: Array<{ id: string; url: string; name: string }>;
+  logos: HomeTrustLogo[];
   statement: string;
 }
 
@@ -52,26 +53,58 @@ export default function TrustBand({ logos, statement }: TrustBandProps) {
               gap: 40, flexWrap: 'wrap',
             }}
           >
-            {logos.map((logo, i) => (
+            {logos.filter(l => l.isVisible !== false).map((logo, i) => (
               <motion.div
                 key={logo.id}
                 initial={{ opacity: 0 }}
                 animate={inView ? { opacity: 1 } : {}}
                 transition={{ delay: 0.4 + i * 0.1 }}
                 style={{
-                  padding: '12px 20px', borderRadius: 12,
-                  filter: 'grayscale(100%) opacity(0.5)',
-                  transition: 'all 300ms',
-                  cursor: 'default',
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.filter = 'grayscale(0%) opacity(1)';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.filter = 'grayscale(100%) opacity(0.5)';
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
               >
-                <img src={logo.url} alt={logo.name} style={{ height: 40, width: 'auto', maxWidth: 120, objectFit: 'contain' }} />
+                {logo.linkUrl ? (
+                  <a 
+                    href={logo.linkUrl.startsWith('http') ? logo.linkUrl : `https://${logo.linkUrl}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{
+                      padding: '12px 20px', borderRadius: 12,
+                      filter: 'grayscale(100%) opacity(0.5)',
+                      transition: 'all 300ms',
+                      cursor: 'pointer',
+                      display: 'block',
+                      textDecoration: 'none'
+                    }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLElement).style.filter = 'grayscale(0%) opacity(1)';
+                      (e.currentTarget as HTMLElement).style.background = 'rgba(0, 63, 73, 0.04)';
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLElement).style.filter = 'grayscale(100%) opacity(0.5)';
+                      (e.currentTarget as HTMLElement).style.background = 'transparent';
+                    }}
+                  >
+                    <img src={logo.url} alt={logo.name} style={{ height: 40, width: 'auto', maxWidth: 120, objectFit: 'contain' }} />
+                  </a>
+                ) : (
+                  <div
+                    style={{
+                      padding: '12px 20px', borderRadius: 12,
+                      filter: 'grayscale(100%) opacity(0.5)',
+                      transition: 'all 300ms',
+                      cursor: 'default',
+                    }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLElement).style.filter = 'grayscale(0%) opacity(1)';
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLElement).style.filter = 'grayscale(100%) opacity(0.5)';
+                    }}
+                  >
+                    <img src={logo.url} alt={logo.name} style={{ height: 40, width: 'auto', maxWidth: 120, objectFit: 'contain' }} />
+                  </div>
+                )}
               </motion.div>
             ))}
           </motion.div>

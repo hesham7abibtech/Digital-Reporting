@@ -253,7 +253,7 @@ export default function ExportConfirmationModal({
                                  opacity: filterMode === mode ? 1 : 0.6
                                }}
                              >
-                              {mode === 'all' ? 'All Time' : mode}
+                              {mode === 'all' ? 'Project Lifecycle' : mode}
                             </button>
                           ))}
                         </div>

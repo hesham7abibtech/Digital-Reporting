@@ -87,7 +87,7 @@ export default function HomePage() {
       />
 
       {/* 8. Footer */}
-      <HomeFooter />
+      <HomeFooter config={config.footer} />
     </div>
   );
 }
