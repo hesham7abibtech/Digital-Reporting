@@ -65,7 +65,7 @@ const parseBimDate = (d: string) => {
 
 export default function Dashboard() {
   const { isUpdating, selectedTimeZone } = useTimeZone();
-  const { tasks: syncedTasks, members: syncedMembers, registry: syncedRegistry, departments: syncedDepartments, bimReviews: syncedBimReviews, project: syncedProject, isLoading } = useRealtimeData();
+  const { tasks: syncedTasks, members: syncedMembers, registry: syncedRegistry, departments: syncedDepartments, bimReviews: syncedBimReviews, project: syncedProject, isLoading, hasError } = useRealtimeData();
 
   const { userProfile } = useAuth();
   const [notifOpen, setNotifOpen] = useState(false);
@@ -646,7 +646,7 @@ export default function Dashboard() {
 
   return (
     <div style={{ height: '100vh', position: 'relative', overflow: 'hidden' }}>
-      <BrandedLoader isLoading={!minLoadingComplete || isLoading} />
+      <BrandedLoader isLoading={!minLoadingComplete || isLoading || hasError} />
 
       <ParticleBackground />
 

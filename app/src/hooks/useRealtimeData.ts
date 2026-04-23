@@ -46,6 +46,8 @@ export function useRealtimeData() {
       if (departmentsError) console.warn('[REALTIME_SYNC] Departments access handshake pending...');
       if (bimReviewsError && hasBIM) console.warn('[REALTIME_SYNC] BIM access handshake pending...');
       if (projectError) console.warn('[REALTIME_SYNC] Project access handshake pending...');
+    } else if (userProfile) {
+      console.error('[REALTIME_SYNC] Clearance revoked: Active session restricted by security protocol.');
     }
     
     if (isApproved && !tasksLoading && !membersLoading && !registryLoading && !projectLoading && !departmentsLoading && !bimReviewsLoading &&
@@ -61,7 +63,8 @@ export function useRealtimeData() {
     departments,
     bimReviews,
     project,
-    isLoading: !userProfile || tasksLoading || membersLoading || registryLoading || projectLoading || departmentsLoading || bimReviewsLoading
+    isLoading: !userProfile || tasksLoading || membersLoading || registryLoading || projectLoading || departmentsLoading || bimReviewsLoading,
+    hasError: !!(tasksError || membersError || registryError || departmentsError || bimReviewsError || projectError),
+    errors: { tasksError, membersError, registryError, departmentsError, bimReviewsError, projectError }
   };
 };
-
