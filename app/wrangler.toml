@@ -2,15 +2,3 @@ name = "digital-reporting"
 compatibility_date = "2024-04-08"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
-
-[vars]
-SMTP_HOST = "smtp.zoho.com"
-SMTP_PORT = "465"
-SMTP_SECURE = "true"
-SMTP_USER = "verification@rehdigital.com"
-SMTP_PASS = "51FzgcyZfydb"
-SMTP_INFO_USER = "info@rehdigital.com"
-SMTP_INFO_PASS = "JQd4fdi7Fp3s"
-SMTP_RESET_USER = "reset@rehdigital.com"
-SMTP_RESET_PASS = "mNb7UU4gmcJn"
-FIREBASE_PROJECT_ID = "keodigitalreporting"
