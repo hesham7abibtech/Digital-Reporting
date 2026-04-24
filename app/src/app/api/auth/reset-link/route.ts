@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
+import { authEdge } from '@/lib/firebase-edge';
 import { mailService } from '@/services/MailService';
 
 export const runtime = 'edge';
@@ -27,36 +27,20 @@ export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
-    }
-
-    const adminAuth = getAdminAuth();
-    const adminDb = getAdminDb();
-
-    // Safety check for Firebase Admin initialization
-    if (!adminAuth || !adminDb) {
-      console.warn('[RESET_LINK] Firebase Admin SDK not initialized. Proceeding in Mock Mode.');
-    }
-
-    // 1. Check if user exists (to get their name if possible)
-    let displayName = 'User';
     try {
-      const userRecord = await adminAuth.getUserByEmail(email);
-      displayName = userRecord.displayName || email.split('@')[0];
-    } catch (err: any) {
-      if (err.code === 'auth/user-not-found') {
+      await authEdge.getPasswordResetLink(email);
+      
+      // Since the REST API sends the mail directly, we just return success
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Security update link dispatched to your infrastructure.' 
+      }, { status: 200, headers: corsHeaders });
+      
+    } catch (error: any) {
+      if (error.message.includes('EMAIL_NOT_FOUND')) {
         return NextResponse.json({ 
-          error: 'User account not found', 
+          error: 'Not Found', 
           code: 'USER_NOT_FOUND' 
-        }, { status: 404 });
-      }
-      throw err;
-    }
-
-    // 2. Generate secure password reset link pointing to our custom reset page
-    let resetLink = '';
-    let oobCode = '';
 
     if (adminAuth) {
       try {
