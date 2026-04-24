@@ -13,20 +13,43 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
 
-/**
- * Enterprise Reset Link API
- * @param req - The incoming request
- * @param context - Cloudflare Request Context containing env bindings
- */
 export async function POST(req: NextRequest, context: any) {
   try {
     const { email } = await req.json();
-    
-    // On Cloudflare, environment variables are in context.env or req.env
-    const env = context?.env || (req as any).env || process.env;
+
+    /**
+     * EXTRACT ENVIRONMENT BINDINGS
+     * Cloudflare Pages (next-on-pages) passes variables in different ways.
+     * We check all possible locations to ensure 100% compatibility.
+     */
+    const env = 
+      context?.env || 
+      (req as any).env || 
+      (globalThis as any).process?.env || 
+      (globalThis as any).env || 
+      {};
+
+    const apiKey = env.NEXT_PUBLIC_FIREBASE_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+
+    // Diagnostic tracking
+    const debugStatus = apiKey ? 'FOUND' : 'MISSING';
 
     if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400, headers: corsHeaders });
+      return NextResponse.json({ error: 'Email is required' }, { 
+        status: 400, 
+        headers: { ...corsHeaders, 'X-Debug-Env': debugStatus } 
+      });
+    }
+
+    if (!apiKey) {
+      console.error('[RESET_LINK] CRITICAL: API Key not found in context.env or process.env');
+      return NextResponse.json({ 
+        error: 'Infrastructure Error', 
+        message: 'Missing Firebase API Configuration in Cloudflare Dashboard.' 
+      }, { 
+        status: 500, 
+        headers: { ...corsHeaders, 'X-Debug-Env': 'MISSING' } 
+      });
     }
 
     try {
@@ -35,14 +58,20 @@ export async function POST(req: NextRequest, context: any) {
       return NextResponse.json({ 
         success: true, 
         message: 'Security update link dispatched to your infrastructure.' 
-      }, { status: 200, headers: corsHeaders });
+      }, { 
+        status: 200, 
+        headers: { ...corsHeaders, 'X-Debug-Env': 'FOUND' } 
+      });
       
     } catch (error: any) {
       if (error.message.includes('EMAIL_NOT_FOUND')) {
         return NextResponse.json({ 
           error: 'User account not found', 
           code: 'USER_NOT_FOUND' 
-        }, { status: 404, headers: corsHeaders });
+        }, { 
+          status: 404, 
+          headers: { ...corsHeaders, 'X-Debug-Env': 'FOUND' } 
+        });
       }
       throw error;
     }
@@ -51,7 +80,10 @@ export async function POST(req: NextRequest, context: any) {
     console.error('[RESET_LINK_API_ERROR]', error);
     return NextResponse.json(
       { error: 'Internal Server Error', message: error.message },
-      { status: 500, headers: corsHeaders }
+      { 
+        status: 500, 
+        headers: { ...corsHeaders } 
+      }
     );
   }
 }
