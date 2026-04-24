@@ -5,29 +5,21 @@
  */
 
 export class FirebaseAuthEdge {
-  private apiKey: string;
-  private projectId: string;
-
-  constructor() {
-    // We use the public API key from environment
-    this.apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '';
-    this.projectId = "keodigitalreporting";
-    
-    if (!this.apiKey) {
-      console.error('[FIREBASE_EDGE] CRITICAL: NEXT_PUBLIC_FIREBASE_API_KEY is missing from environment.');
-    }
-  }
-
   /**
    * Generates a Password Reset Link via REST
+   * @param env - The Cloudflare environment bindings
    */
-  async getPasswordResetLink(email: string): Promise<string> {
-    if (!this.apiKey) {
+  async getPasswordResetLink(email: string, env: any): Promise<string> {
+    const apiKey = env.NEXT_PUBLIC_FIREBASE_API_KEY;
+    const baseUrl = env.NEXT_PUBLIC_BASE_URL || 'https://www.rehdigital.com';
+    const projectId = "keodigitalreporting";
+    
+    if (!apiKey) {
+      console.error('[FIREBASE_EDGE] CRITICAL: NEXT_PUBLIC_FIREBASE_API_KEY is missing from environment bindings.');
       throw new Error('Infrastructure configuration incomplete (Missing API Key).');
     }
 
-    const url = `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${this.apiKey}`;
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.rehdigital.com';
+    const url = `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`;
     
     try {
       const response = await fetch(url, {

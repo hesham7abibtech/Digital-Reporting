@@ -13,16 +13,24 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
 
-export async function POST(req: NextRequest) {
+/**
+ * Enterprise Reset Link API
+ * @param req - The incoming request
+ * @param context - Cloudflare Request Context containing env bindings
+ */
+export async function POST(req: NextRequest, context: any) {
   try {
     const { email } = await req.json();
+    
+    // On Cloudflare, environment variables are in context.env or req.env
+    const env = context?.env || (req as any).env || process.env;
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400, headers: corsHeaders });
     }
 
     try {
-      await authEdge.getPasswordResetLink(email);
+      await authEdge.getPasswordResetLink(email, env);
       
       return NextResponse.json({ 
         success: true, 
