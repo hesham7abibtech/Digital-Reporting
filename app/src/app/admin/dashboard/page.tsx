@@ -401,11 +401,12 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
 
             {mailTarget === 'SPECIFIC' && (
               <div style={{ 
-                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, padding: 6, 
-                background: 'linear-gradient(135deg, rgba(0, 63, 73, 0.15), rgba(0,0,0,0.6))', 
-                borderRadius: 24, border: '1px solid rgba(0, 63, 73, 0.3)',
-                boxShadow: 'inset 0 0 40px rgba(0,0,0,0.2)'
+                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, padding: 24, 
+                background: 'rgba(0,0,0,0.4)', borderRadius: 24, border: '1px solid var(--border)',
+                boxShadow: 'inset 0 0 40px rgba(0,0,0,0.3)', position: 'relative', overflow: 'hidden'
               }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 4, background: 'linear-gradient(90deg, var(--teal), var(--primary-light), var(--teal))' }} />
+                
                 {/* Direct Recipients (TO) - Full Width */}
                 <div style={{ gridColumn: 'span 2' }}>
                   {[
@@ -415,7 +416,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                       key={field.id} 
                       style={{ 
                         display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', 
-                        background: 'rgba(0, 63, 73, 0.08)', padding: '24px 32px', borderRadius: 20, 
+                        background: 'rgba(0, 63, 73, 0.05)', padding: '24px 32px', borderRadius: 20, 
                         border: '1px solid rgba(0, 63, 73, 0.2)', borderLeft: `6px solid ${field.accent}`,
                         boxShadow: '0 12px 40px rgba(0,0,0,0.4)'
                       }}
@@ -436,10 +437,8 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                             background: field.accent, color: '#ffffff', fontSize: 11, 
                             fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
                             transition: 'all 300ms', textTransform: 'uppercase', letterSpacing: '0.1em',
-                            boxShadow: 'var(--shadow-premium)', transform: 'translateY(0)'
+                            boxShadow: 'var(--shadow-premium)'
                           }}
-                          onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.1)'}
-                          onMouseLeave={e => e.currentTarget.style.filter = 'brightness(1)'}
                         >
                           <UserPlus size={16} /> SELECT TEAM REGISTRY
                         </button>
@@ -448,11 +447,11 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                         value={field.value}
                         onChange={(e) => field.setter(e.target.value)}
                         placeholder="Establish primary communication uplink..."
-                        rows={1}
+                        rows={Math.max(1, field.value.split('\n').length, Math.ceil(field.value.length / 80))}
                         style={{ 
-                          padding: '16px 20px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)', 
+                          padding: '16px 20px', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)', 
                           borderRadius: 14, color: '#ffffff', fontSize: 15, outline: 'none', 
-                          resize: 'none', fontWeight: 500, lineHeight: '1.5'
+                          resize: 'none', fontWeight: 500, lineHeight: '1.6', transition: 'height 0.2s'
                         }}
                       />
                       
@@ -529,7 +528,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                     key={field.id} 
                     style={{ 
                       display: 'flex', flexDirection: 'column', gap: 10, position: 'relative', 
-                      background: 'rgba(0,0,0,0.3)', padding: '20px 24px', borderRadius: 18, 
+                      background: 'rgba(0,0,0,0.5)', padding: '20px 24px', borderRadius: 18, 
                       border: '1px solid rgba(255,255,255,0.05)', borderLeft: `4px solid ${field.accent}`,
                       boxShadow: '0 6px 25px rgba(0,0,0,0.3)'
                     }}
@@ -550,14 +549,6 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                           background: 'transparent', color: field.accent, fontSize: 9, 
                           fontWeight: 900, cursor: 'pointer', transition: 'all 200ms', letterSpacing: '0.05em'
                         }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.background = field.accent;
-                          e.currentTarget.style.color = '#000000';
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.background = 'transparent';
-                          e.currentTarget.style.color = field.accent;
-                        }}
                       >
                         ADD TEAM
                       </button>
@@ -566,11 +557,11 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                       value={field.value}
                       onChange={(e) => field.setter(e.target.value)}
                       placeholder={`Draft ${field.id} identities...`}
-                      rows={1}
+                      rows={Math.max(1, field.value.split('\n').length, Math.ceil(field.value.length / 40))}
                       style={{ 
-                        padding: '12px 16px', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)', 
+                        padding: '12px 16px', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)', 
                         borderRadius: 12, color: '#ffffff', fontSize: 13, outline: 'none', 
-                        resize: 'none', fontWeight: 500
+                        resize: 'none', fontWeight: 500, lineHeight: '1.5'
                       }}
                     />
                     
