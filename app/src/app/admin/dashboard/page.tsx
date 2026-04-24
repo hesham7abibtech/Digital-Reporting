@@ -177,7 +177,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
 
     setLoading(true);
     try {
-      let toList = [];
+      let toList: string[] = [];
       let ccList = ccEmails.split(',').map(e => e.trim()).filter(Boolean);
       let bccList = bccEmails.split(',').map(e => e.trim()).filter(Boolean);
 
