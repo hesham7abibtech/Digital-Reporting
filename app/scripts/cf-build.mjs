@@ -1,34 +1,56 @@
 /**
  * Cloudflare Pages Build Wrapper
  * 
- * Prevents WSL's bash.exe from being invoked by @cloudflare/next-on-pages.
- * On Windows, the Vercel build subprocess looks for 'bash' in PATH, which
- * resolves to WSL's bash.exe and opens a dead terminal window.
+ * Problem: @cloudflare/next-on-pages uses "shellac" which spawns `bash` from PATH.
+ * On this machine, PATH resolves bash to C:\Windows\System32\bash.exe (WSL),
+ * which opens a dead WSL terminal window.
  * 
- * This wrapper forces SHELL=cmd.exe before invoking the build.
+ * Solution: Prepend Git's bin directory to PATH so its native MinGW bash.exe
+ * is found BEFORE WSL's bash.exe. Also set SHELL explicitly.
  */
 import { execSync } from 'child_process';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const root = join(__dirname, '..');
 
-// Force SHELL to cmd.exe to prevent WSL bash from being invoked
-process.env.SHELL = 'cmd.exe';
-// Also remove any BASH_ENV that might trigger WSL
-delete process.env.BASH_ENV;
+// Find Git's bash directory (native MinGW bash, NOT WSL)
+const gitBinDirs = [
+  'C:\\Program Files\\Git\\bin',
+  'C:\\Program Files (x86)\\Git\\bin',
+];
 
-console.log('🔧 SHELL forced to cmd.exe (WSL bypass active)');
+const gitBinDir = gitBinDirs.find(p => existsSync(join(p, 'bash.exe')));
+
+if (!gitBinDir) {
+  console.error('❌ Git bash not found. Install Git for Windows.');
+  process.exit(1);
+}
+
+const gitBash = join(gitBinDir, 'bash.exe');
+
+// Prepend Git's bin to PATH so bash resolves to Git's bash, NOT WSL
+const originalPath = process.env.PATH || process.env.Path || '';
+const newPath = gitBinDir + ';' + originalPath;
+
+console.log(`🔧 Git bash: ${gitBash}`);
+console.log(`🔧 PATH prepended with: ${gitBinDir}`);
 console.log('📦 Starting @cloudflare/next-on-pages build...\n');
+
+const buildEnv = {
+  ...process.env,
+  SHELL: gitBash,
+  PATH: newPath,
+  Path: newPath,
+};
 
 try {
   execSync('npx @cloudflare/next-on-pages', {
     stdio: 'inherit',
-    cwd: join(__dirname, '..'),
-    env: {
-      ...process.env,
-      SHELL: 'cmd.exe',
-    },
+    cwd: root,
+    env: buildEnv,
   });
   console.log('\n✅ Cloudflare Pages build complete.');
 } catch (err) {
