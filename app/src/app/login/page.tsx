@@ -325,9 +325,13 @@ function LoginContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
       });
-      
-      const data = await response.json();
-      
+
+      let data: any = {};
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        try { data = await response.json(); } catch { data = {}; }
+      }
+
       if (!response.ok) {
         if (response.status === 404 && data.code === 'USER_NOT_FOUND') {
           setEmailNotFound(true);

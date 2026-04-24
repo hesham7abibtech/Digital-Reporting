@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mailService } from '@/services/MailService';
 
-export const runtime = 'edge';
-
 /**
  * Enterprise Mail Gateway API
  * Accepts: to, cc, bcc, type, payload
