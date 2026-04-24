@@ -177,48 +177,52 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
 
     setLoading(true);
     try {
-      let recipients: string[] = [];
+      let toList = [];
+      let ccList = ccEmails.split(',').map(e => e.trim()).filter(Boolean);
+      let bccList = bccEmails.split(',').map(e => e.trim()).filter(Boolean);
 
       if (mailTarget === 'ALL') {
-        recipients = usersSnapshot?.docs.map((d: any) => d.data().email).filter(Boolean) || [];
+        // For mass broadcasts, we BCC everyone to ensure privacy as requested
+        bccList = [...new Set([...bccList, ...(usersSnapshot?.docs.map((d: any) => d.data().email).filter(Boolean) || [])])];
       } else if (mailTarget === 'ROLE') {
-        recipients = usersSnapshot?.docs
+        bccList = [...new Set([...bccList, ...(usersSnapshot?.docs
           .filter((d: any) => d.data().role === targetRole)
           .map((d: any) => d.data().email)
-          .filter(Boolean) || [];
+          .filter(Boolean) || [])])];
       } else {
-        recipients = toEmails.split(',').map(e => e.trim()).filter(Boolean);
+        toList = toEmails.split(',').map(e => e.trim()).filter(Boolean);
       }
 
-      if (recipients.length === 0) {
-        showToast('Dispatch aborted: No valid recipients found.', 'WARNING');
+      // Final check across all tiers
+      if (toList.length === 0 && ccList.length === 0 && bccList.length === 0) {
+        showToast('Dispatch aborted: No recipients defined in TO, CC, or BCC.', 'WARNING');
         setLoading(false);
         return;
       }
 
-      const ccList = ccEmails.split(',').map(e => e.trim()).filter(Boolean);
-      const bccList = bccEmails.split(',').map(e => e.trim()).filter(Boolean);
+      // Professional handling of 'Undisclosed Recipients'
+      const primaryTo = toList.length > 0 ? toList.join(', ') : 'Undisclosed Recipients <info@rehdigital.com>';
 
-      // Dispatch via API
-      for (const email of recipients) {
-        await fetch('/api/mail', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: email,
-            cc: ccList.length > 0 ? ccList.join(', ') : undefined,
-            bcc: bccList.length > 0 ? bccList.join(', ') : undefined,
-            type: 'CUSTOM',
-            payload: {
-              title: mailSubject,
-              body: mailBody,
-              category: mailCategory
-            }
-          })
-        });
-      }
+      // Unified SMTP Dispatch
+      const response = await fetch('/api/mail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: primaryTo,
+          cc: ccList.length > 0 ? ccList.join(', ') : undefined,
+          bcc: bccList.length > 0 ? bccList.join(', ') : undefined,
+          type: 'CUSTOM',
+          payload: {
+            title: mailSubject,
+            body: mailBody,
+            category: mailCategory
+          }
+        })
+      });
 
-      showToast(`SMTP Dispatch complete: ${recipients.length} transmissions successful.`, 'SUCCESS');
+      if (!response.ok) throw new Error('Uplink rejected by SMTP gateway');
+
+      showToast(`SMTP Dispatch successful: Transmission synchronized via Elite Gateway.`, 'SUCCESS');
       setMailSubject('');
       setMailBody('');
       setToEmails('');
