@@ -12,32 +12,45 @@ export class FirebaseAuthEdge {
     // We use the public API key from environment
     this.apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '';
     this.projectId = "keodigitalreporting";
+    
+    if (!this.apiKey) {
+      console.error('[FIREBASE_EDGE] CRITICAL: NEXT_PUBLIC_FIREBASE_API_KEY is missing from environment.');
+    }
   }
 
   /**
    * Generates a Password Reset Link via REST
    */
   async getPasswordResetLink(email: string): Promise<string> {
-    const url = `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${this.apiKey}`;
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        requestType: 'PASSWORD_RESET',
-        email,
-        continueUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://www.rehdigital.com'}/login`
-      })
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'Failed to generate reset link');
+    if (!this.apiKey) {
+      throw new Error('Infrastructure configuration incomplete (Missing API Key).');
     }
 
-    // Note: The REST API usually sends the email directly. 
-    // If you need the raw link, you would use a Service Account OAuth token.
-    return 'EMAIL_SENT_DIRECTLY';
+    const url = `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${this.apiKey}`;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.rehdigital.com';
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestType: 'PASSWORD_RESET',
+          email,
+          continueUrl: `${baseUrl}/login`
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('[FIREBASE_EDGE_REST_ERROR]', error);
+        throw new Error(error.error?.message || 'Failed to generate reset link');
+      }
+
+      return 'EMAIL_SENT_DIRECTLY';
+    } catch (err: any) {
+      console.error('[FIREBASE_EDGE_FETCH_CRASH]', err);
+      throw err;
+    }
   }
 }
 
