@@ -100,7 +100,7 @@ function formatDate(dateStr: string | null | undefined) {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-').toUpperCase();
 }
 
-function CommunicationsHub({ showToast }: { showToast: any }) {
+function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, usersSnapshot: any }) {
   const router = useRouter();
   const [activeHubTab, setActiveHubTab] = useState<'BROADCAST' | 'MAIL'>('BROADCAST');
   const [loading, setLoading] = useState(false);
@@ -114,7 +114,10 @@ function CommunicationsHub({ showToast }: { showToast: any }) {
   // Mail State
   const [mailTarget, setMailTarget] = useState<'ALL' | 'ROLE' | 'INDIVIDUAL'>('ALL');
   const [targetRole, setTargetRole] = useState('TEAM');
-  const [individualEmail, setIndividualEmail] = useState('');
+  const [selectedUserEmails, setSelectedUserEmails] = useState<string[]>([]);
+  const [customEmails, setCustomEmails] = useState('');
+  const [ccEmails, setCcEmails] = useState('');
+  const [bccEmails, setBccEmails] = useState('');
   const [mailSubject, setMailSubject] = useState('');
   const [mailBody, setMailBody] = useState('');
   const [mailCategory, setMailCategory] = useState('ANNOUNCEMENT');
@@ -163,13 +166,15 @@ function CommunicationsHub({ showToast }: { showToast: any }) {
       let recipients: string[] = [];
 
       if (mailTarget === 'ALL') {
-        const usersSnap = await getDocs(collection(db, 'users'));
-        recipients = usersSnap.docs.map(d => d.data().email).filter(Boolean);
+        recipients = usersSnapshot?.docs.map((d: any) => d.data().email).filter(Boolean) || [];
       } else if (mailTarget === 'ROLE') {
-        const usersSnap = await getDocs(query(collection(db, 'users'), where('role', '==', targetRole)));
-        recipients = usersSnap.docs.map(d => d.data().email).filter(Boolean);
+        recipients = usersSnapshot?.docs
+          .filter((d: any) => d.data().role === targetRole)
+          .map((d: any) => d.data().email)
+          .filter(Boolean) || [];
       } else {
-        recipients = [individualEmail];
+        const customList = customEmails.split(',').map(e => e.trim()).filter(Boolean);
+        recipients = Array.from(new Set([...selectedUserEmails, ...customList]));
       }
 
       if (recipients.length === 0) {
@@ -178,6 +183,9 @@ function CommunicationsHub({ showToast }: { showToast: any }) {
         return;
       }
 
+      const ccList = ccEmails.split(',').map(e => e.trim()).filter(Boolean);
+      const bccList = bccEmails.split(',').map(e => e.trim()).filter(Boolean);
+
       // Dispatch via API
       for (const email of recipients) {
         await fetch('/api/mail', {
@@ -185,6 +193,8 @@ function CommunicationsHub({ showToast }: { showToast: any }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             to: email,
+            cc: ccList.length > 0 ? ccList.join(', ') : undefined,
+            bcc: bccList.length > 0 ? bccList.join(', ') : undefined,
             type: 'CUSTOM',
             payload: {
               title: mailSubject,
@@ -198,6 +208,10 @@ function CommunicationsHub({ showToast }: { showToast: any }) {
       showToast(`SMTP Dispatch complete: ${recipients.length} transmissions successful.`, 'SUCCESS');
       setMailSubject('');
       setMailBody('');
+      setCustomEmails('');
+      setCcEmails('');
+      setBccEmails('');
+      setSelectedUserEmails([]);
     } catch (error) {
       console.error('Mail dispatch failure:', error);
       showToast('SMTP uplink interrupted.', 'ERROR');
@@ -207,7 +221,7 @@ function CommunicationsHub({ showToast }: { showToast: any }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 40, alignItems: 'center' }}>
       {/* Hub Navigation */}
       <div style={{ display: 'flex', gap: 12, background: 'var(--secondary)', padding: 6, borderRadius: 16, border: '1px solid var(--border)', width: 'fit-content' }}>
         <button
@@ -238,7 +252,7 @@ function CommunicationsHub({ showToast }: { showToast: any }) {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 48 }}>
+      <div style={{ width: '100%', maxWidth: 800, display: 'flex', flexDirection: 'column', gap: 48 }}>
         {activeHubTab === 'BROADCAST' ? (
           <form onSubmit={handleBroadcastDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div style={{ display: 'flex', gap: 16 }}>
@@ -316,10 +330,10 @@ function CommunicationsHub({ showToast }: { showToast: any }) {
             <button
               disabled={loading}
               style={{
-                marginTop: 12, padding: '16px', background: 'var(--teal)', color: '#ffffff',
+                marginTop: 12, padding: '16px 32px', background: 'var(--teal)', color: '#ffffff',
                 border: 'none', borderRadius: 16, fontWeight: 900, fontSize: 15,
                 cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-                boxShadow: 'var(--shadow-premium)', letterSpacing: '0.1em', textTransform: 'uppercase'
+                boxShadow: 'var(--shadow-premium)', letterSpacing: '0.1em', textTransform: 'uppercase', width: 'fit-content', alignSelf: 'center'
               }}
             >
               {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
@@ -366,17 +380,51 @@ function CommunicationsHub({ showToast }: { showToast: any }) {
                     <option value="OWNER">SYSTEM OWNERS</option>
                   </select>
                 ) : mailTarget === 'INDIVIDUAL' ? (
-                  <input
-                    value={individualEmail}
-                    onChange={(e) => setIndividualEmail(e.target.value)}
-                    placeholder="Enter email address..."
-                    style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
-                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <select
+                      multiple
+                      value={selectedUserEmails}
+                      onChange={(e) => setSelectedUserEmails(Array.from(e.target.selectedOptions, option => option.value))}
+                      style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none', height: 100 }}
+                    >
+                      {usersSnapshot?.docs.map((d: any) => (
+                        <option key={d.id} value={d.data().email}>{d.data().name} ({d.data().email})</option>
+                      ))}
+                    </select>
+                    <textarea
+                      value={customEmails}
+                      onChange={(e) => setCustomEmails(e.target.value)}
+                      placeholder="Multi Emails (comma separated TO)..."
+                      rows={2}
+                      style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 13, outline: 'none', resize: 'none' }}
+                    />
+                  </div>
                 ) : (
                   <div style={{ padding: '12px 16px', background: 'rgba(0, 63, 73, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.1)', color: 'var(--teal)', fontSize: 13, fontWeight: 800 }}>
                     Global Broadcast Mode Active
                   </div>
                 )}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>CC Recipients</label>
+                <input
+                  value={ccEmails}
+                  onChange={(e) => setCcEmails(e.target.value)}
+                  placeholder="Comma separated CC..."
+                  style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>BCC Recipients</label>
+                <input
+                  value={bccEmails}
+                  onChange={(e) => setBccEmails(e.target.value)}
+                  placeholder="Comma separated BCC..."
+                  style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
+                />
               </div>
             </div>
 
@@ -419,10 +467,10 @@ function CommunicationsHub({ showToast }: { showToast: any }) {
             <button
               disabled={loading}
               style={{
-                marginTop: 12, padding: '16px', background: 'var(--teal)', color: '#ffffff',
+                marginTop: 12, padding: '16px 32px', background: 'var(--teal)', color: '#ffffff',
                 border: 'none', borderRadius: 16, fontWeight: 900, fontSize: 15,
                 cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-                boxShadow: 'var(--shadow-premium)', letterSpacing: '0.1em', textTransform: 'uppercase'
+                boxShadow: 'var(--shadow-premium)', letterSpacing: '0.1em', textTransform: 'uppercase', width: 'fit-content', alignSelf: 'center'
               }}
             >
               {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
@@ -430,94 +478,8 @@ function CommunicationsHub({ showToast }: { showToast: any }) {
             </button>
           </form>
         )}
-
-        {/* Preview Section */}
-        <div style={{ padding: 40, background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}>
-                <Shield size={18} color="var(--teal)" />
-              </div>
-              <span style={{ fontSize: 12, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Transmission Preview</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => router.push('/admin/mail-preview')}
-              style={{
-                padding: '6px 12px', background: 'rgba(0, 63, 73, 0.05)', border: '1px solid rgba(0, 63, 73, 0.1)',
-                borderRadius: 8, color: 'var(--teal)', fontSize: 10, fontWeight: 800, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 6, textTransform: 'uppercase', transition: 'all 200ms'
-              }}
-            >
-              <Eye size={12} />
-              Full Laboratory Preview
-            </button>
-          </div>
-
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {activeHubTab === 'BROADCAST' ? (
-              <div style={{
-                width: '100%', maxWidth: 360, padding: 24, borderRadius: 24, background: 'var(--cotton)',
-                border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)',
-                opacity: broadcastTitle || broadcastDescription ? 1 : 0.3, filter: broadcastTitle || broadcastDescription ? 'none' : 'grayscale(1)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: broadcastSeverity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${broadcastSeverity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)'}` }}>
-                    {broadcastType === 'NOTIF' ? <Bell size={18} color={broadcastSeverity === 'CRITICAL' ? 'var(--status-error)' : 'var(--primary-light)'} /> : <Newspaper size={18} color="#a78bfa" />}
-                  </div>
-                  <div>
-                    <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
-                      {broadcastType} // {broadcastSeverity}
-                    </span>
-                    <h4 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{broadcastTitle || 'Digital Reporting Hub'}</h4>
-                  </div>
-                </div>
-                <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-                  {broadcastDescription || 'Establishing secure administrative narrative... awaiting payload input.'}
-                </p>
-              </div>
-            ) : (
-              <div style={{
-                width: '100%', maxWidth: 400, background: '#ffffff', borderRadius: 24, overflow: 'hidden', border: '1px solid var(--border)',
-                boxShadow: 'var(--shadow-premium)', opacity: mailSubject || mailBody ? 1 : 0.3, textAlign: 'center'
-              }}>
-                <div style={{ background: '#003f49', padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, borderBottom: '4px solid #d0ab82' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: 8, border: '1px solid rgba(208, 171, 130, 0.3)' }}>
-                    <img src="/logos/modon_logo.png" height="14" style={{ filter: 'brightness(0) invert(1)' }} />
-                    <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.2)' }} />
-                    <img src="/logos/insite_logo.png" height="12" style={{ filter: 'brightness(0) invert(1)' }} />
-                  </div>
-                  <h4 style={{ fontSize: 11, color: '#ffffff', margin: 0, letterSpacing: '0.15em', fontWeight: 400, textTransform: 'uppercase' }}>REH Digital Reporting</h4>
-                </div>
-                <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ 
-                      width: 48, height: 48, borderRadius: 12, 
-                      background: mailCategory === 'NEWS' ? 'rgba(0, 63, 73, 0.1)' : 'rgba(208, 171, 130, 0.1)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16
-                    }}>
-                      {mailCategory === 'NEWS' ? <Newspaper size={20} color="#003f49" /> : <Megaphone size={20} color="#d0ab82" />}
-                    </div>
-                    
-                    <span style={{ fontSize: 9, fontWeight: 900, color: '#d0ab82', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 4 }}>{mailCategory} PROTOCOL</span>
-                    <h3 style={{ fontSize: 18, color: '#003f49', margin: '0 0 16px', fontWeight: 700 }}>{mailSubject || 'Professional Subject Line'}</h3>
-                    
-                    <div style={{ width: '100%', padding: '16px', background: '#fcfbf5', borderRadius: 12, border: '1px solid #f1f5f9' }}>
-                      <p style={{ fontSize: 12, color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>{mailBody || 'Administrative communication payload will be rendered here with premium typography...'}</p>
-                    </div>
-
-                    <div style={{ marginTop: 24, padding: '12px 24px', background: '#003f49', color: '#ffffff', borderRadius: 10, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                      Access Digital Reporting
-                    </div>
-
-                    <div style={{ marginTop: 32, textAlign: 'center', fontSize: 9, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}> 
-                      &copy; 2026 REH Digital Reporting Hub
-                    </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
+    </div>
     </div>
   );
 }
@@ -3468,7 +3430,7 @@ export default function AdminDashboardPage() {
                         {activeTab === 'communications' && (
                           <tr style={{ background: 'transparent' }}>
                             <td colSpan={5} style={{ padding: '40px' }}>
-                              <CommunicationsHub showToast={showToast} />
+                              <CommunicationsHub showToast={showToast} usersSnapshot={usersSnapshot} />
 
                               {/* Broadcast History Log */}
                               <div style={{ marginTop: 64 }}>
