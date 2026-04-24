@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
 import { mailService } from '@/services/MailService';
 
 export const runtime = 'edge';
@@ -31,8 +31,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Safety check for Firebase Admin initialization - we now log a warning but proceed with mock links if needed
-    if (!adminAuth) {
+    const adminAuth = getAdminAuth();
+    const adminDb = getAdminDb();
+
+    // Safety check for Firebase Admin initialization
+    if (!adminAuth || !adminDb) {
       console.warn('[RESET_LINK] Firebase Admin SDK not initialized. Proceeding in Mock Mode.');
     }
 
