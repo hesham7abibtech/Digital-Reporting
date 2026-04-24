@@ -6,6 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
 };
 
+// Release ID to verify deployment sync
+const RELEASE_ID = 'STABLE_V2_REST';
+
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: corsHeaders });
 }
@@ -13,24 +16,35 @@ export async function OPTIONS() {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const email = body.email;
+    const { email } = body;
 
-    // Use a robust fallback for the API Key
-    // On Cloudflare Pages, globalThis.process.env is sometimes more reliable
-    const env = (globalThis as any).process?.env || {};
-    const apiKey = env.NEXT_PUBLIC_FIREBASE_API_KEY || 'MISSING';
+    /**
+     * CLOUDFLARE BINDING RESOLUTION
+     * In Cloudflare Pages, bindings are available directly in the global scope.
+     * We attempt to resolve them from all possible runtime containers.
+     */
+    const apiKey = (globalThis as any).NEXT_PUBLIC_FIREBASE_API_KEY || 
+                   (globalThis as any).process?.env?.NEXT_PUBLIC_FIREBASE_API_KEY ||
+                   'MISSING';
+
+    const baseUrl = (globalThis as any).NEXT_PUBLIC_BASE_URL || 
+                    (globalThis as any).process?.env?.NEXT_PUBLIC_BASE_URL ||
+                    'https://www.rehdigital.com';
 
     if (!email) {
       return new Response(JSON.stringify({ error: 'Email required' }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Release-ID': RELEASE_ID }
       });
     }
 
     if (apiKey === 'MISSING') {
-       return new Response(JSON.stringify({ error: 'Infrastructure Error', detail: 'API Key Binding Missing' }), {
+      return new Response(JSON.stringify({ 
+        error: 'Infrastructure Error', 
+        message: 'Firebase API Key binding was not found in the Edge global scope.' 
+      }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Release-ID': RELEASE_ID }
       });
     }
 
@@ -42,32 +56,32 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         requestType: 'PASSWORD_RESET',
         email,
-        continueUrl: 'https://www.rehdigital.com/login'
+        continueUrl: `${baseUrl}/login`
       })
     });
 
     const data = await res.json();
 
     if (!res.ok) {
-      const msg = data.error?.message || 'UNKNOWN';
+      const errorMsg = data.error?.message || 'AUTH_GATEWAY_ERROR';
       return new Response(JSON.stringify({ 
-        error: msg === 'EMAIL_NOT_FOUND' ? 'User not found' : 'Auth failure',
-        code: msg === 'EMAIL_NOT_FOUND' ? 'USER_NOT_FOUND' : 'AUTH_ERROR'
+        error: errorMsg === 'EMAIL_NOT_FOUND' ? 'User account not found' : 'Security gateway error',
+        code: errorMsg === 'EMAIL_NOT_FOUND' ? 'USER_NOT_FOUND' : 'GATEWAY_ERROR'
       }), {
-        status: msg === 'EMAIL_NOT_FOUND' ? 404 : 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        status: errorMsg === 'EMAIL_NOT_FOUND' ? 404 : 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Release-ID': RELEASE_ID }
       });
     }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Release-ID': RELEASE_ID }
     });
 
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: 'Gateway Crash', message: err.message }), {
+    return new Response(JSON.stringify({ error: 'Critical Gateway Failure', detail: err.message }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Release-ID': RELEASE_ID }
     });
   }
 }
