@@ -48,6 +48,7 @@ import {
   Grid,
   Zap,
   EyeOff,
+  Eye,
   Mail
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -58,7 +59,7 @@ import { collections, bulkDelete, getProjectMetadata, updateProjectMetadata, upl
 import { useToast } from '@/components/shared/EliteToast';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import { useDocument } from 'react-firebase-hooks/firestore';
-import { doc, collection, query, orderBy, deleteDoc } from 'firebase/firestore';
+import { doc, collection, query, orderBy, deleteDoc, getDocs, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import GlassCard from '@/components/shared/GlassCard';
 import { useCollection } from 'react-firebase-hooks/firestore';
@@ -100,6 +101,7 @@ function formatDate(dateStr: string | null | undefined) {
 }
 
 function CommunicationsHub({ showToast }: { showToast: any }) {
+  const router = useRouter();
   const [activeHubTab, setActiveHubTab] = useState<'BROADCAST' | 'MAIL'>('BROADCAST');
   const [loading, setLoading] = useState(false);
   
@@ -158,9 +160,6 @@ function CommunicationsHub({ showToast }: { showToast: any }) {
 
     setLoading(true);
     try {
-      const { collection, getDocs, query, where } = await import('firebase/firestore');
-      const { db } = await import('@/lib/firebase');
-      
       let recipients: string[] = [];
 
       if (mailTarget === 'ALL') {
@@ -434,11 +433,25 @@ function CommunicationsHub({ showToast }: { showToast: any }) {
 
         {/* Preview Section */}
         <div style={{ padding: 40, background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}>
-              <Shield size={18} color="var(--teal)" />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}>
+                <Shield size={18} color="var(--teal)" />
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Transmission Preview</span>
             </div>
-            <span style={{ fontSize: 12, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Transmission Preview</span>
+            <button
+              type="button"
+              onClick={() => router.push('/admin/mail-preview')}
+              style={{
+                padding: '6px 12px', background: 'rgba(0, 63, 73, 0.05)', border: '1px solid rgba(0, 63, 73, 0.1)',
+                borderRadius: 8, color: 'var(--teal)', fontSize: 10, fontWeight: 800, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6, textTransform: 'uppercase', transition: 'all 200ms'
+              }}
+            >
+              <Eye size={12} />
+              Full Laboratory Preview
+            </button>
           </div>
 
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -456,7 +469,7 @@ function CommunicationsHub({ showToast }: { showToast: any }) {
                     <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
                       {broadcastType} // {broadcastSeverity}
                     </span>
-                    <h4 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{broadcastTitle || 'Headline Protocol'}</h4>
+                    <h4 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{broadcastTitle || 'Digital Reporting Hub'}</h4>
                   </div>
                 </div>
                 <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>

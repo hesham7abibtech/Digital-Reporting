@@ -51,6 +51,7 @@ function LoginContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
   const [showResetSuccess, setShowResetSuccess] = useState(false);
+  const [emailNotFound, setEmailNotFound] = useState(false);
   const [authStatusMode, setAuthStatusMode] = useState<'none' | 'unverified' | 'unapproved'>('none');
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -317,11 +318,29 @@ function LoginContent() {
     setError('');
     setIsSubmitting(true);
     try {
-      await sendPasswordResetEmail(auth, email);
+      setEmailNotFound(false);
+      const response = await fetch('/api/auth/reset-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        if (response.status === 404 && data.code === 'USER_NOT_FOUND') {
+          setEmailNotFound(true);
+          setError('The specified email address does not exist in our infrastructure.');
+          setIsSubmitting(false);
+          return;
+        }
+        throw new Error(data.error || 'Failed to dispatch reset link.');
+      }
+      
       setShowResetSuccess(true);
       setIsSubmitting(false);
     } catch (err: any) {
-      setError(getFirebaseErrorMessage(err));
+      setError(err.message || 'Service unavailable. Please try again later.');
       setIsSubmitting(false);
     }
   };
@@ -487,10 +506,30 @@ function LoginContent() {
               <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{
                 padding: '12px 14px', borderRadius: 12,
                 background: 'rgba(255, 76, 79, 0.06)', border: '1px solid rgba(255, 76, 79, 0.15)',
-                color: 'var(--status-error)', fontSize: 12, fontWeight: 600,
-                display: 'flex', gap: 8, alignItems: 'flex-start', lineHeight: 1.5,
+                color: 'var(--status-error)', fontSize: 12, fontWeight: 700,
+                display: 'flex', flexDirection: 'column', gap: 10
               }}>
-                <ShieldAlert size={14} style={{ flexShrink: 0, marginTop: 2 }} /> {error}
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <ShieldAlert size={14} style={{ flexShrink: 0, marginTop: 2 }} /> 
+                  <span style={{ lineHeight: 1.4 }}>{error}</span>
+                </div>
+                
+                {emailNotFound && (
+                  <button 
+                    type="button" 
+                    onClick={() => { setError(''); setEmailNotFound(false); setMode('register'); }}
+                    style={{ 
+                      width: '100%', padding: '10px', borderRadius: 10, 
+                      background: 'var(--teal)', color: 'white', 
+                      border: 'none', fontSize: 11, fontWeight: 800, 
+                      cursor: 'pointer', textTransform: 'uppercase', 
+                      letterSpacing: '0.05em', boxShadow: '0 4px 12px rgba(0, 63, 73, 0.2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+                    }}
+                  >
+                    <UserPlus size={14} /> Create New Account
+                  </button>
+                )}
               </motion.div>
             )}
 
@@ -530,7 +569,7 @@ function LoginContent() {
 
           <div style={{ marginTop: 20, textAlign: 'center' }}>
             <button
-              onClick={() => { setError(''); setMessage(''); setMode(mode === 'login' ? 'register' : 'login'); }}
+              onClick={() => { setError(''); setMessage(''); setEmailNotFound(false); setMode(mode === 'login' ? 'register' : 'login'); }}
               style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '0 auto' }}>
               {mode === 'login' ? <><UserPlus size={14} /> Don&apos;t have an account? Register</> :
                 <><ArrowLeft size={14} /> Back to Sign In</>}
