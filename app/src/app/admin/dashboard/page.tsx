@@ -480,7 +480,6 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
         )}
       </div>
     </div>
-    </div>
   );
 }
 
