@@ -9,40 +9,37 @@
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Colors */
-  --teal: #003f49;
-  /* Primary Strong Teal (PDF Sync) */
-  --aqua: #c6e0e0;
-  /* Secondary Main BG (PDF Sync) */
-  --haze: #E4EFEE;
-  /* Section Highlight */
-  --cotton: #F9F8F2;
-  /* Pure Background */
-  --sunlit-rock: #d0ab82;
-  /* Premium Accent */
+  /* Elite Dark Industrial Palette */
+  --teal: #00f2ff; /* Luminous Teal */
+  --teal-deep: #003f49;
+  --gold: #d0ab82;
+  
+  --background: #050a0b; /* Deep Charcoal/Teal Black */
+  --surface: #0a1112;
+  --panel: #0f1a1c;
+  --border: rgba(0, 242, 255, 0.12);
+  --border-bright: rgba(0, 242, 255, 0.3);
+  
+  --text-primary: #e0f2f1;
+  --text-secondary: #80cbc4;
+  --text-muted: #4d6d6d;
+  --text-dim: #213131;
+
+  /* Legacy Compatibility Mapping */
+  --cotton: var(--background);
+  --aqua: var(--surface);
+  --haze: var(--panel);
 
   --primary: var(--teal);
-  --primary-light: #005663;
-  --secondary: rgba(0, 63, 73, 0.08);
-  /* Deep Teal Translucent */
-  --background: var(--aqua);
-  --section-bg: rgba(255, 255, 255, 0.35);
-  /* Crystal Layer */
-  --accent: var(--sunlit-rock);
+  --primary-light: #00b8c4;
+  --secondary: rgba(0, 242, 255, 0.05);
+  --section-bg: rgba(0, 0, 0, 0.6);
+  --accent: var(--gold);
 
-  --card: rgba(255, 255, 255, 0.45);
-  --card-haze: rgba(0, 63, 73, 0.04);
-  --border: rgba(0, 63, 73, 0.15);
-  --border-hover: rgba(0, 63, 73, 0.3);
-
-  --text-primary: #003f49;
-  /* Mid Blue */
-  --chart-5: #FF4C4F;
-  /* Dark Pink */
-  --chart-6: #FF7908;
-  /* Dark Orange */
-  --chart-7: #984495;
-  /* Dark Purple */
+  --card: rgba(15, 26, 28, 0.8);
+  --card-haze: rgba(0, 242, 255, 0.03);
+  --border: rgba(0, 242, 255, 0.15);
+  --border-hover: rgba(0, 242, 255, 0.3);
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -50,10 +47,10 @@
   --radius-xl: 18px;
   --radius-full: 9999px;
 
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08);
-  --shadow-premium: 0 20px 40px rgba(0, 63, 73, 0.05);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.8);
 
   --transition-fast: 150ms ease-out;
   --transition-normal: 300ms ease-out;
@@ -94,12 +91,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 63, 73, 0.35);
+  background: rgba(0, 242, 255, 0.2);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 63, 73, 0.6);
+  background: rgba(0, 242, 255, 0.4);
 }
 
 /* ─── Form Elements & Accessibility ──────────────────────────────── */
@@ -112,9 +109,9 @@ fieldset[disabled] select {
   opacity: 1 !important;
   color: var(--text-primary) !important;
   -webkit-text-fill-color: var(--text-primary) !important;
-  background: rgba(255, 255, 255, 0.5) !important;
-  border: 1px solid rgba(0, 63, 73, 0.3) !important;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02) !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(0, 242, 255, 0.2) !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2) !important;
   cursor: not-allowed;
 }
 
@@ -128,14 +125,14 @@ fieldset[disabled] button {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-premium);
   backdrop-filter: blur(12px);
   transition: all var(--transition-normal);
 }
 
 .glass-card:hover {
   border-color: var(--border-hover);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
 }
 
 .glass-card-haze {
@@ -170,7 +167,7 @@ h4,
 }
 
 .glow-cyan {
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.15), 0 0 40px rgba(6, 182, 212, 0.05);
+  box-shadow: 0 0 20px rgba(0, 242, 255, 0.15), 0 0 40px rgba(0, 242, 255, 0.05);
 }
 
 .glow-emerald {
@@ -192,9 +189,9 @@ h4,
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 60% at 10% 20%, rgba(198, 224, 224, 0.05) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 90% 80%, rgba(197, 160, 89, 0.03) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(0, 63, 73, 0.2) 0%, transparent 60%);
+    radial-gradient(ellipse 80% 60% at 10% 20%, rgba(0, 242, 255, 0.03) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 90% 80%, rgba(208, 171, 130, 0.02) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(0, 63, 73, 0.15) 0%, transparent 60%);
 }
 
 /* ─── Animated Gradient Border ─────────────────────────────────── */
@@ -293,9 +290,9 @@ h4,
 }
 
 .status-in-progress {
-  background: rgba(198, 224, 224, 0.1);
-  color: rgb(198, 224, 224);
-  border: 1px solid rgba(198, 224, 224, 0.2);
+  background: rgba(0, 242, 255, 0.1);
+  color: var(--teal);
+  border: 1px solid rgba(0, 242, 255, 0.2);
 }
 
 .status-pending-review {
@@ -305,9 +302,9 @@ h4,
 }
 
 .status-completed {
-  background: rgba(176, 181, 64, 0.1);
-  color: #B0B540;
-  border: 1px solid rgba(176, 181, 64, 0.2);
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .status-delayed {
@@ -328,8 +325,8 @@ h4,
 }
 
 .priority-medium {
-  background: rgba(198, 224, 224, 0.1);
-  color: rgb(198, 224, 224);
+  background: rgba(0, 242, 255, 0.1);
+  color: var(--teal);
 }
 
 .priority-high {
@@ -405,9 +402,10 @@ h4,
 
 /* ─── Selection ────────────────────────────────────────────────── */
 ::selection {
-  background: rgba(212, 175, 55, 0.3);
+  background: rgba(0, 242, 255, 0.3);
   color: white;
 }
+
 @keyframes slow-pan {
   0% { background-position: 0 0; }
   100% { background-position: 100% 100%; }

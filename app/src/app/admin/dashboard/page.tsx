@@ -357,11 +357,11 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
             </button>
           </form>
         ) : (
-          <form onSubmit={handleMailDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Target Spectrum</label>
-                <div style={{ display: 'flex', gap: 4, background: 'var(--secondary)', padding: 4, borderRadius: 10, border: '1px solid var(--border)' }}>
+          <form onSubmit={handleMailDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Target Spectrum</label>
+                <div style={{ display: 'flex', gap: 6, background: 'rgba(0,0,0,0.4)', padding: 6, borderRadius: 14, border: '1px solid var(--border)' }}>
                   {[
                     { id: 'ALL', label: 'ALL USERS' },
                     { id: 'ROLE', label: 'BY ROLE' },
@@ -372,10 +372,10 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                       type="button"
                       onClick={() => setMailTarget(t.id as any)}
                       style={{
-                        flex: 1, padding: '8px 0', borderRadius: 8, border: 'none',
+                        flex: 1, padding: '10px 0', borderRadius: 10, border: 'none',
                         background: mailTarget === t.id ? 'var(--teal)' : 'transparent',
                         color: mailTarget === t.id ? '#ffffff' : 'var(--text-muted)',
-                        fontSize: 9, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms'
+                        fontSize: 10, fontWeight: 900, cursor: 'pointer', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)'
                       }}
                     >
                       {t.label}
@@ -383,20 +383,20 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                   ))}
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Configuration Mode</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Configuration Mode</label>
                 {mailTarget === 'ROLE' ? (
                   <select
                     value={targetRole}
                     onChange={(e) => setTargetRole(e.target.value)}
-                    style={{ padding: '8px 12px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
+                    style={{ padding: '12px 16px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border)', borderRadius: 14, color: '#ffffff', fontSize: 14, outline: 'none', appearance: 'none' }}
                   >
                     <option value="TEAM">PROJECT TEAM</option>
                     <option value="ADMIN">ADMINISTRATORS</option>
                     <option value="OWNER">SYSTEM OWNERS</option>
                   </select>
                 ) : (
-                  <div style={{ padding: '8px 12px', background: 'rgba(0, 63, 73, 0.05)', borderRadius: 10, border: '1px solid rgba(0, 63, 73, 0.1)', color: 'var(--teal)', fontSize: 11, fontWeight: 800 }}>
+                  <div style={{ padding: '12px 16px', background: 'rgba(0, 242, 255, 0.03)', borderRadius: 14, border: '1px solid rgba(0, 242, 255, 0.1)', color: 'var(--teal)', fontSize: 12, fontWeight: 800, letterSpacing: '0.05em' }}>
                     {mailTarget === 'ALL' ? 'GLOBAL BROADCAST ENABLED' : 'SPECIFIC ROUTING ACTIVE'}
                   </div>
                 )}
@@ -405,30 +405,33 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
 
             {mailTarget === 'SPECIFIC' && (
               <div style={{ 
-                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, padding: 24, 
-                background: 'rgba(0,0,0,0.4)', borderRadius: 24, border: '1px solid var(--border)',
-                boxShadow: 'inset 0 0 40px rgba(0,0,0,0.3)', position: 'relative', overflow: 'hidden'
+                display: 'flex', flexDirection: 'column', gap: 24, padding: 32, 
+                background: 'rgba(0,0,0,0.6)', borderRadius: 28, border: '1px solid var(--border)',
+                boxShadow: 'inset 0 0 60px rgba(0,0,0,0.5)', position: 'relative', overflow: 'visible'
               }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 4, background: 'linear-gradient(90deg, var(--teal), var(--primary-light), var(--teal))' }} />
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 2, background: 'linear-gradient(90deg, transparent, var(--teal), transparent)', opacity: 0.5 }} />
                 
-                {/* Direct Recipients (TO) - Full Width */}
-                <div style={{ gridColumn: 'span 2' }}>
+                {/* Direct Recipients (TO) - High Density Field */}
+                <div style={{ width: '100%' }}>
                   {[
-                    { id: 'TO', label: 'Direct Recipients (TO)', value: toEmails, setter: setToEmails, accent: 'var(--teal)', icon: <Send size={14} /> },
+                    { id: 'TO', label: 'Direct Recipients (TO)', value: toEmails, setter: setToEmails, accent: 'var(--teal)', icon: <Send size={16} /> },
                   ].map(field => (
                     <div 
                       key={field.id} 
                       style={{ 
-                        display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', 
-                        background: 'rgba(0, 63, 73, 0.05)', padding: '24px 32px', borderRadius: 20, 
-                        border: '1px solid rgba(0, 63, 73, 0.2)', borderLeft: `6px solid ${field.accent}`,
-                        boxShadow: '0 12px 40px rgba(0,0,0,0.4)'
+                        display: 'flex', flexDirection: 'column', gap: 16, position: 'relative', 
+                        background: 'rgba(0, 242, 255, 0.02)', padding: '28px', borderRadius: 24, 
+                        border: '1px solid rgba(0, 242, 255, 0.1)', borderLeft: `8px solid ${field.accent}`,
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                          <div style={{ padding: 8, borderRadius: 10, background: 'rgba(0, 63, 73, 0.3)', color: field.accent, boxShadow: '0 0 15px rgba(0, 63, 73, 0.2)' }}>{field.icon}</div>
-                          <label style={{ fontSize: 11, fontWeight: 900, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.25em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>{field.label}</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                          <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(0, 242, 255, 0.1)', color: field.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0, 242, 255, 0.15)' }}>{field.icon}</div>
+                          <div>
+                            <label style={{ fontSize: 12, fontWeight: 900, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.2em', display: 'block' }}>{field.label}</label>
+                            <span style={{ fontSize: 9, color: 'var(--teal)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Primary Destination Node</span>
+                          </div>
                         </div>
                         <button
                           type="button"
@@ -437,54 +440,55 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                             setUserSearchQuery('');
                           }}
                           style={{ 
-                            padding: '10px 20px', borderRadius: 12, border: 'none', 
-                            background: field.accent, color: '#ffffff', fontSize: 11, 
+                            padding: '12px 24px', borderRadius: 14, border: 'none', 
+                            background: field.accent, color: '#050a0b', fontSize: 11, 
                             fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
-                            transition: 'all 300ms', textTransform: 'uppercase', letterSpacing: '0.1em',
-                            boxShadow: 'var(--shadow-premium)'
+                            transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)', textTransform: 'uppercase', letterSpacing: '0.15em',
+                            boxShadow: '0 10px 30px rgba(0, 242, 255, 0.3)'
                           }}
                         >
-                          <UserPlus size={16} /> SELECT TEAM REGISTRY
+                          <UserPlus size={18} /> OPEN REGISTRY
                         </button>
                       </div>
                       <textarea
                         value={field.value}
                         onChange={(e) => field.setter(e.target.value)}
-                        placeholder="Establish primary communication uplink..."
-                        rows={Math.max(1, field.value.split('\n').length, Math.ceil(field.value.length / 80))}
+                        placeholder="Establish primary communication uplink (semicolon separated)..."
+                        rows={Math.max(2, field.value.split('\n').length + (field.value.match(/;/g) || []).length / 2, Math.ceil(field.value.length / 100))}
                         style={{ 
-                          padding: '16px 20px', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)', 
-                          borderRadius: 14, color: '#ffffff', fontSize: 15, outline: 'none', 
-                          resize: 'none', fontWeight: 500, lineHeight: '1.6', transition: 'height 0.2s'
+                          padding: '20px', background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(0, 242, 255, 0.2)', 
+                          borderRadius: 16, color: '#ffffff', fontSize: 15, outline: 'none', 
+                          resize: 'none', fontWeight: 500, lineHeight: '1.6', transition: 'all 300ms',
+                          boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.5)', fontFamily: 'var(--font-mono)'
                         }}
                       />
                       
                       <AnimatePresence>
                         {activeSelectorField === field.id && (
                           <motion.div 
-                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                            initial={{ opacity: 0, scale: 0.98, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                            exit={{ opacity: 0, scale: 0.98, y: 10 }}
                             style={{ 
-                              position: 'absolute', top: 'calc(100% + 12px)', right: 0, zIndex: 1200, 
-                              width: 420, background: '#0a1a1c', 
-                              border: '1px solid var(--teal)', borderRadius: 20, 
-                              boxShadow: '0 40px 80px rgba(0,0,0,0.8)', padding: 18, 
-                              display: 'flex', flexDirection: 'column', gap: 14,
-                              backdropFilter: 'blur(20px)'
+                              position: 'absolute', top: '100%', right: 0, zIndex: 1500, 
+                              width: 440, marginTop: 16, background: '#0a1112', 
+                              border: '1px solid var(--teal)', borderRadius: 24, 
+                              boxShadow: '0 50px 100px rgba(0,0,0,0.9)', padding: 20, 
+                              display: 'flex', flexDirection: 'column', gap: 16,
+                              backdropFilter: 'blur(30px)'
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(0,0,0,0.5)', padding: '12px 18px', borderRadius: 14, border: '1px solid rgba(0, 63, 73, 0.4)' }}>
-                              <Search size={18} color="var(--teal)" />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(0,0,0,0.6)', padding: '14px 20px', borderRadius: 16, border: '1px solid rgba(0, 242, 255, 0.2)' }}>
+                              <Search size={20} color="var(--teal)" />
                               <input 
                                 autoFocus
                                 value={userSearchQuery}
                                 onChange={e => setUserSearchQuery(e.target.value)}
-                                placeholder="Search personnel identity..." 
-                                style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: 14, outline: 'none', width: '100%' }} 
+                                placeholder="Locate personnel identity..." 
+                                style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: 15, outline: 'none', width: '100%' }} 
                               />
                             </div>
-                            <div style={{ maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 8 }} className="custom-scrollbar">
+                            <div style={{ maxHeight: 350, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 8 }} className="custom-scrollbar">
                               {usersSnapshot?.docs
                                 .filter((d: any) => {
                                   const data = d.data();
@@ -497,17 +501,17 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                                     type="button"
                                     onClick={() => addEmailToField(d.data().email, field.id as any)}
                                     style={{ 
-                                      textAlign: 'left', padding: '14px 18px', borderRadius: 14, 
-                                      border: '1px solid transparent', background: 'rgba(255,255,255,0.02)', 
+                                      textAlign: 'left', padding: '16px 20px', borderRadius: 16, 
+                                      border: '1px solid transparent', background: 'rgba(255,255,255,0.03)', 
                                       cursor: 'pointer', transition: 'all 200ms', display: 'flex', 
                                       flexDirection: 'column', gap: 4 
                                     }}
                                     onMouseEnter={e => {
-                                      e.currentTarget.style.background = 'rgba(0, 63, 73, 0.2)';
-                                      e.currentTarget.style.borderColor = 'var(--teal)';
+                                      e.currentTarget.style.background = 'rgba(0, 242, 255, 0.1)';
+                                      e.currentTarget.style.borderColor = 'rgba(0, 242, 255, 0.3)';
                                     }}
                                     onMouseLeave={e => {
-                                      e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                                      e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
                                       e.currentTarget.style.borderColor = 'transparent';
                                     }}
                                   >
@@ -523,152 +527,177 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                   ))}
                 </div>
 
-                {/* CC and BCC - Two Columns */}
-                {[
-                  { id: 'CC', label: 'Carbon Copy (CC)', value: ccEmails, setter: setCcEmails, accent: 'var(--primary-light)', icon: <Users size={14} /> },
-                  { id: 'BCC', label: 'Blind Copy (BCC)', value: bccEmails, setter: setBccEmails, accent: 'var(--text-muted)', icon: <EyeOff size={14} /> }
-                ].map(field => (
-                  <div 
-                    key={field.id} 
-                    style={{ 
-                      display: 'flex', flexDirection: 'column', gap: 10, position: 'relative', 
-                      background: 'rgba(0,0,0,0.5)', padding: '20px 24px', borderRadius: 18, 
-                      border: '1px solid rgba(255,255,255,0.05)', borderLeft: `4px solid ${field.accent}`,
-                      boxShadow: '0 6px 25px rgba(0,0,0,0.3)'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ color: field.accent, opacity: 0.9 }}>{field.icon}</div>
-                        <label style={{ fontSize: 10, fontWeight: 900, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.9 }}>{field.label}</label>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveSelectorField(activeSelectorField === field.id ? null : field.id as any);
-                          setUserSearchQuery('');
-                        }}
-                        style={{ 
-                          padding: '6px 12px', borderRadius: 8, border: `1px solid ${field.accent}`, 
-                          background: 'transparent', color: field.accent, fontSize: 9, 
-                          fontWeight: 900, cursor: 'pointer', transition: 'all 200ms', letterSpacing: '0.05em'
-                        }}
-                      >
-                        ADD TEAM
-                      </button>
-                    </div>
-                    <textarea
-                      value={field.value}
-                      onChange={(e) => field.setter(e.target.value)}
-                      placeholder={`Draft ${field.id} identities...`}
-                      rows={Math.max(1, field.value.split('\n').length, Math.ceil(field.value.length / 40))}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                  {[
+                    { id: 'CC', label: 'Carbon Copy (CC)', value: ccEmails, setter: setCcEmails, accent: 'var(--teal)', icon: <Users size={16} /> },
+                    { id: 'BCC', label: 'Blind Copy (BCC)', value: bccEmails, setter: setBccEmails, accent: 'var(--gold)', icon: <EyeOff size={16} /> }
+                  ].map(field => (
+                    <div 
+                      key={field.id} 
                       style={{ 
-                        padding: '12px 16px', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)', 
-                        borderRadius: 12, color: '#ffffff', fontSize: 13, outline: 'none', 
-                        resize: 'none', fontWeight: 500, lineHeight: '1.5'
+                        display: 'flex', flexDirection: 'column', gap: 14, position: 'relative', 
+                        background: 'rgba(0,0,0,0.5)', padding: '24px', borderRadius: 20, 
+                        border: '1px solid rgba(255,255,255,0.05)', borderTop: `4px solid ${field.accent}`,
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.4)'
                       }}
-                    />
-                    
-                    <AnimatePresence>
-                      {activeSelectorField === field.id && (
-                        <motion.div 
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 15 }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ color: field.accent, opacity: 1 }}>{field.icon}</div>
+                          <label style={{ fontSize: 11, fontWeight: 900, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.15em' }}>{field.label}</label>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveSelectorField(activeSelectorField === field.id ? null : field.id as any);
+                            setUserSearchQuery('');
+                          }}
                           style={{ 
-                            position: 'absolute', top: '100%', left: 0, zIndex: 1200, 
-                            width: 300, marginTop: 12, background: '#0a1a1c', 
-                            border: `1px solid ${field.accent}`, borderRadius: 16, 
-                            boxShadow: '0 20px 60px rgba(0,0,0,0.7)', padding: 14, 
-                            display: 'flex', flexDirection: 'column', gap: 12,
-                            backdropFilter: 'blur(15px)'
+                            padding: '8px 16px', borderRadius: 10, border: `1px solid ${field.accent}`, 
+                            background: 'transparent', color: field.accent, fontSize: 10, 
+                            fontWeight: 900, cursor: 'pointer', transition: 'all 200ms', letterSpacing: '0.1em',
+                            textTransform: 'uppercase'
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <Search size={14} color={field.accent} />
-                            <input 
-                              autoFocus
-                              value={userSearchQuery}
-                              onChange={e => setUserSearchQuery(e.target.value)}
-                              placeholder="Search..." 
-                              style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: 12, outline: 'none', width: '100%' }} 
-                            />
-                          </div>
-                          <div style={{ maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }} className="custom-scrollbar">
-                            {usersSnapshot?.docs
-                              .filter((d: any) => {
-                                const data = d.data();
-                                const search = userSearchQuery.toLowerCase();
-                                return data.name?.toLowerCase().includes(search) || data.email?.toLowerCase().includes(search);
-                              })
-                              .map((d: any) => (
-                                <button
-                                  key={d.id}
-                                  type="button"
-                                  onClick={() => addEmailToField(d.data().email, field.id as any)}
-                                  style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', transition: 'all 200ms' }}
-                                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                                >
-                                  <span style={{ fontSize: 12, fontWeight: 900, color: '#ffffff', display: 'block' }}>{d.data().name}</span>
-                                  <span style={{ fontSize: 10, color: field.accent, opacity: 0.8 }}>{d.data().email}</span>
-                                </button>
-                              ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ))}
+                          Registry
+                        </button>
+                      </div>
+                      <textarea
+                        value={field.value}
+                        onChange={(e) => field.setter(e.target.value)}
+                        placeholder={`Draft ${field.id} identities...`}
+                        rows={Math.max(2, field.value.split('\n').length + (field.value.match(/;/g) || []).length / 2, Math.ceil(field.value.length / 50))}
+                        style={{ 
+                          padding: '16px', background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(255,255,255,0.08)', 
+                          borderRadius: 14, color: '#ffffff', fontSize: 13, outline: 'none', 
+                          resize: 'none', fontWeight: 500, lineHeight: '1.5', fontFamily: 'var(--font-mono)'
+                        }}
+                      />
+                      
+                      <AnimatePresence>
+                        {activeSelectorField === field.id && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 15 }}
+                            style={{ 
+                              position: 'absolute', top: '100%', left: 0, zIndex: 1500, 
+                              width: 320, marginTop: 16, background: '#0a1112', 
+                              border: `1px solid ${field.accent}`, borderRadius: 20, 
+                              boxShadow: '0 30px 80px rgba(0,0,0,0.8)', padding: 16, 
+                              display: 'flex', flexDirection: 'column', gap: 14,
+                              backdropFilter: 'blur(25px)'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,0,0,0.4)', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)' }}>
+                              <Search size={16} color={field.accent} />
+                              <input 
+                                autoFocus
+                                value={userSearchQuery}
+                                onChange={e => setUserSearchQuery(e.target.value)}
+                                placeholder="Search..." 
+                                style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: 13, outline: 'none', width: '100%' }} 
+                              />
+                            </div>
+                            <div style={{ maxHeight: 250, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }} className="custom-scrollbar">
+                              {usersSnapshot?.docs
+                                .filter((d: any) => {
+                                  const data = d.data();
+                                  const search = userSearchQuery.toLowerCase();
+                                  return data.name?.toLowerCase().includes(search) || data.email?.toLowerCase().includes(search);
+                                })
+                                .map((d: any) => (
+                                  <button
+                                    key={d.id}
+                                    type="button"
+                                    onClick={() => addEmailToField(d.data().email, field.id as any)}
+                                    style={{ textAlign: 'left', padding: '12px 14px', borderRadius: 12, border: 'none', background: 'transparent', cursor: 'pointer', transition: 'all 200ms' }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                  >
+                                    <span style={{ fontSize: 13, fontWeight: 900, color: '#ffffff', display: 'block' }}>{d.data().name}</span>
+                                    <span style={{ fontSize: 11, color: field.accent, opacity: 0.8 }}>{d.data().email}</span>
+                                  </button>
+                                ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 16 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Subject Line</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 20 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Subject Line</label>
                 <input
                   value={mailSubject}
                   onChange={(e) => setMailSubject(e.target.value)}
-                  placeholder="Enter official subject..."
-                  style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
+                  placeholder="Official dispatch subject..."
+                  style={{ padding: '14px 20px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border)', borderRadius: 14, color: '#ffffff', fontSize: 15, outline: 'none', transition: 'all 300ms' }}
+                  onFocus={e => e.currentTarget.style.borderColor = 'var(--teal)'}
+                  onBlur={e => e.currentTarget.style.borderColor = 'var(--border)'}
                 />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Category</label>
-                <select
-                  value={mailCategory}
-                  onChange={(e) => setMailCategory(e.target.value)}
-                  style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
-                >
-                  <option value="ANNOUNCEMENT">SYSTEM ANNOUNCEMENT</option>
-                  <option value="NEWS">PROJECT NEWS FEED</option>
-                  <option value="SECURITY">SECURITY ADVISORY</option>
-                  <option value="URGENT">URGENT ACTION REQUIRED</option>
-                </select>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Dispatch Priority</label>
+                <div style={{ position: 'relative' }}>
+                  <select
+                    value={mailCategory}
+                    onChange={(e) => setMailCategory(e.target.value)}
+                    style={{ width: '100%', padding: '14px 20px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border)', borderRadius: 14, color: '#ffffff', fontSize: 15, outline: 'none', appearance: 'none' }}
+                  >
+                    <option value="ANNOUNCEMENT">SYSTEM ANNOUNCEMENT</option>
+                    <option value="NEWS">PROJECT NEWS FEED</option>
+                    <option value="SECURITY">SECURITY ADVISORY</option>
+                    <option value="URGENT">URGENT ACTION REQUIRED</option>
+                  </select>
+                </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Communication Payload (Body)</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Communication Payload (Body)</label>
               <textarea
                 value={mailBody}
                 onChange={(e) => setMailBody(e.target.value)}
-                placeholder="Draft your professional message here..."
-                rows={3}
-                style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none', resize: 'none' }}
+                placeholder="Draft your professional industrial dispatch here..."
+                rows={4}
+                style={{ 
+                  padding: '16px 20px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border)', 
+                  borderRadius: 16, color: '#ffffff', fontSize: 15, outline: 'none', resize: 'none', 
+                  lineHeight: '1.7', transition: 'all 300ms' 
+                }}
+                onFocus={e => e.currentTarget.style.borderColor = 'var(--teal)'}
+                onBlur={e => e.currentTarget.style.borderColor = 'var(--border)'}
               />
             </div>
 
             <button
               disabled={loading}
               style={{
-                marginTop: 8, padding: '12px 32px', background: 'var(--teal)', color: '#ffffff',
-                border: 'none', borderRadius: 12, fontWeight: 900, fontSize: 14,
-                cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                boxShadow: 'var(--shadow-premium)', letterSpacing: '0.1em', textTransform: 'uppercase', width: 'fit-content', alignSelf: 'center'
+                marginTop: 10, padding: '16px 40px', background: 'var(--teal)', color: '#050a0b',
+                border: 'none', borderRadius: 16, fontWeight: 900, fontSize: 15,
+                cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                boxShadow: '0 15px 40px rgba(0, 242, 255, 0.2)', letterSpacing: '0.2em', textTransform: 'uppercase', width: 'fit-content', alignSelf: 'center',
+                transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
+              onMouseEnter={e => {
+                if (!loading) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 20px 50px rgba(0, 242, 255, 0.3)';
+                }
+              }}
+              onMouseLeave={e => {
+                if (!loading) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 15px 40px rgba(0, 242, 255, 0.2)';
+                }
               }}
             >
-              {loading ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+              {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
               Authorize SMTP Dispatch
             </button>
           </form>
@@ -1580,30 +1609,30 @@ export default function AdminDashboardPage() {
         <aside style={{ 
           width: 280, 
           minWidth: 280,
-          background: 'var(--teal)', 
-          borderRight: '1px solid var(--border)', 
+          background: '#0a1112', 
+          borderRight: '1px solid rgba(0, 242, 255, 0.1)', 
           display: 'flex', 
           flexDirection: 'column', 
           height: '100vh',
           zIndex: 150,
-          boxShadow: '4px 0 20px rgba(0,63,73,0.1)',
+          boxShadow: '10px 0 40px rgba(0,0,0,0.4)',
           flexShrink: 0
         }}>
-          <div style={{ padding: '32px', textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
-                <div>
-                  <h1 style={{ fontSize: 13, fontWeight: 900, color: '#F9F8F2', margin: '0 0 4px 0', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'var(--font-heading)' }}>Admin Portal</h1>
-                  <span style={{ fontSize: 9, color: 'var(--sunlit-rock)', fontWeight: 800, letterSpacing: '0.2em' }}>DIGITAL REPORTING</span>
+          <div style={{ padding: '32px 24px', textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                  <h1 style={{ fontSize: 13, fontWeight: 900, color: '#ffffff', margin: 0, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: 'var(--font-heading)' }}>Admin Portal</h1>
+                  <span style={{ fontSize: 9, color: 'var(--teal)', fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Digital Architecture</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, width: '100%', padding: '0 24px' }}>
-                  <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 18, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 1 }} />
-                  <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.2)' }} />
-                  <img src="/logos/insite_logo.png" alt="Insite" style={{ height: 18, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 1 }} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, width: '100%', padding: '12px 24px', background: 'rgba(0,0,0,0.3)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 16, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.9 }} />
+                  <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.1)' }} />
+                  <img src="/logos/insite_logo.png" alt="Insite" style={{ height: 16, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.9 }} />
                 </div>
             </div>
           </div>
 
-          <nav className="custom-scrollbar" style={{ flex: 1, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <nav className="custom-scrollbar" style={{ flex: 1, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
             {[
               { id: 'tasks', label: 'Deliverable Matrix', icon: BarChart3, permission: 'tasks' },
               { id: 'bim-reviews', label: 'BIM Review Matrix', icon: Layers, permission: 'bimReviews' },
@@ -1622,24 +1651,25 @@ export default function AdminDashboardPage() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 14,
-                    background: isActive ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                    color: isActive ? '#ffffff' : 'rgba(255,255,255,0.6)',
-                    border: 'none', cursor: 'pointer', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                    display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 16,
+                    background: isActive ? 'rgba(0, 242, 255, 0.08)' : 'transparent',
+                    color: isActive ? 'var(--teal)' : 'rgba(255,255,255,0.5)',
+                    border: isActive ? '1px solid rgba(0, 242, 255, 0.2)' : '1px solid transparent', 
+                    cursor: 'pointer', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                     width: '100%', textAlign: 'left', position: 'relative', overflow: 'hidden'
                   }}
                 >
                   <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <tab.icon size={20} style={{ opacity: isActive ? 1 : 0.6, color: isActive ? '#ffffff' : 'inherit' }} />
-                    <span style={{ fontSize: 14, fontWeight: isActive ? 800 : 500, letterSpacing: isActive ? '0.02em' : 'normal' }}>{tab.label}</span>
+                    <tab.icon size={18} style={{ opacity: isActive ? 1 : 0.6, color: isActive ? 'var(--teal)' : 'inherit' }} />
+                    <span style={{ fontSize: 13, fontWeight: isActive ? 800 : 500, letterSpacing: isActive ? '0.05em' : 'normal' }}>{tab.label}</span>
                   </div>
                   {isActive && (
                     <motion.div
                       layoutId="nav-active"
                       initial={false}
                       style={{
-                        position: 'absolute', left: 0, top: '20%', bottom: '20%', width: 3, background: 'var(--aqua)', borderRadius: '0 4px 4px 0',
-                        boxShadow: '0 0 10px rgba(0, 204, 255, 0.5)'
+                        position: 'absolute', left: 0, top: '15%', bottom: '15%', width: 3, background: 'var(--teal)', borderRadius: '0 4px 4px 0',
+                        boxShadow: '0 0 15px rgba(0, 242, 255, 0.6)'
                       }}
                     />
                   )}
@@ -1648,14 +1678,14 @@ export default function AdminDashboardPage() {
             })}
           </nav>
 
-          <div style={{ padding: '32px 24px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ padding: '24px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
             <button
               onClick={() => setIsLogoutConfirmOpen(true)}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '16px',
-                borderRadius: 14, background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.2)',
-                color: '#ffffff', fontSize: 13, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms',
-                letterSpacing: '0.1em', textTransform: 'uppercase'
+                borderRadius: 16, background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)',
+                color: '#ef4444', fontSize: 12, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms',
+                letterSpacing: '0.15em', textTransform: 'uppercase'
               }}
             >
               <LogOut size={18} />
@@ -1664,12 +1694,12 @@ export default function AdminDashboardPage() {
           </div>
         </aside>
 
-        <div className="admin-dashboard-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100vh', overflow: 'hidden', background: 'var(--cotton)', backgroundImage: 'radial-gradient(var(--border) 1px, transparent 1px)', backgroundSize: '24px 24px', backgroundPosition: 'center center' }}>
+        <div className="admin-dashboard-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100vh', overflow: 'hidden', background: 'var(--background)', backgroundImage: 'radial-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px)', backgroundSize: '32px 32px', backgroundPosition: 'center center' }}>
           <header style={{
             height: 72, 
-            background: 'rgba(255, 255, 255, 0.7)', 
-            backdropFilter: 'blur(20px)',
-            borderBottom: '1px solid var(--border)', 
+            background: 'rgba(5, 10, 11, 0.8)', 
+            backdropFilter: 'blur(30px)',
+            borderBottom: '1px solid rgba(0, 242, 255, 0.1)', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'space-between', 
@@ -1681,11 +1711,11 @@ export default function AdminDashboardPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <h2 style={{ 
-                  fontSize: 15, 
+                  fontSize: 14, 
                   fontWeight: 900, 
                   margin: 0, 
-                  color: 'var(--text-primary)', 
-                  letterSpacing: '0.18em', 
+                  color: '#ffffff', 
+                  letterSpacing: '0.25em', 
                   textTransform: 'uppercase', 
                   fontFamily: 'var(--font-heading)' 
                 }}>
@@ -1695,13 +1725,12 @@ export default function AdminDashboardPage() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-              {/* Partner Logos moved to Sidebar */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
-                  <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 800 }}>{userProfile?.name || 'Administrator'}</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{userProfile?.role || 'ADMIN'}</div>
+                  <div style={{ fontSize: 13, color: '#ffffff', fontWeight: 800, letterSpacing: '0.02em' }}>{userProfile?.name || 'Administrator'}</div>
+                  <div style={{ fontSize: 10, color: 'var(--teal)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{userProfile?.role || 'ADMIN'}</div>
                 </div>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--teal)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--teal)', color: '#050a0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, boxShadow: '0 0 20px rgba(0, 242, 255, 0.3)' }}>
                   {userProfile?.name?.charAt(0)}
                 </div>
               </div>
@@ -1714,7 +1743,7 @@ export default function AdminDashboardPage() {
             overflowY: 'auto', 
             overflowX: 'hidden', 
             height: 'calc(100vh - 72px)',
-            background: 'var(--cotton)' 
+            background: 'transparent' 
           }}>
             <AnimatePresence mode="wait">
               <motion.div
@@ -1722,19 +1751,19 @@ export default function AdminDashboardPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               >
                 <GlassCard padding="none">
-                  <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>
+                  <div style={{ padding: '32px 40px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)' }}>
+                    <div>
+                      <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: '#ffffff', letterSpacing: '0.02em' }}>
                         {activeTab === 'tasks' ? 'Digital Deliverable Matrix' : activeTab === 'bim-reviews' ? 'BIM Review Intelligence Matrix' : activeTab === 'team' ? 'Active Digital Project Team' : activeTab === 'registry' ? 'Digital Asset Registry Index' : activeTab === 'branding' ? 'Project Identity & Branding' : activeTab === 'communications' ? 'Elite Communications Hub' : 'Security Access Registry'}
                       </h2>
-
-                      <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 6, fontWeight: 500, letterSpacing: '0.01em' }}>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 8, fontWeight: 500, letterSpacing: '0.01em' }}>
                         {activeTab === 'bim-reviews' ? 'Strategic oversight of cross-project BIM submission reviews and status tracking' : activeTab === 'users' ? 'Management of security clearances and administrative roles' : activeTab === 'branding' ? 'Configuration of project branding and site-wide metadata' : activeTab === 'communications' ? 'Dispatch real-time broadcasts and premium SMTP mail notifications' : 'Real-time synchronization with Digital Workflow Systems'}
                       </p>
-
                     </div>
+                  </div>
 
                     <div style={{ display: 'flex', gap: 12 }}>
                       {activeTab === 'users' && userProfile?.isAdmin && (
