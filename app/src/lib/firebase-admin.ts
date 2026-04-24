@@ -17,6 +17,12 @@ function getAdminApp() {
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
       console.log('[FIREBASE_ADMIN] Using Service Account from environment');
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      
+      // Fix for private key newline characters in environment variables
+      if (serviceAccount.private_key) {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+      }
+
       return admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
         projectId: projectId

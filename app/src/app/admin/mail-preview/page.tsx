@@ -12,7 +12,10 @@ import {
   ArrowLeft,
   Monitor,
   Smartphone,
-  Lock
+  Lock,
+  Moon,
+  Sun,
+  PartyPopper
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -81,16 +84,23 @@ const TEMPLATE_CONFIG = [
     description: 'Sent when a user requests a password reset.',
     icon: Lock,
     render: () => templates.PASSWORD_RESET('Khalid Al-Mansour', 'https://rehdigital.com/reset-password?oobCode=example-token')
+  },
+  {
+    id: 'PASSWORD_RESET_SUCCESS',
+    name: 'Reset Success',
+    description: 'Congratulations mail after password change.',
+    icon: PartyPopper,
+    render: () => templates.PASSWORD_RESET_SUCCESS('Khalid Al-Mansour')
   }
 ];
 
 export default function MailPreviewPage() {
   const [activeTab, setActiveTab] = useState(TEMPLATE_CONFIG[0].id);
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const router = useRouter();
 
   const currentTemplate = TEMPLATE_CONFIG.find(t => t.id === activeTab);
-  // Templates are now self-contained — no CID substitution needed
   const htmlContent = currentTemplate ? currentTemplate.render() : '';
 
   return (
@@ -159,8 +169,8 @@ export default function MailPreviewPage() {
           </div>
         </div>
 
-        {/* View Mode Toggle */}
-        <div style={{ padding: '24px', background: '#f8fafc', borderTop: '1px solid #f1f5f9' }}>
+        {/* Control Center */}
+        <div style={{ padding: '24px', background: '#f8fafc', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', gap: 10 }}>
             {(['desktop', 'mobile'] as const).map(mode => (
               <button
@@ -180,14 +190,29 @@ export default function MailPreviewPage() {
               </button>
             ))}
           </div>
+          
+          <button
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            style={{
+              width: '100%', padding: '12px', borderRadius: 10, border: '1px solid #e2e8f0',
+              background: isDarkMode ? '#1e293b' : '#ffffff',
+              color: isDarkMode ? '#f8fafc' : '#003f49',
+              cursor: 'pointer', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', gap: 8, fontSize: 11, fontWeight: 800,
+              transition: 'all 200ms'
+            }}
+          >
+            {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
+            {isDarkMode ? 'SWITCH TO LIGHT MODE' : 'SIMULATE DARK MODE'}
+          </button>
         </div>
       </div>
 
       {/* Preview Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#e8ecf0', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: isDarkMode ? '#0f172a' : '#e8ecf0', overflow: 'hidden', transition: 'background 300ms' }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '48px 40px', overflowY: 'auto' }}>
           <motion.div
-            key={`${activeTab}-${viewMode}`}
+            key={`${activeTab}-${viewMode}-${isDarkMode}`}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
@@ -198,8 +223,9 @@ export default function MailPreviewPage() {
               borderRadius: viewMode === 'mobile' ? '44px' : '20px',
               border: viewMode === 'mobile' ? '12px solid #003f49' : '1px solid #d1d5db',
               overflow: 'hidden',
-              boxShadow: '0 32px 80px rgba(0,0,0,0.15)',
-              flexShrink: 0
+              boxShadow: isDarkMode ? '0 32px 80px rgba(0,0,0,0.4)' : '0 32px 80px rgba(0,0,0,0.15)',
+              flexShrink: 0,
+              filter: isDarkMode ? 'brightness(0.95) contrast(1.05)' : 'none'
             }}
           >
             {viewMode === 'mobile' && (
@@ -213,14 +239,14 @@ export default function MailPreviewPage() {
 
         {/* Status Bar */}
         <div style={{
-          padding: '16px 36px', background: '#ffffff', borderTop: '1px solid #e2e8f0',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+          padding: '16px 36px', background: isDarkMode ? '#1e293b' : '#ffffff', borderTop: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'all 300ms'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981' }} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#003f49' }}>Zero-Attachment Architecture Active</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: isDarkMode ? '#f8fafc' : '#003f49' }}>Zero-Attachment Architecture Active</span>
           </div>
-          <div style={{ display: 'flex', gap: 20, fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>
+          <div style={{ display: 'flex', gap: 20, fontSize: 11, color: isDarkMode ? '#94a3b8' : '#94a3b8', fontWeight: 600 }}>
             <span>RFC 5322 Compliant</span>
             <span>TLS 1.3 Encryption</span>
             <span>Zoho SMTP</span>

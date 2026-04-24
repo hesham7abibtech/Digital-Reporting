@@ -19,12 +19,12 @@ import { useTimeZone } from '@/context/TimeZoneContext';
 
 /* ── Color Palette (Strictly Brand Aligned) ── */
 const CHART_COLORS = [
+  '#003f49', /* Corporate Teal */
   '#C5A059', /* Sunlit Rock Gold */
   '#70ADC4', /* Mid Blue */
-  '#B0B540', /* Mid Green */
+  '#003f49', /* Dark Teal */
   '#FF7908', /* Dark Orange */
   '#984495', /* Dark Purple */
-  '#526136', /* Dark Green */
   '#FF4C4F'  /* Dark Pink */
 ];
 
@@ -600,7 +600,7 @@ export default function AnalyticsDashboardView({
     if (categoryData.length > 0) {
       const top = categoryData[0];
       const pct = tasks.length > 0 ? ((top.value / tasks.length) * 100).toFixed(0) : 0;
-      result.push({ icon: <Trophy size={16} />, text: `${top.name || 'Unknown'} leads with ${pct}% of total deliverables (${top.value} submissions)`, color: '#10b981', type: 'success' });
+      result.push({ icon: <Trophy size={16} />, text: `${top.name || 'Unknown'} leads with ${pct}% of total deliverables (${top.value} submissions)`, color: '#003f49', type: 'success' });
     }
     if (submitterData.length > 0) {
       const top = submitterData[0];
@@ -616,7 +616,7 @@ export default function AnalyticsDashboardView({
       result.push({ icon: <CloudCog size={16} />, text: `${top.name} is the primary CDE environment, used in ${pct}% of deliverables`, color: '#06b6d4', type: 'info' });
     }
     if (kpiStats.growthTrend === 'up') {
-      result.push({ icon: <Zap size={16} />, text: `Deliverables grew ${kpiStats.growthPct}% compared to the previous period`, color: '#10b981', type: 'success' });
+      result.push({ icon: <Zap size={16} />, text: `Deliverables grew ${kpiStats.growthPct}% compared to the previous period`, color: '#003f49', type: 'success' });
     } else if (kpiStats.growthTrend === 'down') {
       result.push({ icon: <TrendingDown size={16} />, text: `Deliverables decreased ${kpiStats.growthPct}% compared to the previous period`, color: '#f43f5e', type: 'warning' });
     }

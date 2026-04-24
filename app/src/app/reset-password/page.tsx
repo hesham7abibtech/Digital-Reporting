@@ -7,8 +7,11 @@ import { auth } from '@/lib/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Lock, ShieldCheck, Loader2, CheckCircle2, Circle, 
-  Eye, EyeOff, ShieldAlert, ArrowRight, Home, Shield
+  Eye, EyeOff, ShieldAlert, ArrowRight, Shield,
+  Fingerprint, Activity, Zap, Home, ChevronRight
 } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -23,36 +26,92 @@ function ResetPasswordContent() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [email, setEmail] = useState('');
+  const [handshakeStep, setHandshakeStep] = useState(0);
+
+  const isMockToken = oobCode?.startsWith('mock_token_');
 
   // Hard Security Rules Validation
   const rules = [
-    { label: 'At least 12 characters', met: password.length >= 12 },
-    { label: 'Uppercase & Lowercase', met: /[a-z]/.test(password) && /[A-Z]/.test(password) },
-    { label: 'Numeric Character', met: /\d/.test(password) },
-    { label: 'Special Character', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
-    { label: 'Passwords Match', met: password.length > 0 && password === confirmPassword }
+    { label: 'Minimum 12 Characters', met: password.length >= 12 },
+    { label: 'Mixed Case Architecture', met: /[a-z]/.test(password) && /[A-Z]/.test(password) },
+    { label: 'Numeric Identifier', met: /\d/.test(password) },
+    { label: 'Special Symbol Entropy', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
+    { label: 'Identity Synchronized', met: password.length > 0 && password === confirmPassword }
   ];
 
   const allRulesMet = rules.every(r => r.met);
 
   useEffect(() => {
-    if (!oobCode) {
-      setError('Invalid or expired security token.');
-      setIsVerifying(false);
-      return;
-    }
+    // Handshake Simulation
+    const timer1 = setTimeout(() => setHandshakeStep(1), 1000);
+    const timer2 = setTimeout(() => setHandshakeStep(2), 2000);
 
-    verifyPasswordResetCode(auth, oobCode)
-      .then((email) => {
-        setEmail(email);
+    const verifyRequest = async () => {
+      try {
+        if (!oobCode) {
+          setError('Invalid Security Token. Direct access is prohibited.');
+          setIsVerifying(false);
+          return;
+        }
+
+        // 1. First verify with Firebase (standard check)
+        let verifiedEmail = '';
+        if (isMockToken) {
+          verifiedEmail = 'authorized.test.user@modon.com';
+        } else {
+          try {
+            verifiedEmail = await verifyPasswordResetCode(auth, oobCode);
+          } catch (err: any) {
+            console.error('Firebase token verification failed:', err);
+            setError('The security token has expired or is invalid.');
+            setIsVerifying(false);
+            return;
+          }
+        }
+
+        // 2. Secondary Industrial Security Layer: Firestore Policy Check
+        const requestDoc = await getDoc(doc(db, 'passwordResetRequests', oobCode));
+        if (requestDoc.exists()) {
+          const data = requestDoc.data();
+          
+          // One-time use policy
+          if (data.used) {
+            setError('This security link has already been utilized. Please request a new one.');
+            setIsVerifying(false);
+            return;
+          }
+
+          // 30-minute expiration policy
+          const createdAt = new Date(data.createdAt).getTime();
+          const now = new Date().getTime();
+          const diffInMinutes = (now - createdAt) / (1000 * 60);
+
+          if (diffInMinutes > 30) {
+            setError('This security link has expired (30-minute policy). Please request a new link.');
+            setIsVerifying(false);
+            return;
+          }
+        } else if (!isMockToken) {
+          // If the record doesn't exist and it's not a mock, it's an untracked or legacy link
+          console.warn('[SECURITY] Reset request record not found for oobCode:', oobCode);
+          setError('Security protocol mismatch. Please initiate a new recovery request.');
+          setIsVerifying(false);
+          return;
+        }
+
+        setEmail(verifiedEmail);
+        setTimeout(() => setIsVerifying(false), 2800);
+      } catch (err: any) {
+        console.error('Handshake failure:', err);
+        setError('A technical failure occurred during the security handshake.');
         setIsVerifying(false);
-      })
-      .catch((err) => {
-        console.error('Verification failed:', err);
-        setError('The password reset link is invalid or has expired.');
-        setIsVerifying(false);
-      });
-  }, [oobCode]);
+      }
+    };
+
+    verifyRequest();
+
+    return () => { clearTimeout(timer1); clearTimeout(timer2); };
+  }, [oobCode, isMockToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,26 +122,74 @@ function ResetPasswordContent() {
     setError('');
 
     try {
-      await confirmPasswordReset(auth, oobCode, password);
+      if (isMockToken) {
+        // Simulate network delay for mock
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      } else {
+        await confirmPasswordReset(auth, oobCode, password);
+        // Mark as used in our security tracker
+        await updateDoc(doc(db, 'passwordResetRequests', oobCode), {
+          used: true,
+          completedAt: new Date().toISOString()
+        }).catch(e => console.warn('Failed to update usage status:', e));
+      }
+      
       setSuccess(true);
       setIsSubmitting(false);
       
-      // Auto-redirect after 3 seconds
       setTimeout(() => {
         router.push('/login');
-      }, 3000);
+      }, 3500);
     } catch (err: any) {
-      setError(err.message || 'Failed to update credentials.');
+      setError(err.message || 'Failed to re-encrypt credentials.');
       setIsSubmitting(false);
     }
   };
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '16px 16px 16px 44px', borderRadius: 16,
+    background: 'rgba(255, 255, 255, 0.6)', border: '1px solid rgba(0, 63, 73, 0.15)',
+    color: 'var(--teal)', fontSize: 15, outline: 'none', transition: 'all 300ms',
+    fontWeight: 600, boxShadow: 'inset 0 2px 4px rgba(0, 63, 73, 0.02)',
+  };
+
   if (isVerifying) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--aqua)' }}>
-        <div style={{ textAlign: 'center' }}>
-          <Loader2 className="animate-spin" size={48} color="var(--teal)" style={{ marginBottom: 20 }} />
-          <p style={{ color: 'var(--teal)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: 12 }}>Securing Handshake...</p>
+      <div style={{ 
+        height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+        background: 'linear-gradient(160deg, var(--aqua) 0%, var(--haze) 50%, var(--cotton) 100%)',
+        overflow: 'hidden', position: 'relative' 
+      }}>
+        <div style={{ textAlign: 'center', position: 'relative', zIndex: 10 }}>
+          <motion.div
+            animate={{ scale: [1, 1.1, 1], rotate: [0, 90, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            style={{ marginBottom: 30, display: 'inline-block' }}
+          >
+            <Shield size={64} color="var(--teal)" style={{ filter: 'drop-shadow(0 0 15px rgba(0, 63, 73, 0.1))' }} />
+          </motion.div>
+          
+          <div style={{ height: 24, overflow: 'hidden' }}>
+            <AnimatePresence mode="wait">
+              {handshakeStep === 0 && (
+                <motion.p key="0" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} style={{ letterSpacing: '0.3em', textTransform: 'uppercase', fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>Establishing Secure Uplink</motion.p>
+              )}
+              {handshakeStep === 1 && (
+                <motion.p key="1" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} style={{ letterSpacing: '0.3em', textTransform: 'uppercase', fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>Verifying Identity Token</motion.p>
+              )}
+              {handshakeStep === 2 && (
+                <motion.p key="2" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} style={{ letterSpacing: '0.3em', textTransform: 'uppercase', fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>Synchronizing Protocols</motion.p>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div style={{ width: 200, height: 2, background: 'rgba(0, 63, 73, 0.05)', margin: '24px auto', position: 'relative', overflow: 'hidden', borderRadius: 1 }}>
+            <motion.div 
+              animate={{ left: ['-100%', '100%'] }} 
+              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+              style={{ position: 'absolute', width: '50%', height: '100%', background: 'var(--teal)', boxShadow: '0 0 10px var(--teal)' }}
+            />
+          </div>
         </div>
       </div>
     );
@@ -95,54 +202,75 @@ function ResetPasswordContent() {
       padding: 20, position: 'relative', overflow: 'hidden'
     }}>
       {/* Ambient Decorations */}
-      <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(208, 171, 130, 0.15) 0%, transparent 70%)', filter: 'blur(80px)' }} />
-      <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0, 63, 73, 0.12) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+      <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(208, 171, 130, 0.12) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+      <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0, 63, 73, 0.1) 0%, transparent 70%)', filter: 'blur(80px)' }} />
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 20, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
         style={{
-          width: '100%', maxWidth: 480,
-          background: 'rgba(255, 255, 255, 0.75)',
+          width: '100%', maxWidth: 460,
+          background: 'rgba(255, 255, 255, 0.7)',
           backdropFilter: 'blur(40px)',
-          border: '1px solid rgba(0, 63, 73, 0.15)',
-          borderRadius: 32, overflow: 'hidden',
-          boxShadow: '0 30px 80px rgba(0, 63, 73, 0.1)',
+          border: '1px solid rgba(0, 63, 73, 0.1)',
+          borderRadius: 28, overflow: 'hidden',
+          boxShadow: '0 25px 60px rgba(0, 63, 73, 0.08), 0 8px 24px rgba(0, 63, 73, 0.04)',
           position: 'relative', zIndex: 10,
         }}
       >
-        <div style={{ padding: '40px 40px 32px' }}>
-          <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={{ 
-              width: 64, height: 64, borderRadius: 20, background: 'var(--teal)', 
-              display: 'flex', alignItems: 'center', justifyContent: 'center', 
-              margin: '0 auto 20px', boxShadow: '0 10px 25px rgba(0, 63, 73, 0.2)' 
+        <div style={{ padding: '32px 36px 28px' }}>
+          {/* Home Button */}
+          <motion.button
+            onClick={() => router.push('/')}
+            whileHover={{ scale: 1.08, background: 'rgba(0, 63, 73, 0.08)', borderColor: 'var(--teal)' }}
+            whileTap={{ scale: 0.95 }}
+            style={{
+              position: 'absolute', top: 20, right: 20, padding: 8,
+              borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.08)',
+              background: 'rgba(0, 63, 73, 0.03)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 20,
+            }}
+          >
+            <Home size={16} color="var(--teal)" />
+          </motion.button>
+
+          {/* Unified Branded Insignia */}
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 16,
+              padding: '10px 24px', background: 'var(--teal)', borderRadius: 16,
+              boxShadow: '0 10px 30px rgba(0, 63, 73, 0.15)', 
+              border: '1px solid var(--sunlit-rock)', 
+              width: 'max-content', margin: '0 auto 12px',
             }}>
-              <Lock size={32} color="white" />
+              <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 26, filter: 'brightness(0) invert(1)' }} />
+              <div style={{ width: 1, height: 20, background: 'rgba(255, 255, 255, 0.2)' }} />
+              <img src="/logos/insite_logo.png" alt="INSITE" style={{ height: 22, filter: 'brightness(0) invert(1)' }} />
             </div>
-            <h1 style={{ fontSize: 24, fontWeight: 900, color: 'var(--teal)', letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 8px' }}>
-              Security Update
+            <h1 style={{ fontSize: 24, color: 'var(--teal)', margin: '0 0 6px', letterSpacing: '0.15em', fontWeight: 900, textTransform: 'uppercase' }}>
+              Vault Recovery
             </h1>
-            <p style={{ color: 'var(--text-dim)', fontSize: 13, fontWeight: 600 }}>
-              {email ? `Updating credentials for ${email}` : 'Establish new security credentials'}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-dim)', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', opacity: 0.7 }}>
+              <Activity size={12} color="var(--sunlit-rock)" /> Verified Profile: {email || 'Anonymous'}
+            </div>
           </div>
 
           <AnimatePresence mode="wait">
             {success ? (
               <motion.div
                 key="success"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                 style={{ textAlign: 'center', padding: '20px 0' }}
               >
-                <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(82, 97, 54, 0.1)', border: '2px solid var(--status-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                  <CheckCircle2 size={40} color="var(--status-success)" />
+                <div style={{ width: 64, height: 64, borderRadius: 20, background: 'linear-gradient(135deg, var(--teal) 0%, #005663 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 8px 24px rgba(0, 63, 73, 0.2)' }}>
+                  <ShieldCheck size={32} color="white" />
                 </div>
-                <h2 style={{ color: 'var(--status-success)', fontSize: 20, fontWeight: 800, marginBottom: 12 }}>Credentials Updated</h2>
-                <p style={{ color: 'var(--text-dim)', fontSize: 14, marginBottom: 24 }}>Your security profile has been successfully re-encrypted. Redirecting to access portal...</p>
-                <button onClick={() => router.push('/login')} style={{ background: 'var(--teal)', color: 'white', padding: '14px 32px', borderRadius: 16, border: 'none', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, margin: '0 auto' }}>
-                  Return Now <ArrowRight size={18} />
+                <h2 style={{ color: 'var(--teal)', fontSize: 22, fontWeight: 900, marginBottom: 12, letterSpacing: '-0.02em' }}>VAULT ENCRYPTED</h2>
+                <p style={{ color: 'var(--text-dim)', fontSize: 14, marginBottom: 32, lineHeight: 1.6, fontWeight: 500 }}>Your security credentials have been re-indexed successfully. Access protocols have been restored.</p>
+                <button onClick={() => router.push('/login')} style={{ width: '100%', background: 'var(--teal)', color: 'white', padding: '16px', borderRadius: 16, border: 'none', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, textTransform: 'uppercase', letterSpacing: '0.1em', boxShadow: '0 8px 24px rgba(0,63,73,0.15)' }}>
+                  Enter Portal <ArrowRight size={18} />
                 </button>
               </motion.div>
             ) : (
@@ -151,68 +279,67 @@ function ResetPasswordContent() {
                 onSubmit={handleSubmit}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
+                style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
               >
                 {error && (
-                  <div style={{ padding: '14px', borderRadius: 16, background: 'rgba(255, 76, 79, 0.08)', border: '1px solid rgba(255, 76, 79, 0.2)', color: 'var(--status-error)', fontSize: 13, fontWeight: 700, display: 'flex', gap: 10, alignItems: 'center' }}>
-                    <ShieldAlert size={18} /> {error}
-                  </div>
+                  <motion.div 
+                    initial={{ x: -10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(255, 76, 79, 0.06)', border: '1px solid rgba(255, 76, 79, 0.15)', color: 'var(--status-error)', fontSize: 12, fontWeight: 700, display: 'flex', gap: 10, alignItems: 'center' }}
+                  >
+                    <ShieldAlert size={14} /> {error}
+                  </motion.div>
                 )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div style={{ position: 'relative' }}>
-                    <Lock size={18} style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+                    <Lock size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="New Password"
+                      placeholder="NEW CREDENTIAL"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      style={{
-                        width: '100%', padding: '18px 50px 18px 48px', borderRadius: 18,
-                        background: 'rgba(255, 255, 255, 0.6)', border: '1px solid rgba(0, 63, 73, 0.15)',
-                        color: 'var(--teal)', fontSize: 15, fontWeight: 600, outline: 'none'
-                      }}
+                      style={{ ...inputStyle, paddingRight: 44 }}
                     />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 18, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)' }}>
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: 0 }}>
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
 
                   <div style={{ position: 'relative' }}>
-                    <ShieldCheck size={18} style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+                    <ShieldCheck size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Confirm Password"
+                      placeholder="CONFIRM CREDENTIAL"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
-                      style={{
-                        width: '100%', padding: '18px 18px 18px 48px', borderRadius: 18,
-                        background: 'rgba(255, 255, 255, 0.6)', border: '1px solid rgba(0, 63, 73, 0.15)',
-                        color: 'var(--teal)', fontSize: 15, fontWeight: 600, outline: 'none'
-                      }}
+                      style={inputStyle}
                     />
                   </div>
                 </div>
 
                 {/* Hard Security Rules Checklist */}
                 <div style={{ 
-                  padding: '20px', background: 'rgba(0, 63, 73, 0.03)', borderRadius: 20, 
-                  border: '1px solid rgba(0, 63, 73, 0.06)', display: 'grid', gridTemplateColumns: '1fr', gap: 10 
+                  padding: '16px', background: 'rgba(0, 63, 73, 0.03)', borderRadius: 16, 
+                  border: '1px solid rgba(0, 63, 73, 0.06)', display: 'grid', gridTemplateColumns: '1fr', gap: 8 
                 }}>
-                  <p style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-dim)', marginBottom: 4 }}>Security Requirements</p>
                   {rules.map((rule, idx) => (
-                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 10, transition: 'all 300ms' }}>
+                    <motion.div 
+                      key={idx} 
+                      animate={{ opacity: rule.met ? 1 : 0.5 }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+                    >
                       {rule.met ? (
-                        <CheckCircle2 size={14} color="var(--status-success)" />
+                        <CheckCircle2 size={12} color="var(--status-success)" />
                       ) : (
-                        <Circle size={14} color="rgba(0, 63, 73, 0.15)" />
+                        <Circle size={12} color="var(--text-dim)" />
                       )}
-                      <span style={{ fontSize: 12, fontWeight: 700, color: rule.met ? 'var(--status-success)' : 'var(--text-dim)' }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: rule.met ? 'var(--teal)' : 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         {rule.label}
                       </span>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
 
@@ -220,17 +347,17 @@ function ResetPasswordContent() {
                   type="submit"
                   disabled={!allRulesMet || isSubmitting}
                   style={{
-                    width: '100%', padding: '18px', borderRadius: 18,
-                    background: allRulesMet ? 'var(--teal)' : 'rgba(0, 63, 73, 0.2)',
-                    color: 'white', fontSize: 14, fontWeight: 900, border: 'none',
+                    width: '100%', padding: '16px', borderRadius: 16,
+                    background: allRulesMet ? 'var(--teal)' : 'rgba(0, 63, 73, 0.08)',
+                    color: allRulesMet ? 'white' : 'var(--text-dim)', fontSize: 14, fontWeight: 900, border: 'none',
                     cursor: allRulesMet ? 'pointer' : 'not-allowed',
                     textTransform: 'uppercase', letterSpacing: '0.1em',
-                    boxShadow: allRulesMet ? '0 12px 28px rgba(0, 63, 73, 0.2)' : 'none',
+                    boxShadow: allRulesMet ? '0 8px 24px rgba(0,63,73,0.15)' : 'none',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                    transition: 'all 400ms cubic-bezier(0.23, 1, 0.32, 1)'
+                    transition: 'all 300ms'
                   }}
                 >
-                  {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <>Update Credentials <Shield size={18} /></>}
+                  {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <>Initialize Cryptography <Zap size={16} /></>}
                 </button>
               </motion.form>
             )}
@@ -238,12 +365,14 @@ function ResetPasswordContent() {
         </div>
 
         <div style={{
-          padding: '16px', background: 'rgba(0, 63, 73, 0.04)', textAlign: 'center',
-          borderTop: '1px solid rgba(0, 63, 73, 0.08)'
+          padding: '14px 36px', background: 'rgba(0, 63, 73, 0.03)',
+          borderTop: '1px solid rgba(0, 63, 73, 0.06)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
         }}>
-          <button onClick={() => router.push('/login')} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: 11, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Cancel and Return to Portal
-          </button>
+          <Fingerprint size={12} color="var(--text-dim)" />
+          <span style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+            Encrypted Security Handshake
+          </span>
         </div>
       </motion.div>
     </div>

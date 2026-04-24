@@ -34,6 +34,8 @@ export async function POST(req: NextRequest) {
         result = await mailService.sendAccountApproved(to, payload.name);
         break;
 
+      case 'CUSTOM':
+      case 'CUSTOM_NOTIFICATION':
         result = await mailService.sendCustomNotification(
           to,
           { title: payload.title, body: payload.body, category: payload.category },

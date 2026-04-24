@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase-admin';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { mailService } from '@/services/MailService';
 
 /**
@@ -59,9 +59,24 @@ export async function POST(req: NextRequest) {
       console.warn(`[RESET_LINK] Using MOCK token for development: ${oobCode}`);
     }
 
-    const customResetLink = `https://rehdigital.com/reset-password?oobCode=${oobCode}`;
+    // 3. Track request for 30-min expiration and one-time use policy
+    if (adminDb) {
+      try {
+        await adminDb.collection('passwordResetRequests').doc(oobCode).set({
+          email,
+          createdAt: new Date().toISOString(),
+          used: false,
+          ip: req.headers.get('x-forwarded-for') || 'unknown'
+        });
+      } catch (err) {
+        console.warn('[RESET_LINK] Failed to track request in Firestore:', err);
+      }
+    }
 
-    // 3. Dispatch the Ultra-Elite fancy email
+    const origin = req.headers.get('origin') || 'https://rehdigital.com';
+    const customResetLink = `${origin}/reset-password?oobCode=${oobCode}`;
+
+    // 4. Dispatch the Ultra-Elite fancy email
     await mailService.sendPasswordReset(email, displayName, customResetLink);
 
     console.log(`[RESET_LINK] Dispatched custom reset email to: ${email}`);

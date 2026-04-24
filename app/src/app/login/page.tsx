@@ -793,8 +793,10 @@ function LoginContent() {
               <div style={{ width: 64, height: 64, borderRadius: 18, background: 'linear-gradient(135deg, var(--sunlit-rock) 0%, #a08050 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                 <Mail size={32} color="white" />
               </div>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--teal)', margin: '0 0 10px' }}>Reset Link Sent</h2>
-              <p style={{ color: 'var(--text-dim)', fontSize: 14, lineHeight: 1.6, margin: '0 0 16px' }}>Check your email for the password reset link.</p>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--teal)', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Security Link Dispatched</h2>
+              <p style={{ color: 'var(--text-dim)', fontSize: 14, lineHeight: 1.6, margin: '0 0 20px', fontWeight: 500 }}>
+                A secure recovery protocol has been initiated. Please check your **Inbox** or **Junk/Spam** folders for further instructions.
+              </p>
               <button onClick={() => { setShowResetSuccess(false); setMode('login'); setEmail(''); }} style={{ width: '100%', padding: '14px', borderRadius: 14, background: 'var(--teal)', color: 'var(--cotton)', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                 Back to Sign In
               </button>

@@ -75,7 +75,6 @@ class MailService {
         bcc: options.bcc,
         subject: options.subject,
         html: options.html,
-        // No attachments — zero files sent
       });
       console.log(`[MAIL_SERVICE] [${options.type}] Dispatch successful: ${info.messageId}`);
       return { success: true, messageId: info.messageId };
@@ -90,7 +89,7 @@ class MailService {
       type: 'VERIFICATION',
       to,
       subject: 'REH Digital Reporting — Registration Received',
-      html: templates.REGISTRATION_PENDING(name),
+      html: templates.REGISTRATION_PENDING(name, to),
     });
   }
 
@@ -108,7 +107,7 @@ class MailService {
       type: 'VERIFICATION',
       to,
       subject: 'REH Digital Reporting — Clearance Granted',
-      html: templates.ACCOUNT_APPROVED(name),
+      html: templates.ACCOUNT_APPROVED(name, to),
     });
   }
 
@@ -132,7 +131,16 @@ class MailService {
       type: 'RESET',
       to,
       subject: 'REH Digital Reset — Password Security Update',
-      html: templates.PASSWORD_RESET(name, resetLink),
+      html: templates.PASSWORD_RESET(name, to, resetLink),
+    });
+  }
+
+  async sendPasswordResetSuccess(to: string, name: string) {
+    return this.sendMail({
+      type: 'RESET',
+      to,
+      subject: 'REH Digital Reset — Security Profile Updated',
+      html: templates.PASSWORD_RESET_SUCCESS(name, to),
     });
   }
 }

@@ -36,25 +36,6 @@
   --border-hover: rgba(0, 63, 73, 0.3);
 
   --text-primary: #003f49;
-  --text-secondary: #003f49;
-  --text-muted: rgba(0, 63, 73, 0.8);
-  --text-dim: rgba(0, 63, 73, 0.65);
-  --text-on-primary: var(--cotton);
-
-  /* Status Colors (Brand Aligned) */
-  --status-success: #526136;
-  --status-warning: #FF7908;
-  --status-error: #FF4C4F;
-  --status-info: #3A547A;
-
-  /* Chart Palette (Strict) */
-  --chart-1: #526136;
-  /* Dark Green */
-  --chart-2: #B0B540;
-  /* Mid Green */
-  --chart-3: #3A547A;
-  /* Dark Blue */
-  --chart-4: #70ADC4;
   /* Mid Blue */
   --chart-5: #FF4C4F;
   /* Dark Pink */
