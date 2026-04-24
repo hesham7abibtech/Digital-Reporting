@@ -25,7 +25,7 @@ const TEMPLATE_CONFIG = [
     name: 'Registration Received',
     description: 'Sent to user after they register.',
     icon: UserPlus,
-    render: () => templates.REGISTRATION_PENDING('Khalid Al-Mansour')
+    render: () => templates.REGISTRATION_PENDING('Khalid Al-Mansour', 'k.almansour@rehdigital.com')
   },
   {
     id: 'ADMIN_NOTIFICATION',
@@ -43,7 +43,7 @@ const TEMPLATE_CONFIG = [
     name: 'Clearance Granted',
     description: 'Sent to user after their account is approved.',
     icon: CheckCircle2,
-    render: () => templates.ACCOUNT_APPROVED('Khalid Al-Mansour')
+    render: () => templates.ACCOUNT_APPROVED('Khalid Al-Mansour', 'k.almansour@rehdigital.com')
   },
   {
     id: 'CUSTOM_NEWS',
@@ -83,14 +83,14 @@ const TEMPLATE_CONFIG = [
     name: 'Security Reset',
     description: 'Sent when a user requests a password reset.',
     icon: Lock,
-    render: () => templates.PASSWORD_RESET('Khalid Al-Mansour', 'https://rehdigital.com/reset-password?oobCode=example-token')
+    render: () => templates.PASSWORD_RESET('Khalid Al-Mansour', 'k.almansour@rehdigital.com', 'https://rehdigital.com/reset-password?oobCode=example-token')
   },
   {
     id: 'PASSWORD_RESET_SUCCESS',
     name: 'Reset Success',
     description: 'Congratulations mail after password change.',
     icon: PartyPopper,
-    render: () => templates.PASSWORD_RESET_SUCCESS('Khalid Al-Mansour')
+    render: () => templates.PASSWORD_RESET_SUCCESS('Khalid Al-Mansour', 'k.almansour@rehdigital.com')
   }
 ];
 
