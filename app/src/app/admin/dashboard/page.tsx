@@ -1540,13 +1540,13 @@ export default function AdminDashboardPage() {
             style={{
               position: 'fixed', top: 90, left: '50%', transform: 'translateX(-50%)',
               zIndex: 90,
-              background: 'rgba(255, 255, 255, 0.98)',
-              backdropFilter: 'blur(20px)',
-              padding: '12px 24px',
-              borderRadius: 16,
-              border: '2px solid var(--status-error)',
+              background: 'rgba(10, 17, 18, 0.95)',
+              backdropFilter: 'blur(30px)',
+              padding: '12px 32px',
+              borderRadius: 20,
+              border: '1px solid var(--status-error)',
               display: 'flex', alignItems: 'center', gap: 24,
-              boxShadow: 'var(--shadow-card)',
+              boxShadow: '0 0 40px rgba(239, 68, 68, 0.2)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
