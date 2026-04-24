@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { mailService } from '@/services/MailService';
 
+export const runtime = 'edge';
+
 /**
  * CORS handling for Enterprise API
  */
