@@ -71,9 +71,9 @@ const DEFAULT_CONFIG: HomePageConfig = {
     contactAddress: 'North Coast, Egypt – Mediterranean',
     contactWebsite: 'www.insiteinternational.com',
     systemItems: [
-      { id: 's1', label: 'Enterprise Security', url: '#' },
-      { id: 's2', label: 'Cloud Infrastructure', url: '#' },
-      { id: 's3', label: 'Privacy Policy', url: '#' },
+      { id: 's1', label: 'Enterprise Security', url: '/security' },
+      { id: 's2', label: 'Cloud Infrastructure', url: '/infrastructure' },
+      { id: 's3', label: 'Privacy Policy', url: '/privacy' },
     ],
     socialLinks: [
       { id: 'sl1', label: 'LinkedIn', url: '#', icon: 'Linkedin' },

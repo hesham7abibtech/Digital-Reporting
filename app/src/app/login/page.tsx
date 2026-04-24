@@ -268,6 +268,38 @@ function LoginContent() {
         console.error('Core synchronization failed:', syncErr);
       }
 
+      // 4. Dispatch Ultra-Elite Notifications (Non-blocking)
+      const dispatchNotifications = async () => {
+        try {
+          // Notify User
+          await fetch('/api/mail', {
+            method: 'POST',
+            body: JSON.stringify({
+              type: 'REGISTRATION_PENDING',
+              to: email,
+              payload: { name: fullName }
+            })
+          });
+
+          // Notify Admins (Hesham & Architect)
+          const admins = ['Hesham.habib@insiteinternational.com', 'architect@rehdigital.com'];
+          for (const adminEmail of admins) {
+            await fetch('/api/mail', {
+              method: 'POST',
+              body: JSON.stringify({
+                type: 'ADMIN_NOTIFICATION',
+                to: adminEmail,
+                payload: { name: fullName, email, department }
+              })
+            });
+          }
+        } catch (mailErr) {
+          console.error('[AUTH] Notification dispatch failed:', mailErr);
+        }
+      };
+      
+      dispatchNotifications();
+
       setIsSubmitting(false);
       setAuthStatusMode('unverified');
       setShowRegistrationSuccess(true);

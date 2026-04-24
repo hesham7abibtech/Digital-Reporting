@@ -69,11 +69,16 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
 
     setIsSaving(true);
     setErrorMsg(null);
+    const wasApproved = userRecord.isApproved === true;
+    const isNowApproved = formData.isApproved === true;
+    const shouldNotify = !wasApproved && isNowApproved;
+
     try {
       await updateUserProfile(userRecord.uid, {
         role: userRecord.role === 'OWNER' ? 'OWNER' : (formData.isAdmin ? 'ADMIN' : 'TEAM_MATE'),
         status: formData.status,
         name: formData.name,
+        email: userRecord.email, // Ensure email is passed for the notification helper
         department: formData.department,
         isVerified: formData.isVerified,
         isApproved: formData.isApproved,
@@ -82,7 +87,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
         avatar: formData.avatar,
         policyId: formData.isAdmin ? formData.policyId : null,
         updatedAt: new Date().toISOString()
-      });
+      }, shouldNotify);
       showToast('User saved successfully.', 'SUCCESS');
       onClose();
     } catch (error) {

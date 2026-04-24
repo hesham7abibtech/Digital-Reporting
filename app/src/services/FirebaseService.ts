@@ -89,7 +89,7 @@ export async function seedDatabase() {
   // 2. Primary Administrative Access Vectors
   const adminUsers = [
     { id: 'admin-1', name: 'Hesham Habib', email: 'Hesham.habib@insiteinternational.com', role: 'OWNER', status: 'ACTIVE' },
-    { id: 'admin-2', name: 'System Architect', email: 'architect@keodigital.com', role: 'SUPER_ADMIN', status: 'ACTIVE' }
+    { id: 'admin-2', name: 'System Architect', email: 'architect@rehdigital.com', role: 'SUPER_ADMIN', status: 'ACTIVE' }
   ];
 
   adminUsers.forEach((user) => {
@@ -315,13 +315,28 @@ export async function createUserProfile(uid: string, data: any) {
   await setDoc(userDoc, cleanData, { merge: true });
 }
 
-export async function updateUserProfile(uid: string, data: any) {
+export async function updateUserProfile(uid: string, data: any, triggerNotification: boolean = false) {
   const userDoc = doc(db, 'users', uid);
   const cleanData = sanitizeData({
     ...data,
     updatedAt: new Date().toISOString()
   });
   await updateDoc(userDoc, cleanData);
+
+  if (triggerNotification && data.isApproved && data.email) {
+    try {
+      await fetch('/api/mail', {
+        method: 'POST',
+        body: JSON.stringify({
+          type: 'ACCOUNT_APPROVED',
+          to: data.email,
+          payload: { name: data.name }
+        })
+      });
+    } catch (err) {
+      console.error('[SERVICE] Approval notification failed:', err);
+    }
+  }
 }
 
 export async function deleteUserProfile(uid: string) {

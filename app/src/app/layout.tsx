@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://rehdigital.com"),
   title: "REH Command Center — Ras El Hekma Digital Reporting",
   description: "Enterprise-grade project command center dashboard for the Ras El Hekma development. Real-time KPIs, task management, project health monitoring, and team coordination.",
   keywords: ["Ras El Hekma", "Project Dashboard", "Digital Reporting", "Insite", "KEO", "Command Center"],

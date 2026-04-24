@@ -47,7 +47,8 @@ import {
   Upload,
   Grid,
   Zap,
-  EyeOff
+  EyeOff,
+  Mail
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -98,43 +99,48 @@ function formatDate(dateStr: string | null | undefined) {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-').toUpperCase();
 }
 
-function BroadcastSender({ showToast }: { showToast: any }) {
+function CommunicationsHub({ showToast }: { showToast: any }) {
+  const [activeHubTab, setActiveHubTab] = useState<'BROADCAST' | 'MAIL'>('BROADCAST');
   const [loading, setLoading] = useState(false);
-  const [type, setType] = useState<'NOTIF' | 'NEWS'>('NOTIF');
-  const [severity, setSeverity] = useState<'CRITICAL' | 'WARNING' | 'INFO' | 'SUCCESS'>('INFO');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
-  const [link, setLink] = useState('');
+  
+  // Broadcast State
+  const [broadcastType, setBroadcastType] = useState<'NOTIF' | 'NEWS'>('NOTIF');
+  const [broadcastSeverity, setBroadcastSeverity] = useState<'CRITICAL' | 'WARNING' | 'INFO' | 'SUCCESS'>('INFO');
+  const [broadcastTitle, setBroadcastTitle] = useState('');
+  const [broadcastDescription, setBroadcastDescription] = useState('');
+  
+  // Mail State
+  const [mailTarget, setMailTarget] = useState<'ALL' | 'ROLE' | 'INDIVIDUAL'>('ALL');
+  const [targetRole, setTargetRole] = useState('TEAM');
+  const [individualEmail, setIndividualEmail] = useState('');
+  const [mailSubject, setMailSubject] = useState('');
+  const [mailBody, setMailBody] = useState('');
+  const [mailCategory, setMailCategory] = useState('ANNOUNCEMENT');
 
-  const handleDispatch = async (e: React.FormEvent) => {
+  const handleBroadcastDispatch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !description) {
+    if (!broadcastTitle || !broadcastDescription) {
       showToast('Payload validation failure: Missing title or content.', 'ERROR');
       return;
     }
 
     setLoading(true);
     try {
-      const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+      const { collection, addDoc } = await import('firebase/firestore');
       const { db } = await import('@/lib/firebase');
 
       await addDoc(collection(db, 'broadcasts'), {
-        title,
-        description,
-        type,
-        severity,
-        category,
-        link,
+        title: broadcastTitle,
+        description: broadcastDescription,
+        type: broadcastType,
+        severity: broadcastSeverity,
         timestamp: new Date().toISOString(),
         readBy: []
       });
 
-      showToast(`Communications dispatched: ${type} packet synchronized.`, 'SUCCESS');
-      setTitle('');
-      setDescription('');
-      setCategory('');
-      setLink('');
+      showToast(`Communications dispatched: ${broadcastType} packet synchronized.`, 'SUCCESS');
+      setBroadcastTitle('');
+      setBroadcastDescription('');
     } catch (error) {
       console.error('Dispatch failure:', error);
       showToast('Broadcast uplink interrupted.', 'ERROR');
@@ -143,149 +149,359 @@ function BroadcastSender({ showToast }: { showToast: any }) {
     }
   };
 
+  const handleMailDispatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mailSubject || !mailBody) {
+      showToast('Mail validation failure: Missing subject or body.', 'ERROR');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { collection, getDocs, query, where } = await import('firebase/firestore');
+      const { db } = await import('@/lib/firebase');
+      
+      let recipients: string[] = [];
+
+      if (mailTarget === 'ALL') {
+        const usersSnap = await getDocs(collection(db, 'users'));
+        recipients = usersSnap.docs.map(d => d.data().email).filter(Boolean);
+      } else if (mailTarget === 'ROLE') {
+        const usersSnap = await getDocs(query(collection(db, 'users'), where('role', '==', targetRole)));
+        recipients = usersSnap.docs.map(d => d.data().email).filter(Boolean);
+      } else {
+        recipients = [individualEmail];
+      }
+
+      if (recipients.length === 0) {
+        showToast('Dispatch aborted: No valid recipients found.', 'WARNING');
+        setLoading(false);
+        return;
+      }
+
+      // Dispatch via API
+      for (const email of recipients) {
+        await fetch('/api/mail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: email,
+            type: 'CUSTOM',
+            payload: {
+              title: mailSubject,
+              body: mailBody,
+              category: mailCategory
+            }
+          })
+        });
+      }
+
+      showToast(`SMTP Dispatch complete: ${recipients.length} transmissions successful.`, 'SUCCESS');
+      setMailSubject('');
+      setMailBody('');
+    } catch (error) {
+      console.error('Mail dispatch failure:', error);
+      showToast('SMTP uplink interrupted.', 'ERROR');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 48 }}>
-      <form onSubmit={handleDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <div style={{ display: 'flex', gap: 16 }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Packet Stream</label>
-            <div style={{ display: 'flex', gap: 8, background: 'var(--secondary)', padding: 4, borderRadius: 12, border: '1px solid var(--border)' }}>
-              {(['NOTIF', 'NEWS'] as const).map(t => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setType(t)}
-                  style={{
-                    flex: 1, padding: '10px', borderRadius: 10, border: 'none',
-                    background: type === t ? 'var(--teal)' : 'transparent',
-                    color: type === t ? '#ffffff' : 'var(--text-muted)',
-                    fontSize: 11, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
-                  }}
-                >
-                  {t === 'NOTIF' ? <Bell size={14} /> : <Newspaper size={14} />}
-                  {t === 'NOTIF' ? 'NOTIFICATION' : 'NEWS FEED'}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Authority Classification</label>
-            <div style={{ display: 'flex', gap: 6, background: 'var(--secondary)', padding: 4, borderRadius: 12, border: '1px solid var(--border)' }}>
-              {[
-                { id: 'INFO', label: 'INFO', color: 'var(--primary-light)' },
-                { id: 'SUCCESS', label: 'SUCCESS', color: 'var(--status-success)' },
-                { id: 'WARNING', label: 'WARNING', color: 'var(--status-warning)' },
-                { id: 'CRITICAL', label: 'CRITICAL', color: 'var(--status-error)' }
-              ].map(s => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => setSeverity(s.id as any)}
-                  style={{
-                    flex: 1, padding: '10px 0', borderRadius: 8, border: 'none',
-                    background: severity === s.id ? `${s.color}` : 'transparent',
-                    color: severity === s.id ? '#ffffff' : 'var(--text-muted)',
-                    fontSize: 10, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms',
-                    boxShadow: severity === s.id ? `inset 0 0 0 1px ${s.color}` : 'none',
-                    letterSpacing: '0.05em', opacity: severity === s.id ? 1 : 0.8
-                  }}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Broadcast Headline</label>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter high-impact title..."
-            style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Narrative Body</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Detailed administrative context..."
-            rows={4}
-            style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', resize: 'none' }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', gap: 16 }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Functional Category</label>
-            <input
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="e.g. SYSTEM, MARKET, TEAM"
-              style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
-            />
-          </div>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Secure Attachment URL</label>
-            <input
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-              placeholder="https://..."
-              style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
-            />
-          </div>
-        </div>
-
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+      {/* Hub Navigation */}
+      <div style={{ display: 'flex', gap: 12, background: 'var(--secondary)', padding: 6, borderRadius: 16, border: '1px solid var(--border)', width: 'fit-content' }}>
         <button
-          disabled={loading}
+          onClick={() => setActiveHubTab('BROADCAST')}
           style={{
-            marginTop: 12, padding: '16px', background: 'var(--primary)', color: '#ffffff',
-            border: 'none', borderRadius: 16, fontWeight: 900, fontSize: 15,
-            cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-            boxShadow: 'var(--shadow-premium)', letterSpacing: '0.05em'
+            padding: '12px 24px', borderRadius: 12, border: 'none',
+            background: activeHubTab === 'BROADCAST' ? 'var(--teal)' : 'transparent',
+            color: activeHubTab === 'BROADCAST' ? '#ffffff' : 'var(--text-muted)',
+            fontSize: 13, fontWeight: 900, cursor: 'pointer', transition: 'all 300ms',
+            display: 'flex', alignItems: 'center', gap: 10
           }}
         >
-          {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
-          DISPATCH BROADCAST
+          <Megaphone size={18} />
+          DASHBOARD BROADCAST
         </button>
-      </form>
+        <button
+          onClick={() => setActiveHubTab('MAIL')}
+          style={{
+            padding: '12px 24px', borderRadius: 12, border: 'none',
+            background: activeHubTab === 'MAIL' ? 'var(--teal)' : 'transparent',
+            color: activeHubTab === 'MAIL' ? '#ffffff' : 'var(--text-muted)',
+            fontSize: 13, fontWeight: 900, cursor: 'pointer', transition: 'all 300ms',
+            display: 'flex', alignItems: 'center', gap: 10
+          }}
+        >
+          <Mail size={18} />
+          PREMIUM MAIL DISPATCH
+        </button>
+      </div>
 
-      <div style={{ padding: 40, background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}>
-            <Shield size={18} color="var(--primary)" />
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 48 }}>
+        {activeHubTab === 'BROADCAST' ? (
+          <form onSubmit={handleBroadcastDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div style={{ display: 'flex', gap: 16 }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Packet Stream</label>
+                <div style={{ display: 'flex', gap: 8, background: 'var(--secondary)', padding: 4, borderRadius: 12, border: '1px solid var(--border)' }}>
+                  {(['NOTIF', 'NEWS'] as const).map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setBroadcastType(t)}
+                      style={{
+                        flex: 1, padding: '10px', borderRadius: 10, border: 'none',
+                        background: broadcastType === t ? 'var(--teal)' : 'transparent',
+                        color: broadcastType === t ? '#ffffff' : 'var(--text-muted)',
+                        fontSize: 11, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                      }}
+                    >
+                      {t === 'NOTIF' ? <Bell size={14} /> : <Newspaper size={14} />}
+                      {t === 'NOTIF' ? 'NOTIFICATION' : 'NEWS FEED'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Authority Classification</label>
+                <div style={{ display: 'flex', gap: 6, background: 'var(--secondary)', padding: 4, borderRadius: 12, border: '1px solid var(--border)' }}>
+                  {[
+                    { id: 'INFO', label: 'INFO', color: 'var(--primary-light)' },
+                    { id: 'SUCCESS', label: 'SUCCESS', color: 'var(--status-success)' },
+                    { id: 'WARNING', label: 'WARNING', color: 'var(--status-warning)' },
+                    { id: 'CRITICAL', label: 'CRITICAL', color: 'var(--status-error)' }
+                  ].map(s => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setBroadcastSeverity(s.id as any)}
+                      style={{
+                        flex: 1, padding: '10px 0', borderRadius: 8, border: 'none',
+                        background: broadcastSeverity === s.id ? `${s.color}` : 'transparent',
+                        color: broadcastSeverity === s.id ? '#ffffff' : 'var(--text-muted)',
+                        fontSize: 10, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms',
+                        letterSpacing: '0.05em', opacity: broadcastSeverity === s.id ? 1 : 0.8
+                      }}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Broadcast Headline</label>
+              <input
+                value={broadcastTitle}
+                onChange={(e) => setBroadcastTitle(e.target.value)}
+                placeholder="Enter high-impact title..."
+                style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Narrative Body</label>
+              <textarea
+                value={broadcastDescription}
+                onChange={(e) => setBroadcastDescription(e.target.value)}
+                placeholder="Detailed administrative context..."
+                rows={4}
+                style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', resize: 'none' }}
+              />
+            </div>
+
+            <button
+              disabled={loading}
+              style={{
+                marginTop: 12, padding: '16px', background: 'var(--teal)', color: '#ffffff',
+                border: 'none', borderRadius: 16, fontWeight: 900, fontSize: 15,
+                cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                boxShadow: 'var(--shadow-premium)', letterSpacing: '0.1em', textTransform: 'uppercase'
+              }}
+            >
+              {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+              Authorize Broadcast Dispatch
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleMailDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div style={{ display: 'flex', gap: 16 }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Target Spectrum</label>
+                <div style={{ display: 'flex', gap: 4, background: 'var(--secondary)', padding: 4, borderRadius: 12, border: '1px solid var(--border)' }}>
+                  {[
+                    { id: 'ALL', label: 'ALL USERS' },
+                    { id: 'ROLE', label: 'BY ROLE' },
+                    { id: 'INDIVIDUAL', label: 'SPECIFIC' }
+                  ].map(t => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setMailTarget(t.id as any)}
+                      style={{
+                        flex: 1, padding: '10px 0', borderRadius: 10, border: 'none',
+                        background: mailTarget === t.id ? 'var(--teal)' : 'transparent',
+                        color: mailTarget === t.id ? '#ffffff' : 'var(--text-muted)',
+                        fontSize: 10, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms'
+                      }}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Recipients Configuration</label>
+                {mailTarget === 'ROLE' ? (
+                  <select
+                    value={targetRole}
+                    onChange={(e) => setTargetRole(e.target.value)}
+                    style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
+                  >
+                    <option value="TEAM">PROJECT TEAM</option>
+                    <option value="ADMIN">ADMINISTRATORS</option>
+                    <option value="OWNER">SYSTEM OWNERS</option>
+                  </select>
+                ) : mailTarget === 'INDIVIDUAL' ? (
+                  <input
+                    value={individualEmail}
+                    onChange={(e) => setIndividualEmail(e.target.value)}
+                    placeholder="Enter email address..."
+                    style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
+                  />
+                ) : (
+                  <div style={{ padding: '12px 16px', background: 'rgba(0, 63, 73, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.1)', color: 'var(--teal)', fontSize: 13, fontWeight: 800 }}>
+                    Global Broadcast Mode Active
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Subject Line</label>
+                <input
+                  value={mailSubject}
+                  onChange={(e) => setMailSubject(e.target.value)}
+                  placeholder="Official Subject..."
+                  style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Notification Category</label>
+                <select
+                  value={mailCategory}
+                  onChange={(e) => setMailCategory(e.target.value)}
+                  style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
+                >
+                  <option value="ANNOUNCEMENT">SYSTEM ANNOUNCEMENT</option>
+                  <option value="NEWS">PROJECT NEWS FEED</option>
+                  <option value="SECURITY">SECURITY ADVISORY</option>
+                  <option value="URGENT">URGENT ACTION REQUIRED</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Communication Payload (Body)</label>
+              <textarea
+                value={mailBody}
+                onChange={(e) => setMailBody(e.target.value)}
+                placeholder="Draft your professional message here..."
+                rows={4}
+                style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', resize: 'none' }}
+              />
+            </div>
+
+            <button
+              disabled={loading}
+              style={{
+                marginTop: 12, padding: '16px', background: 'var(--teal)', color: '#ffffff',
+                border: 'none', borderRadius: 16, fontWeight: 900, fontSize: 15,
+                cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                boxShadow: 'var(--shadow-premium)', letterSpacing: '0.1em', textTransform: 'uppercase'
+              }}
+            >
+              {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+              Authorize SMTP Dispatch
+            </button>
+          </form>
+        )}
+
+        {/* Preview Section */}
+        <div style={{ padding: 40, background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}>
+              <Shield size={18} color="var(--teal)" />
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Transmission Preview</span>
           </div>
-          <span style={{ fontSize: 12, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Transmission Preview</span>
-        </div>
 
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{
-            width: '100%', maxWidth: 360, padding: 24, borderRadius: 24, background: 'var(--cotton)',
-            border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)',
-            opacity: title || description ? 1 : 0.3, filter: title || description ? 'none' : 'grayscale(1)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: severity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${severity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)'}` }}>
-                {type === 'NOTIF' ? <Bell size={18} color={severity === 'CRITICAL' ? 'var(--status-error)' : 'var(--primary-light)'} /> : <Newspaper size={18} color="#a78bfa" />}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {activeHubTab === 'BROADCAST' ? (
+              <div style={{
+                width: '100%', maxWidth: 360, padding: 24, borderRadius: 24, background: 'var(--cotton)',
+                border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)',
+                opacity: broadcastTitle || broadcastDescription ? 1 : 0.3, filter: broadcastTitle || broadcastDescription ? 'none' : 'grayscale(1)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: broadcastSeverity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${broadcastSeverity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)'}` }}>
+                    {broadcastType === 'NOTIF' ? <Bell size={18} color={broadcastSeverity === 'CRITICAL' ? 'var(--status-error)' : 'var(--primary-light)'} /> : <Newspaper size={18} color="#a78bfa" />}
+                  </div>
+                  <div>
+                    <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
+                      {broadcastType} // {broadcastSeverity}
+                    </span>
+                    <h4 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{broadcastTitle || 'Headline Protocol'}</h4>
+                  </div>
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+                  {broadcastDescription || 'Establishing secure administrative narrative... awaiting payload input.'}
+                </p>
               </div>
-              <div>
-                <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
-                  {type} // {severity}
-                </span>
-                <h4 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{title || 'Headline Protocol'}</h4>
+            ) : (
+              <div style={{
+                width: '100%', maxWidth: 400, background: '#ffffff', borderRadius: 24, overflow: 'hidden', border: '1px solid var(--border)',
+                boxShadow: 'var(--shadow-premium)', opacity: mailSubject || mailBody ? 1 : 0.3, textAlign: 'center'
+              }}>
+                <div style={{ background: '#003f49', padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, borderBottom: '4px solid #d0ab82' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: 8, border: '1px solid rgba(208, 171, 130, 0.3)' }}>
+                    <img src="/logos/modon_logo.png" height="14" style={{ filter: 'brightness(0) invert(1)' }} />
+                    <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.2)' }} />
+                    <img src="/logos/insite_logo.png" height="12" style={{ filter: 'brightness(0) invert(1)' }} />
+                  </div>
+                  <h4 style={{ fontSize: 11, color: '#ffffff', margin: 0, letterSpacing: '0.15em', fontWeight: 400, textTransform: 'uppercase' }}>REH Digital Reporting</h4>
+                </div>
+                <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ 
+                      width: 48, height: 48, borderRadius: 12, 
+                      background: mailCategory === 'NEWS' ? 'rgba(0, 63, 73, 0.1)' : 'rgba(208, 171, 130, 0.1)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16
+                    }}>
+                      {mailCategory === 'NEWS' ? <Newspaper size={20} color="#003f49" /> : <Megaphone size={20} color="#d0ab82" />}
+                    </div>
+                    
+                    <span style={{ fontSize: 9, fontWeight: 900, color: '#d0ab82', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 4 }}>{mailCategory} PROTOCOL</span>
+                    <h3 style={{ fontSize: 18, color: '#003f49', margin: '0 0 16px', fontWeight: 700 }}>{mailSubject || 'Professional Subject Line'}</h3>
+                    
+                    <div style={{ width: '100%', padding: '16px', background: '#fcfbf5', borderRadius: 12, border: '1px solid #f1f5f9' }}>
+                      <p style={{ fontSize: 12, color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>{mailBody || 'Administrative communication payload will be rendered here with premium typography...'}</p>
+                    </div>
+
+                    <div style={{ marginTop: 24, padding: '12px 24px', background: '#003f49', color: '#ffffff', borderRadius: 10, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      Access Digital Reporting
+                    </div>
+
+                    <div style={{ marginTop: 32, textAlign: 'center', fontSize: 9, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}> 
+                      &copy; 2026 REH Digital Reporting Hub
+                    </div>
+                </div>
               </div>
-            </div>
-            <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              {description || 'Establishing secure administrative narrative... awaiting payload input.'}
-            </p>
-            <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-              <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)' }}>RECEPTION TERMINAL PREVIEW</span>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -298,7 +514,7 @@ export default function AdminDashboardPage() {
   const { isVisible, can, isAdmin, policy } = usePermissions();
   const router = useRouter();
 
-  // Security Clearance Protocol: TEAM_MATE access to Command Center is restricted
+  // Security Clearance Protocol: TEAM_MATE access to Digital Reporting is restricted
   // Also verify this is a proper admin session (not just dashboard login)
   useEffect(() => {
     const isAdminSession = sessionStorage.getItem('admin_session');
@@ -311,7 +527,7 @@ export default function AdminDashboardPage() {
     }
   }, [userProfile, router]);
 
-  const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'branding' | 'registry' | 'users' | 'policies' | 'broadcast' | 'reports' | 'bim-reviews' | 'homepage' | 'tickets'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'branding' | 'registry' | 'users' | 'policies' | 'communications' | 'reports' | 'bim-reviews' | 'homepage' | 'tickets'>('tasks');
   const [taskImportConfirm, setTaskImportConfirm] = useState<{ isOpen: boolean; records: Task[] }>({ isOpen: false, records: [] });
   const [isTaskImportLoading, setIsTaskImportLoading] = useState(false);
   const taskFileInputRef = useRef<HTMLInputElement>(null);
@@ -1208,7 +1424,7 @@ export default function AdminDashboardPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
                 <div>
                   <h1 style={{ fontSize: 13, fontWeight: 900, color: '#F9F8F2', margin: '0 0 4px 0', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'var(--font-heading)' }}>Admin Portal</h1>
-                  <span style={{ fontSize: 9, color: 'var(--sunlit-rock)', fontWeight: 800, letterSpacing: '0.2em' }}>COMMAND CENTER</span>
+                  <span style={{ fontSize: 9, color: 'var(--sunlit-rock)', fontWeight: 800, letterSpacing: '0.2em' }}>DIGITAL REPORTING</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, width: '100%', padding: '0 24px' }}>
                   <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 18, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 1 }} />
@@ -1226,7 +1442,7 @@ export default function AdminDashboardPage() {
               { id: 'branding', label: 'Identity & Branding', icon: ImageIcon, permission: 'branding' },
               { id: 'reports', label: 'Report Settings', icon: FileText, permission: 'reports' },
               { id: 'homepage', label: 'Home Page CMS', icon: LayoutDashboard, permission: 'homePage' },
-              { id: 'broadcast', label: 'Communications', icon: Megaphone, permission: 'broadcast' },
+              { id: 'communications', label: 'Communications', icon: Megaphone, permission: 'broadcast' },
               { id: 'tickets', label: 'Access Tickets', icon: Inbox, permission: 'tickets' },
               { id: 'users', label: 'Access Control', icon: Shield, permission: 'users' }
             ].map((tab) => {
@@ -1341,13 +1557,12 @@ export default function AdminDashboardPage() {
               >
                 <GlassCard padding="none">
                   <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
                       <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>
-                        {activeTab === 'tasks' ? 'Digital Deliverable Matrix' : activeTab === 'bim-reviews' ? 'BIM Review Intelligence Matrix' : activeTab === 'team' ? 'Active Digital Project Team' : activeTab === 'registry' ? 'Digital Asset Registry Index' : activeTab === 'branding' ? 'Project Identity & Branding' : activeTab === 'broadcast' ? 'Elite Broadcast Command' : 'Security Access Registry'}
+                        {activeTab === 'tasks' ? 'Digital Deliverable Matrix' : activeTab === 'bim-reviews' ? 'BIM Review Intelligence Matrix' : activeTab === 'team' ? 'Active Digital Project Team' : activeTab === 'registry' ? 'Digital Asset Registry Index' : activeTab === 'branding' ? 'Project Identity & Branding' : activeTab === 'communications' ? 'Elite Communications Hub' : 'Security Access Registry'}
                       </h2>
 
                       <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 6, fontWeight: 500, letterSpacing: '0.01em' }}>
-                        {activeTab === 'bim-reviews' ? 'Strategic oversight of cross-project BIM submission reviews and status tracking' : activeTab === 'users' ? 'Management of security clearances and administrative roles' : activeTab === 'branding' ? 'Configuration of project branding and site-wide metadata' : activeTab === 'broadcast' ? 'Dispatch real-time classified notifications and news updates' : 'Real-time synchronization with Digital Workflow Systems'}
+                        {activeTab === 'bim-reviews' ? 'Strategic oversight of cross-project BIM submission reviews and status tracking' : activeTab === 'users' ? 'Management of security clearances and administrative roles' : activeTab === 'branding' ? 'Configuration of project branding and site-wide metadata' : activeTab === 'communications' ? 'Dispatch real-time broadcasts and premium SMTP mail notifications' : 'Real-time synchronization with Digital Workflow Systems'}
                       </p>
 
                     </div>
@@ -1387,7 +1602,7 @@ export default function AdminDashboardPage() {
                           </button>
                         </div>
                       )}
-                      {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'broadcast' && (
+                      {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'communications' && (
                         <div style={{ position: 'relative' }}>
                           <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                           <input
@@ -1508,10 +1723,9 @@ export default function AdminDashboardPage() {
                         </div>
                       )}
                     </div>
-                  </div>
-                  <div style={{ overflowX: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'broadcast' || activeTab === 'homepage') ? 'hidden' : 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'broadcast' || activeTab === 'homepage') ? 'fixed' : 'auto' }}>
-                      {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'broadcast' && activeTab !== 'homepage' && !(activeTab === 'users' && activeSubTab === 'policies') && (
+                  <div style={{ overflowX: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'communications' || activeTab === 'homepage') ? 'hidden' : 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'communications' || activeTab === 'homepage') ? 'fixed' : 'auto' }}>
+                      {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'communications' && activeTab !== 'homepage' && !(activeTab === 'users' && activeSubTab === 'policies') && (
                         <thead style={{ background: 'transparent', borderBottom: '2px solid var(--border)' }}>
                           <tr>
                             <th style={{ width: 80, padding: '24px 0', textAlign: 'center' }}>
@@ -2666,7 +2880,7 @@ export default function AdminDashboardPage() {
                                         <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}>
                                           <Settings size={18} color="var(--teal)" />
                                         </div>
-                                        <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>Reporting Engine Command Center</h3>
+                                        <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>REH Digital Reporting Hub</h3>
                                       </div>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                         <button
@@ -3238,10 +3452,10 @@ export default function AdminDashboardPage() {
                             </td>
                           </tr>
                         )}
-                        {activeTab === 'broadcast' && (
+                        {activeTab === 'communications' && (
                           <tr style={{ background: 'transparent' }}>
                             <td colSpan={5} style={{ padding: '40px' }}>
-                              <BroadcastSender showToast={showToast} />
+                              <CommunicationsHub showToast={showToast} />
 
                               {/* Broadcast History Log */}
                               <div style={{ marginTop: 64 }}>
