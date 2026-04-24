@@ -517,6 +517,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
               Authorize SMTP Dispatch
             </button>
           </form>
+        )}
       </div>
     </div>
   );
