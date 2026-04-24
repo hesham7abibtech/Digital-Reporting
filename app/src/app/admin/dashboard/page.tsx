@@ -49,7 +49,8 @@ import {
   Zap,
   EyeOff,
   Eye,
-  Mail
+  Mail,
+  UserPlus
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -516,10 +517,6 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
               Authorize SMTP Dispatch
             </button>
           </form>
-        )}
-      </div>
-    </div>
-        )}
       </div>
     </div>
   );
