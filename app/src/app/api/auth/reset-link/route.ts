@@ -1,5 +1,3 @@
-import { NextRequest, NextResponse } from 'next/server';
-
 export const runtime = 'edge';
 
 const corsHeaders = {
@@ -9,57 +7,67 @@ const corsHeaders = {
 };
 
 export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: corsHeaders });
+  return new Response(null, { status: 204, headers: corsHeaders });
 }
 
-/**
- * Ultra-Stable Edge Reset Gateway
- */
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const body = await req.json().catch(() => ({}));
+    const body = await request.json().catch(() => ({}));
     const email = body.email;
 
-    // Direct environment access (Most compatible with Cloudflare)
-    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.rehdigital.com';
+    // Use a robust fallback for the API Key
+    // On Cloudflare Pages, globalThis.process.env is sometimes more reliable
+    const env = (globalThis as any).process?.env || {};
+    const apiKey = env.NEXT_PUBLIC_FIREBASE_API_KEY || 'MISSING';
 
     if (!email) {
-      return NextResponse.json({ error: 'Email required' }, { status: 400, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'Email required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    if (!apiKey) {
-      return NextResponse.json({ 
-        error: 'Config Missing', 
-        message: 'Firebase API Key not detected in Edge Runtime.' 
-      }, { status: 500, headers: corsHeaders });
+    if (apiKey === 'MISSING') {
+       return new Response(JSON.stringify({ error: 'Infrastructure Error', detail: 'API Key Binding Missing' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     const firebaseEndpoint = `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`;
 
-    const response = await fetch(firebaseEndpoint, {
+    const res = await fetch(firebaseEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         requestType: 'PASSWORD_RESET',
         email,
-        continueUrl: `${baseUrl}/login`
+        continueUrl: 'https://www.rehdigital.com/login'
       })
     });
 
-    const data = await response.json();
+    const data = await res.json();
 
-    if (!response.ok) {
+    if (!res.ok) {
       const msg = data.error?.message || 'UNKNOWN';
-      return NextResponse.json({ 
+      return new Response(JSON.stringify({ 
         error: msg === 'EMAIL_NOT_FOUND' ? 'User not found' : 'Auth failure',
         code: msg === 'EMAIL_NOT_FOUND' ? 'USER_NOT_FOUND' : 'AUTH_ERROR'
-      }, { status: response.status === 404 || msg === 'EMAIL_NOT_FOUND' ? 404 : 400, headers: corsHeaders });
+      }), {
+        status: msg === 'EMAIL_NOT_FOUND' ? 404 : 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    return NextResponse.json({ success: true }, { status: 200, headers: corsHeaders });
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
 
-  } catch (error: any) {
-    return NextResponse.json({ error: 'Gateway Error', details: error.message }, { status: 500, headers: corsHeaders });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ error: 'Gateway Crash', message: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 }
