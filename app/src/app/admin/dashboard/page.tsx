@@ -112,15 +112,28 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
   const [broadcastDescription, setBroadcastDescription] = useState('');
   
   // Mail State
-  const [mailTarget, setMailTarget] = useState<'ALL' | 'ROLE' | 'INDIVIDUAL'>('ALL');
+  const [mailTarget, setMailTarget] = useState<'ALL' | 'ROLE' | 'SPECIFIC'>('ALL');
   const [targetRole, setTargetRole] = useState('TEAM');
-  const [selectedUserEmails, setSelectedUserEmails] = useState<string[]>([]);
-  const [customEmails, setCustomEmails] = useState('');
+  const [toEmails, setToEmails] = useState('');
   const [ccEmails, setCcEmails] = useState('');
   const [bccEmails, setBccEmails] = useState('');
   const [mailSubject, setMailSubject] = useState('');
   const [mailBody, setMailBody] = useState('');
   const [mailCategory, setMailCategory] = useState('ANNOUNCEMENT');
+
+  const [activeSelectorField, setActiveSelectorField] = useState<'TO' | 'CC' | 'BCC' | null>(null);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+
+  const addEmailToField = (email: string, field: 'TO' | 'CC' | 'BCC') => {
+    const setters = { TO: setToEmails, CC: setCcEmails, BCC: setBccEmails };
+    const values = { TO: toEmails, CC: ccEmails, BCC: bccEmails };
+    
+    const current = values[field].split(',').map(e => e.trim()).filter(Boolean);
+    if (!current.includes(email)) {
+      setters[field]([...current, email].join(', '));
+    }
+    setActiveSelectorField(null);
+  };
 
   const handleBroadcastDispatch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,8 +186,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
           .map((d: any) => d.data().email)
           .filter(Boolean) || [];
       } else {
-        const customList = customEmails.split(',').map(e => e.trim()).filter(Boolean);
-        recipients = Array.from(new Set([...selectedUserEmails, ...customList]));
+        recipients = toEmails.split(',').map(e => e.trim()).filter(Boolean);
       }
 
       if (recipients.length === 0) {
@@ -208,10 +220,9 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
       showToast(`SMTP Dispatch complete: ${recipients.length} transmissions successful.`, 'SUCCESS');
       setMailSubject('');
       setMailBody('');
-      setCustomEmails('');
+      setToEmails('');
       setCcEmails('');
       setBccEmails('');
-      setSelectedUserEmails([]);
     } catch (error) {
       console.error('Mail dispatch failure:', error);
       showToast('SMTP uplink interrupted.', 'ERROR');
@@ -221,7 +232,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 40, alignItems: 'center' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, alignItems: 'center', position: 'relative' }}>
       {/* Hub Navigation */}
       <div style={{ display: 'flex', gap: 12, background: 'var(--secondary)', padding: 6, borderRadius: 16, border: '1px solid var(--border)', width: 'fit-content' }}>
         <button
@@ -252,7 +263,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
         </button>
       </div>
 
-      <div style={{ width: '100%', maxWidth: 800, display: 'flex', flexDirection: 'column', gap: 48 }}>
+      <div style={{ width: '100%', maxWidth: 840, display: 'flex', flexDirection: 'column', gap: 32 }}>
         {activeHubTab === 'BROADCAST' ? (
           <form onSubmit={handleBroadcastDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div style={{ display: 'flex', gap: 16 }}>
@@ -306,60 +317,60 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Broadcast Headline</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Broadcast Headline</label>
               <input
                 value={broadcastTitle}
                 onChange={(e) => setBroadcastTitle(e.target.value)}
                 placeholder="Enter high-impact title..."
-                style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
+                style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
               />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Narrative Body</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Narrative Body</label>
               <textarea
                 value={broadcastDescription}
                 onChange={(e) => setBroadcastDescription(e.target.value)}
                 placeholder="Detailed administrative context..."
-                rows={4}
-                style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', resize: 'none' }}
+                rows={3}
+                style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none', resize: 'none' }}
               />
             </div>
 
             <button
               disabled={loading}
               style={{
-                marginTop: 12, padding: '16px 32px', background: 'var(--teal)', color: '#ffffff',
-                border: 'none', borderRadius: 16, fontWeight: 900, fontSize: 15,
-                cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                marginTop: 8, padding: '12px 24px', background: 'var(--teal)', color: '#ffffff',
+                border: 'none', borderRadius: 12, fontWeight: 900, fontSize: 13,
+                cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                 boxShadow: 'var(--shadow-premium)', letterSpacing: '0.1em', textTransform: 'uppercase', width: 'fit-content', alignSelf: 'center'
               }}
             >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+              {loading ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
               Authorize Broadcast Dispatch
             </button>
           </form>
         ) : (
-          <form onSubmit={handleMailDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <div style={{ display: 'flex', gap: 16 }}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Target Spectrum</label>
-                <div style={{ display: 'flex', gap: 4, background: 'var(--secondary)', padding: 4, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <form onSubmit={handleMailDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Target Spectrum</label>
+                <div style={{ display: 'flex', gap: 4, background: 'var(--secondary)', padding: 4, borderRadius: 10, border: '1px solid var(--border)' }}>
                   {[
                     { id: 'ALL', label: 'ALL USERS' },
                     { id: 'ROLE', label: 'BY ROLE' },
-                    { id: 'INDIVIDUAL', label: 'SPECIFIC' }
+                    { id: 'SPECIFIC', label: 'SPECIFIC' }
                   ].map(t => (
                     <button
                       key={t.id}
                       type="button"
                       onClick={() => setMailTarget(t.id as any)}
                       style={{
-                        flex: 1, padding: '10px 0', borderRadius: 10, border: 'none',
+                        flex: 1, padding: '8px 0', borderRadius: 8, border: 'none',
                         background: mailTarget === t.id ? 'var(--teal)' : 'transparent',
                         color: mailTarget === t.id ? '#ffffff' : 'var(--text-muted)',
-                        fontSize: 10, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms'
+                        fontSize: 9, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms'
                       }}
                     >
                       {t.label}
@@ -367,83 +378,111 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                   ))}
                 </div>
               </div>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Recipients Configuration</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Configuration Mode</label>
                 {mailTarget === 'ROLE' ? (
                   <select
                     value={targetRole}
                     onChange={(e) => setTargetRole(e.target.value)}
-                    style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
+                    style={{ padding: '8px 12px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
                   >
                     <option value="TEAM">PROJECT TEAM</option>
                     <option value="ADMIN">ADMINISTRATORS</option>
                     <option value="OWNER">SYSTEM OWNERS</option>
                   </select>
-                ) : mailTarget === 'INDIVIDUAL' ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <select
-                      multiple
-                      value={selectedUserEmails}
-                      onChange={(e) => setSelectedUserEmails(Array.from(e.target.selectedOptions, option => option.value))}
-                      style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none', height: 100 }}
-                    >
-                      {usersSnapshot?.docs.map((d: any) => (
-                        <option key={d.id} value={d.data().email}>{d.data().name} ({d.data().email})</option>
-                      ))}
-                    </select>
-                    <textarea
-                      value={customEmails}
-                      onChange={(e) => setCustomEmails(e.target.value)}
-                      placeholder="Multi Emails (comma separated TO)..."
-                      rows={2}
-                      style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 13, outline: 'none', resize: 'none' }}
-                    />
-                  </div>
                 ) : (
-                  <div style={{ padding: '12px 16px', background: 'rgba(0, 63, 73, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.1)', color: 'var(--teal)', fontSize: 13, fontWeight: 800 }}>
-                    Global Broadcast Mode Active
+                  <div style={{ padding: '8px 12px', background: 'rgba(0, 63, 73, 0.05)', borderRadius: 10, border: '1px solid rgba(0, 63, 73, 0.1)', color: 'var(--teal)', fontSize: 11, fontWeight: 800 }}>
+                    {mailTarget === 'ALL' ? 'GLOBAL BROADCAST ENABLED' : 'SPECIFIC ROUTING ACTIVE'}
                   </div>
                 )}
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>CC Recipients</label>
-                <input
-                  value={ccEmails}
-                  onChange={(e) => setCcEmails(e.target.value)}
-                  placeholder="Comma separated CC..."
-                  style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
-                />
+            {mailTarget === 'SPECIFIC' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16, background: 'rgba(0,0,0,0.2)', borderRadius: 16, border: '1px solid var(--border)' }}>
+                {[
+                  { id: 'TO', label: 'Direct Recipients (TO)', value: toEmails, setter: setToEmails },
+                  { id: 'CC', label: 'Carbon Copy (CC)', value: ccEmails, setter: setCcEmails },
+                  { id: 'BCC', label: 'Blind Copy (BCC)', value: bccEmails, setter: setBccEmails }
+                ].map(field => (
+                  <div key={field.id} style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{field.label}</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveSelectorField(activeSelectorField === field.id ? null : field.id as any);
+                          setUserSearchQuery('');
+                        }}
+                        style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid var(--teal)', background: 'transparent', color: 'var(--teal)', fontSize: 9, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                      >
+                        <UserPlus size={10} /> SELECT USERS
+                      </button>
+                    </div>
+                    <textarea
+                      value={field.value}
+                      onChange={(e) => field.setter(e.target.value)}
+                      placeholder={`Enter ${field.id} addresses...`}
+                      rows={1}
+                      style={{ padding: '10px 14px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 13, outline: 'none', resize: 'none' }}
+                    />
+                    
+                    {activeSelectorField === field.id && (
+                      <div style={{ position: 'absolute', top: '100%', right: 0, zIndex: 100, width: 300, marginTop: 8, background: 'var(--secondary)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: 'var(--shadow-premium)', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)' }}>
+                          <Search size={12} color="var(--text-muted)" />
+                          <input 
+                            autoFocus
+                            value={userSearchQuery}
+                            onChange={e => setUserSearchQuery(e.target.value)}
+                            placeholder="Search team directory..." 
+                            style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 11, outline: 'none', width: '100%' }} 
+                          />
+                        </div>
+                        <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }} className="custom-scrollbar">
+                          {usersSnapshot?.docs
+                            .filter((d: any) => {
+                              const data = d.data();
+                              const search = userSearchQuery.toLowerCase();
+                              return data.name?.toLowerCase().includes(search) || data.email?.toLowerCase().includes(search);
+                            })
+                            .map((d: any) => (
+                              <button
+                                key={d.id}
+                                type="button"
+                                onClick={() => addEmailToField(d.data().email, field.id as any)}
+                                style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', transition: 'all 200ms', display: 'flex', flexDirection: 'column', gap: 2 }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'var(--border)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                              >
+                                <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-primary)' }}>{d.data().name}</span>
+                                <span style={{ fontSize: 9, color: 'var(--text-dim)' }}>{d.data().email}</span>
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>BCC Recipients</label>
-                <input
-                  value={bccEmails}
-                  onChange={(e) => setBccEmails(e.target.value)}
-                  placeholder="Comma separated BCC..."
-                  style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
-                />
-              </div>
-            </div>
+            )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Subject Line</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Subject Line</label>
                 <input
                   value={mailSubject}
                   onChange={(e) => setMailSubject(e.target.value)}
-                  placeholder="Official Subject..."
-                  style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
+                  placeholder="Enter official subject..."
+                  style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
                 />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Notification Category</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Category</label>
                 <select
                   value={mailCategory}
                   onChange={(e) => setMailCategory(e.target.value)}
-                  style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
+                  style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
                 >
                   <option value="ANNOUNCEMENT">SYSTEM ANNOUNCEMENT</option>
                   <option value="NEWS">PROJECT NEWS FEED</option>
@@ -453,30 +492,33 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Communication Payload (Body)</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Communication Payload (Body)</label>
               <textarea
                 value={mailBody}
                 onChange={(e) => setMailBody(e.target.value)}
                 placeholder="Draft your professional message here..."
-                rows={4}
-                style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', resize: 'none' }}
+                rows={3}
+                style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none', resize: 'none' }}
               />
             </div>
 
             <button
               disabled={loading}
               style={{
-                marginTop: 12, padding: '16px 32px', background: 'var(--teal)', color: '#ffffff',
-                border: 'none', borderRadius: 16, fontWeight: 900, fontSize: 15,
-                cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                marginTop: 8, padding: '12px 32px', background: 'var(--teal)', color: '#ffffff',
+                border: 'none', borderRadius: 12, fontWeight: 900, fontSize: 14,
+                cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                 boxShadow: 'var(--shadow-premium)', letterSpacing: '0.1em', textTransform: 'uppercase', width: 'fit-content', alignSelf: 'center'
               }}
             >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+              {loading ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
               Authorize SMTP Dispatch
             </button>
           </form>
+        )}
+      </div>
+    </div>
         )}
       </div>
     </div>
