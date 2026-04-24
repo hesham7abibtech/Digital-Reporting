@@ -37,15 +37,16 @@ const MOBILE_CSS = `
     .mobile-padding { padding: 24px 20px !important; }
     .hero-title { font-size: 24px !important; }
   }
-  @media (prefers-color-scheme: dark) {
     .force-teal { background-color: ${TEAL_PRIMARY} !important; color: #ffffff !important; }
     .force-white { color: #ffffff !important; }
     .force-gold { color: ${GOLD_ACCENT} !important; }
     .force-card { background-color: ${CARD_BG} !important; color: ${TEXT_PRIMARY} !important; }
+    h1, h2, h3, p, span { color: inherit !important; }
   }
   [data-ogsc] .force-teal { background-color: ${TEAL_PRIMARY} !important; color: #ffffff !important; }
   [data-ogsc] .force-white { color: #ffffff !important; }
   [data-ogsc] .force-card { background-color: ${CARD_BG} !important; color: ${TEXT_PRIMARY} !important; }
+  [data-ogsc] h1, [data-ogsc] h2, [data-ogsc] h3, [data-ogsc] p, [data-ogsc] span { color: inherit !important; }
 </style>
 `;
 
@@ -59,8 +60,8 @@ const getHeader = () => {
   ];
 
   const logoGroup = partnerLogos.map((l, i) => {
-    const divider = i > 0 ? `<div style="width:1px;height:12px;background-color:rgba(255,255,255,0.2);margin:0 12px;display:inline-block;vertical-align:middle;"></div>` : '';
-    return divider + `<img src="${l.uri}" alt="${l.alt}" height="10" style="display:inline-block;height:10px;width:auto;border:0;vertical-align:middle;filter:brightness(0) invert(1);">`;
+    const divider = i > 0 ? `<div style="width:1px;height:12px;background-color:#5a7b81;margin:0 12px;display:inline-block;vertical-align:middle;"></div>` : '';
+    return divider + `<img src="${l.uri}" alt="${l.alt}" height="12" style="display:inline-block;height:12px;width:auto;border:0;vertical-align:middle;filter:brightness(0) invert(1);">`;
   }).join('');
 
   return `
@@ -68,10 +69,10 @@ const getHeader = () => {
     <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" style="height:60px;v-text-anchor:middle;width:600px;" arcsize="34%" stroke="f" fillcolor="${TEAL_PRIMARY}">
       <w:anchorlock/><center>
     <![endif]-->
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="force-teal" style="background-color:${TEAL_PRIMARY}; border-radius:20px 20px 0 0;">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="force-teal" style="background-color:${TEAL_PRIMARY}; border-radius:20px 20px 0 0; color:#FFFFFF;">
       <tr>
-        <td align="center" style="padding:20px 40px 16px;">
-          <div style="display:inline-block;padding:6px 16px;background-color:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;">
+        <td align="center" style="padding:24px 40px 16px; background-color:${TEAL_PRIMARY};">
+          <div style="display:inline-block;padding:8px 20px;background-color:#004a55;border:1px solid #1a525b;border-radius:10px;">
             ${logoGroup}
           </div>
         </td>
@@ -82,13 +83,13 @@ const getHeader = () => {
 };
 
 const getHero = (title: string, subtitle: string) => `
-  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="force-teal" style="background-color:${TEAL_PRIMARY};">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="force-teal" style="background-color:${TEAL_PRIMARY}; color:#FFFFFF;">
     <tr>
-      <td align="center" style="padding:0 40px 40px;">
-        <div class="force-white" style="color:rgba(255,255,255,0.5);font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:0.4em;margin-bottom:10px;">Official Transmission</div>
-        <h1 class="hero-title force-white" style="color:#FFFFFF !important; font-family:'Marcellus', 'Georgia', serif;font-size:26px;font-weight:400;line-height:1.2;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px; mso-color-alt:none;">${title}</h1>
-        <div style="width:28px;height:2px;background-color:${GOLD_ACCENT};margin:0 auto 14px;"></div>
-        <p class="force-white" style="color:rgba(255,255,255,0.7) !important; font-size:13px;line-height:1.5;max-width:380px;margin:0 auto; mso-color-alt:none;">${subtitle}</p>
+      <td align="center" style="padding:0 40px 44px; background-color:${TEAL_PRIMARY};">
+        <div class="force-white" style="color:#668c92;font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:0.4em;margin-bottom:12px;">Official Transmission</div>
+        <h1 class="hero-title force-white" style="color:#FFFFFF !important; font-family:'Marcellus', 'Georgia', serif;font-size:28px;font-weight:400;line-height:1.2;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px; mso-line-height-rule:exactly;">${title}</h1>
+        <div style="width:32px;height:2px;background-color:${GOLD_ACCENT};margin:0 auto 16px;"></div>
+        <p class="force-white" style="color:#b3c5c8 !important; font-size:13px;line-height:1.6;max-width:380px;margin:0 auto; mso-line-height-rule:exactly;">${subtitle}</p>
       </td>
     </tr>
   </table>
@@ -133,12 +134,12 @@ const getButton = (text: string, url: string) => `
 `;
 
 const getIdentityBlock = (name: string, email: string) => `
-  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="force-card" style="margin-bottom:20px;background-color:#F8FAFC;border-radius:12px;border:1px solid #E2E8F0;">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="force-card" style="margin-bottom:20px;background-color:#F8FAFC;border-radius:12px;border:1px solid #E2E8F0; color:${TEXT_PRIMARY};">
     <tr>
-      <td style="padding:14px 18px;">
-        <div class="force-gold" style="font-size:8px;font-weight:900;text-transform:uppercase;color:${GOLD_ACCENT};letter-spacing:0.15em;margin-bottom:4px;">Verified Identity</div>
-        <div class="force-teal" style="color:${TEAL_PRIMARY};font-size:13px;font-weight:800;margin-bottom:2px;">${name}</div>
-        <div style="color:${TEXT_MUTED};font-size:11px;font-weight:600;font-family:'Courier New', Courier, monospace;text-decoration:none !important;color:${TEXT_MUTED} !important;">${email}</div>
+      <td style="padding:16px 20px; background-color:#F8FAFC;">
+        <div class="force-gold" style="font-size:8px;font-weight:900;text-transform:uppercase;color:${GOLD_ACCENT};letter-spacing:0.15em;margin-bottom:6px;">Verified Identity</div>
+        <div class="force-teal" style="color:${TEAL_PRIMARY};font-size:14px;font-weight:800;margin-bottom:4px;">${name}</div>
+        <div style="color:${TEXT_MUTED};font-size:11px;font-weight:600;font-family:Arial, sans-serif;text-decoration:none !important;color:${TEXT_MUTED} !important;">${email}</div>
       </td>
     </tr>
   </table>

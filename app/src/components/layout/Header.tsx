@@ -140,23 +140,23 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0 24px',
-        background: 'var(--primary)',
-        borderBottom: '1px solid rgba(249, 248, 242, 0.1)',
-        boxShadow: '0 4px 20px rgba(0, 63, 73, 0.15)',
+        background: 'var(--teal)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
       }}
     >
       {/* Logo Group */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginRight: 24 }}>
         {project?.partnerLogos?.map((logo, index) => (
           <React.Fragment key={`logo-${index}`}>
-            {index > 0 && <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.15)', borderRadius: 1 }} />}
+            {index > 0 && <div style={{ width: 1, height: 16, background: 'rgba(255, 255, 255, 0.15)', borderRadius: 1 }} />}
             <div style={{ padding: '4px 0', display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: 8, paddingInline: 8 }}>
-              <img src={logo} alt={`Partner Logo ${index + 1}`} style={{ height: 26, width: 'auto', maxWidth: 100, objectFit: 'contain', filter: 'brightness(0) invert(1) Contrast(100) drop-shadow(0 0 2px rgba(255,255,255,0.1))' }} />
+              <img src={logo} alt={`Partner Logo ${index + 1}`} style={{ height: 26, width: 'auto', maxWidth: 100, objectFit: 'contain', filter: 'brightness(0) invert(1) Contrast(100)' }} />
             </div>
           </React.Fragment>
         ))}
         {(!project?.partnerLogos || project.partnerLogos.length === 0) && (
-          <span className="brand-heading" style={{ fontSize: 16, fontWeight: 300, color: 'var(--text-on-primary)' }}>ROH Command Center</span>
+          <span className="brand-heading" style={{ fontSize: 16, fontWeight: 300, color: 'white', letterSpacing: '0.1em' }}>ROH Command Center</span>
         )}
       </div>
 
@@ -172,20 +172,20 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '8px 16px', borderRadius: 12,
-              background: 'rgba(249, 248, 242, 0.08)',
-              border: '1px solid rgba(249, 248, 242, 0.15)',
-              color: 'var(--text-on-primary)', cursor: 'pointer', outline: 'none',
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              color: 'white', cursor: 'pointer', outline: 'none',
               transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Globe size={15} style={{ color: '#d0ab82' }} />
+              <Globe size={15} style={{ color: 'var(--gold)' }} />
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1 }}>{selectedTimeZone.name}</span>
-                <span style={{ fontSize: 10, color: 'rgba(249, 248, 242, 0.6)', marginTop: 2 }}>{selectedTimeZone.offset} Hub</span>
+                <span style={{ fontSize: 13, fontWeight: 800, lineHeight: 1 }}>{selectedTimeZone.name}</span>
+                <span style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.6)', marginTop: 2, fontWeight: 700 }}>{selectedTimeZone.offset} Hub</span>
               </div>
             </div>
-            <ChevronDown size={14} style={{ opacity: 0.6, transform: showTZMenu ? 'rotate(180deg)' : 'none', transition: 'transform 300ms' }} />
+            <ChevronDown size={14} style={{ opacity: 0.6, transform: showTZMenu ? 'rotate(180deg)' : 'none', transition: 'transform 300ms', color: 'var(--gold)' }} />
           </button>
 
           <AnimatePresence>
@@ -295,12 +295,12 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.4)' }} className="pulse-dot" />
-                <span className="font-mono-data" style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-on-primary)', letterSpacing: '0.02em' }}>
+                <span className="font-mono-data" style={{ fontSize: 15, fontWeight: 900, color: 'white', letterSpacing: '0.02em' }}>
                   {time.split(' ')[0]}
-                  <span style={{ fontSize: 11, marginLeft: 4, fontWeight: 500, color: 'rgba(249, 248, 242, 0.6)', textTransform: 'uppercase' }}>{time.split(' ')[1]}</span>
+                  <span style={{ fontSize: 11, marginLeft: 4, fontWeight: 700, color: 'rgba(255, 255, 255, 0.6)', textTransform: 'uppercase' }}>{time.split(' ')[1]}</span>
                 </span>
               </div>
-              <span style={{ fontSize: 11, fontWeight: 500, color: 'rgba(249, 248, 242, 0.5)', textAlign: 'right', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255, 255, 255, 0.5)', textAlign: 'right', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {date}
               </span>
             </>
@@ -323,8 +323,8 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
               whileTap={{ scale: 0.95 }}
               onClick={onNotificationClick}
               style={{
-                position: 'relative', padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)',
-                cursor: 'pointer', background: 'rgba(255,255,255,0.03)', transition: 'all 200ms',
+                position: 'relative', padding: 10, borderRadius: 12, border: '1px solid rgba(255, 255, 255, 0.1)',
+                cursor: 'pointer', background: 'rgba(255, 255, 255, 0.03)', transition: 'all 200ms',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: unreadCount > 0 ? '0 0 20px rgba(212, 175, 55, 0.15)' : 'none'
               }}
@@ -365,7 +365,7 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
                   transition: { duration: 0.8 }
                 } : {}}
               >
-                <Bell size={20} color={showEffects ? "#3b82f6" : "white"} />
+                <Bell size={20} color={showEffects ? "var(--gold)" : "white"} />
               </motion.div>
 
               <AnimatePresence>
@@ -376,11 +376,11 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
                     exit={{ scale: 0, opacity: 0 }}
                     style={{ 
                       position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, 
-                      borderRadius: 10, background: '#3b82f6', 
-                      border: '2px solid #0c0c14', color: 'white', 
+                      borderRadius: 10, background: 'var(--gold)', 
+                      border: '2px solid var(--teal)', color: 'var(--teal)', 
                       fontSize: 11, fontWeight: 900, 
                       display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                      boxShadow: '0 0 10px rgba(59, 130, 246, 0.4)' 
+                      boxShadow: '0 0 10px rgba(212, 175, 55, 0.4)' 
                     }}>
                     {effectiveUnreadCount}
                   </motion.span>
@@ -404,7 +404,7 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
           {userProfile && (
             <div style={{ position: 'relative' }}>
               <motion.button
-                whileHover={{ scale: 1.02, background: 'rgba(249, 248, 242, 0.12)' }}
+                whileHover={{ scale: 1.02, background: 'rgba(255, 255, 255, 0.08)' }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 style={{
@@ -412,8 +412,8 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
                   alignItems: 'center',
                   gap: 12,
                   padding: '5px 14px 5px 6px',
-                  background: 'rgba(249, 248, 242, 0.06)',
-                  border: `1px solid ${showUserMenu ? 'var(--accent)' : 'rgba(249, 248, 242, 0.15)'}`,
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: `1px solid ${showUserMenu ? 'var(--gold)' : 'rgba(255, 255, 255, 0.1)'}`,
                   borderRadius: 14,
                   cursor: 'pointer',
                   transition: 'border-color 300ms',
@@ -423,10 +423,10 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
               >
                 <div style={{
                   width: 32, height: 32, borderRadius: 10, overflow: 'hidden',
-                  background: 'linear-gradient(135deg, var(--accent) 0%, #b8923f 100%)',
+                  background: 'var(--gold)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--primary)', fontWeight: 900, fontSize: 13,
-                  boxShadow: '0 4px 12px rgba(208, 171, 130, 0.2)',
+                  color: 'var(--teal)', fontWeight: 900, fontSize: 13,
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
                   position: 'relative'
                 }}>
                   {userProfile.avatar ? (
@@ -436,12 +436,12 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
                   )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-on-primary)', lineHeight: 1.1 }}>{userProfile.name}</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: 'white', lineHeight: 1.1 }}>{userProfile.name}</span>
                   {pathname?.startsWith('/admin') && (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(249, 248, 242, 0.5)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>{userProfile.isAdmin ? 'ADMIN' : 'STAFF'}</span>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>{userProfile.isAdmin ? 'ADMIN' : 'STAFF'}</span>
                   )}
                 </div>
-                <ChevronDown size={14} style={{ marginLeft: 'auto', opacity: 0.6, transform: showUserMenu ? 'rotate(180deg)' : 'none', transition: 'transform 300ms', color: 'var(--accent)' }} />
+                <ChevronDown size={14} style={{ marginLeft: 'auto', opacity: 0.6, transform: showUserMenu ? 'rotate(180deg)' : 'none', transition: 'transform 300ms', color: 'var(--gold)' }} />
               </motion.button>
 
               <AnimatePresence>

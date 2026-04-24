@@ -9,48 +9,47 @@
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Elite Dark Industrial Palette */
-  --teal: #00f2ff; /* Luminous Teal */
-  --teal-deep: #003f49;
+  /* Elite Premium Light Palette (Cotton) */
+  --teal: #003f49; 
+  --teal-light: #00f2ff;
   --gold: #d0ab82;
   
-  --background: #050a0b; /* Deep Charcoal/Teal Black */
-  --surface: #0a1112;
-  --panel: #0f1a1c;
-  --border: rgba(0, 242, 255, 0.12);
-  --border-bright: rgba(0, 242, 255, 0.3);
+  --background: #f8fafc; 
+  --surface: #ffffff;
+  --panel: #f1f5f9;
+  --border: rgba(0, 63, 73, 0.08);
+  --border-bright: rgba(0, 63, 73, 0.15);
   
-  --text-primary: #e0f2f1;
-  --text-secondary: #80cbc4;
-  --text-muted: #4d6d6d;
-  --text-dim: #213131;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
 
   /* Legacy Compatibility Mapping */
-  --cotton: var(--background);
-  --aqua: var(--surface);
-  --haze: var(--panel);
+  --cotton: #ffffff;
+  --aqua: #f8fafc;
+  --haze: #f1f5f9;
 
   --primary: var(--teal);
   --primary-light: #00b8c4;
-  --secondary: rgba(0, 242, 255, 0.05);
-  --section-bg: rgba(0, 0, 0, 0.6);
+  --secondary: rgba(0, 63, 73, 0.03);
+  --section-bg: #ffffff;
   --accent: var(--gold);
 
-  --card: rgba(15, 26, 28, 0.8);
-  --card-haze: rgba(0, 242, 255, 0.03);
-  --border: rgba(0, 242, 255, 0.15);
-  --border-hover: rgba(0, 242, 255, 0.3);
+  --card: #ffffff;
+  --card-haze: rgba(248, 250, 252, 0.8);
+  --border-hover: rgba(0, 63, 73, 0.2);
 
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
   --radius-full: 9999px;
 
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
-  --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.8);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.03);
+  --shadow-premium: 0 20px 25px rgba(0, 0, 0, 0.05);
 
   --transition-fast: 150ms ease-out;
   --transition-normal: 300ms ease-out;
@@ -122,26 +121,25 @@ fieldset[disabled] button {
 
 /* ─── Premium Cards ────────────────────────────────────────────── */
 .glass-card {
-  background: rgba(10, 17, 18, 0.85);
-  border: 1px solid rgba(0, 242, 255, 0.1);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
   backdrop-filter: blur(24px);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
 
 .glass-card:hover {
-  border-color: rgba(0, 242, 255, 0.3);
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 242, 255, 0.1);
+  border-color: rgba(0, 63, 73, 0.1);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.05);
   transform: translateY(-2px);
 }
 
 .glass-card-haze {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.03);
   border-radius: 16px;
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
 }
 
 /* ─── Typography Utility ───────────────────────────────────────── */

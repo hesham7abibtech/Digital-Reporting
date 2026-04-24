@@ -15,6 +15,7 @@ import {
 import { db, storage } from '@/lib/firebase';
 import { tasks as mockTasks, teamMembers as mockMembers, dashboardsRegistry as mockRegistry } from '@/lib/data';
 import { Task, TeamMember, DashboardNavItem } from '@/lib/types';
+import { getApiEndpoint } from '@/lib/apiConfig';
 import { 
   getFirestore, 
   terminate as firestoreTerminate,
@@ -325,7 +326,7 @@ export async function updateUserProfile(uid: string, data: any, triggerNotificat
 
   if (triggerNotification && data.isApproved && data.email) {
     try {
-      await fetch('/api/mail', {
+      await fetch(getApiEndpoint('/api/mail'), {
         method: 'POST',
         body: JSON.stringify({
           type: 'ACCOUNT_APPROVED',

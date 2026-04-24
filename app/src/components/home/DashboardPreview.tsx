@@ -96,20 +96,22 @@ export default function DashboardPreview({ screenshotUrl, isBlurred, overlayText
               </p>
 
               <motion.button
-                whileHover={{ scale: 1.04, boxShadow: '0 12px 40px rgba(208, 171, 130, 0.4)' }}
+                whileHover={{ scale: 1.05, background: 'rgba(208, 171, 130, 0.9)', boxShadow: '0 12px 40px rgba(208, 171, 130, 0.4)' }}
                 whileTap={{ scale: 0.97 }}
                 onClick={onLoginClick}
                 style={{
-                  padding: '14px 32px', borderRadius: 14,
-                  background: 'linear-gradient(135deg, var(--sunlit-rock), #b8923f)',
-                  color: 'white', fontSize: 13, fontWeight: 800,
+                  padding: '18px 42px', borderRadius: 20,
+                  background: 'var(--gold)',
+                  color: '#000000', fontSize: 15, fontWeight: 900,
                   border: 'none', cursor: 'pointer',
-                  textTransform: 'uppercase', letterSpacing: '0.1em',
-                  display: 'flex', alignItems: 'center', gap: 8,
+                  textTransform: 'uppercase', letterSpacing: '0.15em',
+                  display: 'flex', alignItems: 'center', gap: 10,
                   boxShadow: '0 8px 30px rgba(208, 171, 130, 0.3)',
+                  transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+                  fontFamily: 'var(--font-heading)'
                 }}
               >
-                Access Dashboard <ArrowRight size={16} />
+                Access Dashboard <ArrowRight size={18} />
               </motion.button>
             </div>
           )}

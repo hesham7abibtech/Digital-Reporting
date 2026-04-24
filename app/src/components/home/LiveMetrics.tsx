@@ -23,31 +23,32 @@ export default function LiveMetrics({ items }: LiveMetricsProps) {
 
   return (
     <section ref={sectionRef} style={{
-      padding: '80px 24px',
+      padding: '40px 24px 100px',
       background: 'var(--teal)',
       position: 'relative', overflow: 'hidden',
+      height: 'fit-content'
     }}>
       {/* Background decorations */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'radial-gradient(ellipse 60% 50% at 20% 50%, rgba(208,171,130,0.06) 0%, transparent 60%)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'radial-gradient(ellipse 50% 60% at 80% 50%, rgba(198,224,224,0.05) 0%, transparent 60%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'radial-gradient(ellipse 60% 50% at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'radial-gradient(ellipse 50% 60% at 80% 50%, rgba(0, 242, 255, 0.03) 0%, transparent 60%)', pointerEvents: 'none' }} />
 
       <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1 }}>
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={sectionInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          style={{ textAlign: 'center', marginBottom: 50 }}
+          transition={{ duration: 0.8 }}
+          style={{ textAlign: 'center', marginBottom: 60 }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 14 }}>
-            <div style={{ width: 40, height: 1, background: 'rgba(208,171,130,0.4)' }} />
-            <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--sunlit-rock)', textTransform: 'uppercase', letterSpacing: '0.3em' }}>
-              Live Metrics
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 18 }}>
+            <div style={{ width: 40, height: 1, background: 'rgba(212, 175, 55, 0.3)' }} />
+            <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.4em' }}>
+              Strategic Intelligence
             </span>
-            <div style={{ width: 40, height: 1, background: 'rgba(208,171,130,0.4)' }} />
+            <div style={{ width: 40, height: 1, background: 'rgba(212, 175, 55, 0.3)' }} />
           </div>
-          <h2 className="brand-heading" style={{ fontSize: 'clamp(24px, 4vw, 38px)', color: 'var(--cotton)', margin: 0 }}>
-            Project at a Glance
+          <h2 className="brand-heading" style={{ fontSize: 'clamp(28px, 4vw, 42px)', color: 'white', margin: 0, fontWeight: 300 }}>
+            Project <span style={{ fontWeight: 900, color: 'var(--gold)' }}>at a Glance</span>
           </h2>
         </motion.div>
 
@@ -55,50 +56,42 @@ export default function LiveMetrics({ items }: LiveMetricsProps) {
         <div ref={gridRef} style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${Math.min(visibleItems.length, 4)}, 1fr)`,
-          gap: 20,
+          gap: 24,
         }}>
           {visibleItems.map((metric, i) => {
             const Icon = lucideIconMap[metric.icon] || Activity;
             return (
               <motion.div
                 key={metric.id}
-                initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                animate={gridInView ? { opacity: 1, y: 0, scale: 1 } : {}}
-
-                transition={{ delay: 0.2 + i * 0.12, duration: 0.6, ease: 'easeOut' }}
+                initial={{ opacity: 0, y: 30 }}
+                animate={gridInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: 0.2 + i * 0.1, duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
                 style={{
-                  padding: '16px 12px', borderRadius: 20, textAlign: 'center',
-                  background: 'rgba(249, 248, 242, 0.06)',
+                  padding: '40px 32px', borderRadius: 24, textAlign: 'center',
+                  background: 'rgba(255, 255, 255, 0.05)',
                   backdropFilter: 'blur(12px)',
-                  border: '1px solid rgba(249, 248, 242, 0.08)',
-                  transition: 'all 300ms ease',
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(249, 248, 242, 0.1)';
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(208,171,130,0.3)';
-                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(249, 248, 242, 0.06)';
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(249, 248, 242, 0.08)';
-                  (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2)',
+                  position: 'relative',
+                  overflow: 'hidden'
                 }}
               >
                 <div style={{
-                  width: 44, height: 44, borderRadius: 14,
-                  background: 'rgba(208, 171, 130, 0.12)',
-                  border: '1px solid rgba(208, 171, 130, 0.2)',
+                  width: 52, height: 52, borderRadius: 16,
+                  background: 'rgba(212, 175, 55, 0.15)',
+                  border: '1px solid rgba(212, 175, 55, 0.2)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  margin: '0 auto 14px',
+                  margin: '0 auto 24px',
+                  color: 'var(--gold)'
                 }}>
-                  <Icon size={20} color="var(--sunlit-rock)" />
+                  <Icon size={24} />
                 </div>
 
-                <div style={{ fontSize: 'clamp(28px, 3.5vw, 36px)', fontWeight: 900, color: 'var(--cotton)', lineHeight: 1, marginBottom: 6, fontFamily: 'var(--font-mono)' }}>
-                  <AnimatedCounter value={metric.value} duration={2000} prefix={metric.prefix || ''} suffix={metric.suffix || ''} startCounting={gridInView} />
+                <div style={{ fontSize: 'clamp(32px, 4vw, 40px)', fontWeight: 900, color: 'white', lineHeight: 1, marginBottom: 12, fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}>
+                  <AnimatedCounter value={metric.value} duration={2500} prefix={metric.prefix || ''} suffix={metric.suffix || ''} startCounting={gridInView} />
                 </div>
 
-                <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(249, 248, 242, 0.5)', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>
+                <p style={{ fontSize: 12, fontWeight: 800, color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>
                   {metric.label}
                 </p>
               </motion.div>

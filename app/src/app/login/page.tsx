@@ -17,6 +17,7 @@ import { createUserProfile, getProjectMetadata, logRegistrationEvent } from '@/s
 import { useAuth } from '@/context/AuthContext';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import { ProjectMetadata } from '@/lib/types';
+import { getApiEndpoint } from '@/lib/apiConfig';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import {
   Lock, Mail, Loader2, Globe, ShieldCheck,
@@ -273,7 +274,7 @@ function LoginContent() {
       const dispatchNotifications = async () => {
         try {
           // Notify User
-          await fetch('/api/mail', {
+          await fetch(getApiEndpoint('/api/mail'), {
             method: 'POST',
             body: JSON.stringify({
               type: 'REGISTRATION_PENDING',
@@ -285,7 +286,7 @@ function LoginContent() {
           // Notify Admins (Hesham & Architect)
           const admins = ['Hesham.habib@insiteinternational.com', 'architect@rehdigital.com'];
           for (const adminEmail of admins) {
-            await fetch('/api/mail', {
+            await fetch(getApiEndpoint('/api/mail'), {
               method: 'POST',
               body: JSON.stringify({
                 type: 'ADMIN_NOTIFICATION',
@@ -319,7 +320,7 @@ function LoginContent() {
     setIsSubmitting(true);
     try {
       setEmailNotFound(false);
-      const response = await fetch('/api/auth/reset-link', {
+      const response = await fetch(getApiEndpoint('/api/auth/reset-link'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -790,8 +791,8 @@ function LoginContent() {
               initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               style={{ width: '100%', maxWidth: 420, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)', border: '1px solid rgba(208, 171, 130, 0.2)', borderRadius: 24, padding: '40px 36px', textAlign: 'center', position: 'relative', zIndex: 1, boxShadow: '0 25px 60px rgba(0,63,73,0.15)' }}>
-              <div style={{ width: 64, height: 64, borderRadius: 18, background: 'linear-gradient(135deg, var(--sunlit-rock) 0%, #a08050 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                <Mail size={32} color="white" />
+              <div style={{ width: 64, height: 64, borderRadius: 18, background: 'linear-gradient(135deg, var(--sunlit-rock) 0%, #a08050 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 8px 24px rgba(208, 171, 130, 0.2)' }}>
+                <Mail size={32} color="var(--teal)" />
               </div>
               <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--teal)', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Security Link Dispatched</h2>
               <p style={{ color: 'var(--text-dim)', fontSize: 14, lineHeight: 1.6, margin: '0 0 20px', fontWeight: 500 }}>

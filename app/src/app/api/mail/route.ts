@@ -6,6 +6,16 @@ import { mailService } from '@/services/MailService';
  * Accepts: to, cc, bcc, type, payload
  */
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -51,7 +61,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: `Invalid mail type: ${type}` }, { status: 400 });
     }
 
-    return NextResponse.json({ ...result });
+    return NextResponse.json({ ...result }, { headers: corsHeaders });
 
   } catch (error: any) {
     console.error('[API_MAIL] Handler error:', error);
@@ -59,6 +69,6 @@ export async function POST(req: NextRequest) {
       success: false,
       error: error.message || 'Internal Server Error',
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    }, { status: 500 });
+    }, { status: 500, headers: corsHeaders });
   }
 }

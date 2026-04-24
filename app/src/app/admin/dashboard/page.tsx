@@ -81,6 +81,7 @@ import BulkActionConfirmModal from '@/components/admin/BulkActionConfirmModal';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import HeaderBgCropper from '@/components/admin/HeaderBgCropper';
 import HomePageEditor from '@/components/admin/HomePageEditor';
+import { getApiEndpoint } from '@/lib/apiConfig';
 
 const DEFAULT_ALLOWED_DOMAINS = ['modon.com', 'insiteinternational.com'];
 
@@ -126,7 +127,11 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
   const [userSearchQuery, setUserSearchQuery] = useState('');
 
   const addEmailToField = (email: string, field: 'TO' | 'CC' | 'BCC') => {
-    const setters = { TO: setToEmails, CC: setCcEmails, BCC: setBccEmails };
+    const setters: Record<'TO' | 'CC' | 'BCC', React.Dispatch<React.SetStateAction<string>>> = { 
+      TO: setToEmails, 
+      CC: setCcEmails, 
+      BCC: setBccEmails 
+    };
     const values = { TO: toEmails, CC: ccEmails, BCC: bccEmails };
     
     const current = values[field].split(',').map(e => e.trim()).filter(Boolean);
@@ -182,7 +187,6 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
       let bccList = bccEmails.split(',').map(e => e.trim()).filter(Boolean);
 
       if (mailTarget === 'ALL') {
-        // For mass broadcasts, we BCC everyone to ensure privacy as requested
         bccList = [...new Set([...bccList, ...(usersSnapshot?.docs.map((d: any) => d.data().email).filter(Boolean) || [])])];
       } else if (mailTarget === 'ROLE') {
         bccList = [...new Set([...bccList, ...(usersSnapshot?.docs
@@ -193,18 +197,15 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
         toList = toEmails.split(',').map(e => e.trim()).filter(Boolean);
       }
 
-      // Final check across all tiers
       if (toList.length === 0 && ccList.length === 0 && bccList.length === 0) {
         showToast('Dispatch aborted: No recipients defined in TO, CC, or BCC.', 'WARNING');
         setLoading(false);
         return;
       }
 
-      // Professional handling of 'Undisclosed Recipients'
       const primaryTo = toList.length > 0 ? toList.join(', ') : 'Undisclosed Recipients <info@rehdigital.com>';
 
-      // Unified SMTP Dispatch
-      const response = await fetch('/api/mail', {
+      const response = await fetch(getApiEndpoint('/api/mail'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -328,7 +329,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                 value={broadcastTitle}
                 onChange={(e) => setBroadcastTitle(e.target.value)}
                 placeholder="Enter high-impact title..."
-                style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
+                style={{ padding: '12px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
               />
             </div>
 
@@ -339,7 +340,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                 onChange={(e) => setBroadcastDescription(e.target.value)}
                 placeholder="Detailed administrative context..."
                 rows={3}
-                style={{ padding: '12px 16px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none', resize: 'none' }}
+                style={{ padding: '12px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none', resize: 'none' }}
               />
             </div>
 
@@ -361,7 +362,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Target Spectrum</label>
-                <div style={{ display: 'flex', gap: 6, background: 'rgba(0,0,0,0.4)', padding: 6, borderRadius: 14, border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', gap: 6, background: 'var(--secondary)', padding: 6, borderRadius: 14, border: '1px solid var(--border)' }}>
                   {[
                     { id: 'ALL', label: 'ALL USERS' },
                     { id: 'ROLE', label: 'BY ROLE' },
@@ -374,8 +375,8 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                       style={{
                         flex: 1, padding: '10px 0', borderRadius: 10, border: 'none',
                         background: mailTarget === t.id ? 'var(--teal)' : 'transparent',
-                        color: mailTarget === t.id ? '#ffffff' : 'var(--text-muted)',
-                        fontSize: 10, fontWeight: 900, cursor: 'pointer', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)'
+                        color: mailTarget === t.id ? (mailTarget === t.id ? '#ffffff' : 'var(--text-primary)') : 'var(--text-muted)',
+                        fontSize: 10, fontWeight: 900, cursor: 'pointer', transition: 'all 300ms'
                       }}
                     >
                       {t.label}
@@ -389,14 +390,14 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                   <select
                     value={targetRole}
                     onChange={(e) => setTargetRole(e.target.value)}
-                    style={{ padding: '12px 16px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border)', borderRadius: 14, color: '#ffffff', fontSize: 14, outline: 'none', appearance: 'none' }}
+                    style={{ padding: '12px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
                   >
                     <option value="TEAM">PROJECT TEAM</option>
                     <option value="ADMIN">ADMINISTRATORS</option>
                     <option value="OWNER">SYSTEM OWNERS</option>
                   </select>
                 ) : (
-                  <div style={{ padding: '12px 16px', background: 'rgba(0, 242, 255, 0.03)', borderRadius: 14, border: '1px solid rgba(0, 242, 255, 0.1)', color: 'var(--teal)', fontSize: 12, fontWeight: 800, letterSpacing: '0.05em' }}>
+                  <div style={{ padding: '12px 16px', background: 'var(--secondary)', borderRadius: 14, border: '1px solid var(--border)', color: 'var(--teal)', fontSize: 12, fontWeight: 800, letterSpacing: '0.05em' }}>
                     {mailTarget === 'ALL' ? 'GLOBAL BROADCAST ENABLED' : 'SPECIFIC ROUTING ACTIVE'}
                   </div>
                 )}
@@ -406,12 +407,12 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
             {mailTarget === 'SPECIFIC' && (
               <div style={{ 
                 display: 'flex', flexDirection: 'column', gap: 24, padding: 32, 
-                background: 'rgba(0,0,0,0.6)', borderRadius: 28, border: '1px solid var(--border)',
-                boxShadow: 'inset 0 0 60px rgba(0,0,0,0.5)', position: 'relative', overflow: 'visible'
+                background: 'var(--panel)', borderRadius: 28, border: '1px solid var(--border)',
+                position: 'relative', overflow: 'visible'
               }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 2, background: 'linear-gradient(90deg, transparent, var(--teal), transparent)', opacity: 0.5 }} />
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 2, background: 'linear-gradient(90deg, transparent, var(--teal), transparent)', opacity: 0.3 }} />
                 
-                {/* Direct Recipients (TO) - High Density Field */}
+                {/* Direct Recipients (TO) */}
                 <div style={{ width: '100%' }}>
                   {[
                     { id: 'TO', label: 'Direct Recipients (TO)', value: toEmails, setter: setToEmails, accent: 'var(--teal)', icon: <Send size={16} /> },
@@ -420,17 +421,17 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                       key={field.id} 
                       style={{ 
                         display: 'flex', flexDirection: 'column', gap: 16, position: 'relative', 
-                        background: 'rgba(0, 242, 255, 0.02)', padding: '28px', borderRadius: 24, 
-                        border: '1px solid rgba(0, 242, 255, 0.1)', borderLeft: `8px solid ${field.accent}`,
-                        boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+                        background: 'var(--surface)', padding: '28px', borderRadius: 24, 
+                        border: '1px solid var(--border)', borderLeft: `8px solid ${field.accent}`,
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.03)'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                          <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(0, 242, 255, 0.1)', color: field.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0, 242, 255, 0.15)' }}>{field.icon}</div>
+                          <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(0, 63, 73, 0.05)', color: field.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{field.icon}</div>
                           <div>
-                            <label style={{ fontSize: 12, fontWeight: 900, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.2em', display: 'block' }}>{field.label}</label>
-                            <span style={{ fontSize: 9, color: 'var(--teal)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Primary Destination Node</span>
+                            <label style={{ fontSize: 12, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.2em', display: 'block' }}>{field.label}</label>
+                            <span style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Primary Destination Node</span>
                           </div>
                         </div>
                         <button
@@ -441,10 +442,9 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                           }}
                           style={{ 
                             padding: '12px 24px', borderRadius: 14, border: 'none', 
-                            background: field.accent, color: '#050a0b', fontSize: 11, 
+                            background: 'var(--teal)', color: '#ffffff', fontSize: 11, 
                             fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
-                            transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)', textTransform: 'uppercase', letterSpacing: '0.15em',
-                            boxShadow: '0 10px 30px rgba(0, 242, 255, 0.3)'
+                            transition: 'all 300ms', textTransform: 'uppercase', letterSpacing: '0.15em'
                           }}
                         >
                           <UserPlus size={18} /> OPEN REGISTRY
@@ -456,10 +456,10 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                         placeholder="Establish primary communication uplink (semicolon separated)..."
                         rows={Math.max(2, field.value.split('\n').length + (field.value.match(/;/g) || []).length / 2, Math.ceil(field.value.length / 100))}
                         style={{ 
-                          padding: '20px', background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(0, 242, 255, 0.2)', 
-                          borderRadius: 16, color: '#ffffff', fontSize: 15, outline: 'none', 
+                          padding: '20px', background: 'var(--background)', border: '1px solid var(--border)', 
+                          borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', 
                           resize: 'none', fontWeight: 500, lineHeight: '1.6', transition: 'all 300ms',
-                          boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.5)', fontFamily: 'var(--font-mono)'
+                          fontFamily: 'var(--font-mono)'
                         }}
                       />
                       
@@ -471,21 +471,21 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                             exit={{ opacity: 0, scale: 0.98, y: 10 }}
                             style={{ 
                               position: 'absolute', top: '100%', right: 0, zIndex: 1500, 
-                              width: 440, marginTop: 16, background: '#0a1112', 
-                              border: '1px solid var(--teal)', borderRadius: 24, 
-                              boxShadow: '0 50px 100px rgba(0,0,0,0.9)', padding: 20, 
+                              width: 440, marginTop: 16, background: 'var(--surface)', 
+                              border: '1px solid var(--border)', borderRadius: 24, 
+                              boxShadow: '0 30px 60px rgba(0,0,0,0.1)', padding: 20, 
                               display: 'flex', flexDirection: 'column', gap: 16,
                               backdropFilter: 'blur(30px)'
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(0,0,0,0.6)', padding: '14px 20px', borderRadius: 16, border: '1px solid rgba(0, 242, 255, 0.2)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--background)', padding: '14px 20px', borderRadius: 16, border: '1px solid var(--border)' }}>
                               <Search size={20} color="var(--teal)" />
                               <input 
                                 autoFocus
                                 value={userSearchQuery}
                                 onChange={e => setUserSearchQuery(e.target.value)}
                                 placeholder="Locate personnel identity..." 
-                                style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: 15, outline: 'none', width: '100%' }} 
+                                style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 15, outline: 'none', width: '100%' }} 
                               />
                             </div>
                             <div style={{ maxHeight: 350, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 8 }} className="custom-scrollbar">
@@ -502,20 +502,20 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                                     onClick={() => addEmailToField(d.data().email, field.id as any)}
                                     style={{ 
                                       textAlign: 'left', padding: '16px 20px', borderRadius: 16, 
-                                      border: '1px solid transparent', background: 'rgba(255,255,255,0.03)', 
+                                      border: '1px solid transparent', background: 'var(--secondary)', 
                                       cursor: 'pointer', transition: 'all 200ms', display: 'flex', 
                                       flexDirection: 'column', gap: 4 
                                     }}
                                     onMouseEnter={e => {
-                                      e.currentTarget.style.background = 'rgba(0, 242, 255, 0.1)';
-                                      e.currentTarget.style.borderColor = 'rgba(0, 242, 255, 0.3)';
+                                      e.currentTarget.style.background = 'rgba(0, 63, 73, 0.05)';
+                                      e.currentTarget.style.borderColor = 'rgba(0, 63, 73, 0.1)';
                                     }}
                                     onMouseLeave={e => {
-                                      e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                                      e.currentTarget.style.background = 'var(--secondary)';
                                       e.currentTarget.style.borderColor = 'transparent';
                                     }}
                                   >
-                                    <span style={{ fontSize: 14, fontWeight: 900, color: '#ffffff' }}>{d.data().name}</span>
+                                    <span style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)' }}>{d.data().name}</span>
                                     <span style={{ fontSize: 11, color: 'var(--teal)', fontWeight: 800, letterSpacing: '0.05em', opacity: 0.8 }}>{d.data().email}</span>
                                   </button>
                                 ))}
@@ -536,15 +536,15 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                       key={field.id} 
                       style={{ 
                         display: 'flex', flexDirection: 'column', gap: 14, position: 'relative', 
-                        background: 'rgba(0,0,0,0.5)', padding: '24px', borderRadius: 20, 
-                        border: '1px solid rgba(255,255,255,0.05)', borderTop: `4px solid ${field.accent}`,
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.4)'
+                        background: 'var(--surface)', padding: '24px', borderRadius: 20, 
+                        border: '1px solid var(--border)', borderTop: `4px solid ${field.accent}`,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <div style={{ color: field.accent, opacity: 1 }}>{field.icon}</div>
-                          <label style={{ fontSize: 11, fontWeight: 900, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.15em' }}>{field.label}</label>
+                          <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>{field.label}</label>
                         </div>
                         <button
                           type="button"
@@ -568,8 +568,8 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                         placeholder={`Draft ${field.id} identities...`}
                         rows={Math.max(2, field.value.split('\n').length + (field.value.match(/;/g) || []).length / 2, Math.ceil(field.value.length / 50))}
                         style={{ 
-                          padding: '16px', background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(255,255,255,0.08)', 
-                          borderRadius: 14, color: '#ffffff', fontSize: 13, outline: 'none', 
+                          padding: '16px', background: 'var(--background)', border: '1px solid var(--border)', 
+                          borderRadius: 14, color: 'var(--text-primary)', fontSize: 13, outline: 'none', 
                           resize: 'none', fontWeight: 500, lineHeight: '1.5', fontFamily: 'var(--font-mono)'
                         }}
                       />
@@ -582,21 +582,21 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                             exit={{ opacity: 0, y: 15 }}
                             style={{ 
                               position: 'absolute', top: '100%', left: 0, zIndex: 1500, 
-                              width: 320, marginTop: 16, background: '#0a1112', 
+                              width: 320, marginTop: 16, background: 'var(--surface)', 
                               border: `1px solid ${field.accent}`, borderRadius: 20, 
-                              boxShadow: '0 30px 80px rgba(0,0,0,0.8)', padding: 16, 
+                              boxShadow: '0 30px 60px rgba(0,0,0,0.1)', padding: 16, 
                               display: 'flex', flexDirection: 'column', gap: 14,
                               backdropFilter: 'blur(25px)'
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,0,0,0.4)', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--background)', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border)' }}>
                               <Search size={16} color={field.accent} />
                               <input 
                                 autoFocus
                                 value={userSearchQuery}
                                 onChange={e => setUserSearchQuery(e.target.value)}
                                 placeholder="Search..." 
-                                style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: 13, outline: 'none', width: '100%' }} 
+                                style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13, outline: 'none', width: '100%' }} 
                               />
                             </div>
                             <div style={{ maxHeight: 250, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }} className="custom-scrollbar">
@@ -612,10 +612,10 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                                     type="button"
                                     onClick={() => addEmailToField(d.data().email, field.id as any)}
                                     style={{ textAlign: 'left', padding: '12px 14px', borderRadius: 12, border: 'none', background: 'transparent', cursor: 'pointer', transition: 'all 200ms' }}
-                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'}
                                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                   >
-                                    <span style={{ fontSize: 13, fontWeight: 900, color: '#ffffff', display: 'block' }}>{d.data().name}</span>
+                                    <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-primary)', display: 'block' }}>{d.data().name}</span>
                                     <span style={{ fontSize: 11, color: field.accent, opacity: 0.8 }}>{d.data().email}</span>
                                   </button>
                                 ))}
@@ -636,7 +636,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                   value={mailSubject}
                   onChange={(e) => setMailSubject(e.target.value)}
                   placeholder="Official dispatch subject..."
-                  style={{ padding: '14px 20px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border)', borderRadius: 14, color: '#ffffff', fontSize: 15, outline: 'none', transition: 'all 300ms' }}
+                  style={{ padding: '14px 20px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, color: 'var(--text-primary)', fontSize: 15, outline: 'none', transition: 'all 300ms' }}
                   onFocus={e => e.currentTarget.style.borderColor = 'var(--teal)'}
                   onBlur={e => e.currentTarget.style.borderColor = 'var(--border)'}
                 />
@@ -647,7 +647,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                   <select
                     value={mailCategory}
                     onChange={(e) => setMailCategory(e.target.value)}
-                    style={{ width: '100%', padding: '14px 20px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border)', borderRadius: 14, color: '#ffffff', fontSize: 15, outline: 'none', appearance: 'none' }}
+                    style={{ width: '100%', padding: '14px 20px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
                   >
                     <option value="ANNOUNCEMENT">SYSTEM ANNOUNCEMENT</option>
                     <option value="NEWS">PROJECT NEWS FEED</option>
@@ -666,8 +666,8 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                 placeholder="Draft your professional industrial dispatch here..."
                 rows={4}
                 style={{ 
-                  padding: '16px 20px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border)', 
-                  borderRadius: 16, color: '#ffffff', fontSize: 15, outline: 'none', resize: 'none', 
+                  padding: '16px 20px', background: 'var(--surface)', border: '1px solid var(--border)', 
+                  borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', resize: 'none', 
                   lineHeight: '1.7', transition: 'all 300ms' 
                 }}
                 onFocus={e => e.currentTarget.style.borderColor = 'var(--teal)'}
@@ -678,22 +678,22 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
             <button
               disabled={loading}
               style={{
-                marginTop: 10, padding: '16px 40px', background: 'var(--teal)', color: '#050a0b',
+                marginTop: 10, padding: '16px 40px', background: 'var(--teal)', color: '#ffffff',
                 border: 'none', borderRadius: 16, fontWeight: 900, fontSize: 15,
                 cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-                boxShadow: '0 15px 40px rgba(0, 242, 255, 0.2)', letterSpacing: '0.2em', textTransform: 'uppercase', width: 'fit-content', alignSelf: 'center',
+                boxShadow: '0 10px 30px rgba(0, 63, 73, 0.2)', letterSpacing: '0.2em', textTransform: 'uppercase', width: 'fit-content', alignSelf: 'center',
                 transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)'
               }}
               onMouseEnter={e => {
                 if (!loading) {
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 20px 50px rgba(0, 242, 255, 0.3)';
+                  e.currentTarget.style.boxShadow = '0 15px 40px rgba(0, 63, 73, 0.3)';
                 }
               }}
               onMouseLeave={e => {
                 if (!loading) {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 15px 40px rgba(0, 242, 255, 0.2)';
+                  e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 63, 73, 0.2)';
                 }
               }}
             >
@@ -777,10 +777,10 @@ export default function AdminDashboardPage() {
   const [localSummaryFields, setLocalSummaryFields] = useState<ReportSummaryField[]>(DEFAULT_SUMMARY_FIELDS);
   
   // PDF Color Vectors
-  const [localReportBgColor, setLocalReportBgColor] = useState('#0a0a0f');
-  const [localReportAccentColor, setLocalReportAccentColor] = useState('#D4AF37');
-  const [localReportHeaderTextColor, setLocalReportHeaderTextColor] = useState('#D4AF37');
-  const [localReportPdfBodyTextColor, setLocalReportPdfBodyTextColor] = useState('rgba(255,255,255,0.7)');
+  const [localReportBgColor, setLocalReportBgColor] = useState('#f8fafc');
+  const [localReportAccentColor, setLocalReportAccentColor] = useState('#003f49');
+  const [localReportHeaderTextColor, setLocalReportHeaderTextColor] = useState('#003f49');
+  const [localReportPdfBodyTextColor, setLocalReportPdfBodyTextColor] = useState('#475569');
 
   // Excel Color Vectors
   const [localReportExcelHeaderColor, setLocalReportExcelHeaderColor] = useState('#107c41');
@@ -918,10 +918,10 @@ export default function AdminDashboardPage() {
     setLocalReportTitle(projectData.reportTitle || 'Executive Summary Report');
     setLocalReportSubtitle(projectData.reportSubtitle || 'Operational Performance & Deliverables');
     setLocalReportSummary(projectData.reportSummary || '');
-    setLocalReportBgColor(projectData.reportBgColor || '#0a0a0f');
-    setLocalReportAccentColor(projectData.reportAccentColor || '#D4AF37');
-    setLocalReportHeaderTextColor(projectData.reportHeaderTextColor || '#D4AF37');
-    setLocalReportPdfBodyTextColor(projectData.reportPdfBodyTextColor || 'rgba(255,255,255,0.7)');
+    setLocalReportBgColor(projectData.reportBgColor || '#f8fafc');
+    setLocalReportAccentColor(projectData.reportAccentColor || '#003f49');
+    setLocalReportHeaderTextColor(projectData.reportHeaderTextColor || '#003f49');
+    setLocalReportPdfBodyTextColor(projectData.reportPdfBodyTextColor || '#475569');
     setLocalReportExcelHeaderColor(projectData.reportExcelHeaderColor || '#107c41');
     setLocalReportExcelHeaderTextColor(projectData.reportExcelHeaderTextColor || '#ffffff');
     setLocalReportExcelAccentColor(projectData.reportExcelAccentColor || '#107c41');
@@ -1540,13 +1540,13 @@ export default function AdminDashboardPage() {
             style={{
               position: 'fixed', top: 90, left: '50%', transform: 'translateX(-50%)',
               zIndex: 90,
-              background: 'rgba(10, 17, 18, 0.95)',
+              background: 'rgba(255, 255, 255, 0.98)',
               backdropFilter: 'blur(30px)',
               padding: '12px 32px',
               borderRadius: 20,
-              border: '1px solid var(--status-error)',
+              border: '1px solid var(--border)',
               display: 'flex', alignItems: 'center', gap: 24,
-              boxShadow: '0 0 40px rgba(239, 68, 68, 0.2)',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.05)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -1609,25 +1609,25 @@ export default function AdminDashboardPage() {
         <aside style={{ 
           width: 280, 
           minWidth: 280,
-          background: '#0a1112', 
-          borderRight: '1px solid rgba(0, 242, 255, 0.1)', 
+          background: 'var(--surface)', 
+          borderRight: '1px solid var(--border)', 
           display: 'flex', 
           flexDirection: 'column', 
           height: '100vh',
           zIndex: 150,
-          boxShadow: '10px 0 40px rgba(0,0,0,0.4)',
+          boxShadow: '1px 0 20px rgba(0,0,0,0.03)',
           flexShrink: 0
         }}>
           <div style={{ padding: '32px 24px', textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                  <h1 style={{ fontSize: 13, fontWeight: 900, color: '#ffffff', margin: 0, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: 'var(--font-heading)' }}>Admin Portal</h1>
+                  <h1 style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: 'var(--font-heading)' }}>Admin Portal</h1>
                   <span style={{ fontSize: 9, color: 'var(--teal)', fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Digital Architecture</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, width: '100%', padding: '12px 24px', background: 'rgba(0,0,0,0.3)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 16, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.9 }} />
-                  <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.1)' }} />
-                  <img src="/logos/insite_logo.png" alt="Insite" style={{ height: 16, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.9 }} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, width: '100%', padding: '12px 24px', background: 'rgba(0,0,0,0.03)', borderRadius: 12, border: '1px solid rgba(0,0,0,0.05)' }}>
+                  <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 16, objectFit: 'contain', opacity: 0.9 }} />
+                  <div style={{ width: 1, height: 16, background: 'rgba(0,0,0,0.05)' }} />
+                  <img src="/logos/insite_logo.png" alt="Insite" style={{ height: 16, objectFit: 'contain', opacity: 0.9 }} />
                 </div>
             </div>
           </div>
@@ -1652,9 +1652,9 @@ export default function AdminDashboardPage() {
                   onClick={() => setActiveTab(tab.id as any)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 16,
-                    background: isActive ? 'rgba(0, 242, 255, 0.08)' : 'transparent',
-                    color: isActive ? 'var(--teal)' : 'rgba(255,255,255,0.5)',
-                    border: isActive ? '1px solid rgba(0, 242, 255, 0.2)' : '1px solid transparent', 
+                    background: isActive ? 'rgba(0, 63, 73, 0.05)' : 'transparent',
+                    color: isActive ? 'var(--teal)' : 'rgba(15, 23, 42, 0.5)',
+                    border: isActive ? '1px solid rgba(0, 63, 73, 0.1)' : '1px solid transparent', 
                     cursor: 'pointer', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                     width: '100%', textAlign: 'left', position: 'relative', overflow: 'hidden'
                   }}
@@ -1697,9 +1697,9 @@ export default function AdminDashboardPage() {
         <div className="admin-dashboard-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100vh', overflow: 'hidden', background: 'var(--background)', backgroundImage: 'radial-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px)', backgroundSize: '32px 32px', backgroundPosition: 'center center' }}>
           <header style={{
             height: 72, 
-            background: 'rgba(5, 10, 11, 0.8)', 
+            background: 'rgba(255, 255, 255, 0.8)', 
             backdropFilter: 'blur(30px)',
-            borderBottom: '1px solid rgba(0, 242, 255, 0.1)', 
+            borderBottom: '1px solid var(--border)', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'space-between', 
@@ -1714,7 +1714,7 @@ export default function AdminDashboardPage() {
                   fontSize: 14, 
                   fontWeight: 900, 
                   margin: 0, 
-                  color: '#ffffff', 
+                  color: 'var(--text-primary)', 
                   letterSpacing: '0.25em', 
                   textTransform: 'uppercase', 
                   fontFamily: 'var(--font-heading)' 
@@ -1727,10 +1727,10 @@ export default function AdminDashboardPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
-                  <div style={{ fontSize: 13, color: '#ffffff', fontWeight: 800, letterSpacing: '0.02em' }}>{userProfile?.name || 'Administrator'}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.02em' }}>{userProfile?.name || 'Administrator'}</div>
                   <div style={{ fontSize: 10, color: 'var(--teal)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{userProfile?.role || 'ADMIN'}</div>
                 </div>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--teal)', color: '#050a0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, boxShadow: '0 0 20px rgba(0, 242, 255, 0.3)' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--teal)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, boxShadow: '0 4px 12px rgba(0, 63, 73, 0.1)' }}>
                   {userProfile?.name?.charAt(0)}
                 </div>
               </div>
@@ -1754,9 +1754,9 @@ export default function AdminDashboardPage() {
                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               >
                 <GlassCard padding="none">
-                  <div style={{ padding: '32px 40px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)' }}>
+                  <div style={{ padding: '32px 40px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--panel)' }}>
                     <div>
-                      <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: '#ffffff', letterSpacing: '0.02em' }}>
+                      <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
                         {activeTab === 'tasks' ? 'Digital Deliverable Matrix' : activeTab === 'bim-reviews' ? 'BIM Review Intelligence Matrix' : activeTab === 'team' ? 'Active Digital Project Team' : activeTab === 'registry' ? 'Digital Asset Registry Index' : activeTab === 'branding' ? 'Project Identity & Branding' : activeTab === 'communications' ? 'Elite Communications Hub' : 'Security Access Registry'}
                       </h2>
                       <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 8, fontWeight: 500, letterSpacing: '0.01em' }}>

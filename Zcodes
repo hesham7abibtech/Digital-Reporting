@@ -1,5 +1,3 @@
-git add -A && git status
-git commit -m "feat: admin Portal updates" && git push
+rm -r out; rm -r .next; npm run pages:build
+git add -A && git commit -m "feat: admin Portal updates" && git push
 npm run pages:deploy
-
-npx firebase deploy --only firestore:rules

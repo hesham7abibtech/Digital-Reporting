@@ -3,6 +3,19 @@ import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { mailService } from '@/services/MailService';
 
 /**
+ * CORS handling for Enterprise API
+ */
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
+/**
  * Custom Password Reset Dispatcher
  * 1. Generates a secure Firebase reset link
  * 2. Wraps it in an Ultra-Elite mail template
@@ -81,7 +94,7 @@ export async function POST(req: NextRequest) {
 
     console.log(`[RESET_LINK] Dispatched custom reset email to: ${email}`);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, { headers: corsHeaders });
 
   } catch (error: any) {
     console.error('[API_AUTH_RESET] Critical Failure:', {
@@ -92,6 +105,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ 
       success: false, 
       error: error.message || 'Internal service failure' 
-    }, { status: 500 });
+    }, { status: 500, headers: corsHeaders });
   }
 }

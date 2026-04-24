@@ -106,16 +106,16 @@ export default function ProjectHeader({
         {/* Left - Project Info */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 4 }}>
-              <h1
+               <h1
                 style={{
                   fontSize: 28,
-                  fontWeight: 900, // Maximum authority
+                  fontWeight: 900,
                   letterSpacing: '0.04em',
-                  color: '#FFFFFF', // High-contrast White
+                  color: '#FFFFFF',
                   margin: 0,
                   fontFamily: 'var(--font-primary)',
                   textTransform: 'uppercase',
-                  textShadow: '0 2px 12px rgba(0,0,0,0.6)'
+                  textShadow: '0 2px 10px rgba(0,0,0,0.5)'
                 }}
               >
                 {project?.title && (
@@ -125,7 +125,7 @@ export default function ProjectHeader({
                   </>
                 )}
                 {project?.projectName && (
-                  <span style={{ color: '#FFFFFF', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+                  <span style={{ color: '#FFFFFF' }}>
                     {project.projectName}
                   </span>
                 )}
@@ -137,24 +137,24 @@ export default function ProjectHeader({
               {(project?.subtitles && project.subtitles.length > 0) &&
                 project.subtitles.map((sub, idx) => (
                   <React.Fragment key={`sub-${idx}`}>
-                    {idx > 0 && <span style={{ color: 'var(--text-dim)', fontWeight: 300 }}>|</span>}
+                    {idx > 0 && <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 300 }}>|</span>}
                       <span style={{
                         display: 'flex', alignItems: 'center', gap: 8,
-                        color: idx === 0 ? '#FFFFFF' : 'rgba(255, 255, 255, 0.9)',
+                        color: idx === 0 ? '#FFFFFF' : 'rgba(255, 255, 255, 0.7)',
                         textTransform: idx === 0 ? 'uppercase' : 'none',
                         fontSize: 13,
                         letterSpacing: idx === 0 ? '0.05em' : 'normal',
                         fontWeight: idx === 0 ? 800 : 600,
-                        textShadow: '0 1px 4px rgba(0,0,0,0.4)'
+                        textShadow: '0 1px 4px rgba(0,0,0,0.3)'
                       }}>
-                        {idx === 0 && <Activity size={14} style={{ color: 'var(--accent)' }} />}
+                        {idx === 0 && <Activity size={14} style={{ color: 'var(--gold)' }} />}
                         {sub}
                       </span>
                   </React.Fragment>
                 ))
               }
               {project?.location && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#FFFFFF', fontWeight: 800, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#FFFFFF', fontWeight: 800, textShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
                   <MapPin size={14} style={{ color: '#FF4C4F' }} />
                   {project.location}
                 </span>
@@ -171,20 +171,20 @@ export default function ProjectHeader({
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                   padding: '8px 20px', borderRadius: 10,
-                  background: activeReport === 'DELIVERABLES' ? '#d0ab82' : 'rgba(0, 63, 73, 0.4)',
-                  border: `1px solid ${activeReport === 'DELIVERABLES' ? '#d0ab82' : 'rgba(255, 255, 255, 0.2)'}`,
+                   background: activeReport === 'DELIVERABLES' ? 'var(--gold)' : 'rgba(255, 255, 255, 0.1)',
+                  border: `1px solid ${activeReport === 'DELIVERABLES' ? 'var(--gold)' : 'rgba(255, 255, 255, 0.2)'}`,
                   cursor: 'pointer',
                   transition: 'all 300ms',
-                  boxShadow: activeReport === 'DELIVERABLES' ? '0 0 15px rgba(208, 171, 130, 0.3)' : 'none'
+                  boxShadow: activeReport === 'DELIVERABLES' ? '0 4px 15px rgba(212, 175, 55, 0.3)' : 'none'
                 }}
               >
                 <div style={{ 
                   width: 6, height: 6, borderRadius: '50%', 
-                  background: activeReport === 'DELIVERABLES' ? '#003f49' : '#FFFFFF',
+                  background: activeReport === 'DELIVERABLES' ? 'var(--teal)' : 'white',
                 }} className={activeReport === 'DELIVERABLES' ? "animate-pulse" : ""} />
                 <span style={{ 
-                  fontSize: 12, fontWeight: 950, 
-                  color: activeReport === 'DELIVERABLES' ? '#000000' : '#FFFFFF', 
+                  fontSize: 12, fontWeight: 900, 
+                  color: activeReport === 'DELIVERABLES' ? 'var(--teal)' : 'white', 
                   textTransform: 'uppercase', letterSpacing: '0.08em' 
                 }}>
                   Deliverables Registry Report
@@ -198,20 +198,20 @@ export default function ProjectHeader({
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                   padding: '8px 20px', borderRadius: 10,
-                  background: activeReport === 'BIM_REVIEWS' ? '#d0ab82' : 'rgba(0, 63, 73, 0.4)',
-                  border: `1px solid ${activeReport === 'BIM_REVIEWS' ? '#d0ab82' : 'rgba(255, 255, 255, 0.2)'}`,
+                   background: activeReport === 'BIM_REVIEWS' ? 'var(--gold)' : 'rgba(255, 255, 255, 0.1)',
+                  border: `1px solid ${activeReport === 'BIM_REVIEWS' ? 'var(--gold)' : 'rgba(255, 255, 255, 0.2)'}`,
                   cursor: 'pointer',
                   transition: 'all 300ms',
-                  boxShadow: activeReport === 'BIM_REVIEWS' ? '0 0 15px rgba(208, 171, 130, 0.3)' : 'none'
+                  boxShadow: activeReport === 'BIM_REVIEWS' ? '0 4px 15px rgba(212, 175, 55, 0.3)' : 'none'
                 }}
               >
                 <div style={{ 
                   width: 6, height: 6, borderRadius: '50%', 
-                  background: activeReport === 'BIM_REVIEWS' ? '#003f49' : '#FFFFFF',
+                  background: activeReport === 'BIM_REVIEWS' ? 'var(--teal)' : 'white',
                 }} className={activeReport === 'BIM_REVIEWS' ? "animate-pulse" : ""} />
                 <span style={{ 
-                  fontSize: 12, fontWeight: 950, 
-                  color: activeReport === 'BIM_REVIEWS' ? '#000000' : '#FFFFFF', 
+                  fontSize: 12, fontWeight: 900, 
+                  color: activeReport === 'BIM_REVIEWS' ? 'var(--teal)' : 'white', 
                   textTransform: 'uppercase', letterSpacing: '0.08em' 
                 }}>
                   BIM Reviews Report
@@ -240,10 +240,10 @@ export default function ProjectHeader({
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 8,
                     padding: '8px 20px', borderRadius: 10,
-                    background: 'rgba(0, 63, 73, 0.6)', 
-                    border: `1px solid rgba(255, 255, 255, 0.2)`,
+                     background: 'rgba(255, 255, 255, 0.1)', 
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
                     backdropFilter: 'blur(10px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                    boxShadow: 'none'
                   }}
                 >
                   <div style={{ 
@@ -251,7 +251,7 @@ export default function ProjectHeader({
                     background: color,
                   }} />
                   <span style={{ 
-                    fontSize: 12, fontWeight: 950, color: '#FFFFFF', 
+                    fontSize: 12, fontWeight: 900, color: 'white', 
                     textTransform: 'uppercase', letterSpacing: '0.08em' 
                   }}>
                     {displayText}

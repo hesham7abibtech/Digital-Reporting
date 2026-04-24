@@ -153,36 +153,39 @@ export default function HeroSection({ config, isLoggedIn, onExploreCick, onLogin
           style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}
         >
           <motion.button
-            whileHover={{ scale: 1.04, boxShadow: '0 12px 40px rgba(208, 171, 130, 0.3)' }}
+            whileHover={{ scale: 1.05, boxShadow: '0 12px 40px rgba(208, 171, 130, 0.4)' }}
             whileTap={{ scale: 0.97 }}
             onClick={onExploreCick}
             style={{
-              padding: '16px 36px', borderRadius: 16,
-              background: 'linear-gradient(135deg, var(--sunlit-rock) 0%, #d3e7e6 100%)',
-              color: 'black', fontSize: 14, fontWeight: 1000, border: 'none',
-              cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.12em',
+              padding: '18px 42px', borderRadius: 20,
+              background: 'var(--gold)',
+              color: '#000000', fontSize: 15, fontWeight: 900, border: 'none',
+              cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.15em',
               boxShadow: '0 8px 30px rgba(208, 171, 130, 0.2)',
-              transition: 'all 300ms',
+              transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+              fontFamily: 'var(--font-heading)'
             }}
           >
             {config.ctaPrimary}
           </motion.button>
 
           <motion.button
-            whileHover={{ scale: 1.04, background: 'rgba(255,255,255,0.15)', borderColor: 'rgba(249, 248, 242, 0.5)' }}
+            whileHover={{ scale: 1.05, background: 'rgba(255, 255, 255, 0.1)', borderColor: 'rgba(255, 255, 255, 0.4)' }}
             whileTap={{ scale: 0.97 }}
             onClick={onLoginClick}
             style={{
-              padding: '16px 36px', borderRadius: 16,
-              background: 'rgba(255, 255, 255, 0.08)',
-              backdropFilter: 'blur(10px)',
-              color: 'var(--cotton)', fontSize: 14, fontWeight: 800,
-              border: '1px solid rgba(249, 248, 242, 0.25)',
-              cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.12em',
-              transition: 'all 300ms',
+              padding: '18px 42px', borderRadius: 20,
+              background: 'rgba(255, 255, 255, 0.05)',
+              backdropFilter: 'blur(20px)',
+              color: 'white', fontSize: 15, fontWeight: 800,
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.15em',
+              transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+              fontFamily: 'var(--font-heading)',
+              display: isLoggedIn ? 'none' : 'block'
             }}
           >
-            {isLoggedIn ? 'Go to Dashboard' : config.ctaSecondary}
+            {config.ctaSecondary}
           </motion.button>
         </motion.div>
       </div>
