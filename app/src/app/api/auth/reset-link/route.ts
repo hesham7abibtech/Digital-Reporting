@@ -32,23 +32,28 @@ export async function POST(req: NextRequest, context: any) {
     const apiKey = env.NEXT_PUBLIC_FIREBASE_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
     // Diagnostic tracking
-    const debugStatus = apiKey ? 'FOUND' : 'MISSING';
+    let debugSource = 'NONE';
+    if (context?.env?.NEXT_PUBLIC_FIREBASE_API_KEY) debugSource = 'CONTEXT_ENV';
+    else if ((req as any).env?.NEXT_PUBLIC_FIREBASE_API_KEY) debugSource = 'REQ_ENV';
+    else if (process.env.NEXT_PUBLIC_FIREBASE_API_KEY) debugSource = 'PROCESS_ENV';
+    else if ((globalThis as any).env?.NEXT_PUBLIC_FIREBASE_API_KEY) debugSource = 'GLOBAL_ENV';
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { 
         status: 400, 
-        headers: { ...corsHeaders, 'X-Debug-Env': debugStatus } 
+        headers: { ...corsHeaders, 'X-Debug-Env-Source': debugSource } 
       });
     }
 
     if (!apiKey) {
-      console.error('[RESET_LINK] CRITICAL: API Key not found in context.env or process.env');
+      console.error('[RESET_LINK] CRITICAL: API Key not found. Source:', debugSource);
       return NextResponse.json({ 
         error: 'Infrastructure Error', 
-        message: 'Missing Firebase API Configuration in Cloudflare Dashboard.' 
+        message: `Missing Firebase API Key. Source: ${debugSource}`,
+        debug_source: debugSource
       }, { 
         status: 500, 
-        headers: { ...corsHeaders, 'X-Debug-Env': 'MISSING' } 
+        headers: { ...corsHeaders, 'X-Debug-Env-Source': debugSource } 
       });
     }
 
