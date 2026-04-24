@@ -400,69 +400,119 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
             </div>
 
             {mailTarget === 'SPECIFIC' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16, background: 'rgba(0,0,0,0.2)', borderRadius: 16, border: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: 2, background: 'linear-gradient(135deg, var(--border), transparent)', borderRadius: 20 }}>
                 {[
-                  { id: 'TO', label: 'Direct Recipients (TO)', value: toEmails, setter: setToEmails },
-                  { id: 'CC', label: 'Carbon Copy (CC)', value: ccEmails, setter: setCcEmails },
-                  { id: 'BCC', label: 'Blind Copy (BCC)', value: bccEmails, setter: setBccEmails }
+                  { id: 'TO', label: 'Direct Recipients (TO)', value: toEmails, setter: setToEmails, accent: 'var(--teal)' },
+                  { id: 'CC', label: 'Carbon Copy (CC)', value: ccEmails, setter: setCcEmails, accent: 'var(--primary-light)' },
+                  { id: 'BCC', label: 'Blind Copy (BCC)', value: bccEmails, setter: setBccEmails, accent: 'var(--text-dim)' }
                 ].map(field => (
-                  <div key={field.id} style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative' }}>
+                  <div 
+                    key={field.id} 
+                    style={{ 
+                      display: 'flex', flexDirection: 'column', gap: 8, position: 'relative', 
+                      background: 'rgba(0,0,0,0.3)', padding: '16px 20px', borderRadius: 18, 
+                      border: '1px solid rgba(255,255,255,0.05)', borderLeft: `4px solid ${field.accent}`,
+                      boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+                    }}
+                  >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{field.label}</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: field.accent }} />
+                        <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.8 }}>{field.label}</label>
+                      </div>
                       <button
                         type="button"
                         onClick={() => {
                           setActiveSelectorField(activeSelectorField === field.id ? null : field.id as any);
                           setUserSearchQuery('');
                         }}
-                        style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid var(--teal)', background: 'transparent', color: 'var(--teal)', fontSize: 9, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                        style={{ 
+                          padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', 
+                          background: 'rgba(255,255,255,0.03)', color: 'var(--teal)', fontSize: 9, 
+                          fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                          transition: 'all 200ms', textTransform: 'uppercase', letterSpacing: '0.05em'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
                       >
-                        <UserPlus size={10} /> SELECT USERS
+                        <UserPlus size={12} /> SELECT FROM TEAM
                       </button>
                     </div>
                     <textarea
                       value={field.value}
                       onChange={(e) => field.setter(e.target.value)}
-                      placeholder={`Enter ${field.id} addresses...`}
+                      placeholder={`Draft ${field.id} list...`}
                       rows={1}
-                      style={{ padding: '10px 14px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 13, outline: 'none', resize: 'none' }}
+                      style={{ 
+                        padding: '12px 14px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', 
+                        borderRadius: 12, color: 'var(--text-primary)', fontSize: 13, outline: 'none', 
+                        resize: 'none', fontStyle: field.value ? 'normal' : 'italic', opacity: field.value ? 1 : 0.6 
+                      }}
                     />
                     
-                    {activeSelectorField === field.id && (
-                      <div style={{ position: 'absolute', top: '100%', right: 0, zIndex: 100, width: 300, marginTop: 8, background: 'var(--secondary)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: 'var(--shadow-premium)', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)' }}>
-                          <Search size={12} color="var(--text-muted)" />
-                          <input 
-                            autoFocus
-                            value={userSearchQuery}
-                            onChange={e => setUserSearchQuery(e.target.value)}
-                            placeholder="Search team directory..." 
-                            style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 11, outline: 'none', width: '100%' }} 
-                          />
-                        </div>
-                        <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }} className="custom-scrollbar">
-                          {usersSnapshot?.docs
-                            .filter((d: any) => {
-                              const data = d.data();
-                              const search = userSearchQuery.toLowerCase();
-                              return data.name?.toLowerCase().includes(search) || data.email?.toLowerCase().includes(search);
-                            })
-                            .map((d: any) => (
-                              <button
-                                key={d.id}
-                                type="button"
-                                onClick={() => addEmailToField(d.data().email, field.id as any)}
-                                style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', transition: 'all 200ms', display: 'flex', flexDirection: 'column', gap: 2 }}
-                                onMouseEnter={e => e.currentTarget.style.background = 'var(--border)'}
-                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                              >
-                                <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-primary)' }}>{d.data().name}</span>
-                                <span style={{ fontSize: 9, color: 'var(--text-dim)' }}>{d.data().email}</span>
-                              </button>
-                            ))}
-                        </div>
-                      </div>
-                    )}
+                    <AnimatePresence>
+                      {activeSelectorField === field.id && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          style={{ 
+                            position: 'absolute', top: '100%', right: 0, zIndex: 1000, 
+                            width: 320, marginTop: 12, background: 'var(--secondary)', 
+                            border: '1px solid var(--border)', borderRadius: 16, 
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.5)', padding: 14, 
+                            display: 'flex', flexDirection: 'column', gap: 10,
+                            backdropFilter: 'blur(10px)'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)' }}>
+                            <Search size={14} color="var(--teal)" />
+                            <input 
+                              autoFocus
+                              value={userSearchQuery}
+                              onChange={e => setUserSearchQuery(e.target.value)}
+                              placeholder="Search project registry..." 
+                              style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 12, outline: 'none', width: '100%' }} 
+                            />
+                          </div>
+                          <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, paddingRight: 4 }} className="custom-scrollbar">
+                            {usersSnapshot?.docs
+                              .filter((d: any) => {
+                                const data = d.data();
+                                const search = userSearchQuery.toLowerCase();
+                                return data.name?.toLowerCase().includes(search) || data.email?.toLowerCase().includes(search);
+                              })
+                              .map((d: any) => (
+                                <button
+                                  key={d.id}
+                                  type="button"
+                                  onClick={() => addEmailToField(d.data().email, field.id as any)}
+                                  style={{ 
+                                    textAlign: 'left', padding: '10px 12px', borderRadius: 10, 
+                                    border: '1px solid transparent', background: 'rgba(255,255,255,0.02)', 
+                                    cursor: 'pointer', transition: 'all 200ms', display: 'flex', 
+                                    flexDirection: 'column', gap: 4 
+                                  }}
+                                  onMouseEnter={e => {
+                                    e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                                  }}
+                                  onMouseLeave={e => {
+                                    e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                                    e.currentTarget.style.borderColor = 'transparent';
+                                  }}
+                                >
+                                  <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>{d.data().name}</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--teal)' }} />
+                                    <span style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 600 }}>{d.data().email}</span>
+                                  </div>
+                                </button>
+                              ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 ))}
               </div>
