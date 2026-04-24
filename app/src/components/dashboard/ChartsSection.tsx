@@ -125,7 +125,7 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
 
   const statusData = useMemo(() => {
     const counts: Record<string, number> = { IN_PROGRESS: 0, PENDING_REVIEW: 0, COMPLETED: 0, DELAYED: 0, BLOCKED: 0, NOT_STARTED: 0 };
-    data.forEach(t => { if (counts[t.status] !== undefined) counts[t.status]++; });
+    data.forEach(t => { if (t.status && counts[t.status] !== undefined) counts[t.status]++; });
     return [
       { name: 'In Progress', value: counts.IN_PROGRESS, color: '#818cf8' },
       { name: 'Review', value: counts.PENDING_REVIEW, color: '#fbbf24' },

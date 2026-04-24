@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { getFirestore, initializeFirestore, persistentLocalCache } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -21,10 +21,11 @@ const auth = getAuth(app);
 let db: ReturnType<typeof getFirestore>;
 if (typeof window !== "undefined") {
   try {
-    // We use initializeFirestore with persistentMultipleTabManager to support 
-    // concurrent tabs. Experimental long-polling helps with enterprise network stability.
+    // We use initializeFirestore without persistentMultipleTabManager to isolate
+    // the Firestore connection per tab. This prevents cross-tab Auth token conflicts
+    // when using browserSessionPersistence for separate Admin and Home logins.
     db = initializeFirestore(app, {
-      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+      localCache: persistentLocalCache(),
       experimentalAutoDetectLongPolling: true
     });
   } catch (err) {

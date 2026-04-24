@@ -2,7 +2,9 @@ import * as ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Task, ProjectMetadata, BIMReview } from './types';
-import { PRECINCTS, TASK_STATUS_OPTIONS, TASK_DELIVERABLE_TYPES, TASK_CDE_OPTIONS } from './constants';
+import { PRECINCTS, TASK_DELIVERABLE_TYPES, TASK_CDE_OPTIONS } from './constants';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from './firebase';
 
 // ─── Constants ──────────────────────────────────────────────────────────
 const MAX_COL_WIDTH = 60;
@@ -57,11 +59,12 @@ function getColumnAlign(colId: string): AlignType {
 
 function ensureAbsoluteUrl(url: string): string {
   if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  if (url.match(/^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$/i)) {
-    return `https://${url}`;
+  const u = url.trim();
+  if (u.startsWith('http://') || u.startsWith('https://')) return u;
+  if (u.match(/^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$/i)) {
+    return `https://${u}`;
   }
-  return url;
+  return u;
 }
 
 function formatReportDate(dateStr: string | null | undefined): string {
@@ -97,15 +100,19 @@ async function loadLogoBase64(path: string): Promise<string> {
   }
 }
 
-function getTaskLinks(t: Task) {
-  const allLinks = [];
-  if (t.fileShareLink) {
-    allLinks.push({ label: 'Primary Share Link', url: ensureAbsoluteUrl(t.fileShareLink) });
+function getExportLinks(t: Task, filters?: { types: string[], cdes: string[] }) {
+  const fData = getFilteredTaskData(t, filters);
+  const combinedLinks = fData.vectors.length > 0
+    ? fData.vectors.map(v => ({ label: `${v.type} (${v.cde})`, url: ensureAbsoluteUrl(v.url) }))
+    : fData.links.map(l => ({ label: l.label || 'Deliverable Link', url: ensureAbsoluteUrl(l.url) }));
+  
+  // Also include fileShareLink if present and not already covered by vectors
+  if (t.fileShareLink && fData.vectors.length === 0) {
+    const url = ensureAbsoluteUrl(t.fileShareLink);
+    if (url) combinedLinks.unshift({ label: 'Primary Share Link', url });
   }
-  if (t.links && t.links.length > 0) {
-    allLinks.push(...t.links.map(l => ({ label: l.label || 'Deliverable Link', url: ensureAbsoluteUrl(l.url) })));
-  }
-  return allLinks;
+
+  return combinedLinks.filter(l => l.url);
 }
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -303,7 +310,6 @@ export function getDynamicExportColumns(metadataExcluded: string[], format: 'exc
     { id: 'title', excelLabel: 'Task Definition / Asset', pdfLabel: 'ASSET TITLE', width: 50 },
     { id: 'department', excelLabel: 'Task Category', pdfLabel: 'TASK CATEGORY', width: 20 },
     { id: 'precinct', excelLabel: 'Project Precinct', pdfLabel: 'PRECINCT', width: 25 },
-    { id: 'status', excelLabel: 'Operational Status', pdfLabel: 'OPERATIONAL STATUS', width: 20 },
     { id: 'submitterName', excelLabel: 'Submitter', pdfLabel: 'SUBMITTER', width: 25 },
     { id: 'submittingDate', excelLabel: 'Submission Date', pdfLabel: 'SUBMISSION DATE', width: 20 },
     { id: 'deliverableType', excelLabel: 'Deliverable Type', pdfLabel: 'DELIVERABLE TYPE', width: 25 },
@@ -352,11 +358,9 @@ function getDashboardAnalytics(tasks: Task[]) {
   const types: Record<string, number> = {};
   const cde: Record<string, number> = {};
   const submitters: Record<string, number> = {};
-  const statuses: Record<string, number> = {};
 
   tasks.forEach(t => {
     categories[t.department] = (categories[t.department] || 0) + 1;
-    statuses[t.status] = (statuses[t.status] || 0) + 1;
     if (Array.isArray(t.deliverableType)) {
       t.deliverableType.forEach(type => { types[type] = (types[type] || 0) + 1; });
     }
@@ -368,14 +372,8 @@ function getDashboardAnalytics(tasks: Task[]) {
     }
   });
 
-  const completedCount = statuses['COMPLETED'] || 0;
-  const completionRate = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
-
   return {
     total: tasks.length,
-    completedCount,
-    completionRate,
-    statuses: Object.entries(statuses).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
     categories: Object.entries(categories).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
     types: Object.entries(types).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
     cde: Object.entries(cde).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
@@ -440,6 +438,17 @@ export async function exportToExcel(
     text: metadata?.reportExcelHeaderTextColor || 'FFFFFF'
   };
 
+  // Fetch departments for resolution
+  let departmentsMap: Record<string, string> = {};
+  try {
+    const deptsSnap = await getDocs(collection(db, 'departments'));
+    deptsSnap.forEach(doc => {
+      departmentsMap[doc.id] = doc.data().name;
+    });
+  } catch (err) {
+    console.warn('Could not fetch departments for export resolution:', err);
+  }
+
   // ── Helper: Add Master Registry sheet ──
   const addRegistrySheet = (name: string) => {
     const dataSheet = workbook.addWorksheet(name);
@@ -458,7 +467,7 @@ export async function exportToExcel(
 
     // Compute max deliverables per task after filtering
     const filteredTasksData = tasks.map(t => getFilteredTaskData(t, filters));
-    const maxDeliverables = Math.max(...filteredTasksData.map(d => Math.max(d.vectors.length, d.links.length)), 1);
+    const maxDeliverables = Math.max(...tasks.map(t => getExportLinks(t, filters).length), 1);
 
     // Build headers
     const headers: string[] = [];
@@ -483,20 +492,18 @@ export async function exportToExcel(
     tasks.forEach((t, tIdx) => {
       const fData = filteredTasksData[tIdx];
       const rowData: any[] = [];
+      const resolvedDept = departmentsMap[t.department] || t.department;
       visibleColumns.forEach(c => {
         if (c.id === 'id') rowData.push(t.id.toUpperCase());
         else if (c.id === 'title') rowData.push(t.title);
-        else if (c.id === 'department') rowData.push(t.department);
+        else if (c.id === 'department') rowData.push(resolvedDept);
         else if (c.id === 'precinct') rowData.push(t.precinct || '-');
-        else if (c.id === 'status') rowData.push((t.status || 'NOT_STARTED').replace(/_/g, ' ').toUpperCase());
         else if (c.id === 'submitterName') rowData.push(t.submitterName || '-');
         else if (c.id === 'submittingDate') rowData.push(formatReportDate(t.submittingDate));
         else if (c.id === 'deliverableType') rowData.push(fData.types.join(' | '));
         else if (c.id === 'cde') rowData.push(fData.cdes.join(' | '));
         else if (c.id === 'links') {
-          const combinedLinks = fData.vectors.length > 0
-            ? fData.vectors.map(v => ({ label: `${v.type} (${v.cde})`, url: v.url }))
-            : fData.links;
+          const combinedLinks = getExportLinks(t, filters);
           for (let i = 0; i < Math.min(maxDeliverables, 5); i++) rowData.push(combinedLinks[i]?.label || '');
         }
       });
@@ -537,9 +544,7 @@ export async function exportToExcel(
       if (!excluded.includes('links')) {
         const lIdx = visibleColumns.findIndex(vv => vv.id === 'links');
         if (lIdx !== -1) {
-          const combinedLinks = fData.vectors.length > 0
-            ? fData.vectors.map(v => ({ label: `${v.type} (${v.cde})`, url: v.url }))
-            : fData.links;
+          const combinedLinks = getExportLinks(t, filters);
           // Calculate the actual cell column index
           let linkCellStart = 1;
           for (let ci = 0; ci < lIdx; ci++) linkCellStart++;
@@ -583,9 +588,7 @@ export async function exportToExcel(
     PRECINCTS.forEach((p, i) => validationSheet.getCell(i + 1, 1).value = p);
     const precinctRange = `LookupData!$A$1:$A$${PRECINCTS.length}`;
     
-    // Statuses
-    TASK_STATUS_OPTIONS.forEach((s, i) => validationSheet.getCell(i + 1, 2).value = s);
-    const statusRange = `LookupData!$B$1:$B$${TASK_STATUS_OPTIONS.length}`;
+
 
     // Deliverable Types
     TASK_DELIVERABLE_TYPES.forEach((t, i) => validationSheet.getCell(i + 1, 3).value = t);
@@ -603,8 +606,7 @@ export async function exportToExcel(
 
       if (col.id === 'precinct') {
         validationRange.formulae = [precinctRange];
-      } else if (col.id === 'status') {
-        validationRange.formulae = [statusRange];
+
       } else if (col.id === 'deliverableType') {
         validationRange.formulae = [typeRange];
       } else {
@@ -639,8 +641,6 @@ export async function exportToExcel(
 
     const kpiData = [
       ['Total Deliverables', analytics.total],
-      ['Completion Rate', `${analytics.completionRate}%`],
-      ['Completed Tasks', analytics.completedCount],
       ['Active Technical Categories', analytics.categories.length],
       ['Unique Project Submitters', analytics.activeSubmitters],
       ['Primary CDE Environment', analytics.cde[0]?.name || 'N/A'],
@@ -662,14 +662,7 @@ export async function exportToExcel(
 
     summarySheet.addRow([]);
 
-    // Status Breakdown
-    summarySheet.addRow(['STATUS BREAKDOWN']).font = { bold: true, size: 12, color: { argb: 'FF1E293B' } };
-    analytics.statuses.forEach(s => {
-      const row = summarySheet.addRow([s.name.replace(/_/g, ' '), s.value]);
-      row.getCell(2).alignment = { horizontal: 'right' };
-    });
 
-    summarySheet.addRow([]);
     summarySheet.addRow(['VISUALIZATION DATA MAPPING']).font = { bold: true };
 
     // 2. Analytics Data Matrix (Hidden)
@@ -808,6 +801,17 @@ export async function exportToPDF(
   const accentColor = hexToRgb(metadata?.reportAccentColor || '#D4AF37');
   const headerTextColor = hexToRgb(metadata?.reportHeaderTextColor || '#D4AF37');
 
+  // Fetch departments for resolution
+  let departmentsMap: Record<string, string> = {};
+  try {
+    const deptsSnap = await getDocs(collection(db, 'departments'));
+    deptsSnap.forEach(doc => {
+      departmentsMap[doc.id] = doc.data().name;
+    });
+  } catch (err) {
+    console.warn('Could not fetch departments for export resolution:', err);
+  }
+
   // ── Cover Page ──
   const drawCover = () => {
     doc.setFillColor(...bgColor);
@@ -908,9 +912,9 @@ export async function exportToPDF(
 
     const stats = [
       { label: 'TOTAL DELIVERABLES', value: analytics.total.toString() },
-      { label: 'COMPLETION RATE', value: `${analytics.completionRate}%` },
       { label: 'ACTIVE CATEGORIES', value: analytics.categories.length.toString() },
-      { label: 'PROJECT SUBMITTERS', value: analytics.activeSubmitters.toString() }
+      { label: 'PROJECT SUBMITTERS', value: analytics.activeSubmitters.toString() },
+      { label: 'PRIMARY CDE', value: (analytics.cde[0]?.name || 'N/A').toUpperCase() }
     ];
 
     stats.forEach((s, i) => {
@@ -930,37 +934,10 @@ export async function exportToPDF(
       doc.text(s.value, x + 6, kpiY + 24);
     });
 
-    // Status Breakdown Table
-    let tableStartY = kpiY + kpiH + 12;
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(30, 41, 59);
-    doc.text('STATUS BREAKDOWN', 15, tableStartY);
 
-    const statusBody = analytics.statuses.map(s => [
-      s.name.replace(/_/g, ' '),
-      s.value.toString(),
-      `${analytics.total > 0 ? Math.round((s.value / analytics.total) * 100) : 0}%`
-    ]);
-
-    autoTable(doc, {
-      startY: tableStartY + 4,
-      head: [['Status', 'Count', 'Percentage']],
-      body: statusBody,
-      margin: { left: 15, right: 15 },
-      tableWidth: 120,
-      styles: { fontSize: 8, cellPadding: 4, valign: 'middle' },
-      headStyles: { fillColor: HEADER_SLATE, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
-      alternateRowStyles: { fillColor: PDF_ZEBRA_EVEN },
-      columnStyles: {
-        0: { halign: 'left' },
-        1: { halign: 'right' },
-        2: { halign: 'right' },
-      }
-    });
 
     // Category Distribution Table
-    const catStartY = (doc as any).lastAutoTable?.finalY + 10 || tableStartY + 60;
+    const catStartY = kpiY + kpiH + 12;
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.text('DISTRIBUTION BY CATEGORY', 15, catStartY);
@@ -970,7 +947,7 @@ export async function exportToPDF(
       startY: catStartY + 4,
       head: [['Category', 'Count', 'Weight']],
       body: deptStats.map(({ name, value }) => [name, value.toString(), `${Math.round((value / tasks.length) * 100)}%`]),
-      margin: { left: 15, right: 15 },
+      margin: { left: 8, right: 8 },
       tableWidth: 120,
       styles: { fontSize: 8, cellPadding: 4, valign: 'middle' },
       headStyles: { fillColor: HEADER_SLATE, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
@@ -1011,15 +988,14 @@ export async function exportToPDF(
 
     const body = tasks.map((t, tIdx) => {
       const fData = filteredTasksData[tIdx];
-      const combinedLinks = fData.vectors.length > 0
-        ? fData.vectors.map(v => ({ label: `${v.type} (${v.cde})`, url: v.url }))
-        : fData.links;
-      const linksLabels = combinedLinks.map(l => l.label).join(' | ');
+      const combinedLinks = getExportLinks(t, filters);
+      const linksLabels = combinedLinks.map(l => l.label).join('\n');
+      const resolvedDept = departmentsMap[t.department] || t.department;
 
       return visibleCols.map(c => {
         if (c.id === 'id') return t.id.toUpperCase();
         if (c.id === 'title') return t.title;
-        if (c.id === 'department') return t.department;
+        if (c.id === 'department') return resolvedDept;
         if (c.id === 'precinct') return t.precinct || '-';
         if (c.id === 'submitterName') return t.submitterName || '-';
         if (c.id === 'submittingDate') return formatReportDate(t.submittingDate);
@@ -1037,11 +1013,11 @@ export async function exportToPDF(
     visibleCols.forEach((col, idx) => {
       const align = getColumnAlign(col.id);
       if (col.id === 'title') {
-        colsConfig[idx] = { cellWidth: 'auto', overflow: 'linebreak', halign: 'left', minCellWidth: 40 };
+        colsConfig[idx] = { cellWidth: 'auto', overflow: 'linebreak', halign: 'left', minCellWidth: 25 };
       } else if (col.id === 'links') {
-        colsConfig[idx] = { cellWidth: 'auto', textColor: [5, 99, 193], halign: 'center', minCellWidth: 30 };
+        colsConfig[idx] = { cellWidth: 'auto', textColor: [5, 99, 193], halign: 'center', minCellWidth: 20 };
       } else {
-        colsConfig[idx] = { cellWidth: 'auto', halign: align, minCellWidth: 22 };
+        colsConfig[idx] = { cellWidth: 'auto', halign: align };
       }
     });
 
@@ -1050,25 +1026,25 @@ export async function exportToPDF(
       head,
       body,
       theme: 'grid',
-      margin: { top: 20, bottom: 20, left: 15, right: 15 },
+      margin: { top: 15, bottom: 15, left: 8, right: 8 },
       showHead: 'everyPage',
       rowPageBreak: 'avoid',
       headStyles: {
         fillColor: HEADER_SLATE,
         textColor: [255, 255, 255],
-        fontSize: 8,
+        fontSize: 6.5,
         fontStyle: 'bold',
         halign: 'center',
-        cellPadding: 4,
+        cellPadding: 3,
         overflow: 'linebreak',
-        minCellHeight: 14,
+        minCellHeight: 12,
       },
       styles: {
-        fontSize: 7.5,
-        cellPadding: 4,
+        fontSize: 6.5,
+        cellPadding: 3,
         overflow: 'linebreak',
         valign: 'middle',
-        minCellHeight: 12,
+        minCellHeight: 10,
       },
       alternateRowStyles: {
         fillColor: PDF_ZEBRA_EVEN,
@@ -1076,15 +1052,16 @@ export async function exportToPDF(
       columnStyles: colsConfig,
       didDrawCell: (data) => {
         if (data.section === 'body' && data.column.index === lIdx && lIdx !== -1) {
-          const links = getTaskLinks(tasks[data.row.index]);
-          if (links.length > 0) {
-            const label = links.map(ll => ll.label).join(' | ');
-            const totalW = doc.getTextWidth(label);
-            let cX = data.cell.x + (data.cell.width - totalW) / 2;
-            links.forEach((ll) => {
-              const w = doc.getTextWidth(ll.label);
-              doc.link(cX, data.cell.y, w, data.cell.height, { url: ll.url });
-              cX += w + doc.getTextWidth(' | ');
+          const links = getExportLinks(tasks[data.row.index], filters);
+          if (links.length === 1) {
+            doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: links[0].url });
+          } else if (links.length > 1) {
+            const linkHeight = data.cell.height / links.length;
+            links.forEach((ll, idx) => {
+              if (ll.url) {
+                const yPos = data.cell.y + (idx * linkHeight);
+                doc.link(data.cell.x, yPos, data.cell.width, linkHeight, { url: ll.url });
+              }
             });
           }
         }
@@ -1117,11 +1094,8 @@ export async function exportToPDF(
     drawTable();
   }
 
-  // Patch PDF for external link opening
-  const patched = doc.output().replace(/\/S\s*\/URI\s*\/URI\s*\((.*?)\)\s*>>/g, '/S /URI /URI ($1) /NewWindow true /Target (new) >>');
-  const buffer = new Uint8Array(patched.length).map((_, i) => patched.charCodeAt(i) & 0xFF);
   return {
-    blob: new Blob([buffer], { type: 'application/pdf' }),
+    blob: doc.output('blob'),
     filename: `${metadata?.projectName || 'Project'}_${perspective === 'both' ? 'Consolidated' : (perspective === 'dashboard' ? 'Analytics' : 'Report')}_${new Date().toISOString().split('T')[0]}.pdf`
   };
 }
@@ -1503,9 +1477,11 @@ export async function exportBimToPDF(
     cols.forEach((col, idx) => {
       const align = getColumnAlign(col.id);
       if (col.id === 'submissionDescription' || col.id === 'comments') {
-        colStyles[idx] = { halign: 'left', overflow: 'linebreak', minCellWidth: 40 };
+        colStyles[idx] = { halign: 'left', overflow: 'linebreak', cellWidth: 'auto', minCellWidth: 25 };
+      } else if (col.id === 'insiteReviewOutputUrl') {
+        colStyles[idx] = { halign: align, cellWidth: 'auto', textColor: [5, 99, 193], minCellWidth: 20 };
       } else {
-        colStyles[idx] = { halign: align, minCellWidth: 20 };
+        colStyles[idx] = { halign: align, cellWidth: 'auto' };
       }
     });
 
@@ -1514,7 +1490,7 @@ export async function exportBimToPDF(
 
     autoTable(doc, {
       head, body, theme: 'grid',
-      margin: { top: 20, bottom: 20, left: 15, right: 15 },
+      margin: { top: 15, bottom: 15, left: 8, right: 8 },
       showHead: 'everyPage',
       rowPageBreak: 'avoid',
       headStyles: {
@@ -1542,8 +1518,8 @@ export async function exportBimToPDF(
       didDrawCell: (data) => {
         if (data.section === 'body' && data.column.index === linkColIdx && linkColIdx !== -1) {
           const review = reviews[data.row.index];
-          if (review?.insiteReviewOutputUrl) {
-            doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: review.insiteReviewOutputUrl });
+          if (review?.insiteReviewOutputUrl && review.insiteReviewOutputUrl !== '-') {
+            doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: ensureAbsoluteUrl(review.insiteReviewOutputUrl) });
           }
         }
       },
@@ -1558,9 +1534,8 @@ export async function exportBimToPDF(
   drawCover();
   if (perspective === 'dashboard' || perspective === 'both') drawDashboard();
   if (perspective === 'table' || perspective === 'both') drawTable();
-
   return {
-    blob: new Blob([doc.output('blob')], { type: 'application/pdf' }),
+    blob: doc.output('blob'),
     filename: `BIM_Report_${new Date().toISOString().split('T')[0]}.pdf`
   };
 }

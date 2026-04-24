@@ -24,7 +24,7 @@ interface TaskEditorProps {
   tasks?: Task[];
 }
 
-const statuses: TaskStatus[] = ['NOT_STARTED', 'IN_PROGRESS', 'PENDING_REVIEW', 'COMPLETED', 'DELAYED', 'BLOCKED'];
+
 
 // Helpers for Date-only display (YYYY-MM-DD)
 const toLocalISO = (utcString: string | null | undefined, timeZone: string) => {
@@ -65,7 +65,6 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
     title: '',
     description: '',
     department: 'BIM',
-    status: 'NOT_STARTED',
     completion: 0,
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     fileShareLink: '',
@@ -159,7 +158,6 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         title: task.title || '',
         description: task.description || '',
         department: task.department || 'BIM',
-        status: task.status || 'NOT_STARTED',
         completion: task.completion || 0,
         timeZone: task.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone,
         fileShareLink: task.fileShareLink || '',
@@ -198,7 +196,6 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         title: '',
         description: '',
         department: '',
-        status: '' as any,
         completion: 0,
         attachments: 0,
         files: [],
@@ -224,7 +221,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
   const handleSave = async () => {
     // Blocking Validation for Mandatory Fields
     const hasVectors = (formData.vectors || []).length > 0;
-    if (!formData.title?.trim() || !formData.department || !formData.precinct?.trim() || !formData.submitterId || !formData.status || !formData.submittingDate || !hasVectors) {
+    if (!formData.title?.trim() || !formData.department || !formData.precinct?.trim() || !formData.submitterId || !formData.submittingDate || !hasVectors) {
       setShowErrors(true);
       showToast('Please fill in all fields. Only Notes are optional.', 'ERROR');
       return;
@@ -427,26 +424,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
               </select>
             </div>
 
-            {/* Operational Status */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <Activity size={12} color="#003F49" />
-                <span style={{ fontSize: 10, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Operational Status</span>
-              </div>
-              <select
-                value={formData.status}
-                onChange={e => setFormData({ ...formData, status: e.target.value as TaskStatus })}
-                disabled={isActuallyReadOnly}
-                style={{
-                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff',
-                  border: (showErrors && !formData.status) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)',
-                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none'
-                }}
-              >
-                <option value="">Select Status</option>
-                {statuses.map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
-              </select>
-            </div>
+
           </div>
 
           {/* Network Vector Terminal */}

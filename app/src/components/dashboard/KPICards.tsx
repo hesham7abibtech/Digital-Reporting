@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  BarChart3, CheckCircle2, AlertTriangle,
+  BarChart3, CheckCircle2, AlertTriangle, Users, FolderOpen,
   TrendingUp, TrendingDown, Minus, ShieldCheck, Inbox, Zap, Info
 } from 'lucide-react';
 import AnimatedCounter from '@/components/shared/AnimatedCounter';
@@ -14,24 +14,26 @@ import type { Task } from '@/lib/types';
 // 5 High-Fidelity KPIs for Execution Phase
 const kpiData = [
   { id: 'kpi1', label: 'Global Registry', value: 0, prev: 0, icon: <BarChart3 size={18} />, color: 'var(--aqua)', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: false },
-  { id: 'kpi2', label: 'Execution Velocity', value: 0, prev: 0, icon: <Zap size={18} />, color: 'var(--haze)', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: false, isPercent: true },
-  { id: 'kpi3', label: 'Critical Blockers', value: 0, prev: 0, icon: <AlertTriangle size={18} />, color: '#f43f5e', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true, isBadMetric: true },
-  { id: 'kpi4', label: 'Operational Risks', value: 0, prev: 0, icon: <AlertTriangle size={18} />, color: 'var(--sunlit-rock)', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true, isBadMetric: true },
-  { id: 'kpi5', label: 'Success Milestone', value: 0, prev: 0, icon: <CheckCircle2 size={18} />, color: '#B0B540', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true },
+  { id: 'kpi2', label: 'Collaboration Sync', value: 0, prev: 0, icon: <Users size={18} />, color: 'var(--haze)', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true },
+  { id: 'kpi3', label: 'Category Reach', value: 0, prev: 0, icon: <FolderOpen size={18} />, color: 'var(--sunlit-rock)', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true },
+  { id: 'kpi4', label: 'Data Density', value: 0, prev: 0, icon: <Zap size={18} />, color: '#B0B540', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true },
+  { id: 'kpi5', label: 'Verified Records', value: 0, prev: 0, icon: <ShieldCheck size={18} />, color: '#10b981', trend: 'neutral' as 'up' | 'down' | 'neutral', spark: [], hoverable: true },
 ];
 
 // Map KPI labels to task filter functions
 function getRelatedTasks(label: string, taskList: Task[]) {
   switch (label) {
-    case 'Critical Blockers': return taskList.filter((t: Task) => t.status === 'BLOCKED');
-    case 'Operational Risks': return taskList.filter((t: Task) => t.status === 'DELAYED');
-    case 'Success Milestone': return taskList.filter((t: Task) => t.status === 'COMPLETED');
+    case 'Collaboration Sync': return taskList.filter((t: Task) => t.links && t.links.length > 0);
+    case 'Category Reach': return taskList.filter((t: Task) => t.department);
+    case 'Data Density': return taskList.filter((t: Task) => t.files && t.files.length > 0);
+    case 'Verified Records': return taskList.filter((t: Task) => t.id);
     default: return [];
   }
 }
 
 
-function getStatusColor(s: string) {
+function getStatusColor(s?: string) {
+  if (!s) return 'rgba(255, 255, 255, 0.4)';
   switch (s) {
     case 'DELAYED': return '#FF4C4F';
     case 'BLOCKED': return '#FF4C4F';
@@ -59,25 +61,21 @@ export default function KPICards({ tasks: externalTasks, prevTasks = [], onTaskC
           value = dataToUse.length;
           prevValue = prevTasks.length;
           break;
-        case 'Execution Velocity':
-          value = dataToUse.length > 0 
-            ? Math.round((dataToUse.filter(t => t.status === 'COMPLETED').length / dataToUse.length) * 100) 
-            : 0;
-          prevValue = prevTasks.length > 0 
-            ? Math.round((prevTasks.filter(t => t.status === 'COMPLETED').length / prevTasks.length) * 100) 
-            : 0;
+        case 'Collaboration Sync':
+          value = new Set(dataToUse.map(t => t.submitterEmail).filter(Boolean)).size;
+          prevValue = new Set(prevTasks.map(t => t.submitterEmail).filter(Boolean)).size;
           break;
-        case 'Critical Blockers':
-          value = dataToUse.filter(t => t.status === 'BLOCKED').length;
-          prevValue = prevTasks.filter(t => t.status === 'BLOCKED').length;
+        case 'Category Reach':
+          value = new Set(dataToUse.map(t => t.department)).size;
+          prevValue = new Set(prevTasks.map(t => t.department)).size;
           break;
-        case 'Operational Risks':
-          value = dataToUse.filter(t => t.status === 'DELAYED').length;
-          prevValue = prevTasks.filter(t => t.status === 'DELAYED').length;
+        case 'Data Density':
+          value = dataToUse.filter(t => (t.links?.length || 0) > 0).length;
+          prevValue = prevTasks.filter(t => (t.links?.length || 0) > 0).length;
           break;
-        case 'Success Milestone':
-          value = dataToUse.filter(t => t.status === 'COMPLETED').length;
-          prevValue = prevTasks.filter(t => t.status === 'COMPLETED').length;
+        case 'Verified Records':
+          value = dataToUse.filter(t => t.id).length;
+          prevValue = prevTasks.filter(t => t.id).length;
           break;
       }
 
@@ -223,7 +221,7 @@ export default function KPICards({ tasks: externalTasks, prevTasks = [], onTaskC
                             marginLeft: 8,
                             textTransform: 'uppercase'
                           }}>
-                            {task.status.replace(/_/g, ' ')}
+                            {task.status?.replace(/_/g, ' ') || 'UNTRACKED'}
                           </span>
                         </div>
                       ))}

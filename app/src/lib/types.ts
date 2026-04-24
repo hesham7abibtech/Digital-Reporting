@@ -56,7 +56,7 @@ export interface Task {
   title: string;
   description: string;
   department: string;
-  status: TaskStatus;
+  status?: TaskStatus;
   completion: number;
   attachments: number;
   files: TaskFile[];

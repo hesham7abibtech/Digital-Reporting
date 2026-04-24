@@ -14,7 +14,7 @@ import { useTableColumns, ColumnDef } from '@/hooks/useTableColumns';
 import ColumnSettingsDropdown from '@/components/dashboard/ColumnSettingsDropdown';
 import type { TeamMember } from '@/lib/types';
 
-type SortField = 'title' | 'status' | 'completion' | 'submittingDate' | 'id' | 'department' | 'submitterName' | 'deliverableType' | 'cde' | 'precinct';
+type SortField = 'title' | 'completion' | 'submittingDate' | 'id' | 'department' | 'submitterName' | 'deliverableType' | 'cde' | 'precinct';
 type SortDir = 'asc' | 'desc';
 
 const INITIAL_COLUMNS: ColumnDef<SortField>[] = [
@@ -450,7 +450,7 @@ export default function ActiveTasks({
       let cmp = 0;
       if (sortField === 'title') cmp = a.title.localeCompare(b.title);
       else if (sortField === 'id') cmp = a.id.localeCompare(b.id);
-      else if (sortField === 'status') cmp = a.status.localeCompare(b.status);
+
       else if (sortField === 'submittingDate') cmp = new Date(a.submittingDate || 0).getTime() - new Date(b.submittingDate || 0).getTime();
       else if (sortField === 'department') cmp = a.department.localeCompare(b.department);
       else if (sortField === 'submitterName') cmp = (a.submitterName || '').localeCompare(b.submitterName || '');

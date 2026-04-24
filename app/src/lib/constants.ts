@@ -29,54 +29,36 @@ export const PRECINCTS = [
   'REH-Overall'
 ];
 
-export const TASK_STATUS_OPTIONS = [
-  'NOT STARTED',
-  'IN PROGRESS',
-  'PENDING REVIEW',
-  'COMPLETED',
-  'DELAYED',
-  'BLOCKED'
-];
-
 export const TASK_DELIVERABLE_TYPES = [
+  'CAD',
+  'DOC',
+  'IFC',
+  'IMG',
+  'NWC',
   'PDF',
   'RVT',
-  'IFC',
-  'DOC',
-  'XLSX',
-  'NWC',
-  'CAD',
-  'IMG'
+  'XLSX'
 ];
 
 export const TASK_CDE_OPTIONS = [
   'ACC',
-  'BIM360',
   'ASTA',
-  'P6',
+  'BIM360',
   'EXTERNAL',
-  'LINK'
+  'LINK',
+  'P6'
 ];
 
 export const BIM_STAGE_OPTIONS = [
   'Concept Design',
-  'Schematic Design',
-  'Detailed Design',
+  'Concept Masterplan',
   'Construction',
-  'Concept Masterplan'
-];
-
-export const BIM_GATE_STATUS_OPTIONS = [
-  'Approved',
-  'Approved with Comments',
-  'Resubmission Required',
-  'In Review',
-  'Rejected'
+  'Detailed Design',
+  'Schematic Design'
 ];
 
 export const BIM_FINAL_AUDIT_OPTIONS = [
   'Approved',
   'Hold',
-  'Resubmission Required',
   'N/A'
 ];

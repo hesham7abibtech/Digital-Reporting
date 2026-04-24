@@ -62,7 +62,7 @@ import { db } from '@/lib/firebase';
 import GlassCard from '@/components/shared/GlassCard';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { Task, TaskStatus, TeamMember, DashboardNavItem, ProjectMetadata, Department, ReportSummaryField, HeaderBadge, BIMReview } from '@/lib/types';
-import { PRECINCTS, TASK_STATUS_OPTIONS } from '@/lib/constants';
+import { PRECINCTS } from '@/lib/constants';
 import TaskEditorModal from '@/components/admin/TaskEditorModal';
 import MemberEditorModal from '@/components/admin/MemberEditorModal';
 import RegistryEditorModal from '@/components/admin/RegistryEditorModal';
@@ -817,7 +817,6 @@ export default function AdminDashboardPage() {
         { header: 'Task Definition / Asset', key: 'title', width: 50 },
         { header: 'Project Precinct', key: 'precinct', width: 25 },
         { header: 'Task Category', key: 'department', width: 20 },
-        { header: 'Operational Status', key: 'status', width: 25 },
         { header: 'Submitter', key: 'submitterName', width: 25 },
         { header: 'Submission Date', key: 'submittingDate', width: 20 },
         { header: 'Deliverable Type', key: 'deliverableType', width: 25 },
@@ -858,23 +857,13 @@ export default function AdminDashboardPage() {
         });
       }
 
-      // Status Dropdown (Column E)
-      (sheet as any).dataValidations.add('E2:E500', {
-        type: 'list',
-        allowBlank: true,
-        formulae: [`"${TASK_STATUS_OPTIONS.join(',')}"`],
-        showErrorMessage: true,
-        errorTitle: 'Invalid Status',
-        error: 'Please select an operational status from the list.'
-      });
+
       
       sheet.addRow({
         id: 'T-001 (Optional)',
         title: 'Sample Asset Title',
         precinct: PRECINCTS[0],
         department: deptNames[0] || 'BIM',
-        status: TASK_STATUS_OPTIONS[0],
-        submitterName: 'John Doe',
         submittingDate: '11-APR-2026',
         deliverableType: 'RVT | IFC',
         cde: 'ACC | BIM360',
@@ -933,13 +922,7 @@ export default function AdminDashboardPage() {
           return isNaN(parsed.getTime()) ? String(val) : parsed.toISOString();
         };
 
-        const mapStatusToInternal = (extStatus: string): TaskStatus => {
-          const s = String(extStatus || '').toUpperCase().replace(/\s+/g, '_');
-          if (['NOT_STARTED', 'IN_PROGRESS', 'PENDING_REVIEW', 'COMPLETED', 'DELAYED', 'BLOCKED'].includes(s)) {
-            return s as TaskStatus;
-          }
-          return 'NOT_STARTED';
-        };
+
 
         const nextIdsByPrefix: Record<string, number> = {};
         const getImportNextId = (deptName: string) => {
@@ -996,7 +979,6 @@ export default function AdminDashboardPage() {
             title: String(row['Task Definition / Asset'] || ''),
             precinct: row['Project Precinct'] || '',
             department: category,
-            status: mapStatusToInternal(row['Operational Status'] || 'NOT STARTED'),
             submitterName: matchedMember ? matchedMember.name : rawSubmitter,
             submitterId: matchedMember ? matchedMember.id : '',
             submitterEmail: matchedMember ? matchedMember.email : '',
@@ -1005,7 +987,7 @@ export default function AdminDashboardPage() {
             cde: vectorCde ? vectorCde.split('|').map(s => s.trim()) : [],
             fileShareLink: vectorUrl,
             description: '',
-            completion: mapStatusToInternal(row['Operational Status'] || '') === 'COMPLETED' ? 100 : 0,
+            completion: 0,
             attachments: 0,
             files: [],
             links: [],
@@ -1572,9 +1554,11 @@ export default function AdminDashboardPage() {
                                 <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 130 }}>
                                   {activeTab === 'users' ? 'Admin Access' : (activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Email' : 'Last Updated') : (activeTab === 'registry' ? 'Department' : 'Task Category'))}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: activeTab === 'users' ? 240 : 160 }}>
-                                  {activeTab === 'users' ? 'Feature Modules' : (activeTab === 'tasks' ? 'Operational Status' : 'Control')}
-                                </th>
+                                {activeTab !== 'tasks' && (
+                                  <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: activeTab === 'users' ? 240 : 160 }}>
+                                    {activeTab === 'users' ? 'Feature Modules' : 'Control'}
+                                  </th>
+                                )}
                                 {(activeTab === 'tasks' || activeTab === 'users') && (
                                   <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: activeTab === 'tasks' ? 180 : 150 }}>
                                     {activeTab === 'tasks' ? 'Submitter' : 'Control'}
@@ -1654,24 +1638,7 @@ export default function AdminDashboardPage() {
                                   );
                                 })()}
                               </td>
-                              {/* Operational Status */}
-                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
-                                <span style={{ 
-                                  fontSize: 10, 
-                                  fontWeight: 900, 
-                                  letterSpacing: '0.08em', 
-                                  padding: '6px 12px', 
-                                  borderRadius: 8,
-                                  color: '#ffffff',
-                                  background: task.status === 'COMPLETED' ? 'var(--status-success)' : 
-                                             task.status === 'BLOCKED' ? 'var(--status-error)' :
-                                             task.status === 'DELAYED' ? 'var(--status-warning)' :
-                                             'var(--primary-light)',
-                                  textTransform: 'uppercase'
-                                }}>
-                                  {task.status?.replace(/_/g, ' ') || 'NOT STARTED'}
-                                </span>
-                              </td>
+
                               {/* Submitter */}
                               <td style={{ padding: '24px 16px', textAlign: 'center' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
@@ -3056,12 +3023,11 @@ export default function AdminDashboardPage() {
 
                                                 <div style={{ flex: 1, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                                                   {/* Table Header: Black background, Gold text */}
-                                                  <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 100px 100px 100px 100px 140px', background: 'var(--surface)', borderBottom: '1px solid #1e293b', padding: '12px' }}>
+                                                  <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 100px 100px 100px 140px', background: 'var(--surface)', borderBottom: '1px solid #1e293b', padding: '12px' }}>
                                                     {[
                                                       { label: 'UID', width: 100 },
                                                       { label: 'ASSET TITLE', width: '1fr' },
                                                       { label: 'DEPT', width: 100 },
-                                                      { label: 'STATUS', width: 100 },
                                                       { label: 'START (ACTUAL)', width: 100 },
                                                       { label: 'FINISH (ACTUAL)', width: 100 },
                                                       { label: 'DELIVERABLES LINKS', width: 140 }
@@ -3072,17 +3038,16 @@ export default function AdminDashboardPage() {
 
                                                   <div className="custom-scrollbar" style={{ overflowY: 'auto', maxHeight: 420 }}>
                                                     {(memoizedTasks.length > 0 ? memoizedTasks.slice(0, 12) : [
-                                                      { id: 'BIM-100', title: 'BIM Task Test', department: 'BIM', status: 'COMPLETED', actualStartDate: '10-APR-2026', actualEndDate: '10-APR-2026' },
-                                                      { id: 'DR-100', title: 'Monthly Task Test', department: 'Digital Reporting', status: 'COMPLETED', actualStartDate: '18-MAR-2026', actualEndDate: '10-APR-2026' },
-                                                      { id: 'GIS-100', title: 'GIS Data Sync', department: 'GIS', status: 'COMPLETED', actualStartDate: '10-APR-2026', actualEndDate: '10-APR-2026' }
+                                                      { id: 'BIM-100', title: 'BIM Task Test', department: 'BIM', actualStartDate: '10-APR-2026', actualEndDate: '10-APR-2026' },
+                                                      { id: 'DR-100', title: 'Monthly Task Test', department: 'Digital Reporting', actualStartDate: '18-MAR-2026', actualEndDate: '10-APR-2026' },
+                                                      { id: 'GIS-100', title: 'GIS Data Sync', department: 'GIS', actualStartDate: '10-APR-2026', actualEndDate: '10-APR-2026' }
                                                     ]).map((task: any, idx) => (
-                                                      <div key={task.id} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 100px 100px 100px 100px 140px', borderBottom: '1px solid #e2e8f0', padding: '10px 12px', background: 'var(--text-primary)', alignItems: 'center', minHeight: 44 }}>
+                                                      <div key={task.id} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 100px 100px 100px 140px', borderBottom: '1px solid #e2e8f0', padding: '10px 12px', background: 'var(--text-primary)', alignItems: 'center', minHeight: 44 }}>
                                                         <span style={{ fontSize: 9, color: '#475569', textAlign: 'center', fontWeight: 500 }}>REH-{task.id?.split('-').pop()?.toUpperCase() || 'DH-100'}</span>
                                                         <span style={{ fontSize: 9, color: '#1e293b', fontWeight: 600, paddingLeft: 12 }}>{task.title}</span>
                                                         <span style={{ fontSize: 8, color: '#64748b', textAlign: 'center' }}>{task.department || 'N/A'}</span>
-                                                        <span style={{ fontSize: 8, color: '#475569', fontWeight: 700, textAlign: 'center' }}>{task.status?.toUpperCase()}</span>
-                                                        <span style={{ fontSize: 8, color: '#64748b', textAlign: 'center' }}>{task.actualStartDate || 'N/A'}</span>
-                                                        <span style={{ fontSize: 8, color: '#64748b', textAlign: 'center' }}>{task.actualEndDate || 'N/A'}</span>
+                                                        <span style={{ fontSize: 8, color: '#475569', fontWeight: 700, textAlign: 'center' }}>{task.actualStartDate || 'N/A'}</span>
+                                                        <span style={{ fontSize: 8, color: '#475569', fontWeight: 700, textAlign: 'center' }}>{task.actualEndDate || 'N/A'}</span>
                                                         <div style={{ fontSize: 8, textAlign: 'center' }}>
                                                           {task.links && task.links.length > 0 ? (
                                                             <a href={task.links[0].url} style={{ color: '#2563eb', textDecoration: 'underline', fontWeight: 600 }}>Preveiw Dashboard | Dash</a>
