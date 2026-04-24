@@ -401,28 +401,29 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
 
             {mailTarget === 'SPECIFIC' && (
               <div style={{ 
-                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, padding: 4, 
-                background: 'linear-gradient(135deg, rgba(0, 63, 73, 0.1), rgba(208, 171, 130, 0.05))', 
-                borderRadius: 24, border: '1px solid var(--border)' 
+                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, padding: 6, 
+                background: 'linear-gradient(135deg, rgba(0, 63, 73, 0.15), rgba(0,0,0,0.6))', 
+                borderRadius: 24, border: '1px solid rgba(0, 63, 73, 0.3)',
+                boxShadow: 'inset 0 0 40px rgba(0,0,0,0.2)'
               }}>
                 {/* Direct Recipients (TO) - Full Width */}
                 <div style={{ gridColumn: 'span 2' }}>
                   {[
-                    { id: 'TO', label: 'Direct Recipients (TO)', value: toEmails, setter: setToEmails, accent: 'var(--teal)', icon: <Send size={12} /> },
+                    { id: 'TO', label: 'Direct Recipients (TO)', value: toEmails, setter: setToEmails, accent: 'var(--teal)', icon: <Send size={14} /> },
                   ].map(field => (
                     <div 
                       key={field.id} 
                       style={{ 
-                        display: 'flex', flexDirection: 'column', gap: 8, position: 'relative', 
-                        background: 'rgba(0,0,0,0.45)', padding: '20px 24px', borderRadius: 20, 
-                        border: '1px solid rgba(255,255,255,0.08)', borderTop: `2px solid ${field.accent}`,
-                        boxShadow: '0 8px 30px rgba(0,0,0,0.3)'
+                        display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', 
+                        background: 'rgba(0, 63, 73, 0.08)', padding: '24px 32px', borderRadius: 20, 
+                        border: '1px solid rgba(0, 63, 73, 0.2)', borderLeft: `6px solid ${field.accent}`,
+                        boxShadow: '0 12px 40px rgba(0,0,0,0.4)'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ padding: 6, borderRadius: 8, background: 'rgba(0, 63, 73, 0.2)', color: field.accent }}>{field.icon}</div>
-                          <label style={{ fontSize: 10, fontWeight: 900, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.2em' }}>{field.label}</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                          <div style={{ padding: 8, borderRadius: 10, background: 'rgba(0, 63, 73, 0.3)', color: field.accent, boxShadow: '0 0 15px rgba(0, 63, 73, 0.2)' }}>{field.icon}</div>
+                          <label style={{ fontSize: 11, fontWeight: 900, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.25em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>{field.label}</label>
                         </div>
                         <button
                           type="button"
@@ -431,54 +432,56 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                             setUserSearchQuery('');
                           }}
                           style={{ 
-                            padding: '8px 16px', borderRadius: 10, border: '1px solid var(--teal)', 
-                            background: 'var(--teal)', color: '#ffffff', fontSize: 10, 
-                            fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                            padding: '10px 20px', borderRadius: 12, border: 'none', 
+                            background: field.accent, color: '#ffffff', fontSize: 11, 
+                            fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
                             transition: 'all 300ms', textTransform: 'uppercase', letterSpacing: '0.1em',
-                            boxShadow: '0 4px 12px rgba(0, 63, 73, 0.3)'
+                            boxShadow: 'var(--shadow-premium)', transform: 'translateY(0)'
                           }}
+                          onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.1)'}
+                          onMouseLeave={e => e.currentTarget.style.filter = 'brightness(1)'}
                         >
-                          <UserPlus size={14} /> SELECT TEAM
+                          <UserPlus size={16} /> SELECT TEAM REGISTRY
                         </button>
                       </div>
                       <textarea
                         value={field.value}
                         onChange={(e) => field.setter(e.target.value)}
-                        placeholder="Uplink primary recipient list..."
+                        placeholder="Establish primary communication uplink..."
                         rows={1}
                         style={{ 
-                          padding: '14px 18px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', 
-                          borderRadius: 12, color: '#ffffff', fontSize: 14, outline: 'none', 
-                          resize: 'none', fontWeight: 500, letterSpacing: '0.02em'
+                          padding: '16px 20px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)', 
+                          borderRadius: 14, color: '#ffffff', fontSize: 15, outline: 'none', 
+                          resize: 'none', fontWeight: 500, lineHeight: '1.5'
                         }}
                       />
                       
                       <AnimatePresence>
                         {activeSelectorField === field.id && (
                           <motion.div 
-                            initial={{ opacity: 0, scale: 0.9, y: -20 }}
+                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: -20 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
                             style={{ 
-                              position: 'absolute', top: 'calc(100% + 12px)', right: 0, zIndex: 1100, 
-                              width: 380, background: 'var(--secondary)', 
-                              border: '1px solid var(--teal)', borderRadius: 18, 
-                              boxShadow: '0 30px 60px rgba(0,0,0,0.6)', padding: 16, 
-                              display: 'flex', flexDirection: 'column', gap: 12,
-                              backdropFilter: 'blur(15px)'
+                              position: 'absolute', top: 'calc(100% + 12px)', right: 0, zIndex: 1200, 
+                              width: 420, background: '#0a1a1c', 
+                              border: '1px solid var(--teal)', borderRadius: 20, 
+                              boxShadow: '0 40px 80px rgba(0,0,0,0.8)', padding: 18, 
+                              display: 'flex', flexDirection: 'column', gap: 14,
+                              backdropFilter: 'blur(20px)'
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,0,0,0.4)', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)' }}>
-                              <Search size={16} color="var(--teal)" />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(0,0,0,0.5)', padding: '12px 18px', borderRadius: 14, border: '1px solid rgba(0, 63, 73, 0.4)' }}>
+                              <Search size={18} color="var(--teal)" />
                               <input 
                                 autoFocus
                                 value={userSearchQuery}
                                 onChange={e => setUserSearchQuery(e.target.value)}
-                                placeholder="Filter by name or identity..." 
-                                style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: 13, outline: 'none', width: '100%' }} 
+                                placeholder="Search personnel identity..." 
+                                style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: 14, outline: 'none', width: '100%' }} 
                               />
                             </div>
-                            <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 6 }} className="custom-scrollbar">
+                            <div style={{ maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 8 }} className="custom-scrollbar">
                               {usersSnapshot?.docs
                                 .filter((d: any) => {
                                   const data = d.data();
@@ -491,22 +494,22 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                                     type="button"
                                     onClick={() => addEmailToField(d.data().email, field.id as any)}
                                     style={{ 
-                                      textAlign: 'left', padding: '12px 16px', borderRadius: 12, 
-                                      border: '1px solid transparent', background: 'rgba(255,255,255,0.03)', 
+                                      textAlign: 'left', padding: '14px 18px', borderRadius: 14, 
+                                      border: '1px solid transparent', background: 'rgba(255,255,255,0.02)', 
                                       cursor: 'pointer', transition: 'all 200ms', display: 'flex', 
                                       flexDirection: 'column', gap: 4 
                                     }}
                                     onMouseEnter={e => {
-                                      e.currentTarget.style.background = 'rgba(0, 63, 73, 0.15)';
+                                      e.currentTarget.style.background = 'rgba(0, 63, 73, 0.2)';
                                       e.currentTarget.style.borderColor = 'var(--teal)';
                                     }}
                                     onMouseLeave={e => {
-                                      e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                                      e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
                                       e.currentTarget.style.borderColor = 'transparent';
                                     }}
                                   >
-                                    <span style={{ fontSize: 13, fontWeight: 900, color: '#ffffff' }}>{d.data().name}</span>
-                                    <span style={{ fontSize: 10, color: 'var(--teal)', fontWeight: 700, letterSpacing: '0.05em' }}>{d.data().email}</span>
+                                    <span style={{ fontSize: 14, fontWeight: 900, color: '#ffffff' }}>{d.data().name}</span>
+                                    <span style={{ fontSize: 11, color: 'var(--teal)', fontWeight: 800, letterSpacing: '0.05em', opacity: 0.8 }}>{d.data().email}</span>
                                   </button>
                                 ))}
                             </div>
@@ -519,22 +522,22 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
 
                 {/* CC and BCC - Two Columns */}
                 {[
-                  { id: 'CC', label: 'Carbon Copy (CC)', value: ccEmails, setter: setCcEmails, accent: 'var(--primary-light)', icon: <Users size={12} /> },
-                  { id: 'BCC', label: 'Blind Copy (BCC)', value: bccEmails, setter: setBccEmails, accent: '#64748b', icon: <EyeOff size={12} /> }
+                  { id: 'CC', label: 'Carbon Copy (CC)', value: ccEmails, setter: setCcEmails, accent: 'var(--primary-light)', icon: <Users size={14} /> },
+                  { id: 'BCC', label: 'Blind Copy (BCC)', value: bccEmails, setter: setBccEmails, accent: 'var(--text-muted)', icon: <EyeOff size={14} /> }
                 ].map(field => (
                   <div 
                     key={field.id} 
                     style={{ 
-                      display: 'flex', flexDirection: 'column', gap: 8, position: 'relative', 
-                      background: 'rgba(0,0,0,0.4)', padding: '16px 20px', borderRadius: 18, 
-                      border: '1px solid rgba(255,255,255,0.05)', borderLeft: `3px solid ${field.accent}`,
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+                      display: 'flex', flexDirection: 'column', gap: 10, position: 'relative', 
+                      background: 'rgba(0,0,0,0.3)', padding: '20px 24px', borderRadius: 18, 
+                      border: '1px solid rgba(255,255,255,0.05)', borderLeft: `4px solid ${field.accent}`,
+                      boxShadow: '0 6px 25px rgba(0,0,0,0.3)'
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ color: field.accent }}>{field.icon}</div>
-                        <label style={{ fontSize: 9, fontWeight: 900, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>{field.label}</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ color: field.accent, opacity: 0.9 }}>{field.icon}</div>
+                        <label style={{ fontSize: 10, fontWeight: 900, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.9 }}>{field.label}</label>
                       </div>
                       <button
                         type="button"
@@ -543,17 +546,17 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                           setUserSearchQuery('');
                         }}
                         style={{ 
-                          padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)', 
-                          background: 'transparent', color: 'var(--text-muted)', fontSize: 8, 
-                          fontWeight: 900, cursor: 'pointer', transition: 'all 200ms'
+                          padding: '6px 12px', borderRadius: 8, border: `1px solid ${field.accent}`, 
+                          background: 'transparent', color: field.accent, fontSize: 9, 
+                          fontWeight: 900, cursor: 'pointer', transition: 'all 200ms', letterSpacing: '0.05em'
                         }}
                         onMouseEnter={e => {
-                          e.currentTarget.style.color = 'var(--teal)';
-                          e.currentTarget.style.borderColor = 'var(--teal)';
+                          e.currentTarget.style.background = field.accent;
+                          e.currentTarget.style.color = '#000000';
                         }}
                         onMouseLeave={e => {
-                          e.currentTarget.style.color = 'var(--text-muted)';
-                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.color = field.accent;
                         }}
                       >
                         ADD TEAM
@@ -562,41 +565,41 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                     <textarea
                       value={field.value}
                       onChange={(e) => field.setter(e.target.value)}
-                      placeholder={`Draft ${field.id} addresses...`}
+                      placeholder={`Draft ${field.id} identities...`}
                       rows={1}
                       style={{ 
-                        padding: '10px 14px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', 
-                        borderRadius: 10, color: 'rgba(255,255,255,0.9)', fontSize: 12, outline: 'none', 
-                        resize: 'none'
+                        padding: '12px 16px', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)', 
+                        borderRadius: 12, color: '#ffffff', fontSize: 13, outline: 'none', 
+                        resize: 'none', fontWeight: 500
                       }}
                     />
                     
                     <AnimatePresence>
                       {activeSelectorField === field.id && (
                         <motion.div 
-                          initial={{ opacity: 0, y: 10 }}
+                          initial={{ opacity: 0, y: 15 }}
                           animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 10 }}
+                          exit={{ opacity: 0, y: 15 }}
                           style={{ 
-                            position: 'absolute', top: '100%', left: 0, zIndex: 1100, 
-                            width: 280, marginTop: 10, background: 'var(--secondary)', 
-                            border: '1px solid var(--border)', borderRadius: 14, 
-                            boxShadow: '0 15px 40px rgba(0,0,0,0.5)', padding: 12, 
-                            display: 'flex', flexDirection: 'column', gap: 10,
-                            backdropFilter: 'blur(10px)'
+                            position: 'absolute', top: '100%', left: 0, zIndex: 1200, 
+                            width: 300, marginTop: 12, background: '#0a1a1c', 
+                            border: `1px solid ${field.accent}`, borderRadius: 16, 
+                            boxShadow: '0 20px 60px rgba(0,0,0,0.7)', padding: 14, 
+                            display: 'flex', flexDirection: 'column', gap: 12,
+                            backdropFilter: 'blur(15px)'
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)' }}>
-                            <Search size={12} color="var(--text-muted)" />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <Search size={14} color={field.accent} />
                             <input 
                               autoFocus
                               value={userSearchQuery}
                               onChange={e => setUserSearchQuery(e.target.value)}
                               placeholder="Search..." 
-                              style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: 11, outline: 'none', width: '100%' }} 
+                              style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: 12, outline: 'none', width: '100%' }} 
                             />
                           </div>
-                          <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }} className="custom-scrollbar">
+                          <div style={{ maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }} className="custom-scrollbar">
                             {usersSnapshot?.docs
                               .filter((d: any) => {
                                 const data = d.data();
@@ -608,12 +611,12 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                                   key={d.id}
                                   type="button"
                                   onClick={() => addEmailToField(d.data().email, field.id as any)}
-                                  style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', transition: 'all 200ms' }}
+                                  style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', transition: 'all 200ms' }}
                                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                 >
-                                  <span style={{ fontSize: 11, fontWeight: 700, color: '#ffffff', display: 'block' }}>{d.data().name}</span>
-                                  <span style={{ fontSize: 9, color: 'var(--text-dim)' }}>{d.data().email}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 900, color: '#ffffff', display: 'block' }}>{d.data().name}</span>
+                                  <span style={{ fontSize: 10, color: field.accent, opacity: 0.8 }}>{d.data().email}</span>
                                 </button>
                               ))}
                           </div>
