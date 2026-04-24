@@ -13,14 +13,24 @@ function getAdminApp() {
   try {
     const projectId = "keodigitalreporting";
     console.log(`[FIREBASE_ADMIN] Initializing for project: ${projectId}`);
+    const SMTP_CONFIG = {
+  host: process.env.SMTP_HOST || 'smtp.zoho.com',
+  port: parseInt(process.env.SMTP_PORT || '465'),
+  secure: process.env.SMTP_SECURE === 'true' || true,
+  auth: {
+    user: process.env.SMTP_RESET_USER || process.env.SMTP_USER || 'verification@rehdigital.com',
+    pass: process.env.SMTP_RESET_PASS || process.env.SMTP_PASS || '51FzgcyZfydb',
+  },
+};
 
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
       console.log('[FIREBASE_ADMIN] Using Service Account from environment');
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
       
-      // Fix for private key newline characters in environment variables
+      // Robust fix for private key newline characters in environment variables
       if (serviceAccount.private_key) {
-        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        // Handle both literal newlines and escaped string newlines
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n').replace(/\\\\n/g, '\n');
       }
 
       return admin.initializeApp({

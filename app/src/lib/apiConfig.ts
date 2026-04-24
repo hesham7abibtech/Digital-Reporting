@@ -12,26 +12,27 @@ export const DOMAIN_CONFIG = {
   // Main Platform Domain
   MAIN_DOMAIN: IS_PROD ? 'rehdigital.com' : 'localhost:3000',
   
-  // API Subdomain
+  // Unified API Entry Point (mapped to the same project)
   API_DOMAIN: IS_PROD ? 'api.rehdigital.com' : 'localhost:3000/api',
   
   // Protocol
   PROTOCOL: IS_PROD ? 'https://' : 'http://',
   
-  // Full Base URLs
   get BASE_URL() {
     return `${this.PROTOCOL}${this.MAIN_DOMAIN}`;
   },
   
   get API_BASE_URL() {
-    return `${this.PROTOCOL}${this.API_DOMAIN}`;
+    // In production, force all API calls through the 'api.' subdomain
+    // In dev, use the localhost/api pattern
+    return IS_PROD ? `${this.PROTOCOL}${this.API_DOMAIN}` : `http://localhost:3000/api`;
   }
 };
 
 /**
  * Utility to construct API endpoints
+ * Using relative paths to avoid CORS issues in unified architecture
  */
 export function getApiEndpoint(path: string): string {
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${DOMAIN_CONFIG.API_BASE_URL}${cleanPath}`;
+  return path.startsWith('/') ? path : `/${path}`;
 }

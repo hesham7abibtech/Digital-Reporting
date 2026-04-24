@@ -9,7 +9,7 @@
     "lint": "eslint",
     "pages:build": "npm run build",
     "deploy": "npx wrangler pages deploy out --project-name digital-reporting",
-    "pages:deploy": "npm run build && npm run deploy"
+    "pages:deploy": "npm run pages:build && npm run deploy"
   },
   "dependencies": {
     "@tsparticles/react": "^3.0.0",
