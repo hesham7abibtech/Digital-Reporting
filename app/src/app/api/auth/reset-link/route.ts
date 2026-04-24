@@ -2,12 +2,9 @@ export const runtime = 'edge';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
-
-// Release ID to verify deployment sync
-const RELEASE_ID = 'STABLE_V2_REST';
 
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: corsHeaders });
@@ -15,73 +12,63 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json().catch(() => ({}));
-    const { email } = body;
+    const { email } = await request.json().catch(() => ({}));
 
-    /**
-     * CLOUDFLARE BINDING RESOLUTION
-     * In Cloudflare Pages, bindings are available directly in the global scope.
-     * We attempt to resolve them from all possible runtime containers.
-     */
+    // In Cloudflare Pages, environment variables are injected as globals.
+    // We check every possible location with zero dependencies.
     const apiKey = (globalThis as any).NEXT_PUBLIC_FIREBASE_API_KEY || 
-                   (globalThis as any).process?.env?.NEXT_PUBLIC_FIREBASE_API_KEY ||
-                   'MISSING';
-
-    const baseUrl = (globalThis as any).NEXT_PUBLIC_BASE_URL || 
-                    (globalThis as any).process?.env?.NEXT_PUBLIC_BASE_URL ||
-                    'https://www.rehdigital.com';
+                   (globalThis as any).process?.env?.NEXT_PUBLIC_FIREBASE_API_KEY;
 
     if (!email) {
       return new Response(JSON.stringify({ error: 'Email required' }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Release-ID': RELEASE_ID }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    if (apiKey === 'MISSING') {
+    if (!apiKey) {
       return new Response(JSON.stringify({ 
-        error: 'Infrastructure Error', 
-        message: 'Firebase API Key binding was not found in the Edge global scope.' 
+        error: 'Configuration Error', 
+        message: 'API Key not found in Edge bindings. Please verify the Cloudflare Dashboard.' 
       }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Release-ID': RELEASE_ID }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    const firebaseEndpoint = `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`;
-
-    const res = await fetch(firebaseEndpoint, {
+    // Call Firebase Auth REST API
+    const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         requestType: 'PASSWORD_RESET',
         email,
-        continueUrl: `${baseUrl}/login`
+        continueUrl: 'https://www.rehdigital.com/login'
       })
     });
 
-    const data = await res.json();
+    const data = await response.json();
 
-    if (!res.ok) {
-      const errorMsg = data.error?.message || 'AUTH_GATEWAY_ERROR';
+    if (!response.ok) {
+      const msg = data.error?.message || 'ERROR';
       return new Response(JSON.stringify({ 
-        error: errorMsg === 'EMAIL_NOT_FOUND' ? 'User account not found' : 'Security gateway error',
-        code: errorMsg === 'EMAIL_NOT_FOUND' ? 'USER_NOT_FOUND' : 'GATEWAY_ERROR'
+        error: msg === 'EMAIL_NOT_FOUND' ? 'User not found' : 'Auth failure',
+        code: msg === 'EMAIL_NOT_FOUND' ? 'USER_NOT_FOUND' : 'AUTH_ERROR'
       }), {
-        status: errorMsg === 'EMAIL_NOT_FOUND' ? 404 : 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Release-ID': RELEASE_ID }
+        status: msg === 'EMAIL_NOT_FOUND' ? 404 : 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Release-ID': RELEASE_ID }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: 'Critical Gateway Failure', detail: err.message }), {
+    return new Response(JSON.stringify({ error: 'Worker Error', details: err.message }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Release-ID': RELEASE_ID }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 }
