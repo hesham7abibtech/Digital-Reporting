@@ -342,71 +342,68 @@ function LoginContent() {
 
   if (loading && !isSubmitting) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--aqua)' }}>
-        <Loader2 className="animate-spin" size={32} color="var(--teal)" />
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#002d35' }}>
+        <Loader2 className="animate-spin" size={32} color="#d0ab82" />
       </div>
     );
   }
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '16px 16px 16px 44px', borderRadius: 16,
-    background: 'rgba(255, 255, 255, 0.6)', border: '1px solid rgba(0, 63, 73, 0.15)',
-    color: 'var(--teal)', fontSize: 15, outline: 'none', transition: 'all 300ms',
-    fontWeight: 600, boxShadow: 'inset 0 2px 4px rgba(0, 63, 73, 0.02)',
+    background: 'rgba(0, 45, 53, 0.6)', border: '1px solid rgba(208, 171, 130, 0.2)',
+    color: 'white', fontSize: 15, outline: 'none', transition: 'all 300ms',
+    fontWeight: 600, backdropFilter: 'blur(10px)',
   };
 
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(160deg, var(--aqua) 0%, var(--haze) 50%, var(--cotton) 100%)',
+      background: '#002d35',
       padding: 20, position: 'relative', overflow: 'hidden'
     }}>
+      {/* Industrial Grid Background */}
+      <div style={{ 
+        position: 'absolute', inset: 0, opacity: 0.15, pointerEvents: 'none',
+        backgroundImage: 'radial-gradient(#d0ab82 0.5px, transparent 0.5px)',
+        backgroundSize: '40px 40px'
+      }} />
+      
       {/* Ambient Decorations */}
-      <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(208, 171, 130, 0.12) 0%, transparent 70%)', filter: 'blur(80px)' }} />
-      <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0, 63, 73, 0.1) 0%, transparent 70%)', filter: 'blur(80px)' }} />
-      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '120%', height: '120%', background: 'radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 80%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(208, 171, 130, 0.1) 0%, transparent 70%)', filter: 'blur(100px)' }} />
+      <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0, 63, 73, 0.2) 0%, transparent 70%)', filter: 'blur(100px)' }} />
 
       <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         style={{
           width: '100%', maxWidth: 460,
-          background: 'rgba(255, 255, 255, 0.7)',
-          backdropFilter: 'blur(40px)',
-          border: '1px solid rgba(0, 63, 73, 0.1)',
-          borderRadius: 28, overflow: 'hidden',
-          boxShadow: '0 25px 60px rgba(0, 63, 73, 0.08), 0 8px 24px rgba(0, 63, 73, 0.04)',
+          background: 'rgba(0, 63, 73, 0.45)',
+          backdropFilter: 'blur(30px)',
+          border: '1px solid rgba(208, 171, 130, 0.25)',
+          borderRadius: 32, overflow: 'hidden',
+          boxShadow: '0 30px 60px rgba(0, 0, 0, 0.4)',
           position: 'relative', zIndex: 10,
         }}
       >
-        <div style={{ padding: '32px 36px 28px' }}>
-          {/* Home Button - Repositioned to Top-Right to avoid collision with logos */}
+        <div style={{ padding: '48px 40px 32px' }}>
+          {/* Home Button */}
           <motion.button
             onClick={() => router.push('/')}
-            whileHover={{ scale: 1.08, background: 'rgba(0, 63, 73, 0.08)', borderColor: 'var(--teal)' }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.05, background: 'rgba(208, 171, 130, 0.1)' }}
             style={{
               position: 'absolute', top: 20, right: 20, padding: 8,
-              borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.08)',
-              background: 'rgba(0, 63, 73, 0.03)', cursor: 'pointer',
+              borderRadius: 12, border: '1px solid rgba(208, 171, 130, 0.2)',
+              background: 'transparent', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              zIndex: 20,
+              zIndex: 20, color: '#d0ab82'
             }}
-            title="Back to Home"
           >
-            <Home size={16} color="var(--teal)" />
+            <Home size={16} />
           </motion.button>
 
-          {/* Slim Branded Insignia - Final Proportional Scaling */}
+          {/* Branding Header */}
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 16,
-              padding: '10px 24px', background: 'var(--teal)', borderRadius: 16,
-              boxShadow: '0 10px 30px rgba(0, 63, 73, 0.15)', 
-              border: '1px solid var(--sunlit-rock)', 
-              width: 'max-content', margin: '0 auto 12px',
-            }}>
               <motion.img 
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -547,18 +544,18 @@ function LoginContent() {
             )}
 
             <button type="submit" disabled={isSubmitting} style={{
-              width: '100%', padding: '14px', borderRadius: 14, marginTop: 4,
-              background: 'var(--teal)', color: 'var(--cotton)', fontSize: 14,
-              fontWeight: 700, border: 'none', cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: '0 8px 24px rgba(0, 63, 73, 0.15)',
-              textTransform: 'uppercase', letterSpacing: '0.08em',
+              width: '100%', padding: '16px', borderRadius: 16, marginTop: 10,
+              background: '#d0ab82', color: '#002d35', fontSize: 14,
+              fontWeight: 900, border: 'none', cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              boxShadow: '0 10px 25px rgba(208, 171, 130, 0.25)',
+              textTransform: 'uppercase', letterSpacing: '0.1em', fontStyle: 'italic',
               transition: 'all 300ms',
             }}>
               {isSubmitting ? <Loader2 className="animate-spin" size={18} /> :
-                mode === 'login' ? <>Sign In <ChevronRight size={16} /></> :
-                  mode === 'register' ? <>Create Account <UserPlus size={16} /></> :
-                    <>Send Reset Link <ChevronRight size={16} /></>}
+                mode === 'login' ? <>AUTHORIZE ACCESS <ChevronRight size={18} /></> :
+                  mode === 'register' ? <>INITIALIZE PROFILE <UserPlus size={18} /></> :
+                    <>TRANSMIT RECOVERY <ChevronRight size={18} /></>}
             </button>
           </form>
 
@@ -594,21 +591,21 @@ function LoginContent() {
       <AnimatePresence>
         {showRegistrationSuccess && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'absolute', inset: 0, background: 'rgba(0, 42, 48, 0.4)', backdropFilter: 'blur(16px)' }} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'absolute', inset: 0, background: 'rgba(0, 45, 53, 0.6)', backdropFilter: 'blur(20px)' }} />
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              style={{ width: '100%', maxWidth: 460, background: 'rgba(255,255,255,0.98)', backdropFilter: 'blur(20px)', border: '1px solid rgba(0, 63, 73, 0.15)', borderRadius: 32, padding: '48px 40px', position: 'relative', zIndex: 1, boxShadow: '0 30px 80px rgba(0,42,48,0.2)' }}>
+              style={{ width: '100%', maxWidth: 460, background: 'rgba(0, 63, 73, 0.85)', backdropFilter: 'blur(40px)', border: '1px solid rgba(208, 171, 130, 0.3)', borderRadius: 32, padding: '48px 40px', position: 'relative', zIndex: 1, boxShadow: '0 40px 100px rgba(0,0,0,0.5)' }}>
               
               <div style={{ textAlign: 'center', marginBottom: 32 }}>
-                <div style={{ width: 64, height: 64, borderRadius: 20, background: 'linear-gradient(135deg, var(--teal) 0%, #005663 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 8px 24px rgba(0, 63, 73, 0.2)' }}>
-                  <ShieldCheck size={32} color="white" />
+                <div style={{ width: 80, height: 80, borderRadius: 24, background: 'linear-gradient(135deg, #003f49 0%, #002d35 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid rgba(208, 171, 130, 0.4)', boxShadow: '0 0 30px rgba(208, 171, 130, 0.2)' }}>
+                  <ShieldCheck size={40} color="#d0ab82" />
                 </div>
-                <h2 style={{ fontSize: 24, fontWeight: 900, color: 'var(--teal)', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
-                  {authStatusMode === 'unapproved' ? 'Clearance Pending' : 'Security Protocol'}
+                <h2 style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: '0 0 10px', letterSpacing: '0.05em', textTransform: 'uppercase', fontStyle: 'italic' }}>
+                  {authStatusMode === 'unapproved' ? 'CLEARANCE PENDING' : 'SECURITY PROTOCOL'}
                 </h2>
-                <p style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 500 }}>
-                  {authStatusMode === 'unapproved' ? 'Identity verified successfully. Your clearance for project modules is now finalizing.' : 'Your security profile has been initialized. Please complete the following stages:'}
+                <p style={{ color: '#94A3B8', fontSize: 14, fontWeight: 600, lineHeight: 1.5 }}>
+                  {authStatusMode === 'unapproved' ? 'Identity verified successfully. Your cryptographic signature has been validated against the REH registry.' : 'Your security profile has been initialized. Please complete the following stages:'}
                 </p>
               </div>
 
@@ -620,15 +617,15 @@ function LoginContent() {
                       boxShadow: authStatusMode === 'unapproved' ? '0 0 20px rgba(82, 97, 54, 0.15)' : 'none'
                     }}
                     style={{ 
-                      display: 'flex', gap: 16, padding: '16px 20px', borderRadius: 16, 
-                      background: (isEmailVerified || authStatusMode === 'unapproved') ? 'rgba(82, 97, 54, 0.04)' : 'rgba(0, 63, 73, 0.03)', 
-                      border: (isEmailVerified || authStatusMode === 'unapproved') ? '1px solid rgba(82, 97, 54, 0.2)' : '1px solid rgba(0, 63, 73, 0.08)',
+                      display: 'flex', gap: 16, padding: '20px', borderRadius: 20, 
+                      background: (isEmailVerified || authStatusMode === 'unapproved') ? 'rgba(208, 171, 130, 0.08)' : 'rgba(0, 63, 73, 0.2)', 
+                      border: (isEmailVerified || authStatusMode === 'unapproved') ? '1px solid rgba(208, 171, 130, 0.3)' : '1px solid rgba(208, 171, 130, 0.1)',
                       transition: 'all 500ms ease'
                     }}
                   >
                     <div style={{ 
-                      width: 24, height: 24, borderRadius: '50%', 
-                      background: (isEmailVerified || authStatusMode === 'unapproved') ? 'var(--status-success)' : 'rgba(0, 63, 73, 0.1)', 
+                      width: 28, height: 28, borderRadius: '50%', 
+                      background: (isEmailVerified || authStatusMode === 'unapproved') ? '#d0ab82' : 'rgba(208, 171, 130, 0.15)', 
                       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                       transition: 'background 400ms ease'
                     }}>
@@ -640,7 +637,7 @@ function LoginContent() {
                             animate={{ scale: 1, rotate: 0 }}
                             transition={{ type: 'spring', damping: 12, stiffness: 200 }}
                           >
-                            <CheckCircle2 size={14} color="white" />
+                            <CheckCircle2 size={16} color="#002d35" />
                           </motion.div>
                         ) : (
                           <motion.span 
@@ -663,11 +660,11 @@ function LoginContent() {
                           exit={{ opacity: 0, x: 10 }}
                           transition={{ duration: 0.3 }}
                         >
-                          <h3 style={{ fontSize: 13, fontWeight: 800, color: (isEmailVerified || authStatusMode === 'unapproved') ? 'var(--status-success)' : 'var(--teal)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            {(isEmailVerified || authStatusMode === 'unapproved') ? 'Identity Verified' : 'Identity Verification'}
+                          <h3 style={{ fontSize: 13, fontWeight: 900, color: (isEmailVerified || authStatusMode === 'unapproved') ? 'white' : '#d0ab82', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.08em', fontStyle: 'italic' }}>
+                            {(isEmailVerified || authStatusMode === 'unapproved') ? 'IDENTITY CONFIRMED' : 'IDENTITY VERIFICATION'}
                           </h3>
-                          <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: 0, lineHeight: 1.5 }}>
-                            {(isEmailVerified || authStatusMode === 'unapproved') ? 'Authentication successful. Your work email has been confirmed.' : 'Verification link dispatched to your inbox. Please check your email and verify your address to continue.'}
+                          <p style={{ fontSize: 12, color: '#94A3B8', margin: 0, lineHeight: 1.5, fontWeight: 600 }}>
+                            {(isEmailVerified || authStatusMode === 'unapproved') ? 'Authentication successful. Your cryptographic signature has been validated.' : 'Verification link dispatched to your inbox. Please validate your operative identity to continue.'}
                           </p>
                         </motion.div>
                       </AnimatePresence>
@@ -692,21 +689,20 @@ function LoginContent() {
                     </div>
                   </motion.div>
 
-                {/* Stage 2: Approval */}
                 <div style={{ 
-                  display: 'flex', gap: 16, padding: '16px 20px', borderRadius: 16, 
-                  background: 'rgba(212, 175, 55, 0.03)', 
-                  border: '1px solid rgba(212, 175, 55, 0.15)' 
+                  display: 'flex', gap: 16, padding: '20px', borderRadius: 20, 
+                  background: userProfile?.isApproved ? 'rgba(208, 171, 130, 0.08)' : 'rgba(0, 63, 73, 0.2)', 
+                  border: userProfile?.isApproved ? '1px solid rgba(208, 171, 130, 0.3)' : '1px solid rgba(208, 171, 130, 0.1)' 
                 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: '50%', background: userProfile?.isApproved ? 'var(--status-success)' : 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {userProfile?.isApproved ? <CheckCircle2 size={14} color="white" /> : <span style={{ fontSize: 12, fontWeight: 900, color: '#b89431' }}>02</span>}
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: userProfile?.isApproved ? '#d0ab82' : 'rgba(208, 171, 130, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {userProfile?.isApproved ? <CheckCircle2 size={16} color="#002d35" /> : <span style={{ fontSize: 12, fontWeight: 900, color: '#d0ab82' }}>02</span>}
                   </div>
                   <div>
-                    <h3 style={{ fontSize: 14, fontWeight: 800, color: userProfile?.isApproved ? 'var(--status-success)' : '#b89431', margin: '0 0 4px' }}>
-                      {userProfile?.isApproved ? 'ADMINISTRATIVE CLEARANCE GRANTED' : 'ADMINISTRATIVE CLEARANCE'}
+                    <h3 style={{ fontSize: 13, fontWeight: 900, color: userProfile?.isApproved ? 'white' : '#d0ab82', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.08em', fontStyle: 'italic' }}>
+                      {userProfile?.isApproved ? 'CLEARANCE AUTHORIZED' : 'MANUAL APPROVAL'}
                     </h3>
-                    <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: 0, lineHeight: 1.5 }}>
-                      {userProfile?.isApproved ? 'Access finalized. All requested project modules have been successfully bound to your security profile.' : 'Registry access pending manual review. An administrator is currently evaluating your authorization for project modules.'}
+                    <p style={{ fontSize: 12, color: '#94A3B8', margin: 0, lineHeight: 1.5, fontWeight: 600 }}>
+                      {userProfile?.isApproved ? 'Access authorized. All project modules have been bound to your operative profile.' : 'Manual review in progress. Our administrators are currently evaluating your access clearance.'}
                     </p>
                   </div>
                 </div>
@@ -722,16 +718,16 @@ function LoginContent() {
                       router.push('/dashboard');
                     }} 
                     style={{ 
-                      width: '100%', padding: '18px', borderRadius: 18, 
-                      background: 'var(--teal)', color: 'var(--cotton)', 
+                      width: '100%', padding: '18px', borderRadius: 20, 
+                      background: '#d0ab82', color: '#002d35', 
                       fontSize: 14, fontWeight: 900, border: 'none', cursor: 'pointer', 
-                      boxShadow: '0 12px 28px rgba(0, 63, 73, 0.25)', 
-                      textTransform: 'uppercase', letterSpacing: '0.12em',
+                      boxShadow: '0 15px 35px rgba(208, 171, 130, 0.3)', 
+                      textTransform: 'uppercase', letterSpacing: '0.12em', fontStyle: 'italic',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
                     }}
                   >
-                    Launch System Dashboard
-                    <ChevronRight size={18} />
+                    Enter Command Center
+                    <ChevronRight size={20} />
                   </motion.button>
                 ) : (
                   <button 

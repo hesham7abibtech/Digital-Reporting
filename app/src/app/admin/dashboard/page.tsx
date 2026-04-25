@@ -1526,7 +1526,18 @@ export default function AdminDashboardPage() {
   const currentTabIds = getCurrentTabItems().map((item: any) => item.id);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--background)', color: 'var(--text-primary)', overflowX: 'hidden', overflow: 'hidden', height: '100vh' }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      background: '#002d35', 
+      color: '#ffffff', 
+      overflowX: 'hidden', 
+      overflow: 'hidden', 
+      height: '100vh',
+      position: 'relative'
+    }}>
+      {/* Industrial Grid Overlay */}
+      <div className="absolute inset-0 opacity-10 pointer-events-none" 
+           style={{ backgroundImage: 'radial-gradient(#d0ab82 0.5px, transparent 0.5px)', backgroundSize: '40px 40px' }} />
       <AnimatePresence>
         {selectedIds.size > 0 && (
           <motion.div
@@ -1605,25 +1616,25 @@ export default function AdminDashboardPage() {
         <aside style={{ 
           width: 280, 
           minWidth: 280,
-          background: 'var(--surface)', 
-          borderRight: '1px solid var(--border)', 
+          background: '#002d35', 
+          borderRight: '1px solid rgba(208, 171, 130, 0.1)', 
           display: 'flex', 
           flexDirection: 'column', 
           height: '100vh',
           zIndex: 150,
-          boxShadow: '1px 0 20px rgba(0,0,0,0.03)',
+          boxShadow: '1px 0 20px rgba(0,0,0,0.2)',
           flexShrink: 0
         }}>
           <div style={{ padding: '32px 24px', textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                  <h1 style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: 'var(--font-heading)' }}>Admin Portal</h1>
-                  <span style={{ fontSize: 9, color: 'var(--teal)', fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Digital Architecture</span>
+                  <h1 style={{ fontSize: 13, fontWeight: 900, color: '#ffffff', margin: 0, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: 'var(--font-heading)' }}>Admin Portal</h1>
+                  <span style={{ fontSize: 9, color: '#d0ab82', fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Digital Architecture</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, width: '100%', padding: '12px 24px', background: 'rgba(0,0,0,0.03)', borderRadius: 12, border: '1px solid rgba(0,0,0,0.05)' }}>
-                  <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 16, objectFit: 'contain', opacity: 0.9 }} />
-                  <div style={{ width: 1, height: 16, background: 'rgba(0,0,0,0.05)' }} />
-                  <img src="/logos/insite_logo.png" alt="Insite" style={{ height: 16, objectFit: 'contain', opacity: 0.9 }} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, width: '100%', padding: '12px 24px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 16, objectFit: 'contain', opacity: 0.9, filter: 'brightness(0) invert(1)' }} />
+                  <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.05)' }} />
+                  <img src="/logos/insite_logo.png" alt="Insite" style={{ height: 16, objectFit: 'contain', opacity: 0.9, filter: 'brightness(1) contrast(1.2)' }} />
                 </div>
             </div>
           </div>
@@ -1648,15 +1659,15 @@ export default function AdminDashboardPage() {
                   onClick={() => setActiveTab(tab.id as any)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 16,
-                    background: isActive ? 'rgba(0, 63, 73, 0.05)' : 'transparent',
-                    color: isActive ? 'var(--teal)' : 'rgba(15, 23, 42, 0.5)',
-                    border: isActive ? '1px solid rgba(0, 63, 73, 0.1)' : '1px solid transparent', 
+                    background: isActive ? 'rgba(208, 171, 130, 0.1)' : 'transparent',
+                    color: isActive ? '#d0ab82' : 'rgba(255, 255, 255, 0.5)',
+                    border: isActive ? '1px solid rgba(208, 171, 130, 0.2)' : '1px solid transparent', 
                     cursor: 'pointer', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                     width: '100%', textAlign: 'left', position: 'relative', overflow: 'hidden'
                   }}
                 >
                   <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <tab.icon size={18} style={{ opacity: isActive ? 1 : 0.6, color: isActive ? 'var(--teal)' : 'inherit' }} />
+                    <tab.icon size={18} style={{ opacity: isActive ? 1 : 0.6, color: isActive ? '#d0ab82' : 'inherit' }} />
                     <span style={{ fontSize: 13, fontWeight: isActive ? 800 : 500, letterSpacing: isActive ? '0.05em' : 'normal' }}>{tab.label}</span>
                   </div>
                   {isActive && (
@@ -1664,8 +1675,8 @@ export default function AdminDashboardPage() {
                       layoutId="nav-active"
                       initial={false}
                       style={{
-                        position: 'absolute', left: 0, top: '15%', bottom: '15%', width: 3, background: 'var(--teal)', borderRadius: '0 4px 4px 0',
-                        boxShadow: '0 0 15px rgba(0, 242, 255, 0.6)'
+                        position: 'absolute', left: 0, top: '15%', bottom: '15%', width: 3, background: '#d0ab82', borderRadius: '0 4px 4px 0',
+                        boxShadow: '0 0 15px rgba(208, 171, 130, 0.6)'
                       }}
                     />
                   )}
@@ -1690,12 +1701,12 @@ export default function AdminDashboardPage() {
           </div>
         </aside>
 
-        <div className="admin-dashboard-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100vh', overflow: 'hidden', background: 'var(--background)', backgroundImage: 'radial-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px)', backgroundSize: '32px 32px', backgroundPosition: 'center center' }}>
+        <div className="admin-dashboard-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100vh', overflow: 'hidden', background: 'transparent' }}>
           <header style={{
             height: 72, 
-            background: 'rgba(255, 255, 255, 0.8)', 
+            background: 'rgba(0, 45, 53, 0.8)', 
             backdropFilter: 'blur(30px)',
-            borderBottom: '1px solid var(--border)', 
+            borderBottom: '1px solid rgba(208, 171, 130, 0.1)', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'space-between', 
@@ -1710,7 +1721,7 @@ export default function AdminDashboardPage() {
                   fontSize: 14, 
                   fontWeight: 900, 
                   margin: 0, 
-                  color: 'var(--text-primary)', 
+                  color: '#ffffff', 
                   letterSpacing: '0.25em', 
                   textTransform: 'uppercase', 
                   fontFamily: 'var(--font-heading)' 
@@ -1723,10 +1734,10 @@ export default function AdminDashboardPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
-                  <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.02em' }}>{userProfile?.name || 'Administrator'}</div>
-                  <div style={{ fontSize: 10, color: 'var(--teal)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{userProfile?.role || 'ADMIN'}</div>
+                  <div style={{ fontSize: 13, color: '#ffffff', fontWeight: 800, letterSpacing: '0.02em' }}>{userProfile?.name || 'Administrator'}</div>
+                  <div style={{ fontSize: 10, color: '#d0ab82', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{userProfile?.role || 'ADMIN'}</div>
                 </div>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--teal)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, boxShadow: '0 4px 12px rgba(0, 63, 73, 0.1)' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: '#d0ab82', color: '#002d35', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, boxShadow: '0 4px 12px rgba(208, 171, 130, 0.3)' }}>
                   {userProfile?.name?.charAt(0)}
                 </div>
               </div>

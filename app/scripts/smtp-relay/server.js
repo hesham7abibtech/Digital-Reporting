@@ -63,7 +63,7 @@ const getAccessToken = async (sa) => {
 };
 
 // 🛡️ IDENTITY HANDSHAKE ENGINE
-async function generateResetLink(email) {
+async function generateOobLink(email, type = 'PASSWORD_RESET') {
   try {
     const fs = require('fs');
     const path = require('path');
@@ -85,14 +85,15 @@ async function generateResetLink(email) {
     }
 
     // 2. Protocol Initiation (Link Generation)
+    const isVerification = type === 'VERIFY_EMAIL';
     const res = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${sa.project_id}/accounts:sendOobCode`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
       body: JSON.stringify({
-        requestType: 'PASSWORD_RESET',
+        requestType: type,
         email,
         returnOobLink: true,
-        continueUrl: 'https://rehdigital.com/auth/reset'
+        continueUrl: isVerification ? 'https://rehdigital.com/auth/verify-success' : 'https://rehdigital.com/auth/reset'
       })
     });
 
@@ -100,10 +101,14 @@ async function generateResetLink(email) {
     if (!res.ok) throw new Error(data.error?.message || 'Link Generation Failed');
     return data.oobLink;
   } catch (error) {
-    console.error('[FIREBASE_AUTHORITY_ERROR]', error);
+    console.error(`[FIREBASE_AUTHORITY_ERROR] ${type} failed:`, error);
     throw error;
   }
 }
+
+// Legacy wrapper for safety
+const generateResetLink = (email) => generateOobLink(email, 'PASSWORD_RESET');
+const generateVerificationLink = (email) => generateOobLink(email, 'VERIFY_EMAIL');
 
 // ----------------------------------------------------------------------------
 // INDUSTRIAL BRANDING ASSETS (Base64)
@@ -136,22 +141,43 @@ const getTemplate = (type, payload) => {
 
   const baseContainer = (content, icon) => `
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-    <html xmlns="http://www.w3.org/1999/xhtml">
+    <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
     <head>
       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
       <title>REH Digital Security</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+      <meta name="color-scheme" content="light dark">
+      <meta name="supported-color-schemes" content="light dark">
       <!--[if mso]>
       <style type="text/css">
-        body, table, td, a { font-family: Arial, Helvetica, sans-serif !important; }
+        body, table, td, a, span, h1, h2, h3 { font-family: Arial, Helvetica, sans-serif !important; }
+        .outlook-bg { background-color: #002d35 !important; }
       </style>
+      <xml>
+        <o:OfficeDocumentSettings>
+          <o:AllowPNG/>
+          <o:PixelsPerInch>96</o:PixelsPerInch>
+        </o:OfficeDocumentSettings>
+      </xml>
       <![endif]-->
+      <style type="text/css">
+        :root { color-scheme: light dark; supported-color-schemes: light dark; }
+        /* Outlook Dark Mode Fixes */
+        [data-ogsc] .outlook-bg { background-color: #002d35 !important; }
+        [data-ogsc] .card { background-color: #ffffff !important; }
+        [data-ogsc] .text-primary { color: #003f49 !important; }
+      </style>
     </head>
-    <body style="margin: 0; padding: 0; background-color: #F8FAFC;">
-      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F8FAFC;">
+    <body style="margin: 0; padding: 0; background-color: #002d35;">
+      <!--[if mso]>
+      <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:100%; height:1000px;">
+        <v:fill type="tile" color="#002d35" />
+        <v:textbox inset="0,0,0,0">
+      <![endif]-->
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #002d35;" class="outlook-bg">
         <tr>
           <td align="center" style="padding: 60px 20px;">
-            <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #E2E8F0; box-shadow: 0 20px 50px rgba(0,63,73,0.12);">
+            <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #E2E8F0; box-shadow: 0 20px 50px rgba(0,0,0,0.3);" class="card">
               <!-- Header Section -->
               <tr>
                 <td align="center" style="background-color: #002d35; padding: 28px 30px; border-bottom: 4px solid ${accentColor};">
@@ -179,6 +205,10 @@ const getTemplate = (type, payload) => {
           </td>
         </tr>
       </table>
+      <!--[if mso]>
+        </v:textbox>
+      </v:rect>
+      <![endif]-->
     </body>
     </html>
   `;
@@ -344,7 +374,7 @@ app.post('/v1/auth/verify-link', limiter, async (req, res) => {
   if (secret !== process.env.RELAY_SECRET) return res.status(403).json({ error: 'Unauthorized' });
 
   try {
-    const oobLink = await generateResetLink(email);
+    const oobLink = await generateVerificationLink(email);
     // High-Speed Background Dispatch
     transporters.VERIFICATION.sendMail({
       from: `"REH Verification" <${process.env.SMTP_USER}>`,
@@ -412,20 +442,19 @@ app.post('/v1/mail/dispatch', limiter, async (req, res) => {
   if (secret !== process.env.RELAY_SECRET) return res.status(403).json({ error: 'Unauthorized' });
 
   try {
-    // 🛡️ IDENTITY ROUTING PROTOCOL
+    // 🛡️ TWO-CHANNEL AUTHORITY PROTOCOL
     // INFO: Admin/System Dispatches (info@rehdigital.com)
-    // RESET: Security Recovery (reset@rehdigital.com)
-    // VERIFICATION: Auth/Identity (verification@rehdigital.com)
-    
+    // VERIFICATION: All Identity/Security/Auth (verification@rehdigital.com)
+
     const isAdminType = ['ANNOUNCEMENT', 'NEWS', 'CUSTOM', 'SYSTEM_ALERT', 'ACCOUNT_APPROVED'].includes(type);
-    const isResetType = type?.includes('RESET');
-    
-    const mailCategory = isResetType ? 'RESET' : (isAdminType ? 'INFO' : 'VERIFICATION');
+    const isAuthType = !isAdminType; // Default all others (RESETS, VERIFICATIONS) to AUTH
+
+    const mailCategory = isAdminType ? 'INFO' : 'VERIFICATION';
     const transporter = transporters[mailCategory] || transporters.VERIFICATION;
-    
+
     // Dynamically resolve the authenticated from address
     const fromUser = process.env[`SMTP_${mailCategory === 'VERIFICATION' ? '' : mailCategory + '_'}USER`] || process.env.SMTP_USER;
-    const fromLabel = isAdminType ? 'REH Digital' : (isResetType ? 'REH Security' : 'REH Verification');
+    const fromLabel = isAdminType ? 'REH Digital' : 'REH Security';
 
     // High-Speed Background Dispatch
     transporter.sendMail({
