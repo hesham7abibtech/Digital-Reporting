@@ -212,7 +212,11 @@ function AdminLoginContent() {
     setIsSubmitting(true);
 
     try {
-      await sendPasswordResetEmail(auth, email);
+      const actionCodeSettings = {
+        url: window.location.origin + '/auth/reset',
+        handleCodeInApp: true,
+      };
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
       setShowResetSuccess(true);
       setIsSubmitting(false);
     } catch (err: any) {

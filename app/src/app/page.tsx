@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useHomePageData } from '@/hooks/useHomePageData';
@@ -19,6 +20,16 @@ export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
   const { config, isLoading } = useHomePageData();
   const isLoggedIn = !!user;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode');
+    const oobCode = params.get('oobCode');
+
+    if (mode === 'resetPassword' && oobCode) {
+      router.push(`/auth/reset?oobCode=${oobCode}`);
+    }
+  }, [router]);
 
   const handleExplore = () => {
     const el = document.getElementById('overview');

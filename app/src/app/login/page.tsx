@@ -320,31 +320,25 @@ function LoginContent() {
     setIsSubmitting(true);
     try {
       setEmailNotFound(false);
-      const response = await fetch(getApiEndpoint('/api/auth/reset-link'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
+      
+      const { mailService } = await import('@/services/MailService');
+      const result = await mailService.sendPasswordReset(email, 'User');
 
-      let data: any = {};
-      const contentType = response.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        try { data = await response.json(); } catch { data = {}; }
-      }
-
-      if (!response.ok) {
-        if (response.status === 404 && data.code === 'USER_NOT_FOUND') {
+      if (!result.success) {
+        if (result.error?.includes('USER_NOT_FOUND')) {
           setEmailNotFound(true);
           setError('The specified email address does not exist in our infrastructure.');
-          setIsSubmitting(false);
-          return;
+        } else {
+          throw new Error(result.error || 'Consolidated Dispatch Failed');
         }
-        throw new Error(data.error || 'Failed to dispatch reset link.');
+        setIsSubmitting(false);
+        return;
       }
       
       setShowResetSuccess(true);
       setIsSubmitting(false);
     } catch (err: any) {
+      console.error('SMTP Reset failed:', err);
       setError(err.message || 'Service unavailable. Please try again later.');
       setIsSubmitting(false);
     }
