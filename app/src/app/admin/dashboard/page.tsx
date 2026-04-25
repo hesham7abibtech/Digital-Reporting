@@ -206,7 +206,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
 
       const primaryTo = toList.length > 0 ? toList.join(', ') : 'Undisclosed Recipients <info@rehdigital.com>';
 
-      const response = await mailService.dispatch({
+      await mailService.dispatch({
         to: primaryTo,
         cc: ccList.length > 0 ? ccList.join(', ') : undefined,
         bcc: bccList.length > 0 ? bccList.join(', ') : undefined,
@@ -214,12 +214,10 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
         type: mailCategory === 'NEWS' ? 'NEWS' : 'ANNOUNCEMENT',
         payload: {
           title: mailSubject,
-          content: mailBody, // Template uses 'content' for the body
+          content: mailBody,
           category: mailCategory
         }
       });
-
-      if (!response.ok) throw new Error('Uplink rejected by SMTP gateway');
 
       showToast(`SMTP Dispatch successful: Transmission synchronized via Elite Gateway.`, 'SUCCESS');
       setMailSubject('');

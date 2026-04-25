@@ -160,9 +160,11 @@ const getTemplate = (type, payload) => {
               </tr>
               <!-- Body Section -->
               <tr>
-                <td style="padding: 50px; color: ${textColor};">
+                <td align="center" style="padding: 40px 50px 60px; color: ${textColor}; text-align: center;">
                   ${icon ? `<div style="text-align: center; margin-bottom: 30px; font-size: 48px;">${icon}</div>` : ''}
-                  ${content}
+                  <div style="display: inline-block; width: 100%; text-align: center;">
+                    ${content}
+                  </div>
                 </td>
               </tr>
               <!-- Footer Section -->
@@ -216,7 +218,7 @@ const getTemplate = (type, payload) => {
       <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; text-align: center; color: #475569;">Your vault credentials have been successfully updated. Your security profile is now synchronized with the latest encryption standards.</p>
       <table border="0" cellpadding="0" cellspacing="0" width="100%">
         <tr>
-          <td align="center" style="padding: 20px; background-color: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 12px;">
+          <td align="center" style="padding: 20px; background-color: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 12px; text-align: center;">
             <span style="color: #166534; font-weight: 700; font-size: 15px;">Status: Secure & Active</span>
           </td>
         </tr>
@@ -239,9 +241,9 @@ const getTemplate = (type, payload) => {
     return baseContainer(`
       <h2 style="margin: 0 0 20px 0; color: ${brandColor}; font-size: 28px; text-align: center; font-weight: 900; letter-spacing: -0.02em; line-height: 1.2;">Action Required: New User</h2>
       <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.6; text-align: center; color: #475569;">A new operative is awaiting administrative clearance.</p>
-      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F1F5F9; border-left: 6px solid ${accentColor}; border-radius: 16px;">
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F1F5F9; border-top: 6px solid ${accentColor}; border-radius: 16px;">
         <tr>
-          <td style="padding: 30px; font-size: 15px;">
+          <td align="center" style="padding: 30px; font-size: 15px; text-align: center;">
             <strong style="color: ${brandColor};">Operative:</strong> ${payload.userName}<br>
             <strong style="color: ${brandColor};">Email:</strong> ${payload.userEmail}<br>
             <strong style="color: ${brandColor}; font-size: 11px;">TIMESTAMP:</strong> ${new Date().toLocaleString()}
@@ -259,7 +261,7 @@ const getTemplate = (type, payload) => {
       <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; text-align: center; color: #475569;">Your security clearance for the REH Digital Reporting platform has been officially authorized. Your account is now fully <strong>Active & Secure</strong>.</p>
       <table border="0" cellpadding="0" cellspacing="0" width="100%">
         <tr>
-          <td align="center" style="padding: 24px; background-color: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 16px;">
+          <td align="center" style="padding: 24px; background-color: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 16px; text-align: center;">
             <div style="color: #166534; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Access Level: Authorized</div>
             <div style="color: #15803D; font-size: 13px;">You now have full access to your assigned project modules and reporting registries.</div>
           </td>
@@ -277,7 +279,7 @@ const getTemplate = (type, payload) => {
       <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; text-align: center; color: #475569;">Your security profile has been successfully created. Your account is currently in the <strong>Manual Approval Stage</strong>.</p>
       <table border="0" cellpadding="0" cellspacing="0" width="100%">
         <tr>
-          <td align="center" style="padding: 24px; background-color: #FFFBEB; border: 1px solid #FEF3C7; border-radius: 16px;">
+          <td align="center" style="padding: 24px; background-color: #FFFBEB; border: 1px solid #FEF3C7; border-radius: 16px; text-align: center;">
             <div style="color: #92400E; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Pending Administrative Clearance</div>
             <div style="color: #B45309; font-size: 13px;">Our security team is reviewing your access request. You will receive an automated transmission once clearance is granted.</div>
           </td>
@@ -289,9 +291,11 @@ const getTemplate = (type, payload) => {
 
   if (type === 'SYSTEM_ALERT' || type === 'URGENT' || type === 'SECURITY') {
     return baseContainer(`
-      <div style="background-color: #DC2626; color: white; padding: 10px 18px; border-radius: 8px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; display: inline-block; margin-bottom: 20px;">Priority System Alert</div>
-      <h2 style="margin: 0 0 16px 0; color: #991B1B; font-size: 24px; font-weight: 900;">${payload.title || 'Security Advisory'}</h2>
-      <div style="color: #475569; line-height: 1.7; font-size: 15px; border-left: 4px solid #DC2626; padding-left: 20px; margin-bottom: 24px;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div style="background-color: #DC2626; color: white; padding: 10px 18px; border-radius: 8px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; display: inline-block;">Priority System Alert</div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; color: #991B1B; font-size: 24px; font-weight: 900; text-align: center;">${payload.title || 'Security Advisory'}</h2>
+      <div style="color: #475569; line-height: 1.7; font-size: 15px; border-top: 4px solid #DC2626; padding-top: 20px; margin-bottom: 24px; text-align: center;">
         ${payload.content || payload.body || ''}
       </div>
       ${payload.link ? button(payload.buttonLabel || 'Acknowledge Alert', payload.link) : ''}
@@ -300,9 +304,11 @@ const getTemplate = (type, payload) => {
 
   if (type === 'ANNOUNCEMENT' || type === 'CUSTOM') {
     return baseContainer(`
-      <div style="background-color: ${brandColor}; color: white; padding: 12px 20px; border-radius: 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; display: inline-block; margin-bottom: 20px;">Official Communication</div>
-      <h2 style="margin: 0 0 16px 0; color: ${brandColor}; font-size: 24px; font-weight: 900;">${payload.title || 'Administrative Update'}</h2>
-      <div style="color: #475569; line-height: 1.7; font-size: 15px;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div style="background-color: ${brandColor}; color: white; padding: 12px 20px; border-radius: 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; display: inline-block;">Official Communication</div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; color: ${brandColor}; font-size: 24px; font-weight: 900; text-align: center;">${payload.title || 'Administrative Update'}</h2>
+      <div style="color: #475569; line-height: 1.7; font-size: 15px; text-align: center; margin-bottom: 24px;">
         ${payload.content || payload.body || ''}
       </div>
       ${payload.link ? button(payload.buttonLabel || 'Open Transmission', payload.link) : ''}
@@ -311,9 +317,11 @@ const getTemplate = (type, payload) => {
 
   if (type === 'NEWS') {
     return baseContainer(`
-      <div style="background-color: ${accentColor}; color: white; padding: 12px 20px; border-radius: 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; display: inline-block; margin-bottom: 20px;">Project Insight</div>
-      <h2 style="margin: 0 0 16px 0; color: ${brandColor}; font-size: 24px; font-weight: 900;">${payload.title || 'Platform News'}</h2>
-      <div style="color: #475569; line-height: 1.7; font-size: 15px;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div style="background-color: ${accentColor}; color: white; padding: 12px 20px; border-radius: 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; display: inline-block;">Project Insight</div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; color: ${brandColor}; font-size: 24px; font-weight: 900; text-align: center;">${payload.title || 'Platform News'}</h2>
+      <div style="color: #475569; line-height: 1.7; font-size: 15px; text-align: center; margin-bottom: 24px;">
         ${payload.content || payload.body || ''}
       </div>
       ${payload.link ? button('Read Comprehensive Brief', payload.link) : ''}
@@ -404,14 +412,24 @@ app.post('/v1/mail/dispatch', limiter, async (req, res) => {
   if (secret !== process.env.RELAY_SECRET) return res.status(403).json({ error: 'Unauthorized' });
 
   try {
-    // Dynamically select transporter based on mail type
-    const mailCategory = type?.includes('RESET') ? 'RESET' : (type === 'NEWS' ? 'INFO' : 'VERIFICATION');
+    // 🛡️ IDENTITY ROUTING PROTOCOL
+    // INFO: Admin/System Dispatches (info@rehdigital.com)
+    // RESET: Security Recovery (reset@rehdigital.com)
+    // VERIFICATION: Auth/Identity (verification@rehdigital.com)
+    
+    const isAdminType = ['ANNOUNCEMENT', 'NEWS', 'CUSTOM', 'SYSTEM_ALERT', 'ACCOUNT_APPROVED'].includes(type);
+    const isResetType = type?.includes('RESET');
+    
+    const mailCategory = isResetType ? 'RESET' : (isAdminType ? 'INFO' : 'VERIFICATION');
     const transporter = transporters[mailCategory] || transporters.VERIFICATION;
+    
+    // Dynamically resolve the authenticated from address
     const fromUser = process.env[`SMTP_${mailCategory === 'VERIFICATION' ? '' : mailCategory + '_'}USER`] || process.env.SMTP_USER;
+    const fromLabel = isAdminType ? 'REH Digital' : (isResetType ? 'REH Security' : 'REH Verification');
 
     // High-Speed Background Dispatch
     transporter.sendMail({
-      from: `"REH Command Center" <${fromUser}>`,
+      from: `"${fromLabel}" <${fromUser}>`,
       to, cc, bcc,
       subject: subject || 'REH Digital Transmission',
       html: getTemplate(type || 'ANNOUNCEMENT', payload)
