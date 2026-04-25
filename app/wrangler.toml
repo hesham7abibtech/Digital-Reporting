@@ -1,4 +1,4 @@
 name = "digital-reporting"
 compatibility_date = "2024-04-08"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = ".vercel/output"
+pages_build_output_dir = ".vercel/output/static"
