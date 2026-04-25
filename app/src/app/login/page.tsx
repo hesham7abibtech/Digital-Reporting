@@ -573,8 +573,7 @@ function LoginContent() {
               <LifeBuoy size={14} /> Need Technical Support?
             </button>
           </div>
-        </div>
-
+        
         <div style={{
           padding: '14px 36px', background: 'rgba(0, 63, 73, 0.03)',
           borderTop: '1px solid rgba(0, 63, 73, 0.06)',
