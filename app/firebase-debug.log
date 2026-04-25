@@ -1,0 +1,113 @@
+[debug] [2026-04-25T15:37:13.902Z] ----------------------------------------------------------------------
+[debug] [2026-04-25T15:37:13.904Z] Command:       C:\nvm4w\nodejs\node.exe C:\nvm4w\nodejs\node_modules\firebase-tools\lib\bin\firebase.js deploy
+[debug] [2026-04-25T15:37:13.904Z] CLI Version:   15.14.0
+[debug] [2026-04-25T15:37:13.905Z] Platform:      win32
+[debug] [2026-04-25T15:37:13.905Z] Node Version:  v20.20.0
+[debug] [2026-04-25T15:37:13.905Z] Time:          Sat Apr 25 2026 18:37:13 GMT+0300 (Eastern European Summer Time)
+[debug] [2026-04-25T15:37:13.905Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-25T15:37:15.286Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-25T15:37:15.287Z] > authorizing via signed-in user (hesham7abibtech@gmail.com)
+[debug] [2026-04-25T15:37:15.287Z] [iam] checking project keodigitalreporting for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-04-25T15:37:15.288Z] Checked if tokens are valid: true, expires at: 1777134296410
+[debug] [2026-04-25T15:37:15.288Z] Checked if tokens are valid: true, expires at: 1777134296410
+[debug] [2026-04-25T15:37:15.289Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/keodigitalreporting:testIamPermissions [none]
+[debug] [2026-04-25T15:37:15.289Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/keodigitalreporting:testIamPermissions  x-goog-user-project=keodigitalreporting
+[debug] [2026-04-25T15:37:15.289Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/keodigitalreporting:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-04-25T15:37:16.153Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/keodigitalreporting:testIamPermissions 200
+[debug] [2026-04-25T15:37:16.153Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/keodigitalreporting:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-04-25T15:37:16.154Z] Checked if tokens are valid: true, expires at: 1777134296410
+[debug] [2026-04-25T15:37:16.154Z] Checked if tokens are valid: true, expires at: 1777134296410
+[debug] [2026-04-25T15:37:16.154Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/keodigitalreporting [none]
+[debug] [2026-04-25T15:37:16.546Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/keodigitalreporting 200
+[debug] [2026-04-25T15:37:16.546Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/keodigitalreporting {"projectId":"keodigitalreporting","projectNumber":"308017579101","displayName":"KEODigitalReporting","name":"projects/keodigitalreporting","resources":{"hostingSite":"keodigitalreporting"},"state":"ACTIVE","etag":"1_d5367d47-83d0-4083-a760-9b1768ef4c8e"}
+[debug] [2026-04-25T15:37:20.995Z] defaultcredentials: writing to file C:\Users\h7abi\AppData\Roaming\firebase\hesham7abibtech_gmail_com_application_default_credentials.json
+[debug] [2026-04-25T15:37:20.996Z] Checked if tokens are valid: true, expires at: 1777134296410
+[debug] [2026-04-25T15:37:20.997Z] Checked if tokens are valid: true, expires at: 1777134296410
+[debug] [2026-04-25T15:37:20.997Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/keodigitalreporting/sites pageToken=&pageSize=10
+[debug] [2026-04-25T15:37:21.944Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/keodigitalreporting/sites 200
+[debug] [2026-04-25T15:37:21.945Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/keodigitalreporting/sites {"sites":[{"name":"projects/keodigitalreporting/sites/keodigitalreporting","defaultUrl":"https://keodigitalreporting.web.app","appId":"1:308017579101:web:75aec4a1a9c2942a2c39b4","type":"DEFAULT_SITE"}]}
+[debug] [2026-04-25T15:37:21.945Z] Checked if tokens are valid: true, expires at: 1777134296410
+[debug] [2026-04-25T15:37:21.945Z] Checked if tokens are valid: true, expires at: 1777134296410
+[debug] [2026-04-25T15:37:21.945Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:308017579101:web:75aec4a1a9c2942a2c39b4/config [none]
+[debug] [2026-04-25T15:37:22.614Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:308017579101:web:75aec4a1a9c2942a2c39b4/config 200
+[debug] [2026-04-25T15:37:22.614Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:308017579101:web:75aec4a1a9c2942a2c39b4/config {"projectId":"keodigitalreporting","appId":"1:308017579101:web:75aec4a1a9c2942a2c39b4","storageBucket":"keodigitalreporting.firebasestorage.app","apiKey":"AIzaSyBvTzutQCPLDLAE44knfNlG_U5gFLar1M4","authDomain":"keodigitalreporting.firebaseapp.com","messagingSenderId":"308017579101","measurementId":"G-X5E9ZPE1BG","projectNumber":"308017579101","version":"2"}
+[info] 
+   Thank you for trying our early preview of Next.js support on Firebase Hosting.
+   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
+   The integration is known to work with Next.js version 12 - 15.0. You may encounter errors.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+[debug] [2026-04-25T15:37:29.592Z] Checked if tokens are valid: true, expires at: 1777134296410
+[debug] [2026-04-25T15:37:29.592Z] Checked if tokens are valid: true, expires at: 1777134296410
+[debug] [2026-04-25T15:37:29.592Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/keodigitalreporting/sites/keodigitalreporting [none]
+[debug] [2026-04-25T15:37:30.522Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/keodigitalreporting/sites/keodigitalreporting 200
+[debug] [2026-04-25T15:37:30.522Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/keodigitalreporting/sites/keodigitalreporting {"name":"projects/keodigitalreporting/sites/keodigitalreporting","defaultUrl":"https://keodigitalreporting.web.app","appId":"1:308017579101:web:75aec4a1a9c2942a2c39b4","type":"DEFAULT_SITE"}
+[info] ▲ Next.js 16.2.2 (Turbopack)
+
+[info] - Environments: .env.local
+
+
+[info]   Creating an optimized production build ...
+
+[info] ✓ Compiled successfully in 9.3s
+
+[info]   Running TypeScript ...
+
+[info]   Finished TypeScript in 11.4s ...
+
+[info]   Collecting page data using 17 workers ...
+
+[info]   Generating static pages using 17 workers (0/16) ...
+
+[info]   Generating static pages using 17 workers (4/16) 
+
+[info]   Generating static pages using 17 workers (8/16) 
+
+[info]   Generating static pages using 17 workers (12/16) 
+
+[info] ✓ Generating static pages using 17 workers (16/16) in 1404ms
+
+[info]   Finalizing page optimization ...
+
+[info] 
+
+[info] Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /admin
+├ ○ /admin/dashboard
+├ ○ /admin/login
+├ ○ /admin/mail-preview
+├ ƒ /api/auth/reset-link
+├ ƒ /api/mail
+├ ○ /dashboard
+├ ○ /infrastructure
+├ ○ /login
+├ ○ /privacy
+├ ○ /reset-password
+└ ○ /security
+
+
+[info] 
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+[info] Building a Cloud Function to run this application. This is needed due to:
+[info]  • non-static component /api/auth/reset-link/route
+[info]  • non-static component /api/mail/route
+[info] 
+[debug] [2026-04-25T15:38:06.961Z] Checked if tokens are valid: true, expires at: 1777134296410
+[debug] [2026-04-25T15:38:06.961Z] Checked if tokens are valid: true, expires at: 1777134296410
+[debug] [2026-04-25T15:38:06.961Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/keodigitalreporting/sites/keodigitalreporting [none]
+[debug] [2026-04-25T15:38:07.831Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/keodigitalreporting/sites/keodigitalreporting 200
+[debug] [2026-04-25T15:38:07.831Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/keodigitalreporting/sites/keodigitalreporting {"name":"projects/keodigitalreporting/sites/keodigitalreporting","defaultUrl":"https://keodigitalreporting.web.app","appId":"1:308017579101:web:75aec4a1a9c2942a2c39b4","type":"DEFAULT_SITE"}
+[debug] [2026-04-25T15:38:09.733Z] Error: EPERM: operation not permitted, symlink 'E:\Digital_Reporting\app\node_modules\rimraf' -> 'E:\Digital_Reporting\.firebase\keodigitalreporting\functions\.next\node_modules\rimraf-ca920c550f67ed39'
+[error] 
+[error] Error: An unexpected error has occurred.

@@ -1,11 +1,8 @@
-import nodemailer from 'nodemailer';
 import { templates } from '@/lib/mailTemplates';
 
 /**
  * Universal Edge-Compatible Mail Service
- * Uses nodemailer with nodejs_compat for Cloudflare compatibility.
  */
-
 export const MAIL_SENDERS = {
   VERIFICATION: '"REH Digital Verification" <verification@rehdigital.com>',
   INFO: '"REH Digital Info" <info@rehdigital.com>',
@@ -14,7 +11,7 @@ export const MAIL_SENDERS = {
 
 class MailService {
   /**
-   * Core send method — Uses nodemailer for Edge compatibility
+   * Core send method — Uses nodemailer only if available
    */
   private async sendMail(options: {
     type: 'VERIFICATION' | 'INFO' | 'RESET';
@@ -26,7 +23,12 @@ class MailService {
   }) {
     console.log(`[MAIL_SERVICE] [${options.type}] Dispatch initiated to ${options.to}`);
     
+    // In Edge Runtime, nodemailer might crash the build if not handled carefully.
+    // We attempt a dynamic import to isolate it.
     try {
+      // @ts-ignore - Dynamic import to avoid build-time analysis
+      const nodemailer = await import('nodemailer').then(m => m.default || m);
+
       // Select credentials based on type
       let user = process.env.SMTP_USER;
       let pass = process.env.SMTP_PASS;
@@ -67,8 +69,14 @@ class MailService {
       return { success: true, messageId: info.messageId };
 
     } catch (error: any) {
-      console.error(`[MAIL_SERVICE] [${options.type}] Failed to send email:`, error);
-      return { success: false, error: error.message };
+      console.error(`[MAIL_SERVICE] [${options.type}] Edge Mail Error:`, error);
+      
+      // Fallback: If nodemailer fails (common on Edge), we log the intent.
+      // In a production environment, we would use a REST-based mail provider API here.
+      return { 
+        success: false, 
+        error: "SMTP not supported in this runtime environment. Please use a REST-based mail provider." 
+      };
     }
   }
 

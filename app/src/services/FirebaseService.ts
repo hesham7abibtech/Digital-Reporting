@@ -449,32 +449,38 @@ export async function updateHomePageConfig(data: any) {
   await setDoc(homeDoc, cleanData, { merge: true });
 }
 
-export async function uploadFile(file: File, path: string) {
+export async function uploadFile(file: File, path: string): Promise<string> {
   // Cloudinary Direct Unsigned Upload
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
   if (!cloudName || !uploadPreset) {
-    throw new Error('Cloudinary environment variables are missing. Please configure .env.local.');
+    throw new Error('Cloudinary configuration missing in .env.local');
   }
 
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', uploadPreset);
-  formData.append('public_id', path); // Optionally set the desired folder/filename
+  formData.append('public_id', path);
 
-  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
-    method: 'POST',
-    body: formData,
-  });
+  try {
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+      method: 'POST',
+      body: formData,
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(`Cloudinary upload failed: ${errorData.error?.message || response.statusText}`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Cloudinary upload failed: ${errorData.error?.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log(`[STORAGE] Successfully uploaded to Cloudinary: ${path}`);
+    return data.secure_url;
+  } catch (error: any) {
+    console.error('[STORAGE] Cloudinary Upload Error:', error);
+    throw error;
   }
-
-  const data = await response.json();
-  return data.secure_url;
 }
 
 
