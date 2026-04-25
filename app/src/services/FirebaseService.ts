@@ -326,13 +326,12 @@ export async function updateUserProfile(uid: string, data: any, triggerNotificat
 
   if (triggerNotification && data.isApproved && data.email) {
     try {
-      await fetch(getApiEndpoint('/api/mail'), {
-        method: 'POST',
-        body: JSON.stringify({
-          type: 'ACCOUNT_APPROVED',
-          to: data.email,
-          payload: { name: data.name }
-        })
+      const { mailService } = await import('./MailService');
+      await mailService.dispatch({
+        to: data.email,
+        subject: 'REH Digital — Access Clearance Granted',
+        type: 'ACCOUNT_APPROVED',
+        payload: { name: data.name }
       });
     } catch (err) {
       console.error('[SERVICE] Approval notification failed:', err);

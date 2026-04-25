@@ -21,57 +21,63 @@ class MailService {
         })
       });
 
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Consolidated Dispatch Failed');
-      
-      return { success: true };
-    } catch (error: any) {
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Relay communication failed');
+      }
+
+      return await response.json();
+    } catch (error) {
       console.error(`[MAIL_SERVICE] [${endpoint}] Error:`, error);
-      return { success: false, error: error.message };
+      throw error;
     }
   }
 
   /**
-   * CONSOLIDATED RESET: Generates link AND sends email in one AWS call.
+   * AUTH: Send Identity Verification Link (New Account)
    */
-  async sendPasswordReset(to: string, name: string) {
-    return this.call('/v1/auth/reset-link', { email: to, name });
+  async sendVerificationLink(email: string, name: string) {
+    return this.call('/v1/auth/verify-link', { email, name });
   }
 
-  async sendRegistrationPending(to: string, name: string) {
-    return this.call('/v1/mail/dispatch', {
-      type: 'REGISTRATION_PENDING',
-      to,
-      subject: 'REH Digital Reporting — Registration Received',
+  /**
+   * AUTH: Send Password Reset Link
+   */
+  async sendPasswordReset(email: string, name: string) {
+    return this.call('/v1/auth/reset-link', { email, name });
+  }
+
+  /**
+   * AUTH: Send Password Changed Confirmation
+   */
+  async sendPasswordChangedConfirmation(email: string, name: string) {
+    return this.call('/v1/mail/dispatch', { 
+      to: email, 
+      subject: 'REH Command Center — Security Updated',
+      type: 'PASSWORD_CHANGED',
       payload: { name }
     });
   }
 
-  async sendAccountApproved(to: string, name: string) {
-    return this.call('/v1/mail/dispatch', {
-      type: 'ACCOUNT_APPROVED',
-      to,
-      subject: 'REH Digital Reporting — Clearance Granted',
-      payload: { name }
-    });
+  /**
+   * AUTH: Notify Admin of New User Waiting for Approval
+   */
+  async notifyAdminOfNewUser(userName: string, userEmail: string, adminEmail: string) {
+    return this.call('/v1/auth/admin-notify', { userName, userEmail, adminEmail });
   }
 
-  async sendAdminRegistrationAlert(to: string, userData: any) {
-    return this.call('/v1/mail/dispatch', {
-      type: 'ADMIN_NOTIFICATION',
-      to,
-      subject: `[ADMIN] New Access Request: ${userData.name}`,
-      payload: userData
-    });
-  }
-
-  async sendCustomNotification(to: string, data: any) {
-    return this.call('/v1/mail/dispatch', {
-      type: 'CUSTOM_NOTIFICATION',
-      to,
-      subject: data.subject || 'REH Digital Notification',
-      payload: data
-    });
+  /**
+   * DISPATCH: Send Announcement / News / Custom Mail
+   */
+  async dispatch(params: {
+    to: string | string[];
+    cc?: string | string[];
+    bcc?: string | string[];
+    subject: string;
+    type: 'ANNOUNCEMENT' | 'NEWS' | 'SYSTEM_ALERT' | 'PASSWORD_CHANGED' | 'ACCOUNT_APPROVED';
+    payload: any;
+  }) {
+    return this.call('/v1/mail/dispatch', params);
   }
 }
 

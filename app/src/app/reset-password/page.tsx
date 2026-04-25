@@ -160,35 +160,33 @@ function ResetPasswordContent() {
         background: 'linear-gradient(160deg, var(--aqua) 0%, var(--haze) 50%, var(--cotton) 100%)',
         overflow: 'hidden', position: 'relative' 
       }}>
-        <div style={{ textAlign: 'center', position: 'relative', zIndex: 10 }}>
-          <motion.div
-            animate={{ scale: [1, 1.1, 1], rotate: [0, 90, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            style={{ marginBottom: 30, display: 'inline-block' }}
-          >
-            <Shield size={64} color="var(--teal)" style={{ filter: 'drop-shadow(0 0 15px rgba(0, 63, 73, 0.1))' }} />
-          </motion.div>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 20,
+          background: 'rgba(255, 255, 255, 0.6)',
+          padding: '20px 32px',
+          borderRadius: 24,
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(0, 63, 73, 0.1)',
+          boxShadow: '0 15px 40px rgba(0, 42, 48, 0.08)',
+          position: 'relative',
+          zIndex: 10
+        }}>
+          <Loader2 className="animate-spin" size={28} color="var(--teal)" />
           
-          <div style={{ height: 24, overflow: 'hidden' }}>
+          <div style={{ height: 20, overflow: 'hidden' }}>
             <AnimatePresence mode="wait">
               {handshakeStep === 0 && (
-                <motion.p key="0" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} style={{ letterSpacing: '0.3em', textTransform: 'uppercase', fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>Establishing Secure Uplink</motion.p>
+                <motion.p key="0" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} style={{ letterSpacing: '0.2em', textTransform: 'uppercase', fontSize: 11, fontWeight: 900, color: 'var(--teal)', margin: 0 }}>Establishing Secure Uplink</motion.p>
               )}
               {handshakeStep === 1 && (
-                <motion.p key="1" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} style={{ letterSpacing: '0.3em', textTransform: 'uppercase', fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>Verifying Identity Token</motion.p>
+                <motion.p key="1" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} style={{ letterSpacing: '0.2em', textTransform: 'uppercase', fontSize: 11, fontWeight: 900, color: 'var(--teal)', margin: 0 }}>Verifying Identity Token</motion.p>
               )}
               {handshakeStep === 2 && (
-                <motion.p key="2" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} style={{ letterSpacing: '0.3em', textTransform: 'uppercase', fontSize: 10, fontWeight: 900, color: 'var(--teal)' }}>Synchronizing Protocols</motion.p>
+                <motion.p key="2" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} style={{ letterSpacing: '0.2em', textTransform: 'uppercase', fontSize: 11, fontWeight: 900, color: 'var(--teal)', margin: 0 }}>Synchronizing Protocols</motion.p>
               )}
             </AnimatePresence>
-          </div>
-
-          <div style={{ width: 200, height: 2, background: 'rgba(0, 63, 73, 0.05)', margin: '24px auto', position: 'relative', overflow: 'hidden', borderRadius: 1 }}>
-            <motion.div 
-              animate={{ left: ['-100%', '100%'] }} 
-              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-              style={{ position: 'absolute', width: '50%', height: '100%', background: 'var(--teal)', boxShadow: '0 0 10px var(--teal)' }}
-            />
           </div>
         </div>
       </div>
@@ -328,15 +326,15 @@ function ResetPasswordContent() {
                   {rules.map((rule, idx) => (
                     <motion.div 
                       key={idx} 
-                      animate={{ opacity: rule.met ? 1 : 0.5 }}
+                      animate={{ opacity: rule.met ? 1 : 0.85 }}
                       style={{ display: 'flex', alignItems: 'center', gap: 10 }}
                     >
                       {rule.met ? (
                         <CheckCircle2 size={12} color="var(--status-success)" />
                       ) : (
-                        <Circle size={12} color="var(--text-dim)" />
+                        <Circle size={12} color="#64748b" />
                       )}
-                      <span style={{ fontSize: 10, fontWeight: 800, color: rule.met ? 'var(--teal)' : 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: rule.met ? 'var(--teal)' : '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         {rule.label}
                       </span>
                     </motion.div>

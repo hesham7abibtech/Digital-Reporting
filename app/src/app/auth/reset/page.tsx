@@ -55,6 +55,15 @@ function ResetPasswordContent() {
 
     try {
       await confirmPasswordReset(auth, oobCode!, newPassword);
+      
+      // Dispatch Elite Security Confirmation
+      try {
+        const { mailService } = await import('@/services/MailService');
+        await mailService.sendPasswordChangedConfirmation(email, 'Operative');
+      } catch (mailErr) {
+        console.warn('[SECURITY] Post-reset confirmation dispatch failed:', mailErr);
+      }
+
       setStatus('success');
       setTimeout(() => {
         router.push('/login');
@@ -89,9 +98,25 @@ function ResetPasswordContent() {
   if (status === 'verifying') {
     return (
       <div style={containerStyle}>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: 'center' }}>
-          <Loader2 className="animate-spin" size={48} color="var(--teal)" />
-          <p style={{ marginTop: 16, color: 'var(--teal)', fontWeight: 600, letterSpacing: '0.05em' }}>Verifying security credentials...</p>
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 16,
+            background: 'rgba(255, 255, 255, 0.6)',
+            padding: '16px 28px',
+            borderRadius: 20,
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(0, 63, 73, 0.1)',
+            boxShadow: '0 10px 30px rgba(0, 42, 48, 0.05)'
+          }}
+        >
+          <Loader2 className="animate-spin" size={24} color="var(--teal)" />
+          <p style={{ color: 'var(--teal)', fontWeight: 700, letterSpacing: '0.05em', fontSize: 14 }}>
+            Verifying security credentials...
+          </p>
         </motion.div>
       </div>
     );
@@ -202,25 +227,25 @@ function ResetPasswordContent() {
                     flexDirection: 'column', 
                     alignItems: 'center', 
                     gap: 6,
-                    opacity: req.met ? 1 : 0.4,
+                    opacity: req.met ? 1 : 0.85,
                     transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                     transform: req.met ? 'scale(1)' : 'scale(0.95)',
-                    gridColumn: i >= 3 ? 'span 1.5' : 'span 1' // Center the bottom two
+                    gridColumn: i >= 3 ? 'span 1.5' : 'span 1'
                   }}>
                     <div style={{
                       width: 22, height: 22, borderRadius: 7,
-                      background: req.met ? 'var(--teal)' : 'rgba(0, 0, 0, 0.05)',
+                      background: req.met ? 'var(--teal)' : 'rgba(0, 0, 0, 0.12)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       boxShadow: req.met ? '0 4px 12px rgba(0, 63, 73, 0.25)' : 'none'
                     }}>
-                      <CheckCircle2 size={13} color={req.met ? 'white' : 'var(--text-dim)'} />
+                      <CheckCircle2 size={13} color={req.met ? 'white' : '#64748b'} />
                     </div>
                     <span style={{ 
                       fontSize: 8, 
                       fontWeight: 800, 
                       textTransform: 'uppercase', 
                       letterSpacing: '0.08em',
-                      color: req.met ? 'var(--teal)' : 'var(--text-dim)',
+                      color: req.met ? 'var(--teal)' : '#475569',
                       textAlign: 'center',
                       lineHeight: 1.2
                     }}>

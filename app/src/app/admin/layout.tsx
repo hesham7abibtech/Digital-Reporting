@@ -40,9 +40,17 @@ export default function AdminLayout({
   if (user && !userProfile) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0f' }}>
-        <div style={{ textAlign: 'center' }}>
-          <Loader2 className="animate-spin" size={32} color="#D4AF37" style={{ margin: '0 auto 16px' }} />
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: 700, letterSpacing: '0.05em' }}>VERIFYING SECURITY CLEARANCE...</p>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 16, 
+          background: 'rgba(255, 255, 255, 0.03)',
+          padding: '16px 24px',
+          borderRadius: 16,
+          border: '1px solid rgba(255, 255, 255, 0.05)'
+        }}>
+          <Loader2 className="animate-spin" size={20} color="#D4AF37" />
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', margin: 0 }}>VERIFYING SECURITY CLEARANCE...</p>
         </div>
       </div>
     );
@@ -59,5 +67,3 @@ export default function AdminLayout({
 
   return <>{children}</>;
 }
-
-

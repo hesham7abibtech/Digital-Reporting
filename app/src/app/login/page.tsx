@@ -238,16 +238,21 @@ function LoginContent() {
       await logRegistrationEvent(userCredential.user.uid, 'AUTH_CREATED', 'success', { email });
       await updateProfile(userCredential.user, { displayName: fullName });
       
-      // 1. Resilient Identity Handshake
-      console.log('%c[AUTH] Starting verification handshake...', 'color: #008080; font-weight: bold;');
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Propagation Buffer
+      // 1. AWS Consolidated Identity Handshake
+      console.log('%c[AUTH] Starting Master Relay handshake...', 'color: #008080; font-weight: bold;');
       try {
-        await sendEmailVerification(userCredential.user);
-        console.log('%c[AUTH] Verification link dispatched.', 'color: #2e7d32; font-weight: bold;');
+        const { mailService } = await import('@/services/MailService');
+        
+        // Dispatch User Verification (Branded)
+        await mailService.sendVerificationLink(email, fullName);
+        
+        // Dispatch Admin Notification
+        await mailService.notifyAdminOfNewUser(fullName, email, 'verification@rehdigital.com'); 
+        
+        console.log('%c[AUTH] AWS Master Relay sequences complete.', 'color: #2e7d32; font-weight: bold;');
         await logRegistrationEvent(userCredential.user.uid, 'VERIFICATION_SENT', 'success');
       } catch (emailErr: any) {
-        console.error('[AUTH] Handshake failed:', emailErr);
-        await logRegistrationEvent(userCredential.user.uid, 'VERIFICATION_SENT', 'failure', { error: emailErr.message || emailErr });
+        console.error('[AUTH] Relay Handshake failed:', emailErr);
       }
 
       // 2. Initialize Firestore Profile
@@ -273,27 +278,24 @@ function LoginContent() {
       // 4. Dispatch Ultra-Elite Notifications (Non-blocking)
       const dispatchNotifications = async () => {
         try {
-          // Notify User
-          await fetch(getApiEndpoint('/api/mail'), {
-            method: 'POST',
-            body: JSON.stringify({
-              type: 'REGISTRATION_PENDING',
-              to: email,
-              payload: { name: fullName }
-            })
+          const { mailService } = await import('@/services/MailService');
+          
+          // Notify User of Pending Status
+          await mailService.dispatch({
+            to: email,
+            subject: 'REH Digital — Account Created & Pending Clearance',
+            type: 'ANNOUNCEMENT', // Using ANNOUNCEMENT as fallback for Pending Status
+            payload: {
+              name: fullName,
+              title: 'Account Initialization Success',
+              body: 'Your operative profile has been created and is now awaiting administrative clearance.'
+            }
           });
 
-          // Notify Admins (Hesham & Architect)
+          // Notify Admins
           const admins = ['Hesham.habib@insiteinternational.com', 'architect@rehdigital.com'];
           for (const adminEmail of admins) {
-            await fetch(getApiEndpoint('/api/mail'), {
-              method: 'POST',
-              body: JSON.stringify({
-                type: 'ADMIN_NOTIFICATION',
-                to: adminEmail,
-                payload: { name: fullName, email, department }
-              })
-            });
+            await mailService.notifyAdminOfNewUser(fullName, email, adminEmail);
           }
         } catch (mailErr) {
           console.error('[AUTH] Notification dispatch failed:', mailErr);
@@ -304,7 +306,7 @@ function LoginContent() {
 
       setIsSubmitting(false);
       setAuthStatusMode('unverified');
-      setShowRegistrationSuccess(true);
+      router.push('/auth/verify-success');
     } catch (err: any) {
       if (auth.currentUser) {
         await logRegistrationEvent(auth.currentUser.uid, 'REGISTRATION_OVERALL', 'failure', { error: err.message || err });
@@ -322,24 +324,18 @@ function LoginContent() {
       setEmailNotFound(false);
       
       const { mailService } = await import('@/services/MailService');
-      const result = await mailService.sendPasswordReset(email, 'User');
-
-      if (!result.success) {
-        if (result.error?.includes('USER_NOT_FOUND')) {
-          setEmailNotFound(true);
-          setError('The specified email address does not exist in our infrastructure.');
-        } else {
-          throw new Error(result.error || 'Consolidated Dispatch Failed');
-        }
-        setIsSubmitting(false);
-        return;
-      }
+      await mailService.sendPasswordReset(email, 'User');
       
       setShowResetSuccess(true);
       setIsSubmitting(false);
     } catch (err: any) {
       console.error('SMTP Reset failed:', err);
-      setError(err.message || 'Service unavailable. Please try again later.');
+      if (err.message?.includes('USER_NOT_FOUND')) {
+        setEmailNotFound(true);
+        setError('The security network does not recognize this email identity.');
+      } else {
+        setError(err.message || 'Service unavailable. Please try again later.');
+      }
       setIsSubmitting(false);
     }
   };

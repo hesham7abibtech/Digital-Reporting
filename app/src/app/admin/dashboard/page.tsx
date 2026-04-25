@@ -58,6 +58,7 @@ import { useAuth } from '@/context/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { collections, bulkDelete, getProjectMetadata, updateProjectMetadata, uploadFile } from '@/services/FirebaseService';
 import { useToast } from '@/components/shared/EliteToast';
+import { mailService } from '@/services/MailService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import { useDocument } from 'react-firebase-hooks/firestore';
 import { doc, collection, query, orderBy, deleteDoc, getDocs, where } from 'firebase/firestore';
@@ -205,20 +206,17 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
 
       const primaryTo = toList.length > 0 ? toList.join(', ') : 'Undisclosed Recipients <info@rehdigital.com>';
 
-      const response = await fetch(getApiEndpoint('/api/mail'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: primaryTo,
-          cc: ccList.length > 0 ? ccList.join(', ') : undefined,
-          bcc: bccList.length > 0 ? bccList.join(', ') : undefined,
-          type: 'CUSTOM',
-          payload: {
-            title: mailSubject,
-            body: mailBody,
-            category: mailCategory
-          }
-        })
+      const response = await mailService.dispatch({
+        to: primaryTo,
+        cc: ccList.length > 0 ? ccList.join(', ') : undefined,
+        bcc: bccList.length > 0 ? bccList.join(', ') : undefined,
+        subject: mailSubject,
+        type: mailCategory === 'NEWS' ? 'NEWS' : 'ANNOUNCEMENT',
+        payload: {
+          title: mailSubject,
+          content: mailBody, // Template uses 'content' for the body
+          category: mailCategory
+        }
       });
 
       if (!response.ok) throw new Error('Uplink rejected by SMTP gateway');

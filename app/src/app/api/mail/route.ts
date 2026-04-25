@@ -26,19 +26,43 @@ export async function POST(request: Request) {
     let result;
     switch (type) {
       case 'REGISTRATION_PENDING':
-        result = await mailService.sendRegistrationPending(to, payload.name);
+        result = await mailService.dispatch({
+          to,
+          subject: 'REH Digital — Account Initialized',
+          type: 'ANNOUNCEMENT',
+          payload: { 
+            name: payload.name, 
+            title: 'Account Registration Successful',
+            body: 'Your operative profile has been created and is awaiting clearance.' 
+          }
+        });
         break;
       case 'ADMIN_NOTIFICATION':
-        result = await mailService.sendAdminRegistrationAlert(to, payload);
+        result = await mailService.notifyAdminOfNewUser(payload.name, payload.email, to);
         break;
       case 'ACCOUNT_APPROVED':
-        result = await mailService.sendAccountApproved(to, payload.name);
+        result = await mailService.dispatch({
+          to,
+          subject: 'REH Digital — Access Granted',
+          type: 'ACCOUNT_APPROVED',
+          payload: { name: payload.name }
+        });
         break;
       case 'PASSWORD_RESET':
-        result = await mailService.sendPasswordReset(to, payload.name);
+        result = await mailService.sendPasswordReset(to, payload.name || 'Operative');
         break;
       case 'CUSTOM_NOTIFICATION':
-        result = await mailService.sendCustomNotification(to, payload);
+      case 'CUSTOM':
+        result = await mailService.dispatch({
+          to,
+          subject: payload.title || 'REH Digital Notification',
+          type: 'ANNOUNCEMENT',
+          payload: { 
+            title: payload.title, 
+            body: payload.body || payload.content,
+            category: payload.category 
+          }
+        });
         break;
       default:
         return new Response(JSON.stringify({ success: false, message: 'Invalid email type' }), {
