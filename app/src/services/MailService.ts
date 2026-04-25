@@ -1,8 +1,9 @@
+import nodemailer from 'nodemailer';
 import { templates } from '@/lib/mailTemplates';
 
 /**
  * Universal Edge-Compatible Mail Service
- * Uses fetch-based SMTP or direct API calls for Cloudflare compatibility.
+ * Uses nodemailer with nodejs_compat for Cloudflare compatibility.
  */
 
 export const MAIL_SENDERS = {
@@ -13,7 +14,7 @@ export const MAIL_SENDERS = {
 
 class MailService {
   /**
-   * Core send method — Uses fetch for Edge compatibility
+   * Core send method — Uses nodemailer for Edge compatibility
    */
   private async sendMail(options: {
     type: 'VERIFICATION' | 'INFO' | 'RESET';
@@ -23,13 +24,52 @@ class MailService {
     subject: string;
     html: string;
   }) {
-    console.log(`[MAIL_SERVICE] [${options.type}] Dispatch initiated via Edge Fetch Bridge`);
+    console.log(`[MAIL_SERVICE] [${options.type}] Dispatch initiated to ${options.to}`);
     
-    // In Edge Runtime, we use a simple fetch to a secure SMTP relay or direct API
-    // For now, we log the intent to allow the build to pass.
-    // Real implementation would use an HTTP-based mail provider like Resend or SendGrid.
-    
-    return { success: true, messageId: `edge_${Date.now()}` };
+    try {
+      // Select credentials based on type
+      let user = process.env.SMTP_USER;
+      let pass = process.env.SMTP_PASS;
+
+      if (options.type === 'INFO') {
+        user = process.env.SMTP_INFO_USER;
+        pass = process.env.SMTP_INFO_PASS;
+      } else if (options.type === 'RESET') {
+        user = process.env.SMTP_RESET_USER;
+        pass = process.env.SMTP_RESET_PASS;
+      }
+
+      if (!user || !pass) {
+        throw new Error(`SMTP credentials missing for type: ${options.type}`);
+      }
+
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.zoho.com',
+        port: Number(process.env.SMTP_PORT) || 465,
+        secure: true,
+        auth: { user, pass },
+      });
+
+      const from = options.type === 'RESET' ? MAIL_SENDERS.RESET : 
+                   options.type === 'INFO' ? MAIL_SENDERS.INFO : 
+                   MAIL_SENDERS.VERIFICATION;
+
+      const info = await transporter.sendMail({
+        from,
+        to: options.to,
+        cc: options.cc,
+        bcc: options.bcc,
+        subject: options.subject,
+        html: options.html,
+      });
+
+      console.log(`[MAIL_SERVICE] [${options.type}] Successfully sent: ${info.messageId}`);
+      return { success: true, messageId: info.messageId };
+
+    } catch (error: any) {
+      console.error(`[MAIL_SERVICE] [${options.type}] Failed to send email:`, error);
+      return { success: false, error: error.message };
+    }
   }
 
   async sendRegistrationPending(to: string, name: string) {
