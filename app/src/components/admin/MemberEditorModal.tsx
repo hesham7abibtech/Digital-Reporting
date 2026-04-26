@@ -123,10 +123,10 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0, 63, 73, 0.3)', backdropFilter: 'blur(12px)' }} />
-      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ width: '100%', maxWidth: 500, background: 'var(--cotton)', border: '1px solid var(--border)', borderRadius: 28, position: 'relative', zIndex: 1, overflow: 'hidden' }}>
-        <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontSize: 22, fontWeight: 900, color: 'var(--teal)', letterSpacing: '-0.02em', margin: 0 }}>Team Personnel Record</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={24} /></button>
+      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ width: '100%', maxWidth: 480, background: '#ffffff', border: '1px solid rgba(0, 63, 73, 0.1)', borderRadius: 28, position: 'relative', zIndex: 1, overflow: 'hidden', boxShadow: '0 30px 100px rgba(0, 63, 73, 0.15)' }}>
+        <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(0, 63, 73, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc' }}>
+          <h2 style={{ fontSize: 18, fontWeight: 950, color: '#003f49', letterSpacing: '0.05em', margin: 0, textTransform: 'uppercase' }}>Personnel Record</h2>
+          <button onClick={onClose} style={{ background: '#ffffff', border: '1px solid rgba(0, 63, 73, 0.1)', color: '#003f49', cursor: 'pointer', width: 32, height: 32, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
         </div>
         <div style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
           {readOnly && (
@@ -136,35 +136,35 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
             </div>
           )}
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase' }}>Full Name</label>
+            <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Full Name</label>
             <input 
               type="text" 
               value={formData.name ?? ''} 
               onChange={e => setFormData({ ...formData, name: e.target.value })} 
               disabled={readOnly}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', color: readOnly ? 'var(--text-muted)' : '#003F49', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text', fontWeight: 600 }} 
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', outline: 'none', fontWeight: 600, fontSize: 14 }} 
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase' }}>Email Interface</label>
+            <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Email Interface</label>
             <div style={{ position: 'relative' }}>
-              <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
+              <Mail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#003f49', opacity: 0.5 }} />
               <input 
                 type="email" 
                 value={formData.email ?? ''} 
                 onChange={e => setFormData({ ...formData, email: e.target.value })} 
                 disabled={readOnly}
-                style={{ width: '100%', padding: '12px 16px 12px 38px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', color: readOnly ? 'var(--text-muted)' : '#003F49', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text', fontWeight: 600 }} 
+                style={{ width: '100%', padding: '12px 16px 12px 42px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', outline: 'none', fontWeight: 600, fontSize: 14 }} 
               />
             </div>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase' }}>TASK CATEGORIES</label>
+            <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Task Category</label>
             <select 
               value={departments.find(d => d.id === formData.department || d.name === formData.department)?.id || ''} 
               onChange={e => setFormData({ ...formData, department: e.target.value })} 
               disabled={readOnly}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: readOnly ? 'var(--text-muted)' : '#003F49', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', outline: 'none', fontWeight: 600, fontSize: 14, cursor: readOnly ? 'not-allowed' : 'pointer' }}
             >
               <option value="" disabled>Select Task Category</option>
               {departments.length > 0 ? (
@@ -180,14 +180,18 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--teal)', marginBottom: 12, textTransform: 'uppercase' }}>Identity Asset (Avatar)</label>
             <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <div style={{ 
-                width: 64, height: 64, borderRadius: 16, 
-                background: 'rgba(0, 63, 73, 0.05)', 
-                border: '2.5px solid var(--border)', 
-                overflow: 'hidden', flexShrink: 0,
-                position: 'relative',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
+              <div 
+                onClick={() => formData.avatar && window.open(formData.avatar, '_blank')}
+                style={{ 
+                  width: 64, height: 64, borderRadius: 16, 
+                  background: 'rgba(0, 63, 73, 0.05)', 
+                  border: '2.5px solid var(--border)', 
+                  overflow: 'hidden', flexShrink: 0,
+                  position: 'relative',
+                  cursor: formData.avatar ? 'zoom-in' : 'default',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+              >
                 {isUploading ? (
                   <Loader2 size={24} className="animate-spin" color="var(--teal)" />
                 ) : formData.avatar ? (
@@ -231,14 +235,23 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
         <div style={{ padding: '24px 32px', background: 'var(--section-bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button 
             onClick={() => setIsConfirmOpen(true)} 
-            disabled={!member || !canDelete}
+            disabled={!member}
             style={{ 
-              color: 'var(--status-error)', background: 'none', border: 'none', 
-              cursor: (!member || !canDelete) ? 'not-allowed' : 'pointer',
-              opacity: (!member || !canDelete) ? 0.3 : 1
+              color: '#ef4444', 
+              background: 'rgba(239, 68, 68, 0.05)', 
+              border: '1px solid rgba(239, 68, 68, 0.1)', 
+              padding: '10px',
+              borderRadius: 12,
+              cursor: !member ? 'not-allowed' : 'pointer',
+              opacity: !member ? 0.3 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 200ms'
             }}
+            title="Terminate Identity Protocol"
           >
-            <Trash2 size={18} />
+            <Trash2 size={20} />
           </button>
           
           <div style={{ display: 'flex', gap: 12 }}>
@@ -272,9 +285,9 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleDelete}
-        title="Identity Termination"
-        message={`Are you sure you want to permanently revoke the credentials for ${member?.name || 'this member'}? This will purge their record from the secure registry.`}
-        confirmLabel="Authorize Wipe"
+        title="Identity Termination Protocol"
+        message={`Authorize the permanent revocation of credentials for ${member?.name || 'this member'}? This will purge their identity from the secure registry and revoke all operational access.`}
+        confirmLabel="Execute Wipe"
         severity="DANGER"
       />
     </div>

@@ -119,28 +119,46 @@ export default function DepartmentEditorModal({ department, isOpen, onClose, can
             onClick={() => setIsConfirmOpen(true)} 
             disabled={!department || !canDelete}
             style={{ 
-              color: 'var(--status-error)', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', 
-              padding: 10, borderRadius: 10, cursor: (!department || !canDelete) ? 'not-allowed' : 'pointer',
-              opacity: (!department || !canDelete) ? 0.3 : 1
+              color: '#ef4444', 
+              background: 'rgba(239, 68, 68, 0.05)', 
+              border: '1px solid rgba(239, 68, 68, 0.1)', 
+              padding: '10px',
+              borderRadius: 12,
+              cursor: (!department || !canDelete) ? 'not-allowed' : 'pointer',
+              opacity: (!department || !canDelete) ? 0.3 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 200ms'
             }}
+            title="Operational Vector Termination"
           >
-            <Trash2 size={18} />
+            <Trash2 size={20} />
           </button>
           
           <div style={{ display: 'flex', gap: 12 }}>
-            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, background: 'var(--section-bg)', color: 'var(--teal)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Cancel</button>
+            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, background: 'var(--section-bg)', color: 'var(--teal)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>Dismiss</button>
             <button 
               onClick={handleSave} 
               disabled={isSaving} 
               style={{ 
                 padding: '10px 24px', borderRadius: 10, 
-                background: isSaving ? 'rgba(212, 175, 55, 0.5)' : 'var(--teal)', 
+                background: isSaving ? 'rgba(0, 63, 73, 0.5)' : 'var(--teal)', 
                 color: '#ffffff', border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer', 
                 fontWeight: 900, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, letterSpacing: '0.05em' 
               }}
             >
-              {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-              SAVE CATEGORY
+              {isSaving ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  SYNCING...
+                </>
+              ) : (
+                <>
+                  <Save size={18} />
+                  COMMIT CATEGORY
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -150,9 +168,9 @@ export default function DepartmentEditorModal({ department, isOpen, onClose, can
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleDelete}
-        title="Category Purge Sequence"
-        message={`Are you sure you want to permanently delete the ${department?.name} category? This may affect records linked to this operational vector.`}
-        confirmLabel="Authorize Deletion"
+        title="Category Termination Protocol"
+        message={`Authorize the permanent eradication of the ${department?.name} category? This operation will purge the operational vector from the production environment.`}
+        confirmLabel="Authorize Purge"
         severity="DANGER"
       />
     </div>

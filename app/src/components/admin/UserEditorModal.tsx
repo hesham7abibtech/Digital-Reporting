@@ -156,15 +156,15 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         style={{
-          width: '100%', maxWidth: 900, background: 'var(--cotton)', border: '1px solid var(--border)', borderRadius: 28, position: 'relative', zIndex: 1, overflow: 'hidden'
+          width: '100%', maxWidth: 840, background: '#ffffff', border: '1px solid rgba(0, 63, 73, 0.1)', borderRadius: 28, position: 'relative', zIndex: 1, overflow: 'hidden', boxShadow: '0 30px 100px rgba(0, 63, 73, 0.15)'
         }}
       >
-        <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(0, 63, 73, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc' }}>
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: 'var(--teal)', letterSpacing: '0.01em' }}>TERMINAL ACCESS CONTROL</h2>
-            <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>ID: {userRecord.uid.substring(0, 16)}...</p>
+            <h2 style={{ fontSize: 18, fontWeight: 950, color: '#003f49', letterSpacing: '0.05em', margin: 0, textTransform: 'uppercase' }}>Terminal Access Control</h2>
+            <p style={{ fontSize: 10, color: '#003f49', marginTop: 4, fontWeight: 700, opacity: 0.6 }}>ID: {userRecord.uid.substring(0, 16)}...</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}><X size={24} /></button>
+          <button onClick={onClose} style={{ background: '#ffffff', border: '1px solid rgba(0, 63, 73, 0.1)', color: '#003f49', cursor: 'pointer', width: 32, height: 32, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
         </div>
 
         {/* 2-COLUMN GRID FORM */}
@@ -173,40 +173,40 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
           {/* LEFT COLUMN: IDENTITY & SECURITY */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Identity Name</label>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Identity Name</label>
               <div style={{ position: 'relative' }}>
-                <User size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--teal)', opacity: 0.6 }} />
+                <User size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#003f49', opacity: 0.6 }} />
                 <input 
                   type="text" 
                   value={formData.name ?? ''} 
                   onChange={e => setFormData({ ...formData, name: e.target.value })} 
-                  style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: 16, background: 'var(--section-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 14, outline: 'none', fontWeight: 600 }} 
+                  style={{ width: '100%', padding: '12px 16px 12px 44px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', fontSize: 14, outline: 'none', fontWeight: 600 }} 
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Authenticated Email</label>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Authenticated Email</label>
               <div style={{ position: 'relative' }}>
-                <Mail size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+                <Mail size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#003f49', opacity: 0.4 }} />
                 <input 
                   type="text" 
                   value={userRecord.email} 
                   disabled
-                  style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: 16, background: 'var(--section-bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 14, cursor: 'not-allowed', fontWeight: 600 }}
+                  style={{ width: '100%', padding: '12px 16px 12px 44px', borderRadius: 12, background: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0, 63, 73, 0.1)', color: '#64748b', fontSize: 14, cursor: 'not-allowed', fontWeight: 600 }}
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Job Title / Designation</label>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Designation</label>
               <div style={{ position: 'relative' }}>
-                <Briefcase size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--teal)', opacity: 0.6 }} />
+                <Briefcase size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#003f49', opacity: 0.6 }} />
                 <input 
                   type="text" 
                   value={formData.department ?? ''} 
                   onChange={e => setFormData({ ...formData, department: e.target.value })} 
-                  style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: 16, background: 'var(--section-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 14, outline: 'none', fontWeight: 600 }} 
+                  style={{ width: '100%', padding: '12px 16px 12px 44px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', fontSize: 14, outline: 'none', fontWeight: 600 }} 
                 />
               </div>
             </div>
@@ -269,11 +269,11 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Access Status</label>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Access Status</label>
               <select 
                 value={formData.status || 'ACTIVE'} 
                 onChange={e => setFormData({ ...formData, status: e.target.value })}
-                style={{ width: '100%', padding: '14px 16px', borderRadius: 16, background: 'var(--section-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 14, outline: 'none', fontWeight: 600, cursor: 'pointer' }}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', fontSize: 14, outline: 'none', fontWeight: 600, cursor: 'pointer' }}
               >
                 <option value="ACTIVE">ACTIVE - FULL ACCESS</option>
                 <option value="PENDING_APPROVAL">PENDING APPROVAL</option>

@@ -285,18 +285,18 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0, 63, 73, 0.45)', backdropFilter: 'blur(16px)' }}></motion.div>
-      <motion.div initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ width: '100%', maxWidth: 780, background: 'linear-gradient(165deg, #F9F8F2 0%, #FFFFFF 100%)', border: '1px solid rgba(0, 0, 0, 0.12)', borderRadius: 28, position: 'relative', zIndex: 1, overflow: 'hidden', boxShadow: '0 30px 100px rgba(0, 63, 73, 0.15)' }}>
+      <motion.div initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ width: '100%', maxWidth: 780, background: '#ffffff', border: '1px solid rgba(0, 63, 73, 0.1)', borderRadius: 28, position: 'relative', zIndex: 1, overflow: 'hidden', boxShadow: '0 30px 100px rgba(0, 63, 73, 0.15)' }}>
 
         {/* Header - Executive Protocol */}
-        <div style={{ padding: '24px 32px', borderBottom: '1.5px solid rgba(0, 63, 73, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0, 63, 73, 0.03)' }}>
+        <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(0, 63, 73, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc' }}>
           <div>
-            <h2 style={{ fontSize: 20, fontWeight: 950, color: '#003F49', letterSpacing: '0.08em', margin: 0, textTransform: 'uppercase' }}>{task ? 'Edit Task Protocol' : 'Create New Task'}</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-              <Shield size={10} color="#D4AF37" />
-              <p style={{ fontSize: 10, color: '#003F49', margin: 0, textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 900 }}>Protocol ID: {formData.id || 'Registry Pending'}</p>
+            <h2 style={{ fontSize: 18, fontWeight: 950, color: '#003F49', letterSpacing: '0.05em', margin: 0, textTransform: 'uppercase' }}>{task ? 'Edit Task Protocol' : 'Create New Task'}</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <Shield size={10} color="#003F49" opacity={0.6} />
+              <p style={{ fontSize: 9, color: '#003F49', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 900, opacity: 0.6 }}>Protocol ID: {formData.id || 'Registry Pending'}</p>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: '#ffffff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003F49', cursor: 'pointer', width: 36, height: 36, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }} onMouseEnter={e => e.currentTarget.style.borderColor = '#003F49'} onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(0, 63, 73, 0.15)'}><X size={20} /></button>
+          <button onClick={onClose} style={{ background: '#ffffff', border: '1px solid rgba(0, 63, 73, 0.1)', color: '#003F49', cursor: 'pointer', width: 32, height: 32, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}><X size={18} /></button>
         </div>
 
         {/* Form Body - Performance Spacing & Dual Column Grid */}
@@ -322,12 +322,12 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                 onChange={e => setFormData({ ...formData, title: e.target.value })}
                 disabled={isActuallyReadOnly}
                 style={{
-                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff',
-                  border: (showErrors && !formData.title?.trim()) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)',
-                  color: '#0a1220', fontSize: 15, fontWeight: 800, outline: 'none', transition: 'all 200ms', boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+                  width: '100%', padding: '12px 16px', borderRadius: 12, background: '#eef2ff',
+                  border: (showErrors && !formData.title?.trim()) ? '2px solid #ef4444' : '1px solid rgba(0, 63, 73, 0.15)',
+                  color: '#003f49', fontSize: 14, fontWeight: 700, outline: 'none', transition: 'all 200ms'
                 }}
                 onFocus={e => e.target.style.borderColor = (showErrors && !formData.title?.trim()) ? '#ef4444' : '#003F49'}
-                onBlur={e => e.target.style.borderColor = (showErrors && !formData.title?.trim()) ? '#ef4444' : 'rgba(0, 0, 0, 0.12)'}
+                onBlur={e => e.target.style.borderColor = (showErrors && !formData.title?.trim()) ? '#ef4444' : 'rgba(0, 63, 73, 0.15)'}
                 placeholder="Enter task name"
               />
             </div>
@@ -359,16 +359,16 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                   onChange={e => setFormData({ ...formData, precinct: e.target.value })}
                   disabled={isActuallyReadOnly}
                   style={{
-                    width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff',
-                    border: (showErrors && !formData.precinct?.trim()) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)',
-                    color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none', appearance: 'none'
+                    width: '100%', padding: '12px 16px', borderRadius: 12, background: '#eef2ff',
+                    border: (showErrors && !formData.precinct?.trim()) ? '2px solid #ef4444' : '1px solid rgba(0, 63, 73, 0.15)',
+                    color: '#003f49', fontSize: 13, fontWeight: 700, outline: 'none', appearance: 'none'
                   }}
                 >
                   <option value="">Select Precinct</option>
                   {PRECINCTS.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
-                <div style={{ position: 'absolute', right: 18, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#003F49', opacity: 0.5 }}>
-                  <ChevronDown size={16} />
+                <div style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#003F49', opacity: 0.5 }}>
+                  <ChevronDown size={14} />
                 </div>
               </div>
             </div>
@@ -383,9 +383,9 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                 onChange={e => handleDeptChange(e.target.value)}
                 disabled={isActuallyReadOnly}
                 style={{
-                  width: '100%', padding: '14px 18px', borderRadius: 14, background: '#ffffff',
-                  border: (showErrors && !formData.department) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)',
-                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none', appearance: 'none'
+                  width: '100%', padding: '12px 16px', borderRadius: 12, background: '#eef2ff',
+                  border: (showErrors && !formData.department) ? '2px solid #ef4444' : '1px solid rgba(0, 63, 73, 0.15)',
+                  color: '#003f49', fontSize: 13, fontWeight: 700, outline: 'none', appearance: 'none'
                 }}
               >
                 <option value="">Select Category</option>
@@ -412,10 +412,10 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                 }}
                 disabled={isActuallyReadOnly || !formData.department}
                 style={{
-                  width: '100%', padding: '14px 18px', borderRadius: 14,
-                  background: (!formData.department || isActuallyReadOnly) ? 'rgba(0,0,0,0.02)' : '#ffffff',
-                  border: (showErrors && !formData.submitterId) ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.12)',
-                  color: '#0a1220', fontSize: 14, fontWeight: 700, outline: 'none',
+                  width: '100%', padding: '12px 16px', borderRadius: 12,
+                  background: (!formData.department || isActuallyReadOnly) ? 'rgba(0,0,0,0.02)' : '#eef2ff',
+                  border: (showErrors && !formData.submitterId) ? '2px solid #ef4444' : '1px solid rgba(0, 63, 73, 0.15)',
+                  color: '#003f49', fontSize: 13, fontWeight: 700, outline: 'none',
                   cursor: (!formData.department || isActuallyReadOnly) ? 'not-allowed' : 'pointer'
                 }}
               >

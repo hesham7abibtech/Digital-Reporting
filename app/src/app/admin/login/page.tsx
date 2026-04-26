@@ -25,7 +25,6 @@ import {
   CheckCircle2, Eye, EyeOff, Circle, Briefcase, Home, LifeBuoy
 } from 'lucide-react';
 import TicketRequestModal from '@/components/shared/TicketRequestModal';
-import ParticleBackground from '@/components/layout/ParticleBackground';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'unauthorized';
 
@@ -247,33 +246,17 @@ function AdminLoginContent() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', display: 'flex', flexDirection: 'column', background: '#0a1220' }}>
-      {/* Isolated Administrative Branding - Slim Professional High Contrast */}
-      <div style={{ padding: '20px 48px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(5, 10, 20, 0.98)', borderBottom: '1px solid var(--sunlit-rock)', zIndex: 100, boxShadow: '0 5px 20px rgba(0,0,0,0.6)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-          <motion.img 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            src="/logos/modon_logo.png" 
-            alt="MODON" 
-            style={{ height: 22, width: 'auto', filter: 'brightness(0) invert(1) contrast(200%)' }} 
-          />
-          <div style={{ width: 1, height: 18, background: 'rgba(208, 171, 130, 0.3)' }} />
-          <motion.img 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            src="/logos/insite_logo.png" 
-            alt="Insite" 
-            style={{ height: 22, width: 'auto', filter: 'brightness(0) invert(1) contrast(200%)' }} 
-          />
-        </div>
-      </div>
+    <div style={{ minHeight: '100vh', position: 'relative', display: 'flex', flexDirection: 'column', background: '#001519' }}>
       <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, overflow: 'hidden' }}>
-        <ParticleBackground />
-
-        <div style={{ position: 'absolute', top: '10%', left: '5%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(212, 175, 55, 0.05) 0%, transparent 70%)', filter: 'blur(60px)', zIndex: 0 }} />
-        <div style={{ position: 'absolute', bottom: '10%', right: '5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, transparent 70%)', filter: 'blur(60px)', zIndex: 0 }} />
+        {/* Deep Green Ambient Glow */}
+        <div style={{ 
+          position: 'absolute', inset: 0, opacity: 0.6, pointerEvents: 'none',
+          background: 'radial-gradient(circle at 50% 0%, rgba(0, 242, 255, 0.1) 0%, transparent 70%)'
+        }} />
+        <div style={{ 
+          position: 'absolute', inset: 0, opacity: 0.4, pointerEvents: 'none',
+          background: 'radial-gradient(circle at 50% 100%, rgba(208, 171, 130, 0.05) 0%, transparent 70%)'
+        }} />
 
         <motion.div
           variants={containerVariants}
@@ -283,85 +266,76 @@ function AdminLoginContent() {
           key={mode}
           style={{
             width: '100%',
-            maxWidth: 480,
-            background: 'rgba(10, 18, 32, 0.95)',
-            backdropFilter: 'blur(50px)',
-            border: '1px solid rgba(212, 175, 55, 0.3)',
-            borderRadius: 36,
-            boxShadow: '0 50px 120px -20px rgba(0,0,0,0.9), inset 0 0 60px rgba(0, 63, 73, 0.2)',
+            maxWidth: 460,
+            background: '#ffffff',
+            border: '1px solid rgba(0, 63, 73, 0.05)',
+            borderRadius: 32,
+            boxShadow: '0 20px 60px rgba(0, 63, 73, 0.05)',
             overflow: 'hidden',
             zIndex: 10,
             position: 'relative'
           }}
-          onMouseEnter={() => setIsScanned(true)}
-          onMouseLeave={() => setIsScanned(false)}
         >
-          <AnimatePresence>
-            {isScanned && (
-              <motion.div
-                initial={{ top: '0%' }}
-                animate={{ top: '100%' }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                style={{
-                  position: 'absolute', left: 0, right: 0, height: '2px',
-                  background: 'linear-gradient(to right, transparent, rgba(212, 175, 55, 0.5), transparent)',
-                  boxShadow: '0 0 15px rgba(212, 175, 55, 0.8)',
-                  zIndex: 20, pointerEvents: 'none'
-                }}
-              />
-            )}
-          </AnimatePresence>
 
           <div style={{ padding: '24px 32px 16px', position: 'relative' }}>
             <motion.button
               onClick={() => router.push('/')}
-              whileHover={{ scale: 1.1, backgroundColor: 'rgba(212, 175, 55, 0.15)', borderColor: 'rgba(212, 175, 55, 0.4)' }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.05, background: 'rgba(0, 63, 73, 0.05)' }}
               style={{
-                position: 'absolute', top: 24, right: 24, padding: 10,
-                borderRadius: 14, border: '1px solid rgba(212, 175, 55, 0.15)',
-                background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(10px)',
-                cursor: 'pointer', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'absolute', top: 20, right: 20, padding: 8,
+                borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.1)',
+                background: 'transparent', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 5px 15px rgba(0,0,0,0.4)', zIndex: 20
+                zIndex: 20, color: '#003f49'
               }}
-              title="Return to Hub"
             >
-              <Home size={18} color="#D4AF37" style={{ filter: 'drop-shadow(0 0 5px rgba(212, 175, 55, 0.4))' }} />
+              <Home size={16} />
             </motion.button>
 
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
-              <motion.div
-                style={{
-                  width: 72, height: 72, borderRadius: 22,
-                  background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  position: 'relative', overflow: 'hidden',
-                  boxShadow: '0 0 30px rgba(212, 175, 55, 0.3), inset 0 0 15px rgba(255, 255, 255, 0.5)'
-                }}
-              >
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(255,255,255,0.3), transparent)', opacity: 0.6 }} />
-                <ShieldCheck size={36} color="#0a1220" />
-              </motion.div>
+            {/* Branding Header - Pill Container (100% Match) */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <div style={{ 
+                background: '#003f49', 
+                padding: '10px 28px', 
+                borderRadius: 16, 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 12,
+                boxShadow: '0 8px 24px rgba(0, 63, 73, 0.15)'
+              }}>
+                  <motion.img 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    src="/logos/modon_logo.png" 
+                    alt="MODON" 
+                    style={{ height: 20, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} 
+                  />
+                  <div style={{ width: 1, height: 14, background: 'rgba(255, 255, 255, 0.2)' }} />
+                  <motion.img 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    src="/logos/insite_logo.png" 
+                    alt="INSITE" 
+                    style={{ height: 16, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} 
+                  />
+              </div>
             </div>
 
-            <motion.h1
-              style={{
-                fontSize: 26, fontWeight: 900, textAlign: 'center', margin: '0 0 8px',
-                letterSpacing: '-0.04em', background: 'linear-gradient(to bottom, #fff, #94a3b8)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                fontFamily: 'var(--font-heading)'
-              }}
-            >
-              {mode === 'login' ? 'Auth Required' :
-                mode === 'register' ? 'Account Provision' :
-                  'Recov Protocol'}
-            </motion.h1>
-            <p style={{ textAlign: 'center', color: '#64748b', fontSize: 13, marginBottom: 24, fontWeight: 500, letterSpacing: '0.01em', opacity: 0.8 }}>
-              {mode === 'login' ? 'Sign in to access the admin dashboard' :
-                mode === 'register' ? 'Create a new account to get started' :
-                  'Enter your email to reset your password'}
-            </p>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <h1 className="brand-heading" style={{
+                fontSize: 26, color: '#003f49', margin: '0 0 4px',
+                letterSpacing: '0.1em', fontWeight: 900,
+                textTransform: 'uppercase',
+              }}>
+                {mode === 'login' ? 'Admin Portal' : mode === 'register' ? 'Provisioning' : 'Reset Protocol'}
+              </h1>
+              <p style={{ color: '#94A3B8', fontSize: 10, margin: 0, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                {mode === 'login' ? 'Sign in to access administrative modules' :
+                  mode === 'register' ? 'Initialize new administrator identity' :
+                    'Enter your work email for recovery'}
+              </p>
+            </div>
 
             <AnimatePresence mode="wait">
               <form
@@ -371,7 +345,7 @@ function AdminLoginContent() {
                   {mode === 'register' && (
                     <>
                       <div style={{ position: 'relative' }}>
-                        <User size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#4b5563' }} />
+                        <User size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(0, 63, 73, 0.4)' }} />
                         <input
                           type="text"
                           placeholder="FullName / ID"
@@ -380,13 +354,14 @@ function AdminLoginContent() {
                           required
                           style={{
                             width: '100%', padding: '12px 16px 12px 42px', borderRadius: 12,
-                            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
-                            color: 'white', fontSize: 14, outline: 'none', transition: 'all 300ms'
+                            background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)',
+                            color: '#003f49', fontSize: 14, outline: 'none', transition: 'all 300ms',
+                            fontWeight: 600
                           }}
                         />
                       </div>
                       <div style={{ position: 'relative' }}>
-                        <Briefcase size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#4b5563' }} />
+                        <Briefcase size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(0, 63, 73, 0.4)' }} />
                         <input
                           type="text"
                           placeholder="Job Title / Designation"
@@ -395,8 +370,9 @@ function AdminLoginContent() {
                           required
                           style={{
                             width: '100%', padding: '12px 16px 12px 42px', borderRadius: 12,
-                            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
-                            color: 'white', fontSize: 14, outline: 'none', transition: 'all 300ms'
+                            background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)',
+                            color: '#003f49', fontSize: 14, outline: 'none', transition: 'all 300ms',
+                            fontWeight: 600
                           }}
                         />
                       </div>
@@ -404,7 +380,7 @@ function AdminLoginContent() {
                   )}
 
                   <div style={{ position: 'relative' }}>
-                    <Mail size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#4b5563' }} />
+                    <Mail size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(0, 63, 73, 0.4)' }} />
                     <input
                       type="email"
                       placeholder="Work Email"
@@ -413,15 +389,16 @@ function AdminLoginContent() {
                       required
                       style={{
                         width: '100%', padding: '12px 16px 12px 42px', borderRadius: 12,
-                        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
-                        color: 'white', fontSize: 14, outline: 'none', transition: 'all 300ms'
+                        background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)',
+                        color: '#003f49', fontSize: 14, outline: 'none', transition: 'all 300ms',
+                        fontWeight: 600
                       }}
                     />
                   </div>
 
                   {mode !== 'forgot-password' && (
                     <div style={{ position: 'relative' }}>
-                      <Lock size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#4b5563' }} />
+                      <Lock size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(0, 63, 73, 0.4)' }} />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Password"
@@ -430,8 +407,9 @@ function AdminLoginContent() {
                         required
                         style={{
                           width: '100%', padding: '12px 42px 12px 42px', borderRadius: 12,
-                          background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
-                          color: 'white', fontSize: 14, outline: 'none', transition: 'all 300ms'
+                          background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)',
+                          color: '#003f49', fontSize: 14, outline: 'none', transition: 'all 300ms',
+                          fontWeight: 600
                         }}
                       />
                       <button
@@ -439,7 +417,7 @@ function AdminLoginContent() {
                         onClick={() => setShowPassword(!showPassword)}
                         style={{
                           position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
-                          background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer',
+                          background: 'none', border: 'none', color: 'rgba(0, 63, 73, 0.4)', cursor: 'pointer',
                           padding: 0, display: 'flex', alignItems: 'center', zIndex: 10
                         }}
                       >
@@ -515,7 +493,7 @@ function AdminLoginContent() {
 
                   {mode === 'login' && (
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <button type="button" onClick={() => setMode('forgot-password')} style={{ background: 'transparent', border: 'none', color: '#D4AF37', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                      <button type="button" onClick={() => setMode('forgot-password')} style={{ background: 'transparent', border: 'none', color: '#003f49', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                         Forgotten Credentials?
                       </button>
                     </div>
@@ -525,14 +503,13 @@ function AdminLoginContent() {
                     type="submit"
                     disabled={isSubmitting}
                     style={{
-                      width: '100%', padding: '12px', borderRadius: 12, marginTop: 4,
-                      background: '#D4AF37',
-                      color: '#0a0a0f', fontSize: 14, fontWeight: 800, border: 'none',
-                      cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                      transition: 'all 300ms',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                      boxShadow: '0 10px 30px rgba(212, 175, 55, 0.2)',
-                      letterSpacing: '0.02em', textTransform: 'uppercase'
+                      width: 'fit-content', padding: '12px 40px', borderRadius: 12, marginTop: 4,
+                      background: '#003f49', color: 'white', fontSize: 13,
+                      fontWeight: 900, border: 'none', cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      boxShadow: '0 8px 24px rgba(0, 63, 73, 0.15)',
+                      textTransform: 'uppercase', letterSpacing: '0.1em',
+                      transition: 'all 300ms', alignSelf: 'center'
                     }}
                   >
                     {isSubmitting ? (
@@ -572,44 +549,28 @@ function AdminLoginContent() {
             
             <button
                onClick={() => setIsTicketModalOpen(true)}
-               style={{ background: 'transparent', border: 'none', color: '#D4AF37', fontSize: 11, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, margin: '20px auto 0', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em' }}
+               style={{ background: 'transparent', border: 'none', color: '#003f49', fontSize: 11, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, margin: '20px auto 0', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.05em' }}
             >
                <LifeBuoy size={14} /> Engaged Technical Support Cluster
             </button>
           </div>
 
           <div style={{
-            padding: '16px 40px', background: 'rgba(0,0,0,0.3)',
-            borderTop: '1px solid rgba(255,255,255,0.03)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            padding: '16px 40px', background: 'rgba(0, 63, 73, 0.03)',
+            borderTop: '1px solid rgba(0, 63, 73, 0.06)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ display: 'flex', gap: 2 }}>
-                <div style={{ width: 4, height: 10, background: '#10b981', borderRadius: 1 }} />
-                <div style={{ width: 4, height: 10, background: '#10b981', borderRadius: 1 }} />
-                <div style={{ width: 4, height: 10, background: isScanned ? '#10b981' : '#334155', borderRadius: 1 }} />
-              </div>
-              <span style={{ fontSize: 11, color: '#4b5563', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                Signal Link High
+              <Globe size={12} color="#94A3B8" />
+              <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+                Secure Admin Access
               </span>
-            </div>
-
-            <div style={{ display: 'flex', gap: 12 }}>
-              <Cpu size={14} color="#334155" />
-              <Database size={14} color="#334155" />
-              <Fingerprint size={14} color="#334155" />
             </div>
           </div>
         </motion.div>
 
 
-        {/* Footer */}
-        <div style={{ position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 12, opacity: 0.5, pointerEvents: 'none' }}>
-          <Globe size={14} color="#4b5563" />
-          <span style={{ fontSize: 12, color: '#4b5563', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-            Global Registry Monitoring Active
-          </span>
-        </div>
+      </div>
 
         {/* Registration Success Modal */}
         <AnimatePresence>
@@ -750,8 +711,7 @@ function AdminLoginContent() {
           )}
         </AnimatePresence>
 
-      </div>
-      <TicketRequestModal 
+        <TicketRequestModal 
         isOpen={isTicketModalOpen} 
         onClose={() => setIsTicketModalOpen(false)} 
         defaultReason="Administrative Access Request"
@@ -764,8 +724,8 @@ function AdminLoginContent() {
 export default function AdminLoginPage() {
   return (
     <Suspense fallback={
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a1220' }}>
-        <Loader2 className="animate-spin" size={32} color="var(--teal)" />
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#001519' }}>
+        <Loader2 className="animate-spin" size={32} color="#003f49" />
       </div>
     }>
       <AdminLoginContent />

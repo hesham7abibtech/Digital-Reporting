@@ -90,10 +90,10 @@ export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, c
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0, 63, 73, 0.3)', backdropFilter: 'blur(12px)' }} />
-      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ width: '100%', maxWidth: 500, background: 'var(--cotton)', border: '1px solid var(--border)', borderRadius: 28, position: 'relative', zIndex: 1, overflow: 'hidden' }}>
-        <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontSize: 22, fontWeight: 900, color: 'var(--teal)', letterSpacing: '-0.02em', margin: 0 }}>Portal Registry Config</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={24} /></button>
+      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ width: '100%', maxWidth: 480, background: '#ffffff', border: '1px solid rgba(0, 63, 73, 0.1)', borderRadius: 28, position: 'relative', zIndex: 1, overflow: 'hidden', boxShadow: '0 30px 100px rgba(0, 63, 73, 0.15)' }}>
+        <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(0, 63, 73, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc' }}>
+          <h2 style={{ fontSize: 18, fontWeight: 950, color: '#003f49', letterSpacing: '0.05em', margin: 0, textTransform: 'uppercase' }}>Portal Config</h2>
+          <button onClick={onClose} style={{ background: '#ffffff', border: '1px solid rgba(0, 63, 73, 0.1)', color: '#003f49', cursor: 'pointer', width: 32, height: 32, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
         </div>
         <div style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
           {readOnly && (
@@ -103,24 +103,24 @@ export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, c
             </div>
           )}
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase' }}>File name</label>
+            <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Portal Name</label>
             <input 
               type="text" 
               value={formData.name ?? ''} 
               onChange={e => setFormData({ ...formData, name: e.target.value })} 
               disabled={readOnly}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', color: readOnly ? 'var(--text-muted)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text' }} 
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', outline: 'none', fontWeight: 600, fontSize: 14 }} 
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase' }}>Description</label>
+            <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Functional Overview</label>
             <textarea 
               value={formData.description ?? ''} 
               onChange={e => setFormData({ ...formData, description: e.target.value })} 
               disabled={readOnly}
               placeholder="Portal functional overview..."
-              style={{ width: '100%', minHeight: 80, padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', color: readOnly ? 'var(--text-muted)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'text', resize: 'vertical', fontSize: 13 }} 
+              style={{ width: '100%', minHeight: 80, padding: '12px 16px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', outline: 'none', fontWeight: 600, fontSize: 14, resize: 'vertical' }} 
             />
           </div>
           {/* Supplemental Links Management */}
@@ -190,12 +190,12 @@ export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, c
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase' }}>Task Category</label>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Task Category</label>
               <select 
                 value={availableDepartments?.find(d => d.id === formData.department || d.name === formData.department)?.id || ''} 
                 onChange={e => setFormData({ ...formData, department: e.target.value })} 
                 disabled={readOnly}
-                style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(20,20,30,1)', border: '1px solid var(--border)', color: readOnly ? 'var(--text-dim)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer' }}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14 }}
               >
                 <option value="">Select Category</option>
                 {availableDepartments?.map(dept => (
@@ -204,12 +204,12 @@ export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, c
               </select>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase' }}>Category</label>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Category Type</label>
               <select 
                 value={formData.category || 'DASHBOARD'} 
                 onChange={e => setFormData({ ...formData, category: e.target.value })} 
                 disabled={readOnly}
-                style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(20,20,30,1)', border: '1px solid var(--border)', color: readOnly ? 'var(--text-dim)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer' }}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14 }}
               >
                 <option value="DASHBOARD">Dashboard</option>
                 <option value="REPORT">Report</option>
@@ -219,12 +219,12 @@ export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, c
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--teal)', marginBottom: 8, textTransform: 'uppercase' }}>Status</label>
+            <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Registry Status</label>
             <select 
               value={formData.status} 
               onChange={e => setFormData({ ...formData, status: e.target.value as any })} 
               disabled={readOnly}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: readOnly ? 'rgba(255,255,255,0.01)' : 'rgba(20,20,30,1)', border: '1px solid var(--border)', color: readOnly ? 'var(--text-dim)' : 'white', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer' }}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14 }}
             >
               <option value="LIVE">Live</option>
               <option value="HOLD">Hold</option>

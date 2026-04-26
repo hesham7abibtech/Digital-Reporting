@@ -17,8 +17,11 @@ import {
   Filter,
   MoreVertical,
   Shield,
+  ShieldAlert,
   Trash2,
   User,
+  Layers,
+  FileText,
   Loader2,
   Inbox,
   X,
@@ -39,8 +42,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Table,
-  FileText,
-  Layers,
   FileSpreadsheet,
   Type,
   Activity,
@@ -236,53 +237,53 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, alignItems: 'center', position: 'relative' }}>
       {/* Hub Navigation */}
-      <div style={{ display: 'flex', gap: 12, background: 'var(--secondary)', padding: 6, borderRadius: 16, border: '1px solid var(--border)', width: 'fit-content' }}>
+      <div style={{ display: 'flex', gap: 10, background: '#ffffff', padding: 6, borderRadius: 16, border: '1px solid rgba(0, 63, 73, 0.1)', width: 'fit-content', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
         <button
           onClick={() => setActiveHubTab('BROADCAST')}
           style={{
-            padding: '12px 24px', borderRadius: 12, border: 'none',
-            background: activeHubTab === 'BROADCAST' ? 'var(--teal)' : 'transparent',
-            color: activeHubTab === 'BROADCAST' ? '#ffffff' : 'var(--text-muted)',
-            fontSize: 13, fontWeight: 900, cursor: 'pointer', transition: 'all 300ms',
-            display: 'flex', alignItems: 'center', gap: 10
+            padding: '10px 24px', borderRadius: 12, border: 'none',
+            background: activeHubTab === 'BROADCAST' ? '#003f49' : 'transparent',
+            color: activeHubTab === 'BROADCAST' ? '#ffffff' : '#64748b',
+            fontSize: 12, fontWeight: 900, cursor: 'pointer', transition: 'all 300ms',
+            display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.05em'
           }}
         >
-          <Megaphone size={18} />
-          DASHBOARD BROADCAST
+          <Megaphone size={16} />
+          BROADCAST
         </button>
         <button
           onClick={() => setActiveHubTab('MAIL')}
           style={{
-            padding: '12px 24px', borderRadius: 12, border: 'none',
-            background: activeHubTab === 'MAIL' ? 'var(--teal)' : 'transparent',
-            color: activeHubTab === 'MAIL' ? '#ffffff' : 'var(--text-muted)',
-            fontSize: 13, fontWeight: 900, cursor: 'pointer', transition: 'all 300ms',
-            display: 'flex', alignItems: 'center', gap: 10
+            padding: '10px 24px', borderRadius: 12, border: 'none',
+            background: activeHubTab === 'MAIL' ? '#003f49' : 'transparent',
+            color: activeHubTab === 'MAIL' ? '#ffffff' : '#64748b',
+            fontSize: 12, fontWeight: 900, cursor: 'pointer', transition: 'all 300ms',
+            display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.05em'
           }}
         >
-          <Mail size={18} />
-          PREMIUM MAIL DISPATCH
+          <Mail size={16} />
+          MAIL DISPATCH
         </button>
       </div>
 
-      <div style={{ width: '100%', maxWidth: 960, display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <div style={{ width: '100%', maxWidth: 840, display: 'flex', flexDirection: 'column', gap: 24 }}>
         {activeHubTab === 'BROADCAST' ? (
-          <form onSubmit={handleBroadcastDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <div style={{ display: 'flex', gap: 16 }}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Packet Stream</label>
-                <div style={{ display: 'flex', gap: 8, background: 'var(--secondary)', padding: 4, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <form onSubmit={handleBroadcastDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 20, background: '#ffffff', padding: 32, borderRadius: 28, border: '1px solid rgba(0, 63, 73, 0.08)', boxShadow: '0 20px 60px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Packet Stream</label>
+                <div style={{ display: 'flex', gap: 6, background: '#eef2ff', padding: 4, borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.1)' }}>
                   {(['NOTIF', 'NEWS'] as const).map(t => (
                     <button
                       key={t}
                       type="button"
                       onClick={() => setBroadcastType(t)}
                       style={{
-                        flex: 1, padding: '10px', borderRadius: 10, border: 'none',
-                        background: broadcastType === t ? 'var(--teal)' : 'transparent',
-                        color: broadcastType === t ? '#ffffff' : 'var(--text-muted)',
-                        fontSize: 11, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                        flex: 1, padding: '8px', borderRadius: 10, border: 'none',
+                        background: broadcastType === t ? '#003f49' : 'transparent',
+                        color: broadcastType === t ? '#ffffff' : '#64748b',
+                        fontSize: 10, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
                       }}
                     >
                       {t === 'NOTIF' ? <Bell size={14} /> : <Newspaper size={14} />}
@@ -291,25 +292,25 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                   ))}
                 </div>
               </div>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Authority Classification</label>
-                <div style={{ display: 'flex', gap: 6, background: 'var(--secondary)', padding: 4, borderRadius: 12, border: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Classification</label>
+                <div style={{ display: 'flex', gap: 4, background: '#eef2ff', padding: 4, borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.1)' }}>
                   {[
-                    { id: 'INFO', label: 'INFO', color: 'var(--primary-light)' },
-                    { id: 'SUCCESS', label: 'SUCCESS', color: 'var(--status-success)' },
-                    { id: 'WARNING', label: 'WARNING', color: 'var(--status-warning)' },
-                    { id: 'CRITICAL', label: 'CRITICAL', color: 'var(--status-error)' }
+                    { id: 'INFO', label: 'INFO', color: '#0ea5e9' },
+                    { id: 'SUCCESS', label: 'SUCCESS', color: '#10b981' },
+                    { id: 'WARNING', label: 'WARNING', color: '#f59e0b' },
+                    { id: 'CRITICAL', label: 'CRITICAL', color: '#ef4444' }
                   ].map(s => (
                     <button
                       key={s.id}
                       type="button"
                       onClick={() => setBroadcastSeverity(s.id as any)}
                       style={{
-                        flex: 1, padding: '10px 0', borderRadius: 8, border: 'none',
-                        background: broadcastSeverity === s.id ? `${s.color}` : 'transparent',
-                        color: broadcastSeverity === s.id ? '#ffffff' : 'var(--text-muted)',
-                        fontSize: 10, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms',
-                        letterSpacing: '0.05em', opacity: broadcastSeverity === s.id ? 1 : 0.8
+                        flex: 1, padding: '8px 0', borderRadius: 8, border: 'none',
+                        background: broadcastSeverity === s.id ? s.color : 'transparent',
+                        color: broadcastSeverity === s.id ? '#ffffff' : '#64748b',
+                        fontSize: 9, fontWeight: 900, cursor: 'pointer', transition: 'all 200ms',
+                        letterSpacing: '0.05em'
                       }}
                     >
                       {s.label}
@@ -320,45 +321,48 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Broadcast Headline</label>
+              <label style={{ fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Headline</label>
               <input
                 value={broadcastTitle}
                 onChange={(e) => setBroadcastTitle(e.target.value)}
                 placeholder="Enter high-impact title..."
-                style={{ padding: '12px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', fontSize: 14, outline: 'none', fontWeight: 600 }}
               />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Narrative Body</label>
+              <label style={{ fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Narrative Body</label>
               <textarea
                 value={broadcastDescription}
                 onChange={(e) => setBroadcastDescription(e.target.value)}
                 placeholder="Detailed administrative context..."
                 rows={3}
-                style={{ padding: '12px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none', resize: 'none' }}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', fontSize: 14, outline: 'none', fontWeight: 600, resize: 'none' }}
               />
             </div>
 
             <button
               disabled={loading}
               style={{
-                marginTop: 8, padding: '12px 24px', background: 'var(--teal)', color: '#ffffff',
-                border: 'none', borderRadius: 12, fontWeight: 900, fontSize: 13,
-                cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                boxShadow: 'var(--shadow-premium)', letterSpacing: '0.1em', textTransform: 'uppercase', width: 'fit-content', alignSelf: 'center'
+                width: 'fit-content', padding: '12px 40px', borderRadius: 12, marginTop: 4,
+                background: '#003f49', color: 'white', fontSize: 13,
+                fontWeight: 900, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                boxShadow: '0 8px 24px rgba(0, 63, 73, 0.15)',
+                textTransform: 'uppercase', letterSpacing: '0.1em',
+                transition: 'all 300ms', alignSelf: 'center'
               }}
             >
               {loading ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
-              Authorize Broadcast Dispatch
+              Authorize Dispatch
             </button>
           </form>
         ) : (
-          <form onSubmit={handleMailDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Target Spectrum</label>
-                <div style={{ display: 'flex', gap: 6, background: 'var(--secondary)', padding: 6, borderRadius: 14, border: '1px solid var(--border)' }}>
+          <form onSubmit={handleMailDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 20, background: '#ffffff', padding: 32, borderRadius: 28, border: '1px solid rgba(0, 63, 73, 0.08)', boxShadow: '0 20px 60px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Target Spectrum</label>
+                <div style={{ display: 'flex', gap: 4, background: '#eef2ff', padding: 4, borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.1)' }}>
                   {[
                     { id: 'ALL', label: 'ALL USERS' },
                     { id: 'ROLE', label: 'BY ROLE' },
@@ -370,8 +374,8 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                       onClick={() => setMailTarget(t.id as any)}
                       style={{
                         flex: 1, padding: '10px 0', borderRadius: 10, border: 'none',
-                        background: mailTarget === t.id ? 'var(--teal)' : 'transparent',
-                        color: mailTarget === t.id ? (mailTarget === t.id ? '#ffffff' : 'var(--text-primary)') : 'var(--text-muted)',
+                        background: mailTarget === t.id ? '#003f49' : 'transparent',
+                        color: mailTarget === t.id ? '#ffffff' : '#64748b',
                         fontSize: 10, fontWeight: 900, cursor: 'pointer', transition: 'all 300ms'
                       }}
                     >
@@ -380,20 +384,20 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                   ))}
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Configuration Mode</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Configuration</label>
                 {mailTarget === 'ROLE' ? (
                   <select
                     value={targetRole}
                     onChange={(e) => setTargetRole(e.target.value)}
-                    style={{ padding: '12px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
+                    style={{ padding: '10px 16px', background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', borderRadius: 12, color: '#003f49', fontSize: 14, outline: 'none', fontWeight: 600 }}
                   >
                     <option value="TEAM">PROJECT TEAM</option>
                     <option value="ADMIN">ADMINISTRATORS</option>
                     <option value="OWNER">SYSTEM OWNERS</option>
                   </select>
                 ) : (
-                  <div style={{ padding: '12px 16px', background: 'var(--secondary)', borderRadius: 14, border: '1px solid var(--border)', color: 'var(--teal)', fontSize: 12, fontWeight: 800, letterSpacing: '0.05em' }}>
+                  <div style={{ padding: '10px 16px', background: '#f8fafc', borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.1)', color: '#003f49', fontSize: 11, fontWeight: 900, letterSpacing: '0.05em' }}>
                     {mailTarget === 'ALL' ? 'GLOBAL BROADCAST ENABLED' : 'SPECIFIC ROUTING ACTIVE'}
                   </div>
                 )}
@@ -402,223 +406,78 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
 
             {mailTarget === 'SPECIFIC' && (
               <div style={{ 
-                display: 'flex', flexDirection: 'column', gap: 24, padding: 32, 
-                background: 'var(--panel)', borderRadius: 28, border: '1px solid var(--border)',
-                position: 'relative', overflow: 'visible'
+                display: 'flex', flexDirection: 'column', gap: 20, padding: 24, 
+                background: '#f8fafc', borderRadius: 20, border: '1px solid rgba(0, 63, 73, 0.08)'
               }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 2, background: 'linear-gradient(90deg, transparent, var(--teal), transparent)', opacity: 0.3 }} />
-                
-                {/* Direct Recipients (TO) */}
                 <div style={{ width: '100%' }}>
-                  {[
-                    { id: 'TO', label: 'Direct Recipients (TO)', value: toEmails, setter: setToEmails, accent: 'var(--teal)', icon: <Send size={16} /> },
-                  ].map(field => (
-                    <div 
-                      key={field.id} 
-                      style={{ 
-                        display: 'flex', flexDirection: 'column', gap: 16, position: 'relative', 
-                        background: 'var(--surface)', padding: '28px', borderRadius: 24, 
-                        border: '1px solid var(--border)', borderLeft: `8px solid ${field.accent}`,
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.03)'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                          <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(0, 63, 73, 0.05)', color: field.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{field.icon}</div>
-                          <div>
-                            <label style={{ fontSize: 12, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.2em', display: 'block' }}>{field.label}</label>
-                            <span style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Primary Destination Node</span>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveSelectorField(activeSelectorField === field.id ? null : field.id as any);
-                            setUserSearchQuery('');
-                          }}
-                          style={{ 
-                            padding: '12px 24px', borderRadius: 14, border: 'none', 
-                            background: 'var(--teal)', color: '#ffffff', fontSize: 11, 
-                            fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
-                            transition: 'all 300ms', textTransform: 'uppercase', letterSpacing: '0.15em'
-                          }}
-                        >
-                          <UserPlus size={18} /> OPEN REGISTRY
-                        </button>
-                      </div>
-                      <textarea
-                        value={field.value}
-                        onChange={(e) => field.setter(e.target.value)}
-                        placeholder="Establish primary communication uplink (semicolon separated)..."
-                        rows={Math.max(2, field.value.split('\n').length + (field.value.match(/;/g) || []).length / 2, Math.ceil(field.value.length / 100))}
-                        style={{ 
-                          padding: '20px', background: 'var(--background)', border: '1px solid var(--border)', 
-                          borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', 
-                          resize: 'none', fontWeight: 500, lineHeight: '1.6', transition: 'all 300ms',
-                          fontFamily: 'var(--font-mono)'
-                        }}
-                      />
-                      
-                      <AnimatePresence>
-                        {activeSelectorField === field.id && (
-                          <motion.div 
-                            initial={{ opacity: 0, scale: 0.98, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                            style={{ 
-                              position: 'absolute', top: '100%', right: 0, zIndex: 1500, 
-                              width: 440, marginTop: 16, background: 'var(--surface)', 
-                              border: '1px solid var(--border)', borderRadius: 24, 
-                              boxShadow: '0 30px 60px rgba(0,0,0,0.1)', padding: 20, 
-                              display: 'flex', flexDirection: 'column', gap: 16,
-                              backdropFilter: 'blur(30px)'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--background)', padding: '14px 20px', borderRadius: 16, border: '1px solid var(--border)' }}>
-                              <Search size={20} color="var(--teal)" />
-                              <input 
-                                autoFocus
-                                value={userSearchQuery}
-                                onChange={e => setUserSearchQuery(e.target.value)}
-                                placeholder="Locate personnel identity..." 
-                                style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 15, outline: 'none', width: '100%' }} 
-                              />
-                            </div>
-                            <div style={{ maxHeight: 350, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 8 }} className="custom-scrollbar">
-                              {usersSnapshot?.docs
-                                .filter((d: any) => {
-                                  const data = d.data();
-                                  const search = userSearchQuery.toLowerCase();
-                                  return data.name?.toLowerCase().includes(search) || data.email?.toLowerCase().includes(search);
-                                })
-                                .map((d: any) => (
-                                  <button
-                                    key={d.id}
-                                    type="button"
-                                    onClick={() => addEmailToField(d.data().email, field.id as any)}
-                                    style={{ 
-                                      textAlign: 'left', padding: '16px 20px', borderRadius: 16, 
-                                      border: '1px solid transparent', background: 'var(--secondary)', 
-                                      cursor: 'pointer', transition: 'all 200ms', display: 'flex', 
-                                      flexDirection: 'column', gap: 4 
-                                    }}
-                                    onMouseEnter={e => {
-                                      e.currentTarget.style.background = 'rgba(0, 63, 73, 0.05)';
-                                      e.currentTarget.style.borderColor = 'rgba(0, 63, 73, 0.1)';
-                                    }}
-                                    onMouseLeave={e => {
-                                      e.currentTarget.style.background = 'var(--secondary)';
-                                      e.currentTarget.style.borderColor = 'transparent';
-                                    }}
-                                  >
-                                    <span style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)' }}>{d.data().name}</span>
-                                    <span style={{ fontSize: 11, color: 'var(--teal)', fontWeight: 800, letterSpacing: '0.05em', opacity: 0.8 }}>{d.data().email}</span>
-                                  </button>
-                                ))}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-                  {[
-                    { id: 'CC', label: 'Carbon Copy (CC)', value: ccEmails, setter: setCcEmails, accent: 'var(--teal)', icon: <Users size={16} /> },
-                    { id: 'BCC', label: 'Blind Copy (BCC)', value: bccEmails, setter: setBccEmails, accent: 'var(--gold)', icon: <EyeOff size={16} /> }
-                  ].map(field => (
-                    <div 
-                      key={field.id} 
-                      style={{ 
-                        display: 'flex', flexDirection: 'column', gap: 14, position: 'relative', 
-                        background: 'var(--surface)', padding: '24px', borderRadius: 20, 
-                        border: '1px solid var(--border)', borderTop: `4px solid ${field.accent}`,
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
-                      }}
-                    >
+                    <div style={{ 
+                      display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', 
+                      background: '#ffffff', padding: '20px', borderRadius: 16, 
+                      border: '1px solid rgba(0, 63, 73, 0.1)'
+                    }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ color: field.accent, opacity: 1 }}>{field.icon}</div>
-                          <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>{field.label}</label>
+                          <Mail size={16} color="#003f49" />
+                          <label style={{ fontSize: 11, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Direct Recipients (TO)</label>
                         </div>
                         <button
                           type="button"
                           onClick={() => {
-                            setActiveSelectorField(activeSelectorField === field.id ? null : field.id as any);
+                            setActiveSelectorField(activeSelectorField === 'TO' ? null : 'TO');
                             setUserSearchQuery('');
                           }}
                           style={{ 
-                            padding: '8px 16px', borderRadius: 10, border: `1px solid ${field.accent}`, 
-                            background: 'transparent', color: field.accent, fontSize: 10, 
-                            fontWeight: 900, cursor: 'pointer', transition: 'all 200ms', letterSpacing: '0.1em',
-                            textTransform: 'uppercase'
+                            padding: '6px 16px', borderRadius: 10, border: 'none', 
+                            background: '#003f49', color: '#ffffff', fontSize: 10, 
+                            fontWeight: 900, cursor: 'pointer', textTransform: 'uppercase'
                           }}
                         >
                           Registry
                         </button>
                       </div>
                       <textarea
+                        value={toEmails}
+                        onChange={(e) => setToEmails(e.target.value)}
+                        placeholder="Comma separated emails..."
+                        rows={2}
+                        style={{ padding: '12px', background: '#eef2ff', border: 'none', borderRadius: 12, color: '#003f49', fontSize: 13, outline: 'none', resize: 'none', fontWeight: 600 }}
+                      />
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                  {[
+                    { id: 'CC', label: 'Carbon Copy (CC)', value: ccEmails, setter: setCcEmails },
+                    { id: 'BCC', label: 'Blind Copy (BCC)', value: bccEmails, setter: setBccEmails }
+                  ].map(field => (
+                    <div 
+                      key={field.id} 
+                      style={{ 
+                        display: 'flex', flexDirection: 'column', gap: 10, position: 'relative', 
+                        background: '#ffffff', padding: '16px', borderRadius: 16, 
+                        border: '1px solid rgba(0, 63, 73, 0.1)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label style={{ fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase' }}>{field.label}</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveSelectorField(activeSelectorField === field.id ? null : field.id as any);
+                            setUserSearchQuery('');
+                          }}
+                          style={{ background: 'none', border: 'none', color: '#003f49', fontSize: 9, fontWeight: 900, cursor: 'pointer', textTransform: 'uppercase' }}
+                        >
+                          Add
+                        </button>
+                      </div>
+                      <textarea
                         value={field.value}
                         onChange={(e) => field.setter(e.target.value)}
-                        placeholder={`Draft ${field.id} identities...`}
-                        rows={Math.max(2, field.value.split('\n').length + (field.value.match(/;/g) || []).length / 2, Math.ceil(field.value.length / 50))}
-                        style={{ 
-                          padding: '16px', background: 'var(--background)', border: '1px solid var(--border)', 
-                          borderRadius: 14, color: 'var(--text-primary)', fontSize: 13, outline: 'none', 
-                          resize: 'none', fontWeight: 500, lineHeight: '1.5', fontFamily: 'var(--font-mono)'
-                        }}
+                        placeholder="Emails..."
+                        rows={2}
+                        style={{ padding: '10px', background: '#eef2ff', border: 'none', borderRadius: 10, color: '#003f49', fontSize: 12, outline: 'none', resize: 'none', fontWeight: 600 }}
                       />
-                      
-                      <AnimatePresence>
-                        {activeSelectorField === field.id && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 15 }}
-                            style={{ 
-                              position: 'absolute', top: '100%', left: 0, zIndex: 1500, 
-                              width: 320, marginTop: 16, background: 'var(--surface)', 
-                              border: `1px solid ${field.accent}`, borderRadius: 20, 
-                              boxShadow: '0 30px 60px rgba(0,0,0,0.1)', padding: 16, 
-                              display: 'flex', flexDirection: 'column', gap: 14,
-                              backdropFilter: 'blur(25px)'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--background)', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border)' }}>
-                              <Search size={16} color={field.accent} />
-                              <input 
-                                autoFocus
-                                value={userSearchQuery}
-                                onChange={e => setUserSearchQuery(e.target.value)}
-                                placeholder="Search..." 
-                                style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13, outline: 'none', width: '100%' }} 
-                              />
-                            </div>
-                            <div style={{ maxHeight: 250, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }} className="custom-scrollbar">
-                              {usersSnapshot?.docs
-                                .filter((d: any) => {
-                                  const data = d.data();
-                                  const search = userSearchQuery.toLowerCase();
-                                  return data.name?.toLowerCase().includes(search) || data.email?.toLowerCase().includes(search);
-                                })
-                                .map((d: any) => (
-                                  <button
-                                    key={d.id}
-                                    type="button"
-                                    onClick={() => addEmailToField(d.data().email, field.id as any)}
-                                    style={{ textAlign: 'left', padding: '12px 14px', borderRadius: 12, border: 'none', background: 'transparent', cursor: 'pointer', transition: 'all 200ms' }}
-                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'}
-                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                                  >
-                                    <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-primary)', display: 'block' }}>{d.data().name}</span>
-                                    <span style={{ fontSize: 11, color: field.accent, opacity: 0.8 }}>{d.data().email}</span>
-                                  </button>
-                                ))}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
                     </div>
                   ))}
                 </div>
@@ -626,75 +485,55 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
             )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 20 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Subject Line</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Subject Line</label>
                 <input
                   value={mailSubject}
                   onChange={(e) => setMailSubject(e.target.value)}
                   placeholder="Official dispatch subject..."
-                  style={{ padding: '14px 20px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, color: 'var(--text-primary)', fontSize: 15, outline: 'none', transition: 'all 300ms' }}
-                  onFocus={e => e.currentTarget.style.borderColor = 'var(--teal)'}
-                  onBlur={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', fontSize: 14, outline: 'none', fontWeight: 600 }}
                 />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Dispatch Priority</label>
-                <div style={{ position: 'relative' }}>
-                  <select
-                    value={mailCategory}
-                    onChange={(e) => setMailCategory(e.target.value)}
-                    style={{ width: '100%', padding: '14px 20px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
-                  >
-                    <option value="ANNOUNCEMENT">SYSTEM ANNOUNCEMENT</option>
-                    <option value="NEWS">PROJECT NEWS FEED</option>
-                    <option value="SECURITY">SECURITY ADVISORY</option>
-                    <option value="URGENT">URGENT ACTION REQUIRED</option>
-                  </select>
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Priority</label>
+                <select
+                  value={mailCategory}
+                  onChange={(e) => setMailCategory(e.target.value)}
+                  style={{ width: '100%', padding: '12px 16px', background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', borderRadius: 12, color: '#003f49', fontSize: 14, outline: 'none', fontWeight: 600 }}
+                >
+                  <option value="ANNOUNCEMENT">ANNOUNCEMENT</option>
+                  <option value="NEWS">PROJECT NEWS</option>
+                  <option value="SECURITY">SECURITY ADVISORY</option>
+                  <option value="URGENT">URGENT ACTION</option>
+                </select>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Communication Payload (Body)</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Body Content</label>
               <textarea
                 value={mailBody}
                 onChange={(e) => setMailBody(e.target.value)}
-                placeholder="Draft your professional industrial dispatch here..."
+                placeholder="Draft your dispatch here..."
                 rows={4}
-                style={{ 
-                  padding: '16px 20px', background: 'var(--surface)', border: '1px solid var(--border)', 
-                  borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', resize: 'none', 
-                  lineHeight: '1.7', transition: 'all 300ms' 
-                }}
-                onFocus={e => e.currentTarget.style.borderColor = 'var(--teal)'}
-                onBlur={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                style={{ width: '100%', padding: '16px 20px', borderRadius: 16, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', fontSize: 14, outline: 'none', fontWeight: 600, resize: 'none', lineHeight: '1.6' }}
               />
             </div>
 
             <button
               disabled={loading}
               style={{
-                marginTop: 10, padding: '16px 40px', background: 'var(--teal)', color: '#ffffff',
-                border: 'none', borderRadius: 16, fontWeight: 900, fontSize: 15,
-                cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-                boxShadow: '0 10px 30px rgba(0, 63, 73, 0.2)', letterSpacing: '0.2em', textTransform: 'uppercase', width: 'fit-content', alignSelf: 'center',
-                transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
-              onMouseEnter={e => {
-                if (!loading) {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 15px 40px rgba(0, 63, 73, 0.3)';
-                }
-              }}
-              onMouseLeave={e => {
-                if (!loading) {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 63, 73, 0.2)';
-                }
+                width: 'fit-content', padding: '14px 48px', borderRadius: 12, marginTop: 10,
+                background: '#003f49', color: 'white', fontSize: 14,
+                fontWeight: 900, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                boxShadow: '0 8px 24px rgba(0, 63, 73, 0.15)',
+                textTransform: 'uppercase', letterSpacing: '0.1em',
+                transition: 'all 300ms', alignSelf: 'center'
               }}
             >
               {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
-              Authorize SMTP Dispatch
+              Authorize Dispatch
             </button>
           </form>
         )}
@@ -1201,20 +1040,6 @@ export default function AdminDashboardPage() {
     setSelectedIds(new Set());
   };
 
-  const handleDelete = async (id: string, collection: string) => {
-    try {
-      const { deleteDoc, doc: fsDoc } = await import('firebase/firestore');
-      if (collection === 'tasks') await deleteDoc(fsDoc(db, 'tasks', id));
-      else if (collection === 'members') await deleteDoc(fsDoc(db, 'members', id));
-      else if (collection === 'registry') await deleteDoc(fsDoc(db, 'registry', id));
-      else if (collection === 'departments') await deleteDoc(fsDoc(db, 'departments', id));
-      else if (collection === 'bim-reviews') await deleteDoc(fsDoc(db, 'bimReviews', id));
-      else if (collection === 'tickets') await deleteDoc(fsDoc(db, 'tickets', id));
-      showToast('Administrative protocol: Asset record terminated.', 'SUCCESS');
-    } catch (err) {
-      showToast('Security system failure: Record deletion denied.', 'ERROR');
-    }
-  };
 
   const handleDownloadTaskTemplate = async () => {
     try {
@@ -1509,26 +1334,60 @@ export default function AdminDashboardPage() {
     return [];
   };
 
-  const handleBulkDelete = async () => {
+  const handleDeleteRecord = async (id: string, col: string) => {
+    setIsDeleting(true);
     try {
-      const colName = activeTab === 'team' ? 'users' : (activeTab === 'bim-reviews' ? 'bimReviews' : activeTab);
-      await bulkDelete(colName, Array.from(selectedIds));
-      showToast(`${selectedIds.size} records successfully purged from production.`, 'SUCCESS');
-      setSelectedIds(new Set());
-      setIsBulkModalOpen(false);
+      await deleteDoc(doc(db, col, id));
+      showToast('Record successfully purged from production.', 'SUCCESS');
+      setDeleteConfirm({ isOpen: false, id: '', col: '', name: '' });
     } catch (error) {
-      console.error('Bulk deletion failed:', error);
-      showToast('Bulk termination protocol failure.', 'ERROR');
-      throw error;
+      console.error('Purge failure:', error);
+      showToast('Protocol failure: Record could not be terminated.', 'ERROR');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: '', col: '', name: '' });
+
   const currentTabIds = getCurrentTabItems().map((item: any) => item.id);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    
+    setIsBulkDeleting(true);
+    try {
+      const collectionName = activeTab === 'team' 
+        ? (teamActiveSubTab === 'personnel' ? 'members' : 'departments')
+        : activeTab === 'tasks' ? 'tasks'
+        : activeTab === 'registry' ? 'registry'
+        : activeTab === 'bim-reviews' ? 'bimReviews'
+        : activeTab === 'users' ? 'users'
+        : '';
+
+      if (!collectionName) {
+        showToast('Bulk Protocol Failure: Collection context ambiguous.', 'ERROR');
+        return;
+      }
+
+      await bulkDelete(collectionName, Array.from(selectedIds));
+      showToast(`Operational Purge Complete: ${selectedIds.size} records terminated.`, 'SUCCESS');
+      setSelectedIds(new Set());
+      setIsBulkModalOpen(false);
+    } catch (error) {
+      console.error('Bulk purge failure:', error);
+      showToast('Protocol Failure: Large-scale termination interrupted.', 'ERROR');
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
 
   return (
     <div style={{ 
       minHeight: '100vh', 
-      background: '#002d35', 
+      background: '#f8fafc', 
       color: '#ffffff', 
       overflowX: 'hidden', 
       overflow: 'hidden', 
@@ -1545,48 +1404,39 @@ export default function AdminDashboardPage() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -100, opacity: 0 }}
             style={{
-              position: 'fixed', top: 90, left: '50%', transform: 'translateX(-50%)',
-              zIndex: 90,
-              background: 'rgba(255, 255, 255, 0.98)',
+              position: 'fixed', top: 30, left: '50%', transform: 'translateX(-50%)',
+              zIndex: 1000,
+              background: '#002B32',
               backdropFilter: 'blur(30px)',
-              padding: '12px 32px',
-              borderRadius: 20,
-              border: '1px solid var(--border)',
-              display: 'flex', alignItems: 'center', gap: 24,
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.05)',
+              padding: '10px 24px',
+              borderRadius: 16,
+              border: '1px solid rgba(208, 171, 130, 0.2)',
+              display: 'flex', alignItems: 'center', gap: 32,
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                <Shield size={18} color="var(--status-error)" />
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(208, 171, 130, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(208, 171, 130, 0.2)' }}>
+                <Shield size={20} color="#d0ab82" />
               </div>
               <div>
-                <span style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', display: 'block', letterSpacing: '0.05em' }}>{selectedIds.size} ITEMS SELECTED</span>
-                <span style={{ fontSize: 10, color: 'var(--status-error)', fontWeight: 700, textTransform: 'uppercase' }}>High Authority Mode Active</span>
+                <span style={{ fontSize: 13, fontWeight: 900, color: '#ffffff', display: 'block', letterSpacing: '0.1em' }}>{selectedIds.size} COMMANDS QUEUED</span>
+                <span style={{ fontSize: 9, color: '#d0ab82', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em' }}>High Authority Encryption Active</span>
               </div>
-              <button
-                onClick={() => setSelectedIds(new Set())}
-                style={{
-                  background: 'var(--secondary)', border: '1px solid var(--border)',
-                  color: 'var(--text-secondary)', fontSize: 10, fontWeight: 800, padding: '4px 10px',
-                  borderRadius: 6, cursor: 'pointer', marginLeft: 8
-                }}
-              >
-                DISMISS
-              </button>
             </div>
-            <div style={{ width: 1, height: 32, background: 'var(--border)' }} />
+            
+            <div style={{ width: 1, height: 28, background: 'rgba(255, 255, 255, 0.1)' }} />
 
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 10 }}>
               <button
                 onClick={() => showToast('Command Accepted: Exporting high-fidelity dataset...', 'INFO')}
                 style={{
-                  background: 'var(--secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)',
-                  padding: '10px 24px', borderRadius: 10, fontSize: 13, fontWeight: 700,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10
+                  background: 'rgba(255, 255, 255, 0.05)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.1)',
+                  padding: '8px 16px', borderRadius: 10, fontSize: 12, fontWeight: 700,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 200ms'
                 }}
               >
-                <Database size={16} />
+                <Database size={14} />
                 EXTRACT REGISTRY
               </button>
 
@@ -1594,19 +1444,29 @@ export default function AdminDashboardPage() {
                 <button
                   onClick={() => setIsBulkModalOpen(true)}
                   style={{
-                    background: 'var(--status-error)', 
+                    background: '#ef4444', 
                     color: 'white', border: 'none',
-                    padding: '12px 28px', borderRadius: 12, fontSize: 13, fontWeight: 900,
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12,
-                    boxShadow: '0 8px 30px rgba(239, 68, 68, 0.4)',
-                    letterSpacing: '0.15em',
-                    textTransform: 'uppercase'
+                    padding: '8px 20px', borderRadius: 10, fontSize: 12, fontWeight: 900,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                    boxShadow: '0 4px 15px rgba(239, 68, 68, 0.3)',
+                    letterSpacing: '0.05em'
                   }}
                 >
-                  <Trash2 size={18} />
-                  SECURITY PURGE PROTOCOL
+                  <Trash2 size={14} />
+                  PURGE SELECTION
                 </button>
               )}
+              
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                style={{
+                  background: 'transparent', border: 'none',
+                  color: 'rgba(255, 255, 255, 0.4)', fontSize: 11, fontWeight: 700, padding: '8px 12px',
+                  borderRadius: 8, cursor: 'pointer', marginLeft: 8, transition: 'all 200ms'
+                }}
+              >
+                DISMISS
+              </button>
             </div>
           </motion.div>
         )}
@@ -1614,10 +1474,10 @@ export default function AdminDashboardPage() {
       <div style={{ display: 'flex', height: '100vh' }}>
         {/* Elite Navigation Sidebar */}
         <aside style={{ 
-          width: 280, 
+          width: 300, 
           minWidth: 280,
-          background: '#002d35', 
-          borderRight: '1px solid rgba(208, 171, 130, 0.1)', 
+          background: '#001519', 
+          borderRight: '1px solid rgba(255, 255, 255, 0.05)', 
           display: 'flex', 
           flexDirection: 'column', 
           height: '100vh',
@@ -1668,7 +1528,7 @@ export default function AdminDashboardPage() {
                 >
                   <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 14 }}>
                     <tab.icon size={18} style={{ opacity: isActive ? 1 : 0.6, color: isActive ? '#d0ab82' : 'inherit' }} />
-                    <span style={{ fontSize: 13, fontWeight: isActive ? 800 : 500, letterSpacing: isActive ? '0.05em' : 'normal' }}>{tab.label}</span>
+                    <span style={{ fontSize: 13, fontWeight: isActive ? 800 : 500, letterSpacing: isActive ? '0.05em' : 'normal', whiteSpace: 'nowrap' }}>{tab.label}</span>
                   </div>
                   {isActive && (
                     <motion.div
@@ -1703,14 +1563,13 @@ export default function AdminDashboardPage() {
 
         <div className="admin-dashboard-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100vh', overflow: 'hidden', background: 'transparent' }}>
           <header style={{
-            height: 72, 
-            background: 'rgba(0, 45, 53, 0.8)', 
-            backdropFilter: 'blur(30px)',
-            borderBottom: '1px solid rgba(208, 171, 130, 0.1)', 
+            height: 64, 
+            background: '#002B32', 
+            borderBottom: '1px solid rgba(255, 255, 255, 0.05)', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'space-between', 
-            padding: '0 40px',
+            padding: '0 32px',
             position: 'sticky', 
             top: 0, 
             zIndex: 100
@@ -1745,7 +1604,7 @@ export default function AdminDashboardPage() {
           </header>
 
           <main style={{ 
-            padding: '40px', 
+            padding: '24px 32px', 
             flex: 1, 
             overflowY: 'auto', 
             overflowX: 'hidden', 
@@ -1761,30 +1620,56 @@ export default function AdminDashboardPage() {
                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               >
                 <GlassCard padding="none">
-                  <div style={{ padding: '32px 40px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--panel)' }}>
+                  <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
                     <div>
-                      <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
-                        {activeTab === 'tasks' ? 'Digital Deliverable Matrix' : activeTab === 'bim-reviews' ? 'BIM Review Intelligence Matrix' : activeTab === 'team' ? 'Active Digital Project Team' : activeTab === 'registry' ? 'Digital Asset Registry Index' : activeTab === 'branding' ? 'Project Identity & Branding' : activeTab === 'communications' ? 'Elite Communications Hub' : 'Security Access Registry'}
+                      <h2 style={{ fontSize: 13, fontWeight: 900, color: 'var(--teal)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                        {activeTab === 'users' ? 'Security & Identity Management' : activeTab === 'team' ? 'Project Resource Management' : activeTab === 'tasks' ? 'Deliverable Submission Pipeline' : activeTab === 'bim-reviews' ? 'BIM Strategic Review Matrix' : activeTab === 'branding' ? 'Identity & Visual Asset CMS' : activeTab === 'reports' ? 'Global Reporting Protocols' : activeTab === 'communications' ? 'Network Communications & Broadcasts' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1) + ' Intelligence'}
                       </h2>
-                      <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 8, fontWeight: 500, letterSpacing: '0.01em' }}>
+                      <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: '4px 0 0 0', fontWeight: 600, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
                         {activeTab === 'bim-reviews' ? 'Strategic oversight of cross-project BIM submission reviews and status tracking' : activeTab === 'users' ? 'Management of security clearances and administrative roles' : activeTab === 'branding' ? 'Configuration of project branding and site-wide metadata' : activeTab === 'communications' ? 'Dispatch real-time broadcasts and premium SMTP mail notifications' : 'Real-time synchronization with Digital Workflow Systems'}
                       </p>
                     </div>
                   </div>
+                  <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, position: 'relative' }}>
+                    {/* Left: Search Box */}
+                    <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+                      {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'communications' && (
+                        <div style={{ position: 'relative' }}>
+                          <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(0, 63, 73, 0.4)' }} />
+                          <input
+                            type="text"
+                            placeholder="Filter records..."
+                            style={{ 
+                              padding: '10px 20px 10px 42px', 
+                              borderRadius: 12, 
+                              background: '#eef2ff', 
+                              border: '1px solid rgba(0, 63, 73, 0.15)', 
+                              color: '#003f49', 
+                              fontSize: 13, 
+                              outline: 'none', 
+                              width: 280,
+                              transition: 'all 300ms',
+                              fontWeight: 600
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
 
-                    <div style={{ display: 'flex', gap: 12 }}>
+                    {/* Center: Sub-tabs */}
+                    <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center' }}>
                       {activeTab === 'users' && userProfile?.isAdmin && (
-                        <div style={{ display: 'flex', background: 'var(--secondary)', padding: 4, borderRadius: 10, border: '1px solid var(--border)', marginRight: 20 }}>
+                        <div style={{ display: 'flex', background: '#eef2ff', padding: 4, borderRadius: 10, border: '1px solid rgba(0, 63, 73, 0.1)', minWidth: 240 }}>
                           <button
                             onClick={() => setActiveSubTab('users')}
-                            style={{ padding: '6px 16px', borderRadius: 8, background: activeSubTab === 'users' ? 'var(--teal)' : 'transparent', color: activeSubTab === 'users' ? 'var(--text-on-primary)' : 'var(--teal)', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
+                            style={{ flex: 1, padding: '8px 16px', borderRadius: 8, background: activeSubTab === 'users' ? '#003f49' : 'transparent', color: activeSubTab === 'users' ? '#ffffff' : '#003f49', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}
                           >
                             USERS
                           </button>
                           {userProfile?.role === 'OWNER' && (
                             <button
                               onClick={() => setActiveSubTab('policies')}
-                              style={{ padding: '6px 16px', borderRadius: 8, background: activeSubTab === 'policies' ? 'var(--teal)' : 'transparent', color: activeSubTab === 'policies' ? 'var(--text-on-primary)' : 'var(--teal)', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
+                              style={{ flex: 1, padding: '8px 16px', borderRadius: 8, background: activeSubTab === 'policies' ? '#003f49' : 'transparent', color: activeSubTab === 'policies' ? '#ffffff' : '#003f49', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}
                             >
                               GROUP POLICY
                             </button>
@@ -1792,42 +1677,25 @@ export default function AdminDashboardPage() {
                         </div>
                       )}
                       {activeTab === 'team' && (
-                        <div style={{ display: 'flex', background: 'var(--secondary)', padding: 4, borderRadius: 10, border: '1px solid var(--border)', marginRight: 20 }}>
+                        <div style={{ display: 'flex', background: '#eef2ff', padding: 4, borderRadius: 10, border: '1px solid rgba(0, 63, 73, 0.1)', minWidth: 280 }}>
                           <button
                             onClick={() => setTeamActiveSubTab('personnel')}
-                            style={{ padding: '6px 16px', borderRadius: 8, background: teamActiveSubTab === 'personnel' ? 'var(--teal)' : 'transparent', color: teamActiveSubTab === 'personnel' ? 'var(--text-on-primary)' : 'var(--teal)', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
+                            style={{ flex: 1, padding: '8px 16px', borderRadius: 8, background: teamActiveSubTab === 'personnel' ? '#003f49' : 'transparent', color: teamActiveSubTab === 'personnel' ? '#ffffff' : '#003f49', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}
                           >
                             PERSONNEL
                           </button>
                           <button
                             onClick={() => setTeamActiveSubTab('departments')}
-                            style={{ padding: '6px 16px', borderRadius: 8, background: teamActiveSubTab === 'departments' ? 'var(--teal)' : 'transparent', color: teamActiveSubTab === 'departments' ? 'var(--text-on-primary)' : 'var(--teal)', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms' }}
+                            style={{ flex: 1, padding: '8px 16px', borderRadius: 8, background: teamActiveSubTab === 'departments' ? '#003f49' : 'transparent', color: teamActiveSubTab === 'departments' ? '#ffffff' : '#003f49', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 200ms', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}
                           >
                             TASK CATEGORIES
                           </button>
                         </div>
                       )}
-                      {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'communications' && (
-                        <div style={{ position: 'relative' }}>
-                          <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                          <input
-                            type="text"
-                            placeholder="Filter records..."
-                            style={{ 
-                              padding: '12px 20px 12px 42px', 
-                              borderRadius: 14, 
-                              background: 'var(--card-haze)', 
-                              border: '1px solid var(--border)', 
-                              color: 'var(--text-primary)', 
-                              fontSize: 14, 
-                              outline: 'none', 
-                              width: 280,
-                              transition: 'all 300ms',
-                              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
-                            }}
-                          />
-                        </div>
-                      )}
+                    </div>
+
+                    {/* Right: Action Buttons */}
+                    <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 12, alignItems: 'center' }}>
                       {activeTab === 'bim-reviews' && can('bimReviews', 'edit') && (
                         <>
                           <input 
@@ -1840,9 +1708,9 @@ export default function AdminDashboardPage() {
                           <button 
                             onClick={() => bimFileInputRef.current?.click()} 
                             style={{ 
-                              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', 
-                              borderRadius: 10, background: 'rgba(16, 185, 129, 0.1)', 
-                              color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', 
+                              display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px', 
+                              borderRadius: 14, background: '#eef2ff', 
+                              color: '#003f49', border: '1px solid rgba(0, 63, 73, 0.15)', 
                               cursor: 'pointer', fontSize: 13, fontWeight: 800 
                             }}
                           >
@@ -1864,9 +1732,9 @@ export default function AdminDashboardPage() {
                           <button 
                             onClick={handleDownloadTaskTemplate}
                             style={{ 
-                              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', 
-                              borderRadius: 10, background: 'rgba(212, 175, 55, 0.1)', 
-                              color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.2)', 
+                              display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px', 
+                              borderRadius: 14, background: '#fffbeb', 
+                              color: '#d97706', border: '1px solid rgba(217, 119, 6, 0.2)', 
                               cursor: 'pointer', fontSize: 13, fontWeight: 800 
                             }}
                           >
@@ -1876,9 +1744,9 @@ export default function AdminDashboardPage() {
                           <button 
                             onClick={() => taskFileInputRef.current?.click()} 
                             style={{ 
-                              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', 
-                              borderRadius: 10, background: 'rgba(0, 128, 128, 0.1)', 
-                              color: 'var(--teal)', border: '1px solid rgba(0, 128, 128, 0.2)', 
+                              display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px', 
+                              borderRadius: 14, background: '#eef2ff', 
+                              color: '#003f49', border: '1px solid rgba(0, 63, 73, 0.15)', 
                               cursor: 'pointer', fontSize: 13, fontWeight: 800 
                             }}
                           >
@@ -1892,23 +1760,22 @@ export default function AdminDashboardPage() {
                         <button 
                           onClick={handleNewRecord} 
                           style={{ 
-                            display: 'flex', alignItems: 'center', gap: 12, padding: '14px 32px', 
-                            borderRadius: 16, 
-                            background: 'var(--teal)', color: 'var(--cotton)', border: 'none', cursor: 'pointer', 
+                            display: 'flex', alignItems: 'center', gap: 12, padding: '12px 32px', 
+                            borderRadius: 14, 
+                            background: '#003f49', color: '#ffffff', border: 'none', cursor: 'pointer', 
                             fontSize: 13, fontWeight: 900,
-                            boxShadow: 'var(--shadow-premium)',
-                            transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+                            boxShadow: '0 8px 24px rgba(0, 63, 73, 0.15)',
+                            transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                             letterSpacing: '0.1em',
                             textTransform: 'uppercase',
                             fontFamily: 'var(--font-heading)'
                           }}
-                          onMouseEnter={(e: any) => e.currentTarget.style.boxShadow = '0 10px 35px rgba(0, 63, 73, 0.3)'}
-                          onMouseLeave={(e: any) => e.currentTarget.style.boxShadow = 'var(--shadow-premium)'}
                         >
                           <Plus size={18} />
                           Authorized Entry
                         </button>
                       )}
+
                       {activeTab === 'tickets' && (
                         <div style={{ display: 'flex', gap: 12 }}>
                           <button 
@@ -1928,12 +1795,13 @@ export default function AdminDashboardPage() {
                         </div>
                       )}
                     </div>
+                  </div>
                   <div style={{ overflowX: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'communications' || activeTab === 'homepage') ? 'hidden' : 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'communications' || activeTab === 'homepage') ? 'fixed' : 'auto' }}>
                       {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'communications' && activeTab !== 'homepage' && !(activeTab === 'users' && activeSubTab === 'policies') && (
                         <thead style={{ background: 'transparent', borderBottom: '2px solid var(--border)' }}>
                           <tr>
-                            <th style={{ width: 80, padding: '24px 0', textAlign: 'center' }}>
+                            <th style={{ width: 80, padding: '16px 0', textAlign: 'center' }}>
                               <input
                                 type="checkbox"
                                 checked={currentTabIds.length > 0 && currentTabIds.every(id => selectedIds.has(id))}
@@ -1943,52 +1811,52 @@ export default function AdminDashboardPage() {
                             </th>
                             {activeTab === 'bim-reviews' ? (
                               <>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Project Detail</th>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Phase</th>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Gate Status</th>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Final Audit</th>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Lead Reviewer</th>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Target Date</th>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Log History</th>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Control</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Project Detail</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Phase</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Gate Status</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Final Audit</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Lead Reviewer</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Target Date</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Log History</th>
+                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Control</th>
                               </>
                             ) : activeTab === 'tickets' ? (
                               <>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Ticket ID & Requester</th>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Reason & Message</th>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Priority & Status</th>
-                                <th style={{ textAlign: 'center', padding: '24px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Lifecycle Control</th>
+                                <th style={{ textAlign: 'center', padding: '16px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Ticket ID & Requester</th>
+                                <th style={{ textAlign: 'center', padding: '16px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Reason & Message</th>
+                                <th style={{ textAlign: 'center', padding: '16px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Priority & Status</th>
+                                <th style={{ textAlign: 'center', padding: '16px 32px', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Lifecycle Control</th>
                               </>
                             ) : (
                               <>
                                 {activeTab === 'tasks' && (
-                                  <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 120 }}>ID</th>
+                                  <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 120 }}>ID</th>
                                 )}
-                                <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', width: 400 }}>
+                                <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', width: 400 }}>
                                   {activeTab === 'users' ? 'Staff Identity' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Project Personnel' : 'Task Category') : (activeTab === 'tasks' ? 'Task Name' : 'Task Definition / Asset')}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 200 }}>
+                                <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 200 }}>
                                   {activeTab === 'users' ? 'Protocol Clearance' : (activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Department' : 'Abbreviation') : (activeTab === 'registry' ? 'Category' : 'Project Precinct'))}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 130 }}>
+                                <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 130 }}>
                                   {activeTab === 'users' ? 'Admin Access' : (activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Email' : 'Last Updated') : (activeTab === 'registry' ? 'Department' : 'Task Category'))}
                                 </th>
                                 {activeTab !== 'tasks' && (
-                                  <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: activeTab === 'users' ? 240 : 160 }}>
+                                  <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: activeTab === 'users' ? 240 : 160 }}>
                                     {activeTab === 'users' ? 'Feature Modules' : 'Control'}
                                   </th>
                                 )}
                                 {(activeTab === 'tasks' || activeTab === 'users') && (
-                                  <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: activeTab === 'tasks' ? 180 : 150 }}>
+                                  <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: activeTab === 'tasks' ? 180 : 150 }}>
                                     {activeTab === 'tasks' ? 'Submitter' : 'Control'}
                                   </th>
                                 )}
                                 {activeTab === 'tasks' && (
                                   <>
-                                    <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 150 }}>
+                                    <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 11, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 150 }}>
                                       Submission Date
                                     </th>
-                                    <th style={{ textAlign: 'center', padding: '24px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 120 }}>
+                                    <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 11, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 120 }}>
                                       Control
                                     </th>
                                   </>
@@ -2005,11 +1873,11 @@ export default function AdminDashboardPage() {
                           return (
                             <motion.tr 
                               key={doc.id || `task-${i}`} 
-                              whileHover={{ background: 'var(--card-haze)' }}
-                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'rgba(0, 63, 73, 0.01)', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
+                              whileHover={{ background: '#f8fafc' }}
+                              style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
                               onClick={() => handleEditRecord(task)}
                             >
-                              <td style={{ textAlign: 'center', padding: '32px 0' }} onClick={(e) => e.stopPropagation()}>
+                              <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
@@ -2017,10 +1885,10 @@ export default function AdminDashboardPage() {
                                   style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
                                 />
                               </td>
-                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                              <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                                 <div style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 700, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{task.id || '—'}</div>
                               </td>
-                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                              <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                                 <div style={{ 
                                   fontWeight: 800, 
                                   fontSize: 13, 
@@ -2036,8 +1904,7 @@ export default function AdminDashboardPage() {
                                   margin: '0 auto'
                                 }}>{task.title}</div>
                               </td>
-                              {/* Project Precinct */}
-                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                              <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                                 {task.precinct ? (
                                   <span style={{ fontSize: 10, background: 'rgba(0, 63, 73, 0.05)', color: 'var(--text-primary)', padding: '6px 12px', borderRadius: 8, fontWeight: 800, letterSpacing: '0.05em', border: '1px solid var(--border)' }}>
                                     {task.precinct}
@@ -2046,8 +1913,7 @@ export default function AdminDashboardPage() {
                                   <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>—</span>
                                 )}
                               </td>
-                              {/* Task Category */}
-                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                              <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                                 {(() => {
                                   const d = memoizedDepartments.find(dept => dept.id === task.department || dept.name === task.department);
                                   return (
@@ -2057,9 +1923,7 @@ export default function AdminDashboardPage() {
                                   );
                                 })()}
                               </td>
-
-                              {/* Submitter */}
-                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                              <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
                                   {task.submitterName && (
                                     <div style={{
@@ -2079,14 +1943,28 @@ export default function AdminDashboardPage() {
                                   <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>{task.submitterName || '—'}</span>
                                 </div>
                               </td>
-                              {/* Submission Date - Date Only */}
-                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                              <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                                 <div style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 800, letterSpacing: '0.05em' }}>
                                   {formatDate(task.submittingDate)}
                                 </div>
                               </td>
-                              <td style={{ padding: '24px 16px', textAlign: 'center' }} onClick={(e) => { e.stopPropagation(); handleEditRecord(task); }}>
-                                <MoreVertical size={20} color="var(--text-muted)" />
+                              <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); handleEditRecord(task); }}
+                                    style={{ background: 'rgba(0, 63, 73, 0.05)', border: '1px solid rgba(0, 63, 73, 0.1)', color: '#003F49', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
+                                  >
+                                    <Settings size={18} />
+                                  </button>
+                                  {can('tasks', 'delete') && (
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'tasks', name: task.title }); }}
+                                      style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
+                                    >
+                                      <Trash2 size={18} />
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </motion.tr>
                           );
@@ -2123,8 +2001,8 @@ export default function AdminDashboardPage() {
                              return (
                             <motion.tr 
                               key={doc.id || `member-${i}`} 
-                              whileHover={{ background: 'var(--card-haze)' }}
-                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'rgba(0, 63, 73, 0.01)', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
+                              whileHover={{ background: '#f8fafc' }}
+                              style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
                               onClick={() => handleEditRecord(member)}
                             >
                               <td style={{ textAlign: 'center', padding: '32px 0' }} onClick={(e) => e.stopPropagation()}>
@@ -2154,11 +2032,24 @@ export default function AdminDashboardPage() {
                                <td style={{ padding: '24px 32px', textAlign: 'center' }}>
                                  <div style={{ fontSize: 15, color: '#000000', fontWeight: 900 }}>{member.email}</div>
                                </td>
-                               <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                                 <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
-                                   <MoreVertical size={20} />
-                                 </button>
-                               </td>
+                                <td style={{ padding: '12px 24px', textAlign: 'center' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); handleEditRecord(member); }}
+                                      style={{ background: 'rgba(0, 63, 73, 0.05)', border: '1px solid rgba(0, 63, 73, 0.1)', color: '#003F49', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
+                                    >
+                                      <Settings size={18} />
+                                    </button>
+                                    {can('team', 'delete') && (
+                                      <button 
+                                        onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'members', name: member.name }); }}
+                                        style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
+                                      >
+                                        <Trash2 size={18} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
                              </motion.tr>
                            );
                          })}
@@ -2167,7 +2058,7 @@ export default function AdminDashboardPage() {
                           const dept = { id: doc.id, ...doc.data() } as any;
                           const isSelected = selectedIds.has(doc.id);
                           return (
-                            <tr key={doc.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'rgba(0, 63, 73, 0.01)' }} onClick={() => handleEditRecord(dept)}>
+                            <tr key={doc.id} style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms' }} onClick={() => handleEditRecord(dept)}>
                               <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
@@ -2188,9 +2079,22 @@ export default function AdminDashboardPage() {
                                 </div>
                               </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
-                                  <MoreVertical size={18} />
-                                </button>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); handleEditRecord(dept); }}
+                                    style={{ background: 'rgba(0, 63, 73, 0.05)', border: '1px solid rgba(0, 63, 73, 0.1)', color: '#003F49', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
+                                  >
+                                    <Settings size={18} />
+                                  </button>
+                                  {can('team', 'delete') && (
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'departments', name: dept.name }); }}
+                                      style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
+                                    >
+                                      <Trash2 size={18} />
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           );
@@ -2230,8 +2134,8 @@ export default function AdminDashboardPage() {
                           return (
                             <motion.tr 
                               key={doc.id || `bim-${i}`} 
-                              whileHover={{ background: 'var(--card-haze)' }}
-                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'rgba(0, 63, 73, 0.01)', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
+                              whileHover={{ background: '#f8fafc' }}
+                              style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
                               onClick={() => { setSelectedBimReview(review); setIsModalOpen(true); }}
                             >
                               <td style={{ textAlign: 'center', padding: '32px 0' }} onClick={(e) => e.stopPropagation()}>
@@ -2299,8 +2203,23 @@ export default function AdminDashboardPage() {
                                 <div style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 700 }}>{review.submissionDate || '—'}</div>
                                 <div style={{ fontSize: 10, color: review.onAcc === 'SHARED' ? 'var(--status-success)' : 'var(--status-error)', fontWeight: 900, marginTop: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{review.onAcc}</div>
                               </td>
-                              <td style={{ padding: '24px 32px', textAlign: 'center' }} onClick={(e) => { e.stopPropagation(); setSelectedBimReview(review); setIsModalOpen(true); }}>
-                                <MoreVertical size={22} color="var(--text-muted)" />
+                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); setSelectedBimReview(review); setIsModalOpen(true); }}
+                                    style={{ background: 'rgba(0, 63, 73, 0.05)', border: '1px solid rgba(0, 63, 73, 0.1)', color: '#003F49', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
+                                  >
+                                    <Settings size={18} />
+                                  </button>
+                                  {can('bimReviews', 'delete') && (
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'bimReviews', name: review.project }); }}
+                                      style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
+                                    >
+                                      <Trash2 size={18} />
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </motion.tr>
                           );
@@ -2328,7 +2247,7 @@ export default function AdminDashboardPage() {
                             const regDeptDisplay = regMatchedDept ? regMatchedDept.name : item.department || 'General';
 
                             return (
-                              <tr key={doc.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'rgba(0, 63, 73, 0.01)' }} onClick={() => handleEditRecord(item)}>
+                              <tr key={doc.id} style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms' }} onClick={() => handleEditRecord(item)}>
                                 <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
                                   <input
                                     type="checkbox"
@@ -2347,7 +2266,7 @@ export default function AdminDashboardPage() {
                                   <span style={{ fontSize: 13, background: 'var(--secondary)', color: 'var(--teal)', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>{regDeptDisplay}</span>
                                 </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
-                                <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
+                                <button style={{ background: 'transparent', border: 'none', color: '#003f49', opacity: 0.4, cursor: 'pointer' }}>
                                   <MoreVertical size={18} />
                                 </button>
                               </td>
@@ -2375,8 +2294,8 @@ export default function AdminDashboardPage() {
                           return (
                             <motion.tr 
                               key={doc.id} 
-                              whileHover={{ background: 'var(--card-haze)' }}
-                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'rgba(0, 63, 73, 0.01)', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
+                              whileHover={{ background: '#f8fafc' }}
+                              style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
                               onClick={() => handleEditRecord(userRec)}
                             >
                               <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
@@ -2441,7 +2360,7 @@ export default function AdminDashboardPage() {
                                 </div>
                               </td>
                               <td style={{ padding: '8px 16px', textAlign: 'center' }}>
-                                <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
+                                <button style={{ background: 'transparent', border: 'none', color: '#003f49', opacity: 0.4, cursor: 'pointer' }}>
                                   <MoreVertical size={18} />
                                 </button>
                               </td>
@@ -2476,8 +2395,8 @@ export default function AdminDashboardPage() {
                           return (
                             <motion.tr 
                               key={doc.id} 
-                              whileHover={{ background: 'var(--card-haze)' }}
-                              style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isSelected ? 'var(--secondary)' : 'rgba(0, 63, 73, 0.01)', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
+                              whileHover={{ background: '#f8fafc' }}
+                              style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
                             >
                               <td style={{ textAlign: 'center', padding: '32px 0' }} onClick={(e) => e.stopPropagation()}>
                                 <input
@@ -2636,7 +2555,7 @@ export default function AdminDashboardPage() {
                               >
                                 {/* Section 1: Core Project Identity */}
                                 <div style={{ 
-                                  padding: 32, background: 'var(--secondary)', border: '1px solid var(--border)', 
+                                  padding: 32, background: '#f8fafc', border: '1px solid rgba(0, 63, 73, 0.1)', 
                                   borderRadius: 28, display: 'flex', flexDirection: 'column', gap: 24 
                                 }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -2657,7 +2576,7 @@ export default function AdminDashboardPage() {
                                         value={localTitle}
                                         onChange={(e) => setLocalTitle(e.target.value)}
                                         placeholder="e.g. Infrastructure Hub"
-                                        style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', transition: 'all 200ms' }}
+                                        style={{ padding: '12px 16px', background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', borderRadius: 12, color: '#003f49', fontSize: 14, outline: 'none', transition: 'all 200ms', fontWeight: 600 }}
                                       />
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -2667,7 +2586,7 @@ export default function AdminDashboardPage() {
                                         value={localProjectName}
                                         onChange={(e) => setLocalProjectName(e.target.value)}
                                         placeholder="e.g. North Sector Expansion"
-                                        style={{ padding: '16px 20px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none', transition: 'all 200ms' }}
+                                        style={{ padding: '12px 16px', background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', borderRadius: 12, color: '#003f49', fontSize: 14, outline: 'none', transition: 'all 200ms', fontWeight: 600 }}
                                       />
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -2677,7 +2596,7 @@ export default function AdminDashboardPage() {
                                         <input 
                                           value={localLocation} 
                                           onChange={(e) => setLocalLocation(e.target.value)} 
-                                          style={{ width: '100%', padding: '16px 16px 16px 44px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 16, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }} 
+                                          style={{ width: '100%', padding: '12px 16px 12px 44px', background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', borderRadius: 12, color: '#003f49', fontSize: 14, outline: 'none', fontWeight: 600 }} 
                                         />
                                       </div>
                                     </div>
@@ -2685,7 +2604,7 @@ export default function AdminDashboardPage() {
                                       <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Project Subtitles</label>
                                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                                         {subtitleList.map((sub, idx) => (
-                                          <div key={sub.id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 12px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12 }}>
+                                          <div key={sub.id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 12px', background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', borderRadius: 12 }}>
                                             <input
                                               value={sub.text}
                                               onChange={(e) => {
@@ -2693,7 +2612,7 @@ export default function AdminDashboardPage() {
                                                 newList[idx].text = e.target.value;
                                                 setSubtitleList(newList);
                                               }}
-                                              style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: 13, outline: 'none', width: 140 }}
+                                              style={{ background: 'none', border: 'none', color: '#003f49', fontSize: 13, outline: 'none', width: 140, fontWeight: 600 }}
                                               placeholder="Subtitle text..."
                                             />
                                             <button type="button" onClick={() => setSubtitleList(prev => prev.filter((_, i) => i !== idx))} disabled={idx === 0} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: idx === 0 ? 0 : 0.6 }}><X size={14} /></button>
@@ -2707,7 +2626,7 @@ export default function AdminDashboardPage() {
 
                                 {/* Section 2: Visual Atmosphere */}
                                 <div style={{ 
-                                  padding: 32, background: 'var(--secondary)', border: '1px solid var(--border)', 
+                                  padding: 32, background: '#f8fafc', border: '1px solid rgba(0, 63, 73, 0.1)', 
                                   borderRadius: 28, display: 'flex', flexDirection: 'column', gap: 24 
                                 }}>
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -2731,8 +2650,8 @@ export default function AdminDashboardPage() {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                                       <div 
                                         style={{ 
-                                          width: '100%', minHeight: 180, borderRadius: 20, border: '1px dashed var(--teal)', 
-                                          background: 'var(--section-bg)', overflow: 'hidden', position: 'relative',
+                                          width: '100%', minHeight: 180, borderRadius: 20, border: '1px dashed #003f49', 
+                                          background: '#eef2ff', overflow: 'hidden', position: 'relative',
                                           display: 'flex', alignItems: 'center', justifyContent: 'center'
                                         }}
                                       >
@@ -2793,7 +2712,7 @@ export default function AdminDashboardPage() {
                                     </div>
 
                                     {/* Sliders & Controls */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: 24, background: 'var(--section-bg)', borderRadius: 20, border: '1px solid var(--border)' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: 24, background: '#ffffff', borderRadius: 20, border: '1px solid rgba(0, 63, 73, 0.1)' }}>
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                           <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Atmospheric Opacity</label>
@@ -2823,7 +2742,7 @@ export default function AdminDashboardPage() {
 
                                 {/* Section 3: Partner Registry */}
                                 <div style={{ 
-                                  padding: 32, background: 'var(--secondary)', border: '1px solid var(--border)', 
+                                  padding: 32, background: '#f8fafc', border: '1px solid rgba(0, 63, 73, 0.1)', 
                                   borderRadius: 28, display: 'flex', flexDirection: 'column', gap: 24 
                                 }}>
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -2883,7 +2802,7 @@ export default function AdminDashboardPage() {
 
                                 {/* Section 4: Insight Badges */}
                                 <div style={{ 
-                                  padding: 32, background: 'var(--secondary)', border: '1px solid var(--border)', 
+                                  padding: 32, background: '#f8fafc', border: '1px solid rgba(0, 63, 73, 0.1)', 
                                   borderRadius: 28, display: 'flex', flexDirection: 'column', gap: 24 
                                 }}>
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -2976,7 +2895,7 @@ export default function AdminDashboardPage() {
 
                                 {/* Section 5: Security Spectrum */}
                                 <div style={{ 
-                                  padding: 32, background: 'var(--secondary)', border: '1px solid var(--border)', 
+                                  padding: 32, background: '#f8fafc', border: '1px solid rgba(0, 63, 73, 0.1)', 
                                   borderRadius: 28, display: 'flex', flexDirection: 'column', gap: 24 
                                 }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -2998,8 +2917,8 @@ export default function AdminDashboardPage() {
                                         key={domain} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
                                         style={{ 
                                           display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px', 
-                                          background: 'var(--border)', border: '1px solid var(--border)', borderRadius: 16, 
-                                          color: 'var(--teal)', fontSize: 13, fontWeight: 900,
+                                          background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', borderRadius: 12, 
+                                          color: '#003f49', fontSize: 13, fontWeight: 900,
                                           boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
                                           letterSpacing: '0.02em'
                                         }}
@@ -3164,7 +3083,7 @@ export default function AdminDashboardPage() {
                                       </div>
                                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                                         {localSummaryFields.map((field, idx) => (
-                                            <div key={field.id} style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1.5fr', gap: 14, alignItems: 'center', background: 'rgba(0,0,0,0.25)', padding: '12px 14px', borderRadius: 14, border: '1px solid var(--section-bg)', transition: 'all 200ms' }}>
+                                            <div key={field.id} style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1.5fr', gap: 14, alignItems: 'center', background: '#eef2ff', padding: '12px 14px', borderRadius: 14, border: '1px solid rgba(0, 63, 73, 0.1)', transition: 'all 200ms' }}>
                                               <button
                                                 type="button"
                                                 onClick={() => {
@@ -3212,14 +3131,14 @@ export default function AdminDashboardPage() {
                                         </div>
 
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--secondary)', padding: '16px 20px', borderRadius: 16, border: '1px solid var(--border)' }}>
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#f8fafc', padding: '16px 20px', borderRadius: 16, border: '1px solid rgba(0, 63, 73, 0.1)' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                               <Globe size={14} color="var(--teal)" opacity={0.6} />
                                               <span style={{ fontSize: 9, fontWeight: 900, color: 'rgba(212,175,55,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Administrative Branding</span>
                                             </div>
                                             <input value={localReportBranding} onChange={(e) => setLocalReportBranding(e.target.value)} style={{ padding: '8px 0', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', color: 'var(--teal)', fontSize: 13, outline: 'none', fontWeight: 800 }} placeholder="KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT" />
                                           </div>
-                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--section-bg)', padding: '16px 20px', borderRadius: 16, border: '1px solid var(--section-bg)' }}>
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#ffffff', padding: '16px 20px', borderRadius: 16, border: '1px solid rgba(0, 63, 73, 0.05)' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                               <Shield size={14} color='var(--text-primary)' opacity={0.3} />
                                               <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Security Footer Protocol</span>
@@ -3228,7 +3147,7 @@ export default function AdminDashboardPage() {
                                           </div>
                                         </div>
 
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(0,0,0,0.3)', padding: '12px 14px', borderRadius: 12, border: '1px solid var(--section-bg)' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: '#eef2ff', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.1)' }}>
                                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                             <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Executive Narrative Overlay</span>
                                           </div>
@@ -3238,7 +3157,7 @@ export default function AdminDashboardPage() {
                                       <p style={{ fontSize: 10, color: 'var(--text-secondary)', margin: 0, fontStyle: 'italic' }}>* Toggling visibility off hides the entire header row from exported document structures.</p>
                                     </div>
 
-                                    <div style={{ padding: 24, background: 'var(--secondary)', border: '1px solid var(--border)', borderRadius: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                                    <div style={{ padding: 24, background: '#f8fafc', border: '1px solid rgba(0, 63, 73, 0.1)', borderRadius: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--teal)' }} />
                                         <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--teal)', letterSpacing: '0.1em' }}>AESTHETIC VECTORS</span>
@@ -3303,7 +3222,7 @@ export default function AdminDashboardPage() {
                                       </span>
                                     </div>
 
-                                  <div style={{ padding: '48px 24px', width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border)', borderRadius: 48, position: 'relative', overflow: 'hidden' }}>
+                                  <div style={{ padding: '48px 24px', width: '100%', boxSizing: 'border-box', background: '#f8fafc', border: '1px solid rgba(0, 63, 73, 0.1)', borderRadius: 48, position: 'relative', overflow: 'hidden' }}>
                                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40, padding: '0 24px' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                           <div style={{ fontSize: 12, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.1em' }}>LIVE REPORT SIMULATION</div>
@@ -3875,7 +3794,7 @@ export default function AdminDashboardPage() {
                 isOpen={!!ticketToDelete}
                 onClose={() => setTicketToDelete(null)}
                 onConfirm={async () => {
-                  await handleDelete(ticketToDelete.id, 'tickets');
+                  await handleDeleteRecord(ticketToDelete.id, 'tickets');
                   setTicketToDelete(null);
                 }}
                 title="Eradicate Ticket"
@@ -3933,6 +3852,50 @@ export default function AdminDashboardPage() {
               }}
             />
           )}
+
+          <AnimatePresence>
+            {deleteConfirm.isOpen && (
+              <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0, 10, 12, 0.8)', backdropFilter: 'blur(8px)' }}>
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  style={{ background: '#ffffff', padding: '40px', borderRadius: 24, width: 440, textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.4)', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                >
+                  <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                    <ShieldAlert size={40} color="#ef4444" />
+                  </div>
+                  <h3 style={{ fontSize: 20, fontWeight: 900, color: '#003f49', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Security Protocol: Purge Record</h3>
+                  <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6, margin: '0 0 32px' }}>
+                    You are about to permanently delete <strong style={{ color: '#003f49' }}>{deleteConfirm.name}</strong> from the secure database. This action cannot be reversed.
+                  </p>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <button
+                      onClick={() => setDeleteConfirm({ isOpen: false, id: '', col: '', name: '' })}
+                      disabled={isDeleting}
+                      style={{ flex: 1, padding: '14px', borderRadius: 12, background: '#f1f5f9', color: '#64748b', border: 'none', fontWeight: 800, fontSize: 13, cursor: isDeleting ? 'not-allowed' : 'pointer', transition: 'all 200ms', opacity: isDeleting ? 0.5 : 1 }}
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      onClick={() => handleDeleteRecord(deleteConfirm.id, deleteConfirm.col)}
+                      disabled={isDeleting}
+                      style={{ flex: 1, padding: '14px', borderRadius: 12, background: '#ef4444', color: '#ffffff', border: 'none', fontWeight: 800, fontSize: 13, cursor: isDeleting ? 'not-allowed' : 'pointer', transition: 'all 200ms', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
+                    >
+                      {isDeleting ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          PURGING...
+                        </>
+                      ) : (
+                        'CONFIRM PURGE'
+                      )}
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
 
         </div>
       </div>

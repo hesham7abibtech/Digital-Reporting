@@ -13,6 +13,7 @@
   --teal: #003f49; 
   --teal-light: #00f2ff;
   --gold: #d0ab82;
+  --sunlit-rock: #d0ab82;
   
   --background: #f8fafc; 
   --surface: #ffffff;
@@ -121,11 +122,10 @@ fieldset[disabled] button {
 
 /* ─── Premium Cards ────────────────────────────────────────────── */
 .glass-card {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
-  backdrop-filter: blur(24px);
+  background: #ffffff;
+  border: 1px solid rgba(0, 63, 73, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }

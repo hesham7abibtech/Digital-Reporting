@@ -349,28 +349,23 @@ function LoginContent() {
   }
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '16px 16px 16px 44px', borderRadius: 16,
-    background: 'rgba(0, 45, 53, 0.6)', border: '1px solid rgba(208, 171, 130, 0.2)',
-    color: 'white', fontSize: 15, outline: 'none', transition: 'all 300ms',
-    fontWeight: 600, backdropFilter: 'blur(10px)',
+    width: '100%', padding: '12px 16px 12px 44px', borderRadius: 12,
+    background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)',
+    color: '#003f49', fontSize: 14, outline: 'none', transition: 'all 300ms',
+    fontWeight: 600,
   };
 
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: '#002d35',
+      background: '#f8fafc',
       padding: 20, position: 'relative', overflow: 'hidden'
     }}>
-      {/* Industrial Grid Background */}
+      {/* Clean Light Background */}
       <div style={{ 
-        position: 'absolute', inset: 0, opacity: 0.15, pointerEvents: 'none',
-        backgroundImage: 'radial-gradient(#d0ab82 0.5px, transparent 0.5px)',
-        backgroundSize: '40px 40px'
+        position: 'absolute', inset: 0, opacity: 0.4, pointerEvents: 'none',
+        background: 'radial-gradient(circle at 50% 0%, rgba(0, 242, 255, 0.05) 0%, transparent 70%)'
       }} />
-      
-      {/* Ambient Decorations */}
-      <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(208, 171, 130, 0.1) 0%, transparent 70%)', filter: 'blur(100px)' }} />
-      <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0, 63, 73, 0.2) 0%, transparent 70%)', filter: 'blur(100px)' }} />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
@@ -378,15 +373,14 @@ function LoginContent() {
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         style={{
           width: '100%', maxWidth: 460,
-          background: 'rgba(0, 63, 73, 0.45)',
-          backdropFilter: 'blur(30px)',
-          border: '1px solid rgba(208, 171, 130, 0.25)',
+          background: '#ffffff',
+          border: '1px solid rgba(0, 63, 73, 0.05)',
           borderRadius: 32, overflow: 'hidden',
-          boxShadow: '0 30px 60px rgba(0, 0, 0, 0.4)',
+          boxShadow: '0 20px 60px rgba(0, 63, 73, 0.05)',
           position: 'relative', zIndex: 10,
         }}
       >
-        <div style={{ padding: '48px 40px 32px' }}>
+        <div style={{ padding: '40px 36px 24px' }}>
           {/* Home Button */}
           <motion.button
             onClick={() => router.push('/')}
@@ -396,39 +390,50 @@ function LoginContent() {
               borderRadius: 12, border: '1px solid rgba(208, 171, 130, 0.2)',
               background: 'transparent', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              zIndex: 20, color: '#d0ab82'
+              zIndex: 20, color: '#003f49'
             }}
           >
             <Home size={16} />
           </motion.button>
 
-          {/* Branding Header */}
-          <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <motion.img 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                src="/logos/modon_logo.png" 
-                alt="MODON" 
-                style={{ height: 26, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} 
-              />
-              <div style={{ width: 1, height: 20, background: 'rgba(255, 255, 255, 0.2)' }} />
-              <motion.img 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1 }}
-                src="/logos/insite_logo.png" 
-                alt="INSITE" 
-                style={{ height: 22, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} 
-              />
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+            <div style={{ 
+              background: '#003f49', 
+              padding: '10px 28px', 
+              borderRadius: 16, 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 12,
+              boxShadow: '0 8px 24px rgba(0, 63, 73, 0.15)'
+            }}>
+                <motion.img 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  src="/logos/modon_logo.png" 
+                  alt="MODON" 
+                  style={{ height: 20, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} 
+                />
+                <div style={{ width: 1, height: 14, background: 'rgba(255, 255, 255, 0.2)' }} />
+                <motion.img 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  src="/logos/insite_logo.png" 
+                  alt="INSITE" 
+                  style={{ height: 16, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} 
+                />
             </div>
+          </div>
+            
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <h1 className="brand-heading" style={{
-              fontSize: 24, color: 'var(--teal)', margin: '0 0 6px',
-              letterSpacing: '0.15em', fontWeight: 900,
+              fontSize: 26, color: '#003f49', margin: '0 0 4px',
+              letterSpacing: '0.1em', fontWeight: 900,
               textTransform: 'uppercase',
             }}>
               {mode === 'login' ? 'Access Portal' : mode === 'register' ? 'Create Account' : 'Reset Password'}
             </h1>
-            <p style={{ color: 'var(--text-dim)', fontSize: 11, margin: 0, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', opacity: 0.7 }}>
+            <p style={{ color: '#94A3B8', fontSize: 10, margin: 0, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
               {mode === 'login' ? 'Sign in to access the reporting dashboard' :
                 mode === 'register' ? 'Register for project access' :
                   'Enter your email to receive a reset link'}
@@ -437,7 +442,7 @@ function LoginContent() {
 
           <form
             onSubmit={mode === 'register' ? handleRegister : mode === 'forgot-password' ? handleResetPassword : handleLogin}
-            style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
           >
             {mode === 'register' && (
               <>
@@ -458,15 +463,15 @@ function LoginContent() {
             )}
 
             <div style={{ position: 'relative' }}>
-              <Mail size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+              <Mail size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(0, 45, 53, 0.4)' }} />
               <input type="email" placeholder="Work Email" value={email} onChange={e => setEmail(e.target.value)} required style={inputStyle} />
             </div>
 
             {mode !== 'forgot-password' && (
               <div style={{ position: 'relative' }}>
-                <Lock size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+                <Lock size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(0, 45, 53, 0.4)' }} />
                 <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required style={{ ...inputStyle, paddingRight: 44 }} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: 0 }}>
+                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(0, 45, 53, 0.4)', cursor: 'pointer', padding: 0 }}>
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
@@ -537,23 +542,23 @@ function LoginContent() {
 
             {mode === 'login' && (
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setMode('forgot-password')} style={{ background: 'none', border: 'none', color: 'var(--sunlit-rock)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                <button type="button" onClick={() => setMode('forgot-password')} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: 11, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.02em' }}>
                   Forgot password?
                 </button>
               </div>
             )}
 
             <button type="submit" disabled={isSubmitting} style={{
-              width: '100%', padding: '16px', borderRadius: 16, marginTop: 10,
-              background: '#d0ab82', color: '#002d35', fontSize: 14,
+              width: 'fit-content', padding: '12px 40px', borderRadius: 12, marginTop: 4,
+              background: '#003f49', color: 'white', fontSize: 13,
               fontWeight: 900, border: 'none', cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-              boxShadow: '0 10px 25px rgba(208, 171, 130, 0.25)',
-              textTransform: 'uppercase', letterSpacing: '0.1em', fontStyle: 'italic',
-              transition: 'all 300ms',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              boxShadow: '0 8px 24px rgba(0, 63, 73, 0.15)',
+              textTransform: 'uppercase', letterSpacing: '0.1em',
+              transition: 'all 300ms', alignSelf: 'center'
             }}>
               {isSubmitting ? <Loader2 className="animate-spin" size={18} /> :
-                mode === 'login' ? <>AUTHORIZE ACCESS <ChevronRight size={18} /></> :
+                mode === 'login' ? <>SIGN IN <ChevronRight size={18} /></> :
                   mode === 'register' ? <>INITIALIZE PROFILE <UserPlus size={18} /></> :
                     <>TRANSMIT RECOVERY <ChevronRight size={18} /></>}
             </button>
@@ -562,25 +567,26 @@ function LoginContent() {
           <div style={{ marginTop: 20, textAlign: 'center' }}>
             <button
               onClick={() => { setError(''); setMessage(''); setEmailNotFound(false); setMode(mode === 'login' ? 'register' : 'login'); }}
-              style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '0 auto' }}>
+              style={{ background: 'none', border: 'none', color: '#64748b', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '0 auto' }}>
               {mode === 'login' ? <><UserPlus size={14} /> Don&apos;t have an account? Register</> :
                 <><ArrowLeft size={14} /> Back to Sign In</>}
             </button>
             
             <button
               onClick={() => setIsTicketModalOpen(true)}
-              style={{ background: 'none', border: 'none', color: 'var(--teal)', fontSize: 11, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '32px auto 0', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              style={{ background: 'none', border: 'none', color: '#003f49', fontSize: 11, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '32px auto 0', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               <LifeBuoy size={14} /> Need Technical Support?
             </button>
           </div>
+        </div>
         
         <div style={{
           padding: '14px 36px', background: 'rgba(0, 63, 73, 0.03)',
           borderTop: '1px solid rgba(0, 63, 73, 0.06)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
         }}>
-          <Globe size={12} color="var(--text-dim)" />
-          <span style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+          <Globe size={12} color="#94A3B8" />
+          <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
             Secure Project Access
           </span>
         </div>

@@ -118,12 +118,13 @@ export default function HeroSection({ config, isLoggedIn, onExploreCick, onLogin
           transition={{ delay: 0.75, duration: 0.7 }}
           className="brand-heading"
           style={{
-            fontSize: 'clamp(18px, 3vw, 32px)', color: 'var(--sunlit-rock)',
+            fontSize: 'clamp(20px, 4vw, 36px)', color: '#E2B37E',
             margin: '-12px 0 28px', lineHeight: 1.2,
-            textShadow: '0 2px 6px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.3)',
-            fontWeight: 400,
-            letterSpacing: '0.2em',
+            textShadow: '0 2px 15px rgba(0,0,0,1), 0 4px 30px rgba(0,0,0,0.8)',
+            fontWeight: 900,
+            letterSpacing: '0.25em',
             textAlign: 'center',
+            textTransform: 'uppercase'
           }}
         >
           Wadi Yemm
@@ -163,7 +164,11 @@ export default function HeroSection({ config, isLoggedIn, onExploreCick, onLogin
               cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.15em',
               boxShadow: '0 8px 30px rgba(208, 171, 130, 0.2)',
               transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)',
-              fontFamily: 'var(--font-heading)'
+              fontFamily: 'var(--font-heading)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: 'fit-content'
             }}
           >
             {config.ctaPrimary}
@@ -182,10 +187,14 @@ export default function HeroSection({ config, isLoggedIn, onExploreCick, onLogin
               cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.15em',
               transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)',
               fontFamily: 'var(--font-heading)',
-              display: isLoggedIn ? 'none' : 'block'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              whiteSpace: 'nowrap',
+              height: 'fit-content'
             }}
           >
-            {config.ctaSecondary}
+            {isLoggedIn ? 'Access Portal' : config.ctaSecondary}
           </motion.button>
         </motion.div>
       </div>
