@@ -1,17 +1,19 @@
-# 1. Elevate Execution Policy (Run this ONCE in Admin PowerShell)
-# Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+# 1. Authorize Script Execution (MANDATORY)
+# Run this once in a PowerShell window to unlock your environment
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
-# 2. Optimized Deployment Pipeline (Native Environment)
-# Ensures .next and .vercel artifacts are purged for Edge compatibility
+# 2. Local Environment Fix (Satisfies Cloudflare Dependencies)
+$env:Path += ";C:\Program Files\Git\bin;C:\Program Files\Git\usr\bin"
+
+# 3. Purge & Sync
 Remove-Item -Recurse -Force app\.next, app\.vercel, app\out -ErrorAction SilentlyContinue
-
-# 3. Synchronize Master Repository
 git add -A
 git commit -m "feat: infrastructure and auth stabilization"
 git push
 
-# 4. Standardized Cloudflare Deployment
-# Uses the package.json native scripts to ensure Cloudflare Edge compatibility
+# 4. Production Deployment
+# If local build fails due to 'spawn bash', your code is already in GitHub 
+# and will auto-deploy if your Cloudflare Pages is connected.
 cd app
-npm run pages:deploy
+powershell -ExecutionPolicy Bypass -Command "npm run pages:deploy"
 cd ..

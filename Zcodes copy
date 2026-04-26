@@ -1,0 +1,8 @@
+# 1. Clean & Build (Crucial for Edge stability)
+cd app; Remove-Item -Recurse -Force .next, .vercel, out -ErrorAction SilentlyContinue; wsl bash wsl_build.sh; cd ..
+
+# 2. Sync Git (Keeps your repo updated)
+git add -A; git commit -m "feat: infrastructure and auth stabilization"; git push
+
+# 3. Deploy to Production (Correct static root)
+cd app; npx wrangler pages deploy .vercel/output/static --project-name rehdigital --branch main; cd ..

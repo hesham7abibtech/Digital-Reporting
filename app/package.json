@@ -9,7 +9,7 @@
     "lint": "eslint",
     "pages:build": "npx @cloudflare/next-on-pages",
     "deploy": "npx wrangler pages deploy .vercel/output --project-name rehdigital",
-    "pages:deploy": "npm run pages:build ; npm run deploy",
+    "pages:deploy": "npm run pages:build && npm run deploy",
     "pages:watch": "npx @cloudflare/next-on-pages --watch"
   },
   "dependencies": {
