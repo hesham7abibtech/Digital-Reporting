@@ -1,15 +1,13 @@
 #!/bin/bash
-# Install NVM
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+# Ultra-Robust Cloudflare Build Script for Windows
+echo "⚡️ Initializing High-Compatibility Build..."
 
-# Load NVM
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+# Inject shim and node into PATH
+export PATH=$PATH:.
+export PATH=$PATH:/c/Program\ Files/nodejs
 
-# Install Node
-nvm install 20
-nvm use 20
+# Ensure shim is executable
+chmod +x npx
 
-# Run Build
-npm install
-npm run pages:build
+echo "⚡️ Running Edge Transformation..."
+npx @cloudflare/next-on-pages
