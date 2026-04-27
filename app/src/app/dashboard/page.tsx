@@ -641,7 +641,7 @@ export default function Dashboard() {
               {/* Sticky Control Area */}
               <div style={{
                 position: 'relative',
-                zIndex: 50,
+                zIndex: 2000,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 6,
@@ -675,7 +675,7 @@ export default function Dashboard() {
                   flexWrap: 'wrap',
                   overflow: 'visible',
                   position: 'relative',
-                  zIndex: 100,
+                  zIndex: 2000,
                   boxShadow: '0 12px 40px rgba(0, 63, 73, 0.12)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
@@ -694,7 +694,7 @@ export default function Dashboard() {
                     </h2>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto', flexShrink: 0, flexWrap: 'wrap', rowGap: 8, justifyContent: 'flex-end', alignContent: 'flex-start', position: 'relative', zIndex: 1000 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto', flexShrink: 0, flexWrap: 'wrap', rowGap: 8, justifyContent: 'flex-end', alignContent: 'flex-start', position: 'relative', zIndex: 2100 }}>
                     {/* Mode Switcher */}
                     <div style={{
                       display: 'flex', background: 'rgba(255, 255, 255, 0.7)', padding: 3, borderRadius: 12,

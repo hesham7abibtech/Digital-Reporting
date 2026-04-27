@@ -161,9 +161,21 @@ export default function BimExportMenu({
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            style={{ position: 'absolute', top: '100%', right: 0, marginTop: 10, zIndex: 9999, width: 280, background: '#003f49', backdropFilter: 'blur(32px)', border: '1.5px solid rgba(255, 255, 255, 0.1)', borderRadius: 24, boxShadow: '0 25px 60px rgba(0, 0, 0, 0.4)', padding: 12, overflow: 'hidden' }}
+            style={{ position: 'absolute', top: '100%', right: 0, marginTop: 10, zIndex: 10000, width: 280, background: '#003f49', backdropFilter: 'blur(32px)', border: '1.5px solid rgba(255, 255, 255, 0.1)', borderRadius: 24, boxShadow: '0 25px 60px rgba(0, 0, 0, 0.4)', padding: 12, overflow: 'hidden' }}
           >
-            <div style={{ padding: '8px 12px 4px 12px', fontSize: 10, fontWeight: 900, color: 'rgba(255, 255, 255, 0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            <div style={{ 
+              padding: '12px 16px 8px 16px', 
+              fontSize: 10, 
+              fontWeight: 950, 
+              color: 'rgba(255, 255, 255, 0.25)', 
+              textTransform: 'uppercase', 
+              letterSpacing: '0.12em',
+              borderBottom: '1px solid rgba(255,255,255,0.05)',
+              marginBottom: 6,
+              background: 'rgba(0,0,0,0.1)',
+              userSelect: 'none',
+              pointerEvents: 'none'
+            }}>
               Select Output Format
             </div>
             

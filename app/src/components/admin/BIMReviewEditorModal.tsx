@@ -10,7 +10,7 @@ import EliteDatePicker from '@/components/shared/EliteDatePicker';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { db } from '@/lib/firebase';
-import { PRECINCTS } from '@/lib/constants';
+import { PRECINCTS, BIM_STAGE_OPTIONS } from '@/lib/constants';
 import { formatDate } from '@/lib/utils';
 
 interface BIMReviewEditorModalProps {
@@ -529,16 +529,15 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
                       </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Priority</label>
+                      <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Design Stage</label>
                       <select
-                        value={formData.Priority || 'MEDIUM'}
+                        value={formData.Priority || 'Detailed Design'}
                         onChange={(e) => setFormData({ ...formData, Priority: e.target.value })}
                         style={{ width: '100%', padding: '10px 12px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
                       >
-                        <option value="LOW">LOW</option>
-                        <option value="MEDIUM">MEDIUM</option>
-                        <option value="HIGH">HIGH</option>
-                        <option value="CRITICAL">CRITICAL</option>
+                        {BIM_STAGE_OPTIONS.map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
                       </select>
                     </div>
                   </div>

@@ -193,7 +193,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, activeFilters, 
                       gap: 16
                     }}>
                       {[
-                        { label: 'Transmission Date', value: formatDate(task.submittingDate || (task as any).actualEndDate || (task as any).actualStartDate), icon: Calendar },
+                        { label: 'Submission Date', value: formatDate(task.submittingDate || (task as any).actualEndDate || (task as any).actualStartDate), icon: Calendar },
                         { label: 'Project Precinct', value: task.precinct || 'General', icon: Building2 },
                         { label: 'Registry Category', value: resolvedDeptName, icon: Tag, color: getDepartmentColor(resolvedDeptName) },
                         {
@@ -260,7 +260,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, activeFilters, 
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <Globe size={18} color="#D4AF37" strokeWidth={2.5} />
-                        <h4 style={{ fontSize: 13, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>Network Vector Matrix</h4>
+                        <h4 style={{ fontSize: 13, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>Associated Records</h4>
                       </div>
                       <span style={{ fontSize: 11, fontWeight: 1000, color: '#D4AF37', background: 'rgba(212, 175, 55, 0.12)', border: '1px solid rgba(212, 175, 55, 0.2)', padding: '5px 12px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         {filteredVectors.length} Linked Items

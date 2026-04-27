@@ -951,12 +951,23 @@ export default function AdminDashboardPage() {
       return { 
         id: doc.id, 
         ...data,
-        "ACC Status": data["ACC Status"] || data.accStatus || (data.onAcc ? [data.onAcc] : []),
-        "InSite Review Due Date": data["InSite Review Due Date"] || data.insiteReviewDueDate || data.dueDate || null,
-        "Project": data["Project"] || data.project || "",
-        "Priority": data["Priority"] || data.priority || "MEDIUM",
+        "ID": data["ID"] || data.id || doc.id,
+        "Precinct": Array.isArray(data["Precinct"]) ? data["Precinct"] : (data.precinct ? [data.precinct] : []),
         "Stakeholder": data["Stakeholder"] || data.stakeholder || "",
-        "ID": data["ID"] || data.id || doc.id
+        "Project": data["Project"] || data.project || "",
+        "Milestone Submissions": Array.isArray(data["Milestone Submissions"]) ? data["Milestone Submissions"] : (data.milestoneSubmissions ? [data.milestoneSubmissions] : []),
+        "Submission Category": Array.isArray(data["Submission Category"]) ? data["Submission Category"] : (data.submissionCategory ? [data.submissionCategory] : []),
+        "Planned Submission Date": Array.isArray(data["Planned Submission Date"]) ? data["Planned Submission Date"] : (data.plannedSubmissionDate ? [data.plannedSubmissionDate] : []),
+        "ACC Status": Array.isArray(data["ACC Status"]) ? data["ACC Status"] : (data.accStatus ? [data.accStatus] : []),
+        "Priority": data["Priority"] || data.priority || "MEDIUM",
+        "ACC Review ID": data["ACC Review ID"] || data.accReviewId || data.reviewNumber || "",
+        "InSite Review Status": data["InSite Review Status"] || data.insiteReviewStatus || "",
+        "InSite Review Due Date": data["InSite Review Due Date"] || data.insiteReviewDueDate || data.dueDate || null,
+        "InSite Reviewer": Array.isArray(data["InSite Reviewer"]) ? data["InSite Reviewer"] : (data.insiteReviewer ? [data.insiteReviewer] : []),
+        "InSite Review Output ACC URL": data["InSite Review Output ACC URL"] || data.insiteReviewOutputUrl || "",
+        "Comments": data["Comments"] || data.comments || "",
+        createdAt: data.createdAt || new Date().toISOString(),
+        updatedAt: data.updatedAt || new Date().toISOString()
       } as BIMReview;
     }) || [];
     
@@ -1964,7 +1975,7 @@ export default function AdminDashboardPage() {
                               <>
                                 <th style={{ textAlign: 'center', padding: '12px 10px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 60 }}>ID</th>
                                 <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 320 }}>Project & Milestones</th>
-                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 100 }}>Priority</th>
+                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 100 }}>Design Stage</th>
                                 <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 220 }}>Status & Stakeholder</th>
                                 <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 130 }}>ACC Status</th>
                                 <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 250 }}>InSite Reviewer</th>
@@ -2533,7 +2544,7 @@ export default function AdminDashboardPage() {
                                   )}
 
                                   <button 
-                                    onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'users', name: userRec.name || 'Unknown', email: userRec.email }); }}
+                                    onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: userRec.id, col: 'users', name: userRec.name || 'Unknown', email: userRec.email }); }}
                                     title="Revoke All Access"
                                     style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '6px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                   >

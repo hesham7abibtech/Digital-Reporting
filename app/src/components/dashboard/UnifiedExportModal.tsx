@@ -558,25 +558,25 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
                           <>
                               {setFilterStage && (
                                 <EliteDropdown
-                                  value={filterStage} options={(effectiveAvailableOptions?.stages || []).map(s => ({ label: s, value: s }))}
+                                  value={filterStage} options={(availableStages.length > 0 ? availableStages : effectiveAvailableOptions?.stages || []).map(s => ({ label: s, value: s }))}
                                   onChange={setFilterStage} isMulti allLabel="All Stages" menuLabel="Design Stages" fullWidth
                                 />
                               )}
                               {setFilterStatus && (
                                 <EliteDropdown
-                                  value={filterStatus} options={(effectiveAvailableOptions?.statuses || []).map(s => ({ label: s, value: s }))}
+                                  value={filterStatus} options={(availableStatuses.length > 0 ? availableStatuses : effectiveAvailableOptions?.statuses || []).map(s => ({ label: s, value: s }))}
                                   onChange={setFilterStatus} isMulti allLabel="All Statuses" menuLabel="Review Status" fullWidth
                                 />
                               )}
                               {setFilterStakeholder && (
                                 <EliteDropdown
-                                  value={filterStakeholder} options={(effectiveAvailableOptions?.stakeholders || []).map(s => ({ label: s, value: s }))}
+                                  value={filterStakeholder} options={(availableStakeholders.length > 0 ? availableStakeholders : effectiveAvailableOptions?.stakeholders || []).map(s => ({ label: s, value: s }))}
                                   onChange={setFilterStakeholder} isMulti allLabel="All Stakeholders" menuLabel="Stakeholders" fullWidth
                                 />
                               )}
                               {setFilterReviewer && (
                                 <EliteDropdown
-                                  value={filterReviewer} options={(effectiveAvailableOptions?.reviewers || []).map(s => ({ label: s, value: s }))}
+                                  value={filterReviewer} options={(availableReviewers.length > 0 ? availableReviewers : effectiveAvailableOptions?.reviewers || []).map(s => ({ label: s, value: s }))}
                                   onChange={setFilterReviewer} isMulti allLabel="All Reviewers" menuLabel="Reviewers" fullWidth
                                 />
                               )}

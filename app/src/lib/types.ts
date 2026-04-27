@@ -321,6 +321,7 @@ export interface NavItem {
 // ─── Department Types ─────────────────────────────────────────────
 // ─── BIM Review Types ─────────────────────────────────────────────
 export interface BIMReview {
+  id: string;
   "ID": string;
   "Precinct": string[];
   "Stakeholder": string;

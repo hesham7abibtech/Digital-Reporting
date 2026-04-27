@@ -396,7 +396,7 @@ export default function BIMAnalyticsView({
               </motion.div>
             )}
             {setFilterStage && (
-              <EliteDropdown value={filterStage} options={availableStages.map(s => ({ label: s, value: s }))} onChange={setFilterStage} menuLabel="Stage" isMulti allLabel="All Stages" />
+              <EliteDropdown value={filterStage} options={availableStages.map(s => ({ label: s, value: s }))} onChange={setFilterStage} menuLabel="Design Stage" isMulti allLabel="All Stages" />
             )}
             {setFilterStatus && (
               <EliteDropdown value={filterStatus} options={availableStatuses.map(s => ({ label: s, value: s }))} onChange={setFilterStatus} menuLabel="Status" isMulti allLabel="All Statuses" />
@@ -558,7 +558,7 @@ export default function BIMAnalyticsView({
 
           <GlassCard padding="none" style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: CHART_TITLE_PADDING, borderBottom: '1px solid rgba(0, 63, 73, 0.05)' }}>
-              <h3 style={{ fontSize: 12, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Priority Breakdown</h3>
+              <h3 style={{ fontSize: 12, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Design Stage Breakdown</h3>
             </div>
             <div style={{ flex: 1, minHeight: 0, padding: CHART_BODY_PADDING }}>
               <ResponsiveContainer width="100%" height="100%">
