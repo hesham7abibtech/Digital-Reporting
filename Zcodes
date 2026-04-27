@@ -2,18 +2,17 @@
 # Run this once in a PowerShell window to unlock your environment
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
-# 2. Local Environment Fix (Satisfies Cloudflare Dependencies)
-$env:Path += ";C:\Program Files\Git\bin;C:\Program Files\Git\usr\bin"
-
-# 3. Purge & Sync
+# 2. Purge & Sync
+# Remove local build artifacts to ensure a clean state
 Remove-Item -Recurse -Force app\.next, app\.vercel, app\out -ErrorAction SilentlyContinue
+
+# 3. Commit & Push to GitHub
+# Cloudflare Pages will automatically detect changes and build in its native Linux environment
 git add -A
 git commit -m "feat: infrastructure and auth stabilization"
 git push
 
-# 4. Production Deployment
-# If local build fails due to 'spawn bash', your code is already in GitHub 
-# and will auto-deploy if your Cloudflare Pages is connected.
-cd app
-powershell -ExecutionPolicy Bypass -Command "npm run pages:deploy"
-cd ..
+# 4. Deployment Status
+Write-Host "⚡️ Sync Complete!" -ForegroundColor Cyan
+Write-Host "⚡️ Cloudflare is now building your site in the cloud (bypassing Windows local build limits)." -ForegroundColor Green
+Write-Host "⚡️ Monitor: https://dash.cloudflare.com/" -ForegroundColor Yellow
