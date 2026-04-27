@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { HomeFooterConfig } from '@/lib/types';
 import { Globe, Mail, MapPin } from 'lucide-react';
 
@@ -122,13 +123,24 @@ export default function HomeFooter({ config }: Props) {
           {/* System */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--sunlit-rock)', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 4 }}>
-              System
+              System Protocols
             </span>
             <span style={{ fontSize: 12, color: 'var(--sunlit-rock)', fontWeight: 800 }}>{config.version}</span>
             {config.systemItems?.map(item => (
-              <a key={item.id} href={item.url} style={{ fontSize: 12, color: 'rgba(249, 248, 242, 0.5)', textDecoration: 'none' }} className="hover:!text-[rgba(249,248,242,0.8)]">
+              <Link 
+                key={item.id} 
+                href={item.url} 
+                style={{ 
+                  fontSize: 12, 
+                  color: 'rgba(249, 248, 242, 0.5)', 
+                  textDecoration: 'none',
+                  transition: 'all 200ms',
+                  display: 'inline-block'
+                }} 
+                className="hover:!text-[rgba(249,248,242,0.95)] hover:translate-x-1"
+              >
                 {item.label}
-              </a>
+              </Link>
             ))}
           </div>
         </div>

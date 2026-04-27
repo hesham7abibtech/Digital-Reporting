@@ -339,8 +339,31 @@ export async function updateUserProfile(uid: string, data: any, triggerNotificat
   }
 }
 
+export async function adminUserAction(uid: string, action: 'block' | 'unblock' | 'delete') {
+  const { auth } = await import('@/lib/firebase');
+  const user = auth.currentUser;
+  if (!user) throw new Error('Authentication required');
+  
+  const token = await user.getIdToken();
+  const response = await fetch('/api/admin/users', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ uid, action })
+  });
+
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'Action failed');
+  return result;
+}
+
 export async function deleteUserProfile(uid: string) {
+  // First delete from Firestore (standard behavior)
   await deleteDoc(doc(db, 'users', uid));
+  // Then attempt to delete from Auth via Admin API
+  await adminUserAction(uid, 'delete');
 }
 
 export async function logRegistrationEvent(uid: string, stage: string, status: 'success' | 'failure', details?: any) {
@@ -376,6 +399,17 @@ export async function bulkDelete(collectionName: string, ids: string[]) {
     batch.delete(docRef);
   });
   await batch.commit();
+
+  // If deleting users, also revoke their identity in Auth
+  if (collectionName === 'users') {
+    for (const id of ids) {
+      try {
+        await adminUserAction(id, 'delete');
+      } catch (e) {
+        console.error(`[AUTH] Bulk revocation failed for UID ${id}:`, e);
+      }
+    }
+  }
 }
 
 /**

@@ -18,6 +18,8 @@ import {
   MoreVertical,
   Shield,
   ShieldAlert,
+  ShieldOff,
+  ShieldCheck,
   Trash2,
   User,
   Layers,
@@ -57,7 +59,7 @@ import * as XLSX from 'xlsx';
 
 import { useAuth } from '@/context/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
-import { collections, bulkDelete, getProjectMetadata, updateProjectMetadata, uploadFile } from '@/services/FirebaseService';
+import { collections, bulkDelete, getProjectMetadata, updateProjectMetadata, uploadFile, deleteUserProfile } from '@/services/FirebaseService';
 import { useToast } from '@/components/shared/EliteToast';
 import { mailService } from '@/services/MailService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
@@ -81,6 +83,7 @@ import GroupPolicyList from '@/components/admin/GroupPolicyList';
 import GroupPolicyEditor from '@/components/admin/GroupPolicyEditor';
 import BulkActionConfirmModal from '@/components/admin/BulkActionConfirmModal';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
+import BlockUserModal from '@/components/admin/BlockUserModal';
 import HeaderBgCropper from '@/components/admin/HeaderBgCropper';
 import HomePageEditor from '@/components/admin/HomePageEditor';
 import { getApiEndpoint } from '@/lib/apiConfig';
@@ -128,6 +131,19 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
   const [activeSelectorField, setActiveSelectorField] = useState<'TO' | 'CC' | 'BCC' | null>(null);
   const [userSearchQuery, setUserSearchQuery] = useState('');
 
+  const allUsers = useMemo(() => {
+    return usersSnapshot?.docs.map((d: any) => ({
+      id: d.id,
+      ...d.data()
+    })) || [];
+  }, [usersSnapshot]);
+
+  const filteredUsers = allUsers.filter((u: any) => 
+    u.email?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+    u.name?.toLowerCase().includes(userSearchQuery.toLowerCase())
+  );
+
+
   const addEmailToField = (email: string, field: 'TO' | 'CC' | 'BCC') => {
     const setters: Record<'TO' | 'CC' | 'BCC', React.Dispatch<React.SetStateAction<string>>> = { 
       TO: setToEmails, 
@@ -141,7 +157,58 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
       setters[field]([...current, email].join(', '));
     }
     setActiveSelectorField(null);
+    setUserSearchQuery('');
   };
+
+  const renderUserSelector = (field: 'TO' | 'CC' | 'BCC') => {
+    if (activeSelectorField !== field) return null;
+    return (
+      <div style={{
+        position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+        background: '#ffffff', borderRadius: 16, border: '1px solid rgba(0, 63, 73, 0.15)',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.1)', marginTop: 8, padding: 12,
+        maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8
+      }}>
+        <div style={{ position: 'relative', marginBottom: 4 }}>
+          <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+          <input
+            autoFocus
+            value={userSearchQuery}
+            onChange={(e) => setUserSearchQuery(e.target.value)}
+            placeholder="Search users..."
+            style={{ width: '100%', padding: '8px 12px 8px 34px', borderRadius: 10, background: '#f1f5f9', border: 'none', fontSize: 12, outline: 'none' }}
+          />
+        </div>
+        {filteredUsers.length === 0 ? (
+          <div style={{ padding: '12px', textAlign: 'center', fontSize: 11, color: '#64748b' }}>No users found</div>
+        ) : (
+          filteredUsers.map((u: any) => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => addEmailToField(u.email, field)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
+                borderRadius: 10, border: 'none', background: 'transparent',
+                cursor: 'pointer', transition: 'all 200ms', textAlign: 'left'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                {u.avatar ? <img src={u.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={14} color="#64748b" />}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#003f49' }}>{u.name || 'Anonymous User'}</span>
+                <span style={{ fontSize: 10, color: '#64748b' }}>{u.email}</span>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+    );
+  };
+
 
   const handleBroadcastDispatch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -434,6 +501,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                         >
                           Registry
                         </button>
+                        {renderUserSelector('TO')}
                       </div>
                       <textarea
                         value={toEmails}
@@ -470,6 +538,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
                         >
                           Add
                         </button>
+                        {renderUserSelector(field.id as any)}
                       </div>
                       <textarea
                         value={field.value}
@@ -1337,9 +1406,13 @@ export default function AdminDashboardPage() {
   const handleDeleteRecord = async (id: string, col: string) => {
     setIsDeleting(true);
     try {
-      await deleteDoc(doc(db, col, id));
+      if (col === 'users') {
+        await deleteUserProfile(id);
+      } else {
+        await deleteDoc(doc(db, col, id));
+      }
       showToast('Record successfully purged from production.', 'SUCCESS');
-      setDeleteConfirm({ isOpen: false, id: '', col: '', name: '' });
+      setDeleteConfirm({ isOpen: false, id: '', col: '', name: '', email: '' });
     } catch (error) {
       console.error('Purge failure:', error);
       showToast('Protocol failure: Record could not be terminated.', 'ERROR');
@@ -1348,11 +1421,49 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: '', col: '', name: '' });
+  const handleBlockUser = async (reason: string, duration: string) => {
+    try {
+      const { adminUserAction, updateUserProfile } = await import('@/services/FirebaseService');
+      
+      // Calculate expiration if not permanent
+      let expiresAt = null;
+      if (duration !== 'PERMANENT') {
+        const value = parseInt(duration);
+        if (!isNaN(value)) {
+          const date = new Date();
+          if (duration.includes('Hours')) {
+            date.setHours(date.getHours() + value);
+          } else {
+            date.setDate(date.getDate() + value);
+          }
+          expiresAt = date.toISOString();
+        }
+      }
+
+      await adminUserAction(blockModal.uid, 'block');
+      await updateUserProfile(blockModal.uid, { 
+        status: 'SUSPENDED',
+        blockingDetails: {
+          reason,
+          duration,
+          blockedAt: new Date().toISOString(),
+          expiresAt
+        }
+      });
+      showToast(`Personnel ${blockModal.name} suspended successfully.`, 'SUCCESS');
+    } catch (err) {
+      console.error('Suspension protocol failure:', err);
+      showToast('Action failed: Could not authorize suspension.', 'ERROR');
+      throw err;
+    }
+  };
+
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: '', col: '', name: '', email: '' });
 
   const currentTabIds = getCurrentTabItems().map((item: any) => item.id);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [blockModal, setBlockModal] = useState({ isOpen: false, uid: '', name: '', email: '' });
 
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
@@ -1832,23 +1943,23 @@ export default function AdminDashboardPage() {
                                 {activeTab === 'tasks' && (
                                   <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 120 }}>ID</th>
                                 )}
-                                <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', width: 400 }}>
+                                <th style={{ textAlign: activeTab === 'users' ? 'left' : 'center', padding: activeTab === 'users' ? '16px 24px' : '16px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em', width: 400 }}>
                                   {activeTab === 'users' ? 'Staff Identity' : activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Project Personnel' : 'Task Category') : (activeTab === 'tasks' ? 'Task Name' : 'Task Definition / Asset')}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 200 }}>
+                                <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap', width: 200 }}>
                                   {activeTab === 'users' ? 'Protocol Clearance' : (activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Department' : 'Abbreviation') : (activeTab === 'registry' ? 'Category' : 'Project Precinct'))}
                                 </th>
-                                <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: 130 }}>
+                                <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap', width: 130 }}>
                                   {activeTab === 'users' ? 'Admin Access' : (activeTab === 'team' ? (teamActiveSubTab === 'personnel' ? 'Email' : 'Last Updated') : (activeTab === 'registry' ? 'Department' : 'Task Category'))}
                                 </th>
                                 {activeTab !== 'tasks' && (
-                                  <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: activeTab === 'users' ? 240 : 160 }}>
+                                  <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap', width: activeTab === 'users' ? 240 : 160 }}>
                                     {activeTab === 'users' ? 'Feature Modules' : 'Control'}
                                   </th>
                                 )}
                                 {(activeTab === 'tasks' || activeTab === 'users') && (
-                                  <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', whiteSpace: 'nowrap', width: activeTab === 'tasks' ? 180 : 150 }}>
-                                    {activeTab === 'tasks' ? 'Submitter' : 'Control'}
+                                  <th style={{ textAlign: 'center', padding: '16px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap', width: activeTab === 'tasks' ? 180 : 150 }}>
+                                    {activeTab === 'tasks' ? 'Submitter' : 'Action Hub'}
                                   </th>
                                 )}
                                 {activeTab === 'tasks' && (
@@ -1958,7 +2069,7 @@ export default function AdminDashboardPage() {
                                   </button>
                                   {can('tasks', 'delete') && (
                                     <button 
-                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'tasks', name: task.title }); }}
+                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'tasks', name: task.title, email: '' }); }}
                                       style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
                                     >
                                       <Trash2 size={18} />
@@ -2042,7 +2153,7 @@ export default function AdminDashboardPage() {
                                     </button>
                                     {can('team', 'delete') && (
                                       <button 
-                                        onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'members', name: member.name }); }}
+                                        onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'members', name: member.name, email: member.email }); }}
                                         style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
                                       >
                                         <Trash2 size={18} />
@@ -2088,7 +2199,7 @@ export default function AdminDashboardPage() {
                                   </button>
                                   {can('team', 'delete') && (
                                     <button 
-                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'departments', name: dept.name }); }}
+                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'departments', name: dept.name, email: '' }); }}
                                       style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
                                     >
                                       <Trash2 size={18} />
@@ -2213,7 +2324,7 @@ export default function AdminDashboardPage() {
                                   </button>
                                   {can('bimReviews', 'delete') && (
                                     <button 
-                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'bimReviews', name: review.project }); }}
+                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'bimReviews', name: review.project, email: '' }); }}
                                       style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
                                     >
                                       <Trash2 size={18} />
@@ -2298,71 +2409,115 @@ export default function AdminDashboardPage() {
                               style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
                               onClick={() => handleEditRecord(userRec)}
                             >
-                              <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
+                              <td style={{ textAlign: 'center', padding: '12px 0' }} onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={(e) => toggleSelect(doc.id, e as any)}
-                                  style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
+                                  style={{ cursor: 'pointer', width: 18, height: 18, accentColor: 'var(--teal)' }}
                                 />
                               </td>
-                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+                              <td style={{ padding: '12px 24px', textAlign: 'left' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                                   {userRec.avatar ? (
-                                    <img src={userRec.avatar} style={{ width: 36, height: 36, borderRadius: 12, objectFit: 'cover', border: '1px solid var(--border)' }} alt={userRec.name} />
+                                    <img src={userRec.avatar} style={{ width: 32, height: 32, borderRadius: 10, objectFit: 'cover', border: '1px solid var(--border)' }} alt={userRec.name} />
                                   ) : (
-                                    <div style={{ width: 36, height: 36, borderRadius: 12, background: 'rgba(0, 63, 73, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#003F49', fontSize: 12, fontWeight: 950 }}>
+                                    <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(0, 63, 73, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#003F49', fontSize: 11, fontWeight: 950 }}>
                                       {(userRec.name || 'U').charAt(0).toUpperCase()}
                                     </div>
                                   )}
                                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                                    <div style={{ fontWeight: 950, fontSize: 16, color: '#000000', letterSpacing: '-0.01em', fontFamily: 'var(--font-heading)' }}>{userRec.name || 'Unknown Subject'}</div>
-                                    <div style={{ fontSize: 13, color: '#000000', marginTop: 2, fontWeight: 800 }}>{userRec.email}</div>
+                                    <div style={{ fontWeight: 900, fontSize: 14, color: '#000000', letterSpacing: '-0.01em', fontFamily: 'var(--font-heading)' }}>{userRec.name || 'Unknown Subject'}</div>
+                                    <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 1, fontWeight: 700 }}>{userRec.email}</div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
                                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: userRec.isVerified ? '#10b981' : '#f59e0b' }} />
-                                      <span style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 950, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{userRec.isVerified ? 'Access Verified' : 'Handshake Pending'}</span>
+                                      <span style={{ fontSize: 8, color: 'var(--text-muted)', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{userRec.isVerified ? 'VERIFIED' : 'PENDING VERIFICATION'}</span>
                                     </div>
                                   </div>
                                 </div>
                               </td>
                               <td style={{ padding: '8px 16px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                  <span style={{ fontSize: 10, background: userRec.isApproved ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: userRec.isApproved ? 'var(--status-success)' : 'var(--status-error)', border: `1px solid ${userRec.isApproved ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`, padding: '6px 14px', borderRadius: 12, fontWeight: 900, letterSpacing: '0.1em', display: 'flex', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+                                  <span style={{ fontSize: 9, background: userRec.isApproved ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: userRec.isApproved ? '#059669' : '#dc2626', border: `1px solid ${userRec.isApproved ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`, padding: '4px 12px', borderRadius: 10, fontWeight: 900, letterSpacing: '0.08em', display: 'flex', alignItems: 'center' }}>
                                     {userRec.isApproved ? 'APPROVED' : 'PENDING'}
                                   </span>
+                                  {userRec.status === 'SUSPENDED' && (
+                                    <span style={{ fontSize: 9, background: 'rgba(0, 0, 0, 0.08)', color: '#1e293b', border: '1px solid rgba(0, 0, 0, 0.2)', padding: '4px 12px', borderRadius: 10, fontWeight: 900, letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                      <ShieldOff size={10} />
+                                      BLOCKED
+                                    </span>
+                                  )}
                                 </div>
                               </td>
                               <td style={{ padding: '8px 16px', textAlign: 'center' }}>
                                 {(() => {
                                   const roleLabel = (userRec.role === 'OWNER' || userRec.email?.toLowerCase() === 'hesham.habib@insiteinternational.com') ? 'OWNER' : (userRec.isAdmin ? 'ADMIN' : 'USER');
-                                  const roleColor = roleLabel === 'OWNER' ? '#d4af37' : roleLabel === 'ADMIN' ? 'var(--teal)' : 'var(--text-secondary)';
-                                  const roleBg = roleLabel === 'OWNER' ? 'rgba(212, 175, 55, 0.1)' : roleLabel === 'ADMIN' ? 'rgba(0, 63, 73, 0.08)' : 'transparent';
+                                  const roleColor = roleLabel === 'OWNER' ? '#b45309' : roleLabel === 'ADMIN' ? 'var(--teal)' : 'var(--text-dim)';
+                                  const roleBg = roleLabel === 'OWNER' ? 'rgba(245, 158, 11, 0.1)' : roleLabel === 'ADMIN' ? 'rgba(0, 63, 73, 0.08)' : 'rgba(0,0,0,0.03)';
                                   
                                   return (
-                                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: roleBg, padding: '6px 12px', borderRadius: 8, border: roleBg !== 'transparent' ? `1px solid ${roleColor}` : '1px solid transparent' }}>
-                                      <Shield size={14} color={roleColor} style={{ filter: roleLabel === 'OWNER' ? 'drop-shadow(0 0 4px rgba(212,175,55,0.4))' : 'none' }} />
-                                      <span style={{ fontSize: 11, color: roleColor, fontWeight: 900, letterSpacing: '0.05em' }}>{roleLabel}</span>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: roleBg, padding: '4px 10px', borderRadius: 8, border: `1px solid ${roleColor}20` }}>
+                                      <Shield size={12} color={roleColor} />
+                                      <span style={{ fontSize: 10, color: roleColor, fontWeight: 900, letterSpacing: '0.05em' }}>{roleLabel}</span>
                                     </div>
                                   );
                                 })()}
                               </td>
                               <td style={{ padding: '8px 16px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', alignItems: 'center' }}>
                                   {userRec.access?.deliverablesRegistry && (
-                                    <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--teal)', background: 'var(--cotton)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: 6, letterSpacing: '0.05em', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>DELIVERABLES</span>
+                                    <span style={{ fontSize: 8, fontWeight: 900, color: 'var(--teal)', background: 'rgba(0, 63, 73, 0.05)', border: '1px solid rgba(0, 63, 73, 0.1)', padding: '3px 8px', borderRadius: 6, letterSpacing: '0.05em' }}>DELIVERABLES</span>
                                   )}
                                   {userRec.access?.bimReviews && (
-                                    <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--accent)', background: 'var(--cotton)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: 6, letterSpacing: '0.05em', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>BIM REVIEWS</span>
-                                  )}
-                                  {!userRec.access?.deliverablesRegistry && !userRec.access?.bimReviews && (
-                                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 700, fontStyle: 'italic' }}>None Assigned</span>
+                                    <span style={{ fontSize: 8, fontWeight: 900, color: '#8b5cf6', background: 'rgba(139, 92, 246, 0.05)', border: '1px solid rgba(139, 92, 246, 0.1)', padding: '3px 8px', borderRadius: 6, letterSpacing: '0.05em' }}>BIM REVIEWS</span>
                                   )}
                                 </div>
                               </td>
-                              <td style={{ padding: '8px 16px', textAlign: 'center' }}>
-                                <button style={{ background: 'transparent', border: 'none', color: '#003f49', opacity: 0.4, cursor: 'pointer' }}>
-                                  <MoreVertical size={18} />
-                                </button>
+                              <td style={{ padding: '8px 16px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); handleEditRecord(userRec); }}
+                                    title="Edit Protocols"
+                                    style={{ background: 'rgba(0, 63, 73, 0.05)', border: '1px solid rgba(0, 63, 73, 0.1)', color: '#003F49', padding: '6px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                  >
+                                    <Settings size={14} />
+                                  </button>
+                                  
+                                  {userRec.status !== 'SUSPENDED' ? (
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setBlockModal({ isOpen: true, uid: userRec.uid, name: userRec.name || 'Unknown', email: userRec.email });
+                                      }}
+                                      title="Suspend Account"
+                                      style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '6px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    >
+                                      <ShieldOff size={14} />
+                                    </button>
+                                  ) : (
+                                    <button 
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const { adminUserAction, updateUserProfile } = await import('@/services/FirebaseService');
+                                        await adminUserAction(userRec.uid, 'unblock');
+                                        await updateUserProfile(userRec.uid, { status: 'ACTIVE', blockingDetails: null });
+                                        showToast('Account reactivated.', 'SUCCESS');
+                                      }}
+                                      title="Reactivate Account"
+                                      style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '6px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    >
+                                      <ShieldCheck size={14} />
+                                    </button>
+                                  )}
+
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'users', name: userRec.name || 'Unknown', email: userRec.email }); }}
+                                    title="Revoke All Access"
+                                    style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '6px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
                               </td>
                             </motion.tr>
                           );
@@ -3803,6 +3958,15 @@ export default function AdminDashboardPage() {
                 severity="DANGER"
               />
             )}
+
+            <BlockUserModal
+              isOpen={blockModal.isOpen}
+              onClose={() => setBlockModal(prev => ({ ...prev, isOpen: false }))}
+              onConfirm={handleBlockUser}
+              userName={blockModal.name}
+              userEmail={blockModal.email}
+            />
+
             {isModalOpen && activeTab === 'bim-reviews' && (
               <BIMReviewEditorModal
                 key="bim-review-editor"
@@ -3867,11 +4031,13 @@ export default function AdminDashboardPage() {
                   </div>
                   <h3 style={{ fontSize: 20, fontWeight: 900, color: '#003f49', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Security Protocol: Purge Record</h3>
                   <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6, margin: '0 0 32px' }}>
-                    You are about to permanently delete <strong style={{ color: '#003f49' }}>{deleteConfirm.name}</strong> from the secure database. This action cannot be reversed.
+                    You are about to permanently delete <strong style={{ color: '#003f49' }}>{deleteConfirm.name}</strong> 
+                    {deleteConfirm.email && <span style={{ display: 'block', fontSize: 12, marginTop: 4, fontWeight: 700, color: 'var(--text-dim)' }}>({deleteConfirm.email})</span>}
+                    from the secure database. This action cannot be reversed.
                   </p>
                   <div style={{ display: 'flex', gap: 12 }}>
                     <button
-                      onClick={() => setDeleteConfirm({ isOpen: false, id: '', col: '', name: '' })}
+                      onClick={() => setDeleteConfirm({ isOpen: false, id: '', col: '', name: '', email: '' })}
                       disabled={isDeleting}
                       style={{ flex: 1, padding: '14px', borderRadius: 12, background: '#f1f5f9', color: '#64748b', border: 'none', fontWeight: 800, fontSize: 13, cursor: isDeleting ? 'not-allowed' : 'pointer', transition: 'all 200ms', opacity: isDeleting ? 0.5 : 1 }}
                     >

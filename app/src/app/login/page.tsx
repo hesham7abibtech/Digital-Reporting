@@ -196,6 +196,21 @@ function LoginContent() {
       sessionStorage.removeItem('admin_session');
       sessionStorage.setItem('dashboard_session', 'active');
     } catch (err: any) {
+      if (err.code === 'auth/user-disabled') {
+        try {
+          const response = await fetch(`/api/auth/blocking-details?email=${encodeURIComponent(email)}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.suspended && data.blockingDetails) {
+              setError(`ACCESS REVOKED: Reason: ${data.blockingDetails.reason} | Duration: ${data.blockingDetails.duration}`);
+              setIsSubmitting(false);
+              return;
+            }
+          }
+        } catch (e) {
+          console.error('Suspension retrieval failure:', e);
+        }
+      }
       setError(getFirebaseErrorMessage(err));
       setIsSubmitting(false);
     }

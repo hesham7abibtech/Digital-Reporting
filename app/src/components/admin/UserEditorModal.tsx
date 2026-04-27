@@ -74,6 +74,18 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
     const shouldNotify = !wasApproved && isNowApproved;
 
     try {
+      // If status changed to SUSPENDED, block in Auth. If changed from SUSPENDED to ACTIVE/PENDING, unblock in Auth.
+      const wasSuspended = userRecord.status === 'SUSPENDED';
+      const isNowSuspended = formData.status === 'SUSPENDED';
+      
+      if (!wasSuspended && isNowSuspended) {
+        const { adminUserAction } = await import('@/services/FirebaseService');
+        await adminUserAction(userRecord.uid, 'block');
+      } else if (wasSuspended && !isNowSuspended) {
+        const { adminUserAction } = await import('@/services/FirebaseService');
+        await adminUserAction(userRecord.uid, 'unblock');
+      }
+
       await updateUserProfile(userRecord.uid, {
         role: userRecord.role === 'OWNER' ? 'OWNER' : (formData.isAdmin ? 'ADMIN' : 'TEAM_MATE'),
         status: formData.status,

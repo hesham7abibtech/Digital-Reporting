@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useDocument } from 'react-firebase-hooks/firestore';
 import { doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -89,9 +90,29 @@ const DEFAULT_CONFIG: HomePageConfig = {
 export function useHomePageData() {
   const [snapshot, loading, error] = useDocument(doc(db, 'settings', 'homePage'));
 
-  const config: HomePageConfig = snapshot?.exists()
-    ? { ...DEFAULT_CONFIG, ...snapshot.data() } as HomePageConfig
-    : DEFAULT_CONFIG;
+  const config: HomePageConfig = useMemo(() => {
+    if (!snapshot?.exists()) return DEFAULT_CONFIG;
+    
+    const data = snapshot.data() as any;
+    
+    // Deep merge footer to ensure systemItems links are correctly resolved
+    return {
+      ...DEFAULT_CONFIG,
+      ...data,
+      footer: {
+        ...DEFAULT_CONFIG.footer,
+        ...(data.footer || {}),
+        systemItems: (data.footer?.systemItems || DEFAULT_CONFIG.footer.systemItems).map((item: any) => {
+          // If the URL is just a placeholder, try to find the correct default URL by label
+          if (item.url === '#' || !item.url) {
+            const defaultItem = DEFAULT_CONFIG.footer.systemItems.find(d => d.label === item.label);
+            if (defaultItem) return { ...item, url: defaultItem.url };
+          }
+          return item;
+        })
+      }
+    } as HomePageConfig;
+  }, [snapshot]);
 
   return { config, isLoading: loading, error };
 }

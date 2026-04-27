@@ -151,6 +151,13 @@ export interface UserProfile {
   isAdmin: boolean;
   policyId?: string;
   access: UserProfileAccess;
+  status: 'ACTIVE' | 'SUSPENDED' | 'PENDING';
+  blockingDetails?: {
+    reason: string;
+    duration: string;
+    blockedAt: string;
+    expiresAt: string | null;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }

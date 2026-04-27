@@ -73,9 +73,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (snapshot.exists()) {
             const data = snapshot.data();
             
+            // 6. Security Protocol: Access Revocation
+            // If the account status is set to SUSPENDED, immediately terminate the session.
+            if (data.status === 'SUSPENDED') {
+              console.warn('[SECURITY] Terminal access revoked. Terminating session.');
+              await logout();
+              const details = data.blockingDetails;
+              const reasonMsg = details ? `Reason: ${details.reason} | Duration: ${details.duration}` : 'This account has been suspended by an administrator.';
+              setAuthError(`ACCESS REVOKED: ${reasonMsg}`);
+              setLoading(false);
+              return;
+            }
+
             // 5. Immediate State Release
-            // We set the profile state immediately and fire sync updates in the background 
-            // to ensure zero-latency transitions for the user.
             setUserProfile(data as UserProfile);
 
             // 3. Email Verification Sync Logic (Background)
