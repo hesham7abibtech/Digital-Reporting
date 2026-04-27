@@ -1114,16 +1114,16 @@ export function getBimExportColumns(metadataExcluded: string[], format: 'excel' 
     { id: 'Project', excelLabel: 'Project', pdfLabel: 'PROJECT', width: 30 },
     { id: 'Precinct', excelLabel: 'Precinct', pdfLabel: 'PRECINCT', width: 25 },
     { id: 'Stakeholder', excelLabel: 'Stakeholder', pdfLabel: 'STAKEHOLDER', width: 25 },
-    { id: 'Milestone Submissions', excelLabel: 'Milestone Submissions', pdfLabel: 'MILESTONES', width: 50 },
-    { id: 'Submission Category', excelLabel: 'Submission Category', pdfLabel: 'CATEGORY', width: 25 },
-    { id: 'Planned Submission Date', excelLabel: 'Planned Submission Date', pdfLabel: 'PLANNED DATE', width: 20 },
+    { id: 'Milestone Submissions', excelLabel: 'Milestone Submissions', pdfLabel: 'MILESTONE SUBMISSIONS', width: 50 },
+    { id: 'Submission Category', excelLabel: 'Submission Category', pdfLabel: 'SUBMISSION CATEGORY', width: 25 },
+    { id: 'Planned Submission Date', excelLabel: 'Planned Submission Date', pdfLabel: 'PLANNED SUBMISSION DATE', width: 20 },
     { id: 'ACC Status', excelLabel: 'ACC Status', pdfLabel: 'ACC STATUS', width: 20 },
     { id: 'Priority', excelLabel: 'Design Stage', pdfLabel: 'DESIGN STAGE', width: 25 },
-    { id: 'ACC Review ID', excelLabel: 'ACC Review ID', pdfLabel: 'ACC REV ID', width: 20 },
-    { id: 'InSite Review Status', excelLabel: 'InSite Review Status', pdfLabel: 'INSITE STATUS', width: 25 },
-    { id: 'InSite Review Due Date', excelLabel: 'InSite Review Due Date', pdfLabel: 'DUE DATE', width: 20 },
-    { id: 'InSite Reviewer', excelLabel: 'InSite Reviewer', pdfLabel: 'REVIEWER', width: 25 },
-    { id: 'InSite Review Output ACC URL', excelLabel: 'InSite Review Output ACC URL', pdfLabel: 'ACC URL', width: 25 },
+    { id: 'ACC Review ID', excelLabel: 'ACC Review ID', pdfLabel: 'ACC REVIEW ID', width: 20 },
+    { id: 'InSite Review Status', excelLabel: 'InSite Review Status', pdfLabel: 'INSITE REVIEW STATUS', width: 25 },
+    { id: 'InSite Review Due Date', excelLabel: 'InSite Review Due Date', pdfLabel: 'INSITE REVIEW DUE DATE', width: 20 },
+    { id: 'InSite Reviewer', excelLabel: 'InSite Reviewer', pdfLabel: 'INSITE REVIEWER', width: 25 },
+    { id: 'InSite Review Output ACC URL', excelLabel: 'InSite Review Output ACC URL', pdfLabel: 'INSITE REVIEW OUTPUT ACC URL', width: 25 },
     { id: 'Comments', excelLabel: 'Comments', pdfLabel: 'COMMENTS', width: 40 }
   ];
 
@@ -1243,9 +1243,10 @@ export async function exportBimToExcel(
 
       // Hyperlink for review output URL
       const linkIdx = cols.findIndex(c => c.id === 'InSite Review Output ACC URL');
-      if (linkIdx !== -1 && r["InSite Review Output ACC URL"]) {
+      if (linkIdx !== -1 && r["InSite Review Output ACC URL"] && r["InSite Review Output ACC URL"] !== '-') {
         const cell = row.getCell(linkIdx + 1);
-        cell.value = { text: 'View Report', hyperlink: r["InSite Review Output ACC URL"] };
+        const absoluteUrl = ensureAbsoluteUrl(r["InSite Review Output ACC URL"] as string);
+        cell.value = { text: 'View Report', hyperlink: absoluteUrl };
         cell.font = { color: { argb: LINK_COLOR_ARGB }, underline: true, size: 10 };
       }
     });
