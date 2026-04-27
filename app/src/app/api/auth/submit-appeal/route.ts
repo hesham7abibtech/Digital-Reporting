@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminDb, getAdminAuth } from '@/lib/firebase-admin';
+import { firebaseRest } from '@/lib/firebase-rest';
 import { mailService } from '@/services/MailService';
-import { FieldValue } from 'firebase-admin/firestore';
+
+export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,20 +12,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email and notes are required' }, { status: 400 });
     }
 
-    const adminDb = getAdminDb();
-    if (!adminDb) {
-      return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
-    }
-
-    // 1. Create Ticket in Firestore via Admin SDK (Bypassing Rules)
-    const ticketRef = await adminDb.collection('tickets').add({
+    // 1. Create Ticket in Firestore via REST (Bypassing Rules via Admin Auth)
+    const ticketRef = await firebaseRest.firestoreAdd('tickets', {
       email: email,
       type: 'REVOCATION_APPEAL',
       reason: 'Revision Request for Blocked Account',
       message: notes,
       status: 'OPEN',
       priority: 'HIGH',
-      createdAt: FieldValue.serverTimestamp(),
+      createdAt: new Date().toISOString(), // REST doesn't support FieldValue.serverTimestamp easily
       metadata: {
         originalReason,
         originalDuration,
@@ -64,9 +60,10 @@ export async function POST(req: NextRequest) {
       console.error('Admin notification failed:', e);
     }
 
-    return NextResponse.json({ success: true, ticketId: ticketRef.id });
+    return NextResponse.json({ success: true, ticketId: ticketRef.name.split('/').pop() });
   } catch (error: any) {
     console.error('Appeal submission API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

@@ -1,6 +1,7 @@
-// Security Handshake API - Force Rebuild: 2026-04-27
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminDb } from '@/lib/firebase-admin';
+import { firebaseRest } from '@/lib/firebase-rest';
+
+export const runtime = 'edge';
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -10,46 +11,47 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 });
   }
 
-  const adminDb = getAdminDb();
-  if (!adminDb) {
-    console.error('Firebase Admin DB initialization failed');
-    return NextResponse.json({ error: 'Service Unavailable' }, { status: 503 });
-  }
-
   try {
-    const usersRef = adminDb.collection('users');
-    const snapshot = await usersRef.where('email', '==', email).limit(1).get();
+    // 1. Fetch user by email via Firestore REST Query
+    const queryResults = await firebaseRest.firestoreQuery('users', [
+      { field: 'email', op: 'EQUAL', value: email }
+    ]);
 
-    if (snapshot.empty) {
+    const userDoc = queryResults?.[0]?.document;
+    if (!userDoc) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const userData = snapshot.docs[0].data();
+    const userData = userDoc.fields;
 
-    // Check for latest appeal ticket
+    // 2. Check for latest appeal ticket via Firestore REST Query
     let latestAppeal = null;
     try {
-      const ticketsRef = adminDb.collection('tickets');
-      const ticketSnapshot = await ticketsRef
-        .where('email', '==', email)
-        .where('type', '==', 'REVOCATION_APPEAL')
-        .get();
-      
-      if (!ticketSnapshot.empty) {
-        // Sort in memory to avoid needing a composite index for orderBy
-        const sortedDocs = ticketSnapshot.docs.sort((a, b) => {
-          const aTime = a.data().createdAt?.toMillis?.() || 0;
-          const bTime = b.data().createdAt?.toMillis?.() || 0;
-          return bTime - aTime;
-        });
+      const ticketResults = await firebaseRest.firestoreQuery('tickets', [
+        { field: 'email', op: 'EQUAL', value: email },
+        { field: 'type', op: 'EQUAL', value: 'REVOCATION_APPEAL' }
+      ]);
 
-        const tData = sortedDocs[0].data();
+      if (ticketResults && ticketResults.length > 0) {
+        // RunQuery returns an array of { document: ... }
+        // Sort in memory (already handled by the utility potentially, but we'll do it here)
+        const sortedTickets = ticketResults
+          .filter((r: any) => r.document)
+          .sort((a: any, b: any) => {
+            const aTime = new Date(a.document.createTime).getTime();
+            const bTime = new Date(b.document.createTime).getTime();
+            return bTime - aTime;
+          });
+
+        const tDoc = sortedTickets[0].document;
+        const tFields = tDoc.fields;
+        
         latestAppeal = {
-          status: tData.status,
-          message: tData.message || null,
-          adminResponse: tData.adminResponse || null,
-          createdAt: tData.createdAt?.toDate?.() || null,
-          updatedAt: tData.updatedAt?.toDate?.() || tData.createdAt?.toDate?.() || null
+          status: tFields.status?.stringValue,
+          message: tFields.message?.stringValue || null,
+          adminResponse: tFields.adminResponse?.stringValue || null,
+          createdAt: tDoc.createTime,
+          updatedAt: tDoc.updateTime
         };
       }
     } catch (e) {
@@ -57,10 +59,16 @@ export async function GET(req: NextRequest) {
     }
 
     // Only return blocking details, nothing else for security
-    if (userData.status === 'SUSPENDED' && userData.blockingDetails) {
+    const status = userData.status?.stringValue;
+    if (status === 'SUSPENDED' && userData.blockingDetails) {
+      // Map complex blockingDetails if needed, or return as is
       return NextResponse.json({
         suspended: true,
-        blockingDetails: userData.blockingDetails,
+        blockingDetails: {
+          reason: userData.blockingDetails.mapValue?.fields?.reason?.stringValue,
+          duration: userData.blockingDetails.mapValue?.fields?.duration?.stringValue,
+          blockedAt: userData.blockingDetails.mapValue?.fields?.blockedAt?.stringValue,
+        },
         latestAppeal
       });
     }
@@ -71,3 +79,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
