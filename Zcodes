@@ -14,7 +14,7 @@ npm run build
 # 3. Commit & Push to GitHub
 # Cloudflare Pages will automatically detect changes and build in its native Linux environment
 git add -A
-git commit -m "feat: infrastructure and auth stabilization"
+git commit -m "update"
 git push
 
 # 4. Deployment Status
