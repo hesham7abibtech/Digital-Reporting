@@ -403,7 +403,7 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {[
-                          { id: 'table' as const, label: reportType === 'BIM_REVIEWS' ? 'BIM Matrix' : 'Task Registry', icon: <Table size={18} />, desc: 'Data Table Export' },
+                          { id: 'table' as const, label: reportType === 'BIM_REVIEWS' ? 'BIM Review Matrix' : 'Task Registry', icon: <Table size={18} />, desc: 'Data Table Export' },
                           { id: 'dashboard' as const, label: 'Analytics View', icon: <BarChart3 size={18} />, desc: 'Charts & KPIs' },
                           { id: 'both' as const, label: 'Consolidated Report', icon: <Zap size={18} />, desc: 'Full Executive Suite' },
                         ].map(opt => (
