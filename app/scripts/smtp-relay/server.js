@@ -168,25 +168,25 @@ const getTemplate = (type, payload) => {
         [data-ogsc] .text-primary { color: #003f49 !important; }
       </style>
     </head>
-    <body style="margin: 0; padding: 0; background-color: #002d35;">
-      <!--[if mso]>
-      <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:100%; height:1000px;">
-        <v:fill type="tile" color="#002d35" />
-        <v:textbox inset="0,0,0,0">
-      <![endif]-->
-      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #002d35;" class="outlook-bg">
+    <body style="margin: 0; padding: 0; background-color: #002d35;" bgcolor="#002d35">
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#002d35" style="background-color: #002d35; width: 100%;" class="outlook-bg">
         <tr>
-          <td align="center" style="padding: 60px 20px;">
-            <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #E2E8F0; box-shadow: 0 20px 50px rgba(0,0,0,0.3);" class="card">
+          <td align="center" style="padding: 60px 20px;" bgcolor="#002d35">
+            <!--[if mso]>
+            <table align="center" border="0" cellspacing="0" cellpadding="0" width="600">
+            <tr>
+            <td align="center" valign="top" width="600" bgcolor="#ffffff">
+            <![endif]-->
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff" style="background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #E2E8F0; box-shadow: 0 20px 50px rgba(0,0,0,0.3); max-width: 600px; margin: 0 auto;" class="card">
               <!-- Header Section -->
               <tr>
-                <td align="center" style="background-color: #002d35; padding: 28px 30px; border-bottom: 4px solid ${accentColor};">
+                <td align="center" bgcolor="#002d35" style="background-color: #002d35; padding: 28px 30px; border-bottom: 4px solid ${accentColor};">
                   ${logoGroup}
                 </td>
               </tr>
               <!-- Body Section -->
               <tr>
-                <td align="center" style="padding: 40px 50px 60px; color: ${textColor}; text-align: center;">
+                <td align="center" bgcolor="#ffffff" style="background-color: #ffffff; padding: 40px 50px 60px; color: ${textColor}; text-align: center;">
                   ${icon ? `<div style="text-align: center; margin-bottom: 30px; font-size: 48px;">${icon}</div>` : ''}
                   <div style="display: inline-block; width: 100%; text-align: center;">
                     ${content}
@@ -195,20 +195,21 @@ const getTemplate = (type, payload) => {
               </tr>
               <!-- Footer Section -->
               <tr>
-                <td align="center" style="padding: 30px; background-color: #F1F5F9; border-top: 1px solid #E2E8F0; color: #64748B; font-size: 13px;">
+                <td align="center" bgcolor="#F1F5F9" style="background-color: #F1F5F9; padding: 30px; border-top: 1px solid #E2E8F0; color: #64748B; font-size: 13px;">
                   <div style="font-weight: 800; color: #003f49; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px;">REH Digital Reporting</div>
                   <div style="font-weight: 600;">Industrial Authority Security Network</div>
                   <div style="margin-top: 12px; font-size: 11px; opacity: 0.7;">This is an automated security transmission. Confidentiality protocols active.</div>
                 </td>
               </tr>
             </table>
+            <!--[if mso]>
+            </td>
+            </tr>
+            </table>
+            <![endif]-->
           </td>
         </tr>
       </table>
-      <!--[if mso]>
-        </v:textbox>
-      </v:rect>
-      <![endif]-->
     </body>
     </html>
   `;

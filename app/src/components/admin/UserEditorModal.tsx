@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Trash2, Mail, Shield, User, Info, Check, AlertCircle, ShieldCheck, CheckCircle2, UserCheck, Layout, BarChart2, Briefcase, Calendar, Clock } from 'lucide-react';
-import { updateUserProfile, deleteUserProfile } from '@/services/FirebaseService';
+import { X, Save, Trash2, Mail, Shield, User, Info, Check, AlertCircle, ShieldCheck, CheckCircle2, UserCheck, Layout, BarChart2, Briefcase, Calendar, Clock, Camera, Loader2 } from 'lucide-react';
+import { updateUserProfile, deleteUserProfile, uploadFile } from '@/services/FirebaseService';
 import { useAuth } from '@/context/AuthContext';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
@@ -34,6 +34,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
     }
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const { showToast } = useToast();
@@ -153,6 +154,27 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
     }));
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploadingAvatar(true);
+      setErrorMsg(null);
+      // Construct a path for the avatar
+      const path = `avatars/${userRecord.uid}/${Date.now()}_${file.name}`;
+      const url = await uploadFile(file, path);
+      setFormData((prev: any) => ({ ...prev, avatar: url }));
+      showToast('Profile picture uploaded successfully', 'SUCCESS');
+    } catch (error) {
+      console.error('Avatar upload failed:', error);
+      setErrorMsg('Failed to upload profile picture. Please try again.');
+      showToast('Upload failed', 'ERROR');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       {/* Premium Backdrop */}
@@ -185,6 +207,42 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
           
           {/* LEFT COLUMN: IDENTITY & SECURITY */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            
+            {/* AVATAR UPLOAD */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ position: 'relative', width: 64, height: 64, borderRadius: '50%', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0, 63, 73, 0.1)', overflow: 'hidden', flexShrink: 0 }}>
+                {formData.avatar ? (
+                  <img src={formData.avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <User size={24} color="var(--teal)" opacity={0.5} />
+                )}
+                {isUploadingAvatar && (
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Loader2 size={20} className="animate-spin" color="var(--teal)" />
+                  </div>
+                )}
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Profile Picture</label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', transition: 'all 200ms' }}>
+                    <Camera size={14} />
+                    Change Photo
+                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} disabled={isUploadingAvatar} />
+                  </label>
+                  {formData.avatar && (
+                    <button
+                      onClick={() => setFormData((prev: any) => ({ ...prev, avatar: null }))}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: '#ef4444', border: '1px solid #dc2626', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 800, color: '#ffffff', transition: 'all 200ms', boxShadow: '0 2px 8px rgba(239, 68, 68, 0.25)', letterSpacing: '0.02em' }}
+                    >
+                      <Trash2 size={14} color="#ffffff" />
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div>
               <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Identity Name</label>
               <div style={{ position: 'relative' }}>
