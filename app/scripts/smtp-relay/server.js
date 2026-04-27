@@ -345,6 +345,58 @@ const getTemplate = (type, payload) => {
     `, '📢');
   }
 
+  if (type === 'REVOCATION_APPEAL') {
+    const isAdminVersion = !!payload.userEmail;
+
+    if (isAdminVersion) {
+      return baseContainer(`
+        <div style="text-align: center; margin-bottom: 24px;">
+          <div style="background-color: #991B1B; color: white; padding: 10px 18px; border-radius: 8px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; display: inline-block;">Priority Escalation</div>
+        </div>
+        <h2 style="margin: 0 0 16px 0; color: #991B1B; font-size: 24px; font-weight: 900; text-align: center;">Account Revision Appeal</h2>
+        <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+          <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #E2E8F0;">
+            <div style="font-size: 11px; font-weight: 900; color: #64748B; text-transform: uppercase; margin-bottom: 4px;">Subject Operative</div>
+            <div style="font-size: 16px; font-weight: 700; color: #0F172A;">${payload.userEmail}</div>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 11px; font-weight: 900; color: #64748B; text-transform: uppercase; margin-bottom: 4px;">Justification Notes</div>
+            <div style="font-size: 14px; color: #334155; font-style: italic; background: #FFFFFF; padding: 12px; border-radius: 8px; border: 1px solid #F1F5F9;">"${payload.notes}"</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <div style="font-size: 10px; font-weight: 900; color: #94A3B8; text-transform: uppercase;">Original Reason</div>
+              <div style="font-size: 12px; font-weight: 700; color: #475569;">${payload.originalReason || 'Not Specified'}</div>
+            </div>
+            <div>
+              <div style="font-size: 10px; font-weight: 900; color: #94A3B8; text-transform: uppercase;">Duration</div>
+              <div style="font-size: 12px; font-weight: 700; color: #475569;">${payload.originalDuration || 'Permanent'}</div>
+            </div>
+          </div>
+        </div>
+        ${button('Access Command Center', 'https://rehdigital.com/admin/dashboard')}
+      `, '🚨');
+    }
+
+    return baseContainer(`
+      <h2 style="margin: 0 0 20px 0; color: ${brandColor}; font-size: 28px; text-align: center; font-weight: 900; letter-spacing: -0.02em; line-height: 1.2;">Appeal Received</h2>
+      <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.6; text-align: center; color: #475569;">Your account revision request has been securely logged in our system.</p>
+      <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+          <td align="center" style="padding: 24px; background-color: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 16px; text-align: center;">
+            <div style="color: #475569; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Protocol Status: UNDER REVIEW</div>
+            <div style="color: #64748B; font-size: 13px;">Our security board is currently evaluating your justification. You will receive an automated transmission once a decision is synchronized.</div>
+          </td>
+        </tr>
+      </table>
+      <div style="margin-top: 24px; padding: 16px; border-left: 4px solid ${accentColor}; background: #F8FAFC; text-align: left;">
+        <div style="font-size: 11px; font-weight: 900; color: ${brandColor}; text-transform: uppercase; margin-bottom: 4px;">Your Submission:</div>
+        <div style="font-size: 13px; color: #334155;">${payload.notes}</div>
+      </div>
+      <p style="margin: 24px 0 0 0; font-size: 14px; text-align: center; color: #64748B;">No further action is required at this time.</p>
+    `, '⚖️');
+  }
+
   if (type === 'NEWS') {
     return baseContainer(`
       <div style="text-align: center; margin-bottom: 24px;">

@@ -321,24 +321,21 @@ export interface NavItem {
 // ─── Department Types ─────────────────────────────────────────────
 // ─── BIM Review Types ─────────────────────────────────────────────
 export interface BIMReview {
-  id: string;
-  submissionDescription: string;
-  comments: string;
-  designStage: string;
-  insiteBimReviewStatus: string;
-  insiteReviewDueDate?: string | null;
-  insiteReviewOutputUrl?: string;
-  insiteReviewer: string;
-  insiteReviewerEmail?: string;
-  insiteReviewerId?: string;
-  modonHillFinalReviewStatus: string;
-  onAcc: string; // "SHARED" | "NOT SHARED" 
-  project: string;
-  precinct?: string;
-  reviewNumber?: string;
-  stakeholder: string;
-  submissionCategory: string[]; // array of categories
-  submissionDate?: string | null;
+  "ID": string;
+  "Precinct": string[];
+  "Stakeholder": string;
+  "Project": string;
+  "Milestone Submissions": string[];
+  "Submission Category": string[];
+  "Planned Submission Date": string[]; // Array of ISO Dates, properly formatted
+  "ACC Status": string[];
+  "Priority": string;
+  "ACC Review ID": string;
+  "InSite Review Status": string;
+  "InSite Review Due Date": string | null;
+  "InSite Reviewer": string[];
+  "InSite Review Output ACC URL": string;
+  "Comments": string;
   createdAt: string;
   updatedAt: string;
 }

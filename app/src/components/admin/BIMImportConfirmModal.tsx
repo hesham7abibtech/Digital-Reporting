@@ -53,27 +53,41 @@ export default function BIMImportConfirmModal({
 
             <div className="custom-scrollbar" style={{ padding: 32, overflowY: 'auto', maxHeight: '50vh' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead style={{ background: 'rgba(0,0,0,0.3)', position: 'sticky', top: 0, zIndex: 10 }}>
+                <thead style={{ 
+                  background: '#ffffff', 
+                  position: 'sticky', 
+                  top: 0, 
+                  zIndex: 50, 
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  opacity: 1
+                }}>
                   <tr>
-                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Project</th>
-                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Description</th>
-                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Stage</th>
-                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Status</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Project & Milestone</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Priority</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>InSite Status</th>
                     <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Stakeholder</th>
-                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Date</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>ACC Status</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Submission Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   {records.map((rec, i) => (
                     <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>{rec.project}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-secondary)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rec.submissionDescription}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-secondary)' }}>{rec.designStage}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 12 }}>
-                        <span style={{ background: 'var(--secondary)', color: 'var(--teal)', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 900 }}>{rec.insiteBimReviewStatus || 'EMPTY'}</span>
+                      <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>
+                        <div>{rec.Project}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>{(rec["Milestone Submissions"] || []).join(', ')}</div>
                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-secondary)' }}>{rec.stakeholder}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-secondary)' }}>{rec.submissionDate || 'N/A'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-secondary)' }}>{rec.Priority}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12 }}>
+                        <span style={{ background: 'var(--secondary)', color: 'var(--teal)', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 900 }}>{rec["InSite Review Status"] || 'PENDING'}</span>
+                      </td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-secondary)' }}>{rec.Stakeholder}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: '#059669', fontWeight: 800 }}>
+                        {(rec["ACC Status"] || []).length > 0 ? (rec["ACC Status"] || []).join(', ') : 'NOT SHARED'}
+                      </td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-secondary)', fontWeight: 700 }}>
+                        {(rec["Planned Submission Date"] || [])[0] || '—'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

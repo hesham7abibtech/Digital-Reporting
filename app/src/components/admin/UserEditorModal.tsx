@@ -11,6 +11,7 @@ import { useToast } from '@/components/shared/EliteToast';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { formatDate } from '@/lib/utils';
 
 interface UserEditorProps {
   userRecord: any | null;
@@ -229,7 +230,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
                     <Calendar size={10} color="var(--text-dim)" />
                     <span style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Profile Initialized</span>
                   </div>
-                  <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', fontWeight: 800 }}>{userRecord.createdAt ? new Date(userRecord.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</span>
+                  <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', fontWeight: 800 }}>{formatDate(userRecord.createdAt)}</span>
                </div>
                <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>

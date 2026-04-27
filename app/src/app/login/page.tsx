@@ -12,6 +12,7 @@ import {
   sendEmailVerification
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
+import { formatDate } from '@/lib/utils';
 import { waitForPendingWrites, doc, updateDoc } from 'firebase/firestore';
 import { createUserProfile, getProjectMetadata, logRegistrationEvent } from '@/services/FirebaseService';
 import { useAuth } from '@/context/AuthContext';
@@ -23,7 +24,7 @@ import {
   Lock, Mail, Loader2, Globe, ShieldCheck,
   UserPlus, ArrowLeft, User, ShieldAlert,
   ChevronRight, Fingerprint, Database, Cpu,
-  CheckCircle2, Eye, EyeOff, Circle, Briefcase, Home, LifeBuoy
+  CheckCircle2, Eye, EyeOff, Circle, Briefcase, Home, LifeBuoy, RefreshCw, X
 } from 'lucide-react';
 import TicketRequestModal from '@/components/shared/TicketRequestModal';
 
@@ -59,6 +60,12 @@ function LoginContent() {
   const [resendStatus, setResendStatus] = useState<'idle' | 'sent' | 'error'>('idle');
   const [resendTimer, setResendTimer] = useState(0);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+  const [revocationData, setRevocationData] = useState<{ reason: string; duration: string; blockedAt?: string; expiresAt?: string | null } | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewNotes, setReviewNotes] = useState('');
+  const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
+  const [hasPendingAppeal, setHasPendingAppeal] = useState(false);
+  const [latestAppeal, setLatestAppeal] = useState<{ status: string; message?: string | null; adminResponse: string | null; createdAt?: string | null; updatedAt: string | Date | null } | null>(null);
 
   // Real-time Verification Observer
   useEffect(() => {
@@ -109,21 +116,53 @@ function LoginContent() {
   }, [user, userProfile]);
 
   useEffect(() => {
-    if (loading) return;
+    if (authError?.includes('ACCESS REVOKED') && userProfile?.blockingDetails) {
+      setRevocationData(userProfile.blockingDetails);
+    }
+  }, [authError, userProfile]);
+
+  // Polling Watchdog for Real-time Synchronization
+  useEffect(() => {
+    if (error !== 'ACCESS_REVOKED' || !email) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/auth/blocking-details?email=${encodeURIComponent(email)}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.suspended && data.blockingDetails) {
+            setRevocationData(data.blockingDetails);
+            setLatestAppeal(data.latestAppeal);
+            setHasPendingAppeal(data.latestAppeal?.status === 'OPEN');
+          }
+        }
+      } catch (e) {
+        console.error('Polling sync failure:', e);
+      }
+    }, 10000); // 10s pulse
+
+    return () => clearInterval(pollInterval);
+  }, [error, email]);
+
+  useEffect(() => {
 
     // ISOLATION PROTOCOL: Only react to auth state if dashboard_session is active
     // OR if the user is actively submitting login credentials (isSubmitting).
     // This prevents cross-contamination from the admin portal.
     const hasDashboardSession = sessionStorage.getItem('dashboard_session') === 'active';
     const hasAdminSessionOnly = sessionStorage.getItem('admin_session') === 'active' && !hasDashboardSession;
-    
+
     // If the user signed in through admin portal only, don't auto-redirect here
     if (user && hasAdminSessionOnly && !isSubmitting) {
       return;
     }
 
     if (user && authError) {
-      setError(`Authentication error: ${authError}`);
+      if (authError.includes('ACCESS REVOKED')) {
+        setError('ACCESS_REVOKED');
+      } else {
+        setError(`Authentication error: ${authError}`);
+      }
       setIsSubmitting(false);
       return;
     }
@@ -175,14 +214,16 @@ function LoginContent() {
       if (auth.currentUser) {
         await auth.signOut();
       }
-      
+
+      // 3. Ensure strict session persistence is initialized
+      await setPersistence(auth, browserSessionPersistence);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
+
       // Fire-and-forget telemetry (Non-blocking)
       updateDoc(doc(db, 'users', userCredential.user.uid), {
         lastLoginAt: new Date().toISOString()
       }).catch(e => console.error('Failed to sync login timestamp:', e));
-      
+
       // Sync verification state
       if (userCredential.user.emailVerified) {
         setIsEmailVerified(true);
@@ -196,13 +237,21 @@ function LoginContent() {
       sessionStorage.removeItem('admin_session');
       sessionStorage.setItem('dashboard_session', 'active');
     } catch (err: any) {
-      if (err.code === 'auth/user-disabled') {
+      // Don't flood console with expected disabled errors in dev
+      if (err.code !== 'auth/user-disabled') {
+        console.error('Login error:', err);
+      }
+
+      if (err.code === 'auth/user-disabled' || err.message?.includes('disabled') || err.message?.includes('user-disabled')) {
         try {
           const response = await fetch(`/api/auth/blocking-details?email=${encodeURIComponent(email)}`);
           if (response.ok) {
             const data = await response.json();
             if (data.suspended && data.blockingDetails) {
-              setError(`ACCESS REVOKED: Reason: ${data.blockingDetails.reason} | Duration: ${data.blockingDetails.duration}`);
+              setRevocationData(data.blockingDetails);
+              setLatestAppeal(data.latestAppeal);
+              setHasPendingAppeal(data.latestAppeal?.status === 'OPEN');
+              setError('ACCESS_REVOKED');
               setIsSubmitting(false);
               return;
             }
@@ -252,18 +301,18 @@ function LoginContent() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await logRegistrationEvent(userCredential.user.uid, 'AUTH_CREATED', 'success', { email });
       await updateProfile(userCredential.user, { displayName: fullName });
-      
+
       // 1. AWS Consolidated Identity Handshake
       console.log('%c[AUTH] Starting Master Relay handshake...', 'color: #008080; font-weight: bold;');
       try {
         const { mailService } = await import('@/services/MailService');
-        
+
         // Dispatch User Verification (Branded)
         await mailService.sendVerificationLink(email, fullName);
-        
+
         // Dispatch Admin Notification
-        await mailService.notifyAdminOfNewUser(fullName, email, 'verification@rehdigital.com'); 
-        
+        await mailService.notifyAdminOfNewUser(fullName, email, 'verification@rehdigital.com');
+
         console.log('%c[AUTH] AWS Master Relay sequences complete.', 'color: #2e7d32; font-weight: bold;');
         await logRegistrationEvent(userCredential.user.uid, 'VERIFICATION_SENT', 'success');
       } catch (emailErr: any) {
@@ -294,7 +343,7 @@ function LoginContent() {
       const dispatchNotifications = async () => {
         try {
           const { mailService } = await import('@/services/MailService');
-          
+
           // Notify User of Pending Status
           await mailService.dispatch({
             to: email,
@@ -316,7 +365,7 @@ function LoginContent() {
           console.error('[AUTH] Notification dispatch failed:', mailErr);
         }
       };
-      
+
       dispatchNotifications();
 
       setIsSubmitting(false);
@@ -337,10 +386,10 @@ function LoginContent() {
     setIsSubmitting(true);
     try {
       setEmailNotFound(false);
-      
+
       const { mailService } = await import('@/services/MailService');
       await mailService.sendPasswordReset(email, 'User');
-      
+
       setShowResetSuccess(true);
       setIsSubmitting(false);
     } catch (err: any) {
@@ -377,7 +426,7 @@ function LoginContent() {
       padding: 20, position: 'relative', overflow: 'hidden'
     }}>
       {/* Clean Light Background */}
-      <div style={{ 
+      <div style={{
         position: 'absolute', inset: 0, opacity: 0.4, pointerEvents: 'none',
         background: 'radial-gradient(circle at 50% 0%, rgba(0, 242, 255, 0.05) 0%, transparent 70%)'
       }} />
@@ -412,34 +461,34 @@ function LoginContent() {
           </motion.button>
 
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-            <div style={{ 
-              background: '#003f49', 
-              padding: '10px 28px', 
-              borderRadius: 16, 
-              display: 'flex', 
-              alignItems: 'center', 
+            <div style={{
+              background: '#003f49',
+              padding: '10px 28px',
+              borderRadius: 16,
+              display: 'flex',
+              alignItems: 'center',
               gap: 12,
               boxShadow: '0 8px 24px rgba(0, 63, 73, 0.15)'
             }}>
-                <motion.img 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  src="/logos/modon_logo.png" 
-                  alt="MODON" 
-                  style={{ height: 20, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} 
-                />
-                <div style={{ width: 1, height: 14, background: 'rgba(255, 255, 255, 0.2)' }} />
-                <motion.img 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  src="/logos/insite_logo.png" 
-                  alt="INSITE" 
-                  style={{ height: 16, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} 
-                />
+              <motion.img
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                src="/logos/modon_logo.png"
+                alt="MODON"
+                style={{ height: 20, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
+              />
+              <div style={{ width: 1, height: 14, background: 'rgba(255, 255, 255, 0.2)' }} />
+              <motion.img
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                src="/logos/insite_logo.png"
+                alt="INSITE"
+                style={{ height: 16, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
+              />
             </div>
           </div>
-            
+
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <h1 className="brand-heading" style={{
               fontSize: 26, color: '#003f49', margin: '0 0 4px',
@@ -516,31 +565,126 @@ function LoginContent() {
 
             {error && (
               <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{
-                padding: '12px 14px', borderRadius: 12,
-                background: 'rgba(255, 76, 79, 0.06)', border: '1px solid rgba(255, 76, 79, 0.15)',
-                color: 'var(--status-error)', fontSize: 12, fontWeight: 700,
-                display: 'flex', flexDirection: 'column', gap: 10
+                borderRadius: 20,
+                overflow: 'hidden',
+                background: error === 'ACCESS_REVOKED' ? 'rgba(153, 27, 27, 0.05)' : 'rgba(255, 76, 79, 0.06)',
+                border: error === 'ACCESS_REVOKED' ? '1px solid rgba(153, 27, 27, 0.15)' : '1px solid rgba(255, 76, 79, 0.15)',
               }}>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                  <ShieldAlert size={14} style={{ flexShrink: 0, marginTop: 2 }} /> 
-                  <span style={{ lineHeight: 1.4 }}>{error}</span>
-                </div>
-                
-                {emailNotFound && (
-                  <button 
-                    type="button" 
-                    onClick={() => { setError(''); setEmailNotFound(false); setMode('register'); }}
-                    style={{ 
-                      width: '100%', padding: '10px', borderRadius: 10, 
-                      background: 'var(--teal)', color: 'white', 
-                      border: 'none', fontSize: 11, fontWeight: 800, 
-                      cursor: 'pointer', textTransform: 'uppercase', 
-                      letterSpacing: '0.05em', boxShadow: '0 4px 12px rgba(0, 63, 73, 0.2)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
-                    }}
-                  >
-                    <UserPlus size={14} /> Create New Account
-                  </button>
+                {error === 'ACCESS_REVOKED' && revocationData ? (
+                  <div style={{ padding: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                      <motion.div
+                        animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                        style={{ width: 36, height: 36, borderRadius: 12, background: 'rgba(153, 27, 27, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <ShieldAlert size={20} color="#991b1b" />
+                      </motion.div>
+                      <div>
+                        <h4 style={{ fontSize: 12, fontWeight: 900, color: '#991b1b', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Account Blocked</h4>
+                        <div style={{ fontSize: 9, color: '#b91c1c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: 1 }}>Identity Restricted</div>
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#ffffff', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(153, 27, 27, 0.1)', marginBottom: 12 }}>
+                      <div style={{ fontSize: 9, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Reason</div>
+                      <div style={{ fontSize: 13, color: '#1e293b', fontWeight: 800, lineHeight: 1.4 }}>{revocationData.reason}</div>
+                    </div>
+
+                    <div style={{ background: '#fef2f2', padding: '10px 12px', borderRadius: 10, border: '1px solid #fee2e2' }}>
+                      <div style={{ fontSize: 8, fontWeight: 900, color: '#991b1b', textTransform: 'uppercase', marginBottom: 2 }}>Duration</div>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: '#1e293b' }}>{revocationData.duration}</div>
+                    </div>
+
+
+                    {latestAppeal?.adminResponse && (
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                        style={{ marginTop: 12, background: latestAppeal?.status === 'RESOLVED' ? 'rgba(46, 125, 50, 0.05)' : '#f1f5f9', padding: '12px', borderRadius: 12, border: latestAppeal?.status === 'RESOLVED' ? '1px solid rgba(46, 125, 50, 0.2)' : '1px solid #e2e8f0', position: 'relative' }}
+                      >
+                        <div style={{ fontSize: 8, fontWeight: 900, color: latestAppeal?.status === 'RESOLVED' ? '#2e7d32' : '#475569', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Admin Response</div>
+                        <div style={{ fontSize: 12, color: '#1e293b', fontWeight: 700, lineHeight: 1.4 }}>{latestAppeal.adminResponse}</div>
+                      </motion.div>
+                    )}
+
+                    <div style={{ marginTop: 12, borderTop: '1px solid rgba(153, 27, 27, 0.1)', paddingTop: 12 }}>
+                      <button 
+                        type="button"
+                        disabled={hasPendingAppeal}
+                        onClick={() => setIsReviewModalOpen(true)}
+                        style={{ 
+                          width: '100%', padding: '10px', borderRadius: 10, 
+                          background: hasPendingAppeal ? 'rgba(153, 27, 27, 0.05)' : '#991b1b', 
+                          color: hasPendingAppeal ? '#991b1b' : 'white', 
+                          border: hasPendingAppeal ? '1px solid rgba(153, 27, 27, 0.2)' : 'none', 
+                          fontSize: 11, fontWeight: 800, 
+                          cursor: hasPendingAppeal ? 'not-allowed' : 'pointer', 
+                          textTransform: 'uppercase', 
+                          letterSpacing: '0.05em', 
+                          boxShadow: hasPendingAppeal ? 'none' : '0 4px 12px rgba(153, 27, 27, 0.2)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          opacity: hasPendingAppeal ? 0.7 : 1
+                        }}
+                      >
+                        {hasPendingAppeal ? (
+                          <><ShieldCheck size={14} /> REQUEST ACTIVE</>
+                        ) : (
+                          <><RefreshCw size={14} /> REQUEST REVISION</>
+                        )}
+                      </button>
+                    </div>
+
+                    {latestAppeal?.status === 'OPEN' && latestAppeal?.message && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                        style={{ marginTop: 16, background: 'rgba(245, 158, 11, 0.05)', padding: '16px', borderRadius: 16, border: '1px solid rgba(245, 158, 11, 0.2)', position: 'relative', overflow: 'hidden' }}
+                      >
+                        <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: '#f59e0b' }} />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                          <div>
+                            <div style={{ fontSize: 9, fontWeight: 900, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Previous Submitted Request</div>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8' }}>{formatDate(latestAppeal.createdAt)}</div>
+                          </div>
+                          <div style={{ 
+                            padding: '4px 8px', borderRadius: 6, background: 'rgba(245, 158, 11, 0.1)', 
+                            fontSize: 9, fontWeight: 900, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em',
+                            border: '1px solid rgba(245, 158, 11, 0.2)'
+                          }}>
+                            Decision: PENDING
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 13, color: '#1e293b', fontWeight: 600, lineHeight: 1.5, fontStyle: 'italic' }}>"{latestAppeal.message}"</div>
+                      </motion.div>
+                    )}
+
+                    <div style={{ marginTop: 16, textAlign: 'center', fontSize: 8, color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Hash: ERR_AUTH_REVOKED_{revocationData.blockedAt?.split('T')[0].replace(/-/g, '') || '0000'}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '12px 14px', color: 'var(--status-error)', fontSize: 12, fontWeight: 700, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                    <ShieldAlert size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+                    <span style={{ lineHeight: 1.4 }}>{error}</span>
+                  </div>
+                )}
+
+                {emailNotFound && error !== 'ACCESS_REVOKED' && (
+                  <div style={{ padding: '0 14px 14px' }}>
+                    <button
+                      type="button"
+                      onClick={() => { setError(''); setEmailNotFound(false); setMode('register'); }}
+                      style={{
+                        width: '100%', padding: '10px', borderRadius: 10,
+                        background: 'var(--teal)', color: 'white',
+                        border: 'none', fontSize: 11, fontWeight: 800,
+                        cursor: 'pointer', textTransform: 'uppercase',
+                        letterSpacing: '0.05em', boxShadow: '0 4px 12px rgba(0, 63, 73, 0.2)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+                      }}
+                    >
+                      <UserPlus size={14} /> Create New Account
+                    </button>
+                  </div>
                 )}
               </motion.div>
             )}
@@ -586,7 +730,7 @@ function LoginContent() {
               {mode === 'login' ? <><UserPlus size={14} /> Don&apos;t have an account? Register</> :
                 <><ArrowLeft size={14} /> Back to Sign In</>}
             </button>
-            
+
             <button
               onClick={() => setIsTicketModalOpen(true)}
               style={{ background: 'none', border: 'none', color: '#003f49', fontSize: 11, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '32px auto 0', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -594,7 +738,7 @@ function LoginContent() {
             </button>
           </div>
         </div>
-        
+
         <div style={{
           padding: '14px 36px', background: 'rgba(0, 63, 73, 0.03)',
           borderTop: '1px solid rgba(0, 63, 73, 0.06)',
@@ -611,12 +755,17 @@ function LoginContent() {
       <AnimatePresence>
         {showRegistrationSuccess && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'absolute', inset: 0, background: 'rgba(0, 45, 53, 0.6)', backdropFilter: 'blur(20px)' }} />
+            <motion.div 
+              key="modal-backdrop"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+              style={{ position: 'absolute', inset: 0, background: 'rgba(0, 45, 53, 0.6)', backdropFilter: 'blur(20px)' }} 
+            />
             <motion.div
+              key="modal-content"
               initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               style={{ width: '100%', maxWidth: 460, background: 'rgba(0, 63, 73, 0.85)', backdropFilter: 'blur(40px)', border: '1px solid rgba(208, 171, 130, 0.3)', borderRadius: 32, padding: '48px 40px', position: 'relative', zIndex: 1, boxShadow: '0 40px 100px rgba(0,0,0,0.5)' }}>
-              
+
               <div style={{ textAlign: 'center', marginBottom: 32 }}>
                 <div style={{ width: 80, height: 80, borderRadius: 24, background: 'linear-gradient(135deg, #003f49 0%, #002d35 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid rgba(208, 171, 130, 0.4)', boxShadow: '0 0 30px rgba(208, 171, 130, 0.2)' }}>
                   <ShieldCheck size={40} color="#d0ab82" />
@@ -631,88 +780,88 @@ function LoginContent() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 32 }}>
                 {/* Stage 1: Verification */}
-                  <motion.div 
-                    animate={{ 
-                      scale: authStatusMode === 'unapproved' ? [1, 1.02, 1] : 1,
-                      boxShadow: authStatusMode === 'unapproved' ? '0 0 20px rgba(82, 97, 54, 0.15)' : 'none'
-                    }}
-                    style={{ 
-                      display: 'flex', gap: 16, padding: '20px', borderRadius: 20, 
-                      background: (isEmailVerified || authStatusMode === 'unapproved') ? 'rgba(208, 171, 130, 0.08)' : 'rgba(0, 63, 73, 0.2)', 
-                      border: (isEmailVerified || authStatusMode === 'unapproved') ? '1px solid rgba(208, 171, 130, 0.3)' : '1px solid rgba(208, 171, 130, 0.1)',
-                      transition: 'all 500ms ease'
-                    }}
-                  >
-                    <div style={{ 
-                      width: 28, height: 28, borderRadius: '50%', 
-                      background: (isEmailVerified || authStatusMode === 'unapproved') ? '#d0ab82' : 'rgba(208, 171, 130, 0.15)', 
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                      transition: 'background 400ms ease'
-                    }}>
-                      <AnimatePresence mode="wait">
-                        {(isEmailVerified || authStatusMode === 'unapproved') ? (
-                          <motion.div
-                            key="success"
-                            initial={{ scale: 0, rotate: -20 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{ type: 'spring', damping: 12, stiffness: 200 }}
-                          >
-                            <CheckCircle2 size={16} color="#002d35" />
-                          </motion.div>
-                        ) : (
-                          <motion.span 
-                            key="number"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            style={{ fontSize: 12, fontWeight: 900, color: 'var(--teal)' }}
-                          >
-                            01
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <AnimatePresence mode="wait">
+                <motion.div
+                  animate={{
+                    scale: authStatusMode === 'unapproved' ? [1, 1.02, 1] : 1,
+                    boxShadow: authStatusMode === 'unapproved' ? '0 0 20px rgba(82, 97, 54, 0.15)' : 'none'
+                  }}
+                  style={{
+                    display: 'flex', gap: 16, padding: '20px', borderRadius: 20,
+                    background: (isEmailVerified || authStatusMode === 'unapproved') ? 'rgba(208, 171, 130, 0.08)' : 'rgba(0, 63, 73, 0.2)',
+                    border: (isEmailVerified || authStatusMode === 'unapproved') ? '1px solid rgba(208, 171, 130, 0.3)' : '1px solid rgba(208, 171, 130, 0.1)',
+                    transition: 'all 500ms ease'
+                  }}
+                >
+                  <div style={{
+                    width: 28, height: 28, borderRadius: '50%',
+                    background: (isEmailVerified || authStatusMode === 'unapproved') ? '#d0ab82' : 'rgba(208, 171, 130, 0.15)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    transition: 'background 400ms ease'
+                  }}>
+                    <AnimatePresence mode="wait">
+                      {(isEmailVerified || authStatusMode === 'unapproved') ? (
                         <motion.div
-                          key={authStatusMode === 'unapproved' ? 'verified' : 'pending'}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 10 }}
-                          transition={{ duration: 0.3 }}
+                          key="success"
+                          initial={{ scale: 0, rotate: -20 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          transition={{ type: 'spring', damping: 12, stiffness: 200 }}
                         >
-                          <h3 style={{ fontSize: 13, fontWeight: 900, color: (isEmailVerified || authStatusMode === 'unapproved') ? 'white' : '#d0ab82', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.08em', fontStyle: 'italic' }}>
-                            {(isEmailVerified || authStatusMode === 'unapproved') ? 'IDENTITY CONFIRMED' : 'IDENTITY VERIFICATION'}
-                          </h3>
-                          <p style={{ fontSize: 12, color: '#94A3B8', margin: 0, lineHeight: 1.5, fontWeight: 600 }}>
-                            {(isEmailVerified || authStatusMode === 'unapproved') ? 'Authentication successful. Your cryptographic signature has been validated.' : 'Verification link dispatched to your inbox. Please validate your operative identity to continue.'}
-                          </p>
+                          <CheckCircle2 size={16} color="#002d35" />
                         </motion.div>
-                      </AnimatePresence>
-                      {authStatusMode === 'unverified' && (
-                        <button 
-                          onClick={handleResendVerification}
-                          disabled={resendLoading || resendTimer > 0}
-                          style={{ 
-                            background: 'none', border: 'none', padding: '4px 0', marginTop: 8,
-                            color: resendTimer > 0 ? 'var(--status-success)' : 'var(--teal)', 
-                            fontSize: 10, fontWeight: 800, cursor: resendTimer > 0 ? 'not-allowed' : 'pointer',
-                            display: 'flex', alignItems: 'center', gap: 6,
-                            textTransform: 'uppercase', letterSpacing: '0.05em',
-                            opacity: resendLoading ? 0.6 : 1
-                          }}
+                      ) : (
+                        <motion.span
+                          key="number"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          style={{ fontSize: 12, fontWeight: 900, color: 'var(--teal)' }}
                         >
-                          {resendLoading ? <Loader2 className="animate-spin" size={12} /> : 
-                           resendTimer > 0 ? <><CheckCircle2 size={12} /> Re-sent. Wait {resendTimer}s</> : 
-                           'Resend Verification Link'}
-                        </button>
+                          01
+                        </motion.span>
                       )}
-                    </div>
-                  </motion.div>
+                    </AnimatePresence>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={authStatusMode === 'unapproved' ? 'verified' : 'pending'}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 10 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <h3 style={{ fontSize: 13, fontWeight: 900, color: (isEmailVerified || authStatusMode === 'unapproved') ? 'white' : '#d0ab82', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.08em', fontStyle: 'italic' }}>
+                          {(isEmailVerified || authStatusMode === 'unapproved') ? 'IDENTITY CONFIRMED' : 'IDENTITY VERIFICATION'}
+                        </h3>
+                        <p style={{ fontSize: 12, color: '#94A3B8', margin: 0, lineHeight: 1.5, fontWeight: 600 }}>
+                          {(isEmailVerified || authStatusMode === 'unapproved') ? 'Authentication successful. Your cryptographic signature has been validated.' : 'Verification link dispatched to your inbox. Please validate your operative identity to continue.'}
+                        </p>
+                      </motion.div>
+                    </AnimatePresence>
+                    {authStatusMode === 'unverified' && (
+                      <button
+                        onClick={handleResendVerification}
+                        disabled={resendLoading || resendTimer > 0}
+                        style={{
+                          background: 'none', border: 'none', padding: '4px 0', marginTop: 8,
+                          color: resendTimer > 0 ? 'var(--status-success)' : 'var(--teal)',
+                          fontSize: 10, fontWeight: 800, cursor: resendTimer > 0 ? 'not-allowed' : 'pointer',
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          textTransform: 'uppercase', letterSpacing: '0.05em',
+                          opacity: resendLoading ? 0.6 : 1
+                        }}
+                      >
+                        {resendLoading ? <Loader2 className="animate-spin" size={12} /> :
+                          resendTimer > 0 ? <><CheckCircle2 size={12} /> Re-sent. Wait {resendTimer}s</> :
+                            'Resend Verification Link'}
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
 
-                <div style={{ 
-                  display: 'flex', gap: 16, padding: '20px', borderRadius: 20, 
-                  background: userProfile?.isApproved ? 'rgba(208, 171, 130, 0.08)' : 'rgba(0, 63, 73, 0.2)', 
-                  border: userProfile?.isApproved ? '1px solid rgba(208, 171, 130, 0.3)' : '1px solid rgba(208, 171, 130, 0.1)' 
+                <div style={{
+                  display: 'flex', gap: 16, padding: '20px', borderRadius: 20,
+                  background: userProfile?.isApproved ? 'rgba(208, 171, 130, 0.08)' : 'rgba(0, 63, 73, 0.2)',
+                  border: userProfile?.isApproved ? '1px solid rgba(208, 171, 130, 0.3)' : '1px solid rgba(208, 171, 130, 0.1)'
                 }}>
                   <div style={{ width: 28, height: 28, borderRadius: '50%', background: userProfile?.isApproved ? '#d0ab82' : 'rgba(208, 171, 130, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {userProfile?.isApproved ? <CheckCircle2 size={16} color="#002d35" /> : <span style={{ fontSize: 12, fontWeight: 900, color: '#d0ab82' }}>02</span>}
@@ -730,18 +879,18 @@ function LoginContent() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {userProfile?.isApproved ? (
-                  <motion.button 
+                  <motion.button
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    onClick={async () => { 
+                    onClick={async () => {
                       sessionStorage.setItem('dashboard_session', 'active');
                       router.push('/dashboard');
-                    }} 
-                    style={{ 
-                      width: '100%', padding: '18px', borderRadius: 20, 
-                      background: '#d0ab82', color: '#002d35', 
-                      fontSize: 14, fontWeight: 900, border: 'none', cursor: 'pointer', 
-                      boxShadow: '0 15px 35px rgba(208, 171, 130, 0.3)', 
+                    }}
+                    style={{
+                      width: '100%', padding: '18px', borderRadius: 20,
+                      background: '#d0ab82', color: '#002d35',
+                      fontSize: 14, fontWeight: 900, border: 'none', cursor: 'pointer',
+                      boxShadow: '0 15px 35px rgba(208, 171, 130, 0.3)',
                       textTransform: 'uppercase', letterSpacing: '0.12em', fontStyle: 'italic',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
                     }}
@@ -750,30 +899,30 @@ function LoginContent() {
                     <ChevronRight size={20} />
                   </motion.button>
                 ) : (
-                  <button 
-                    onClick={async () => { 
-                      setShowRegistrationSuccess(false); 
+                  <button
+                    onClick={async () => {
+                      setShowRegistrationSuccess(false);
                       setAuthStatusMode('none');
-                      setMode('login'); 
-                      setEmail(''); 
-                      setPassword(''); 
-                      setFirstName(''); 
-                      setLastName(''); 
-                      setDepartment(''); 
+                      setMode('login');
+                      setEmail('');
+                      setPassword('');
+                      setFirstName('');
+                      setLastName('');
+                      setDepartment('');
                       await auth.signOut();
-                    }} 
-                    style={{ 
-                      width: '100%', padding: '16px', borderRadius: 16, 
-                      background: 'var(--teal)', color: 'var(--cotton)', 
-                      fontSize: 14, fontWeight: 800, border: 'none', cursor: 'pointer', 
-                      boxShadow: '0 8px 24px rgba(0,63,73,0.15)', 
-                      textTransform: 'uppercase', letterSpacing: '0.1em' 
+                    }}
+                    style={{
+                      width: '100%', padding: '16px', borderRadius: 16,
+                      background: 'var(--teal)', color: 'var(--cotton)',
+                      fontSize: 14, fontWeight: 800, border: 'none', cursor: 'pointer',
+                      boxShadow: '0 8px 24px rgba(0,63,73,0.15)',
+                      textTransform: 'uppercase', letterSpacing: '0.1em'
                     }}
                   >
                     Return to Access Portal
                   </button>
                 )}
-                
+
                 {userProfile?.isApproved && (
                   <button
                     onClick={async () => {
@@ -796,8 +945,13 @@ function LoginContent() {
       <AnimatePresence>
         {showResetSuccess && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'absolute', inset: 0, background: 'rgba(0, 63, 73, 0.4)', backdropFilter: 'blur(12px)' }} />
+            <motion.div 
+              key="modal-backdrop"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+              style={{ position: 'absolute', inset: 0, background: 'rgba(0, 63, 73, 0.4)', backdropFilter: 'blur(12px)' }} 
+            />
             <motion.div
+              key="modal-content"
               initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               style={{ width: '100%', maxWidth: 420, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)', border: '1px solid rgba(208, 171, 130, 0.2)', borderRadius: 24, padding: '40px 36px', textAlign: 'center', position: 'relative', zIndex: 1, boxShadow: '0 25px 60px rgba(0,63,73,0.15)' }}>
@@ -815,12 +969,147 @@ function LoginContent() {
           </div>
         )}
       </AnimatePresence>
-      <TicketRequestModal 
-        isOpen={isTicketModalOpen} 
-        onClose={() => setIsTicketModalOpen(false)} 
+      <TicketRequestModal
+        isOpen={isTicketModalOpen}
+        onClose={() => setIsTicketModalOpen(false)}
         defaultReason="Login Portal Support"
         defaultMessage="I am experiencing issues accessing my account. Please provide technical assistance."
       />
+
+      <AnimatePresence>
+        {isReviewModalOpen && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <motion.div 
+              key="modal-backdrop"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => !isReviewSubmitting && setIsReviewModalOpen(false)}
+              style={{ position: 'absolute', inset: 0, background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(20px)' }} 
+            />
+            <motion.div
+              key="modal-frame"
+              initial={{ scale: 0.95, opacity: 0, y: 30 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 30 }}
+              style={{
+                width: '100%', maxWidth: 540, background: 'white', borderRadius: 32,
+                border: '1px solid rgba(153, 27, 27, 0.1)', overflow: 'hidden', position: 'relative',
+                boxShadow: '0 40px 100px rgba(15, 23, 42, 0.3)'
+              }}
+            >
+              {/* Close Button X */}
+              <button 
+                onClick={() => setIsReviewModalOpen(false)}
+                style={{ position: 'absolute', top: 24, right: 24, background: 'rgba(15, 23, 42, 0.05)', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
+              >
+                <X size={18} />
+              </button>
+
+              <div style={{ padding: '40px' }}>
+                {hasPendingAppeal && message.includes('successfully') ? (
+                  <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: 'center' }}>
+                    <div style={{ width: 80, height: 80, borderRadius: 24, background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                      <CheckCircle2 size={40} color="#10b981" />
+                    </div>
+                    <h3 style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', margin: '0 0 12px' }}>Transmission Successful</h3>
+                    <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6, margin: '0 0 32px' }}>
+                      Your revision request has been securely transmitted to the administrative board. A confirmation email has been dispatched to your registered address.
+                    </p>
+                    <button 
+                      onClick={() => setIsReviewModalOpen(false)}
+                      style={{ width: '100%', padding: '16px', borderRadius: 16, background: '#0f172a', color: 'white', border: 'none', fontSize: 14, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.1em' }}
+                    >
+                      Close Protocol
+                    </button>
+                  </motion.div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
+                      <div style={{ width: 56, height: 56, borderRadius: 18, background: 'rgba(153, 27, 27, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <RefreshCw size={28} color="#991b1b" />
+                      </div>
+                      <div>
+                        <h3 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0 }}>Revision Request</h3>
+                        <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>Account Restriction Appeal Protocol</p>
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: 32 }}>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 900, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Justification Narrative</label>
+                      <textarea 
+                        value={reviewNotes}
+                        onChange={(e) => setReviewNotes(e.target.value)}
+                        placeholder="Provide professional context regarding your access requirements..."
+                        style={{ 
+                          width: '100%', minHeight: 140, padding: 20, borderRadius: 20, 
+                          border: '1px solid #e2e8f0', background: '#f8fafc', 
+                          fontSize: 14, color: '#1e293b', resize: 'none', outline: 'none',
+                          lineHeight: 1.6, transition: 'border-color 0.2s'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 16 }}>
+                      <button 
+                        onClick={() => setIsReviewModalOpen(false)}
+                        style={{ flex: 1, padding: '16px', borderRadius: 16, background: '#f1f5f9', color: '#475569', border: 'none', fontSize: 13, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        disabled={isReviewSubmitting || !reviewNotes.trim()}
+                        onClick={async () => {
+                          setIsReviewSubmitting(true);
+                          try {
+                            const response = await fetch('/api/auth/submit-appeal', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                email,
+                                notes: reviewNotes,
+                                originalReason: revocationData?.reason,
+                                originalDuration: revocationData?.duration
+                              })
+                            });
+
+                            if (!response.ok) {
+                              const errData = await response.json();
+                              throw new Error(errData.error || 'Submission failed');
+                            }
+
+                            // Do NOT close modal yet, show success state
+                            setReviewNotes('');
+                            setHasPendingAppeal(true);
+                            setLatestAppeal({ status: 'OPEN', updatedAt: new Date().toISOString(), adminResponse: null, message: reviewNotes, createdAt: new Date().toISOString() });
+                            setMessage('Your revision request has been transmitted successfully. Please check your inbox for confirmation.');
+                          } catch (err: any) {
+                            console.error('Review submission error:', err);
+                            setError(`Failed to transmit revision request: ${err.message}`);
+                            setIsReviewModalOpen(false);
+                          } finally {
+                            setIsReviewSubmitting(false);
+                          }
+                        }}
+                        style={{ 
+                          flex: 2, padding: '16px', borderRadius: 16, 
+                          background: '#991b1b', color: 'white', border: 'none', 
+                          fontSize: 13, fontWeight: 900, cursor: (isReviewSubmitting || !reviewNotes.trim()) ? 'not-allowed' : 'pointer', 
+                          textTransform: 'uppercase', letterSpacing: '0.1em',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                          opacity: (isReviewSubmitting || !reviewNotes.trim()) ? 0.5 : 1,
+                          boxShadow: (isReviewSubmitting || !reviewNotes.trim()) ? 'none' : '0 8px 20px rgba(153, 27, 27, 0.3)',
+                          transition: 'all 300ms ease'
+                        }}
+                      >
+                        {isReviewSubmitting ? <Loader2 className="animate-spin" size={18} /> : 'Transmit Appeal'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

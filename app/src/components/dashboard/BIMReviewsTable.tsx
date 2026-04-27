@@ -23,8 +23,15 @@ import {
   CheckCircle2,
   AlertCircle,
   Trash2,
-  Edit2
+  Edit2,
+  Shield
 } from 'lucide-react';
+import { 
+  deleteBimReview, 
+  upsertBimReview, 
+  bulkUpsertBimReviews,
+  migrateBimReviews 
+} from '@/services/FirebaseService';
 import { useAuth } from '@/context/AuthContext';
 import GlassCard from '@/components/shared/GlassCard';
 import EliteDropdown from '@/components/dashboard/EliteDropdown';
@@ -32,26 +39,27 @@ import { BIMReview } from '@/lib/types';
 import { useTableColumns, ColumnDef } from '@/hooks/useTableColumns';
 import ColumnSettingsDropdown from '@/components/dashboard/ColumnSettingsDropdown';
 import type { TeamMember } from '@/lib/types';
+import { formatDate } from '@/lib/utils';
 
 type SortField = keyof BIMReview;
 type SortDir = 'asc' | 'desc';
 
 const INITIAL_COLUMNS: ColumnDef<SortField>[] = [
-  { id: 'project', field: 'project', label: 'Project Identifier', align: 'center', priority: 'high', defaultWidth: 260, alwaysVisible: true },
-  { id: 'precinct', field: 'precinct', label: 'Precinct', align: 'center', priority: 'medium', defaultWidth: 180 },
-  { id: 'submissionDescription', field: 'submissionDescription', label: 'Submission Description', align: 'center', priority: 'high', defaultWidth: 280 },
-  { id: 'reviewNumber', field: 'reviewNumber', label: 'Rev #', align: 'center', priority: 'medium', defaultWidth: 100 },
-  { id: 'designStage', field: 'designStage', label: 'Stage', align: 'center', priority: 'high', defaultWidth: 200 },
-  { id: 'stakeholder', field: 'stakeholder', label: 'Stakeholder', align: 'center', priority: 'medium', defaultWidth: 180 },
-  { id: 'insiteBimReviewStatus', field: 'insiteBimReviewStatus', label: 'InSite Review Status', align: 'center', priority: 'high', defaultWidth: 240 },
-  { id: 'insiteReviewDueDate', field: 'insiteReviewDueDate', label: 'Due Date', align: 'center', priority: 'medium', defaultWidth: 160 },
-  { id: 'insiteReviewer', field: 'insiteReviewer', label: 'Lead Reviewer', align: 'center', priority: 'medium', defaultWidth: 200 },
-  { id: 'modonHillFinalReviewStatus', field: 'modonHillFinalReviewStatus', label: 'Modon Status', align: 'center', priority: 'low', defaultWidth: 200 },
-  { id: 'submissionDate', field: 'submissionDate', label: 'Submission Date', align: 'center', priority: 'low', defaultWidth: 200 },
-  { id: 'onAcc', field: 'onAcc', label: 'ACC Submission Status', align: 'center', priority: 'low', defaultWidth: 160 },
-  { id: 'comments', field: 'comments', label: 'Internal Comments', align: 'center', priority: 'low', defaultWidth: 280 },
-  { id: 'submissionCategory', field: 'submissionCategory', label: 'Category', align: 'center', priority: 'low', defaultWidth: 180 },
-  { id: 'output', field: 'insiteReviewOutputUrl', label: 'Report Links', align: 'center', priority: 'high', defaultWidth: 160 }
+  { id: 'ID', field: 'ID' as any, label: 'ID', align: 'center', priority: 'high', defaultWidth: 120, alwaysVisible: true },
+  { id: 'Project', field: 'Project' as any, label: 'Project', align: 'center', priority: 'high', defaultWidth: 260, alwaysVisible: true },
+  { id: 'Precinct', field: 'Precinct' as any, label: 'Precinct', align: 'center', priority: 'medium', defaultWidth: 180 },
+  { id: 'Stakeholder', field: 'Stakeholder' as any, label: 'Stakeholder', align: 'center', priority: 'medium', defaultWidth: 180 },
+  { id: 'Milestone Submissions', field: 'Milestone Submissions' as any, label: 'Milestone Submissions', align: 'center', priority: 'high', defaultWidth: 280 },
+  { id: 'Submission Category', field: 'Submission Category' as any, label: 'Submission Category', align: 'center', priority: 'low', defaultWidth: 180 },
+  { id: 'Planned Submission Date', field: 'Planned Submission Date' as any, label: 'Planned Submission Date', align: 'center', priority: 'low', defaultWidth: 200 },
+  { id: 'ACC Status', field: 'ACC Status' as any, label: 'ACC Status', align: 'center', priority: 'low', defaultWidth: 160 },
+  { id: 'Priority', field: 'Priority' as any, label: 'Design Stage', align: 'center', priority: 'medium', defaultWidth: 120 },
+  { id: 'ACC Review ID', field: 'ACC Review ID' as any, label: 'ACC Review ID', align: 'center', priority: 'medium', defaultWidth: 120 },
+  { id: 'InSite Review Status', field: 'InSite Review Status' as any, label: 'InSite Review Status', align: 'center', priority: 'high', defaultWidth: 240 },
+  { id: 'InSite Review Due Date', field: 'InSite Review Due Date' as any, label: 'InSite Review Due Date', align: 'center', priority: 'medium', defaultWidth: 160 },
+  { id: 'InSite Reviewer', field: 'InSite Reviewer' as any, label: 'InSite Reviewer', align: 'center', priority: 'medium', defaultWidth: 200 },
+  { id: 'InSite Review Output ACC URL', field: 'InSite Review Output ACC URL' as any, label: 'InSite Review Output ACC URL', align: 'center', priority: 'high', defaultWidth: 160 },
+  { id: 'Comments', field: 'Comments' as any, label: 'Comments', align: 'center', priority: 'low', defaultWidth: 280 }
 ];
 
 function ResizeHandle({ columnWidth, onWidthChange }: { columnWidth: number, onWidthChange: (w: number) => void }) {
@@ -177,11 +185,11 @@ function ReviewRow({
     });
   };
  
-  // Resolve reviewer avatar
+  // Resolve reviewer avatar - taking the first reviewer for the avatar if multiple exist
+  const firstReviewer = item["InSite Reviewer"]?.[0] || '';
   const reviewerProfile = (members || []).find((m: TeamMember) => 
-    (item.insiteReviewerId && m.id === item.insiteReviewerId) || 
-    (item.insiteReviewerEmail && m.email.toLowerCase() === item.insiteReviewerEmail.toLowerCase()) ||
-    (item.insiteReviewer && m.name.toLowerCase() === item.insiteReviewer.toLowerCase())
+    (m.name.toLowerCase() === firstReviewer.toLowerCase()) ||
+    (m.email.toLowerCase() === firstReviewer.toLowerCase())
   );
   const avatarUrl = reviewerProfile?.avatar;
 
@@ -195,7 +203,7 @@ function ReviewRow({
 
   return (
     <motion.tr
-      key={item.id || `row-${index}`}
+      key={item.ID || `row-${index}`}
       initial={{ opacity: 0, x: -6 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.01, duration: 0.15 }}
@@ -214,25 +222,39 @@ function ReviewRow({
           fontFamily: 'var(--font-primary)'
         };
 
-        if (col.id === 'project') return (
+        if (col.id === 'ID') return (
+          <td key={col.id} style={{ ...cellStyle, color: 'var(--text-dim)', fontWeight: 800, fontSize: 11 }}>
+            {item.ID}
+          </td>
+        );
+
+        if (col.id === 'Project') return (
           <td key={col.id} style={{ ...cellStyle, color: 'var(--text-dim)', fontWeight: 800, fontSize: 11, letterSpacing: '0.02em' }}>
-            {formatTextWithLinks(item.project)}
+            {formatTextWithLinks(item.Project)}
           </td>
         );
 
-        if (col.id === 'precinct') return (
-          <td key={col.id} style={{ ...cellStyle, color: 'rgba(0, 63, 73, 0.65)', fontWeight: 850, fontSize: 11.5, letterSpacing: '0.01em', textTransform: 'uppercase' }}>
-            {item.precinct || '—'}
+        if (col.id === 'Precinct') return (
+          <td key={col.id} style={{ ...cellStyle }}>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {(item.Precinct || []).map((p, i) => (
+                <span key={`${p}-${i}`} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 6, background: 'rgba(0, 63, 73, 0.05)', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', fontWeight: 900, textTransform: 'uppercase' }}>{p}</span>
+              ))}
+            </div>
           </td>
         );
 
-        if (col.id === 'submissionDescription') return (
-          <td key={col.id} style={{ ...cellStyle, color: 'rgba(0, 63, 73, 0.7)', fontStyle: 'italic', fontWeight: 800 }}>
-            {item.submissionDescription}
+        if (col.id === 'Milestone Submissions') return (
+          <td key={col.id} style={{ ...cellStyle }}>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+              {(item["Milestone Submissions"] || []).map((ms, i) => (
+                <div key={`ms-${i}`} style={{ color: 'rgba(0, 63, 73, 0.7)', fontStyle: 'italic', fontWeight: 800, fontSize: 11 }}>{ms}</div>
+              ))}
+            </div>
           </td>
         );
 
-        if (col.id === 'reviewNumber') return (
+        if (col.id === 'ACC Review ID') return (
           <td key={col.id} style={{ ...cellStyle }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px',
@@ -240,192 +262,131 @@ function ReviewRow({
               border: '1px solid rgba(0, 63, 73, 0.2)', fontSize: 11,
               fontWeight: 900, color: 'var(--teal)', boxShadow: '0 2px 8px rgba(0, 63, 73, 0.05)'
             }}>
-              <Hash size={10} style={{ opacity: 0.9, color: 'var(--teal)' }} /> {item.reviewNumber || '—'}
+              <Hash size={10} style={{ opacity: 0.9, color: 'var(--teal)' }} /> {item["ACC Review ID"] || '—'}
             </div>
           </td>
         );
 
-        if (col.id === 'designStage') return (
-          <td key={col.id} style={{ ...cellStyle, textAlign: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ display: 'inline-flex', padding: '4px 14px', borderRadius: 20, background: 'rgba(0, 63, 73, 0.95)', border: '1.5px solid rgba(0, 63, 73, 0.2)', fontSize: 10, fontWeight: 950, color: 'var(--aqua)', textTransform: 'uppercase', letterSpacing: '0.08em', boxShadow: '0 4px 12px rgba(0, 63, 73, 0.2)', whiteSpace: 'nowrap' }}>
-                {item.designStage}
-              </div>
-            </div>
-          </td>
-        );
-
-        if (col.id === 'stakeholder') return (
+        if (col.id === 'Stakeholder') return (
           <td key={col.id} style={{ ...cellStyle, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
-            {item.stakeholder}
+            {item.Stakeholder}
           </td>
         );
 
-        if (col.id === 'insiteBimReviewStatus') return (
+        if (col.id === 'InSite Review Status') return (
           <td key={col.id} style={{ ...cellStyle }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
               <div style={{
                 width: 8, height: 8, borderRadius: '50%',
-                background: item.insiteBimReviewStatus?.toUpperCase() === 'WITH EGIS' ? '#FF7908' : getStatusColor(item.insiteBimReviewStatus),
-                boxShadow: `0 0 10px ${item.insiteBimReviewStatus?.toUpperCase() === 'WITH EGIS' ? '#FF7908' : getStatusColor(item.insiteBimReviewStatus)}`
+                background: getStatusColor(item["InSite Review Status"]),
+                boxShadow: `0 0 10px ${getStatusColor(item["InSite Review Status"])}`
               }} />
               <span className="brand-heading" style={{
                 fontSize: 11,
-                color: item.insiteBimReviewStatus?.toUpperCase() === 'WITH EGIS' ? '#DB4D00' : '#003f49',
+                color: '#003f49',
                 fontWeight: 900,
                 letterSpacing: '0.1em'
-              }}>{(item.insiteBimReviewStatus || 'PENDING').toUpperCase()}</span>
+              }}>{(item["InSite Review Status"] || 'PENDING').toUpperCase()}</span>
             </div>
           </td>
         );
 
-        if (col.id === 'insiteReviewDueDate') return (
+        if (col.id === 'InSite Review Due Date') return (
           <td key={col.id} style={{ ...cellStyle, color: 'var(--text-dim)', fontSize: 11 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <Clock size={12} style={{ opacity: 0.6 }} /> {item.insiteReviewDueDate || '—'}
+              <Clock size={12} style={{ opacity: 0.6 }} /> {formatDate(item["InSite Review Due Date"])}
             </div>
           </td>
         );
 
-        if (col.id === 'insiteReviewer') return (
+        if (col.id === 'InSite Reviewer') return (
           <td key={col.id} style={{ ...cellStyle }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-              <div style={{ 
-                width: 24, height: 24, borderRadius: '6px', 
-                background: avatarUrl ? 'transparent' : 'rgba(0, 63, 73, 0.05)', 
-                border: '1px solid rgba(0, 63, 73, 0.2)', 
-                display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                flexShrink: 0, overflow: 'hidden'
-              }}>
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt={item.insiteReviewer} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <User size={12} style={{ opacity: 0.9 }} color="#003f49" />
-                )}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <span style={{ fontSize: 11, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  {reviewerProfile?.name || item.insiteReviewer || '—'}
-                </span>
-              </div>
-            </div>
-          </td>
-        );
-
-        if (col.id === 'modonHillFinalReviewStatus') return (
-          <td key={col.id} style={{ ...cellStyle }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 20, background: 'rgba(255, 255, 255, 0.6)', border: '1.5px solid rgba(0, 63, 73, 0.15)', fontSize: 10, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.08em', boxShadow: '0 2px 8px rgba(0, 63, 73, 0.05)' }}>
-              {item.modonHillFinalReviewStatus || 'AWAITING'}
-            </div>
-          </td>
-        );
-
-        if (col.id === 'submissionDate') return (
-          <td key={col.id} style={{ ...cellStyle, color: 'var(--text-dim)' }}>
-            {item.submissionDate || '—'}
-          </td>
-        );
-
-        if (col.id === 'onAcc') return (
-          <td key={col.id} style={{ ...cellStyle }}>
-            <span style={{
-              fontSize: 11,
-              fontWeight: 950,
-              color: item.onAcc?.toUpperCase() === 'SHARED' ? '#FF7908' : 'rgba(198, 224, 224, 0.4)',
-              textShadow: item.onAcc?.toUpperCase() === 'SHARED' ? '0 0 10px rgba(255, 121, 8, 0.3)' : 'none',
-              letterSpacing: '0.05em'
-            }}>
-              {(item.onAcc || 'NOT SHARED').toUpperCase()}
-            </span>
-          </td>
-        );
-
-        if (col.id === 'comments') return (
-          <td key={col.id} style={{ ...cellStyle, color: 'var(--text-dim)', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {item.comments || '—'}
-          </td>
-        );
-
-        if (col.id === 'submissionCategory') return (
-          <td key={col.id} style={{ ...cellStyle }}>
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {(item.submissionCategory || []).map(cat => (
-                <span key={cat} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'var(--section-bg)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>{cat}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+              {(item["InSite Reviewer"] || []).map((rev, i) => (
+                <div key={`rev-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                   <div style={{ 
+                    width: 20, height: 20, borderRadius: '4px', 
+                    background: 'rgba(0, 63, 73, 0.05)', 
+                    border: '1px solid rgba(0, 63, 73, 0.1)', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                    flexShrink: 0, overflow: 'hidden'
+                  }}>
+                    <User size={10} style={{ opacity: 0.9 }} color="#003f49" />
+                  </div>
+                  <span style={{ fontSize: 10, fontWeight: 950, color: '#003f49', textTransform: 'uppercase' }}>{rev}</span>
+                </div>
               ))}
             </div>
           </td>
         );
 
-        if (col.id === 'output') return (
+        if (col.id === 'Priority') return (
           <td key={col.id} style={{ ...cellStyle }}>
-            {item.insiteReviewOutputUrl ? (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+            <div style={{ display: 'inline-flex', padding: '4px 14px', borderRadius: 20, background: 'rgba(0, 63, 73, 0.95)', border: '1.5px solid rgba(0, 63, 73, 0.2)', fontSize: 10, fontWeight: 950, color: 'var(--aqua)', textTransform: 'uppercase', letterSpacing: '0.08em', boxShadow: '0 4px 12px rgba(0, 63, 73, 0.2)' }}>
+              {item.Priority}
+            </div>
+          </td>
+        );
+
+        if (col.id === 'Planned Submission Date') return (
+          <td key={col.id} style={{ ...cellStyle, color: 'var(--text-dim)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {(item["Planned Submission Date"] || []).map((date, i) => (
+                <div key={`date-${i}`} style={{ fontSize: 10, whiteSpace: 'nowrap' }}>{formatDate(date)}</div>
+              ))}
+            </div>
+          </td>
+        );
+
+        if (col.id === 'ACC Status') return (
+          <td key={col.id} style={{ ...cellStyle }}>
+             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {(item["ACC Status"] || []).map((status, i) => (
+                <span key={`${status}-${i}`} style={{
+                  fontSize: 10,
+                  fontWeight: 950,
+                  color: status?.toUpperCase() === 'SHARED' ? '#FF7908' : 'rgba(0, 63, 73, 0.4)',
+                  letterSpacing: '0.05em'
+                }}>{status.toUpperCase()}</span>
+              ))}
+            </div>
+          </td>
+        );
+
+        if (col.id === 'Comments') return (
+          <td key={col.id} style={{ ...cellStyle, color: 'var(--text-dim)', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {item.Comments || '—'}
+          </td>
+        );
+
+        if (col.id === 'Submission Category') return (
+          <td key={col.id} style={{ ...cellStyle }}>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {(item["Submission Category"] || []).map((cat, i) => (
+                <span key={`${cat}-${i}`} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'var(--section-bg)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>{cat}</span>
+              ))}
+            </div>
+          </td>
+        );
+
+        if (col.id === 'InSite Review Output ACC URL') return (
+          <td key={col.id} style={{ ...cellStyle }}>
+            {item["InSite Review Output ACC URL"] ? (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <motion.a
-                  href={item.insiteReviewOutputUrl}
+                  href={item["InSite Review Output ACC URL"]}
                   target="_blank"
                   rel="noopener noreferrer"
-                  whileHover={{ scale: 1.15, backgroundColor: '#C5A059', color: '#000000', boxShadow: '0 0 25px rgba(197, 160, 89, 0.5)' }}
+                  whileHover={{ scale: 1.15, backgroundColor: '#C5A059', color: '#000000' }}
                   style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 10,
+                    width: 32, height: 32, borderRadius: 10,
                     background: 'rgba(255, 121, 8, 0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#FF7908',
-                    border: '1px solid rgba(255, 121, 8, 0.3)',
-                    textDecoration: 'none',
-                    position: 'relative',
-                    overflow: 'visible',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#FF7908', border: '1px solid rgba(255, 121, 8, 0.3)',
+                    transition: 'all 0.3s'
                   }}
-                  className="group"
                 >
                   <ExternalLink size={16} />
-
-                  {/* Ultra Professional Link Tooltip */}
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '100%',
-                    right: 0,
-                    marginBottom: 12,
-                    padding: '12px 16px',
-                    background: 'rgba(0, 63, 73, 0.98)',
-                    backdropFilter: 'blur(16px)',
-                    border: '1.5px solid #d0ab82',
-                    borderRadius: 14,
-                    fontSize: 11,
-                    fontWeight: 950,
-                    color: '#FFFFFF',
-                    boxShadow: '-12px 12px 40px rgba(0, 63, 73, 0.35)',
-                    pointerEvents: 'none',
-                    transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 6,
-                    zIndex: 1000,
-                    width: 'max-content',
-                    maxWidth: 320
-                  }} className="opacity-0 group-hover:opacity-100 group-hover:-translate-y-[8px]">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#d0ab82', borderBottom: '1px solid rgba(208, 171, 130, 0.2)', paddingBottom: 6, marginBottom: 2 }}>
-                      <ExternalLink size={12} />
-                      <span style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}>Open Review Output</span>
-                    </div>
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 600, wordBreak: 'break-all' }}>
-                      {item.insiteReviewOutputUrl}
-                    </span>
-
-                    {/* Tooltip Arrow */}
-                    <div style={{
-                      position: 'absolute',
-                      top: '100%',
-                      right: 12,
-                      borderWidth: 6,
-                      borderStyle: 'solid',
-                      borderColor: '#d0ab82 transparent transparent transparent'
-                    }} />
-                  </div>
                 </motion.a>
               </div>
             ) : (
@@ -464,18 +425,18 @@ export default function BIMReviewsTable({
   setSearch,
   filterStage,
   setFilterStage,
-  availableStages = [],
   filterStatus,
   setFilterStatus,
-  availableStatuses = [],
   filterStakeholder,
   setFilterStakeholder,
-  availableStakeholders = [],
   filterReviewer,
   setFilterReviewer,
-  availableReviewers = [],
   filterPrecinct,
   setFilterPrecinct,
+  availableStages = [],
+  availableStatuses = [],
+  availableStakeholders = [],
+  availableReviewers = [],
   availablePrecincts = [],
   onEdit,
   onDelete,
@@ -510,7 +471,7 @@ export default function BIMReviewsTable({
 }) {
   const { userProfile } = useAuth();
   const isAdminOrOwner = userProfile?.isAdmin || userProfile?.role === 'OWNER';
-  const [sortField, setSortField] = useState<SortField>('project');
+  const [sortField, setSortField] = useState<SortField>('Project');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
   const {
@@ -526,9 +487,14 @@ export default function BIMReviewsTable({
 
   const sortedData = useMemo(() => {
     return [...data].sort((a, b) => {
-      let valA = a[sortField] as string;
-      let valB = b[sortField] as string;
-      const cmp = (valA || '').localeCompare(valB || '');
+      let valA = a[sortField];
+      let valB = b[sortField];
+      
+      // Handle arrays
+      const strA = Array.isArray(valA) ? valA.join(', ') : String(valA || '');
+      const strB = Array.isArray(valB) ? valB.join(', ') : String(valB || '');
+      
+      const cmp = strA.localeCompare(strB);
       return sortDir === 'asc' ? cmp : -cmp;
     });
   }, [data, sortField, sortDir]);
@@ -580,16 +546,16 @@ export default function BIMReviewsTable({
               value={filterStage}
               options={availableStages.map(s => ({ label: s, value: s }))}
               onChange={setFilterStage}
-              menuLabel="Stages"
+              menuLabel="Priority"
               isMulti={true}
-              allLabel="All Stages"
+              allLabel="All Priorities"
             />
 
             <EliteDropdown
               value={filterStatus}
               options={availableStatuses.map(s => ({ label: s, value: s }))}
               onChange={setFilterStatus}
-              menuLabel="Statuses"
+              menuLabel="InSite Status"
               isMulti={true}
               allLabel="All Statuses"
             />
@@ -603,12 +569,11 @@ export default function BIMReviewsTable({
               allLabel="All Stakeholders"
             />
 
-
             <EliteDropdown
               value={filterReviewer}
               options={availableReviewers.map(s => ({ label: s, value: s }))}
               onChange={setFilterReviewer}
-              menuLabel="Reviewer"
+              menuLabel="InSite Reviewer"
               isMulti={true}
               allLabel="All Reviewers"
             />
@@ -761,7 +726,7 @@ export default function BIMReviewsTable({
             <tbody>
               {sortedData.map((item, i) => (
                 <ReviewRow
-                  key={item.id || `bim-row-${i}`}
+                  key={item.ID || `bim-row-${i}`}
                   item={item}
                   index={i}
                   visibleColumns={visibleColumns}

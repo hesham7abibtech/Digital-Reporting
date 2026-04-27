@@ -265,34 +265,29 @@ export default function BIMAnalyticsView({
     const timelineRaw: Record<string, number> = {};
 
     data.forEach(r => {
-      const s = (r.insiteBimReviewStatus || 'PENDING').toUpperCase();
+      const s = (r["InSite Review Status"] || 'PENDING').toUpperCase();
       statusCounts[s] = (statusCounts[s] || 0) + 1;
 
-      const ms = (r.modonHillFinalReviewStatus || 'AWAITING').toUpperCase();
-      modonCounts[ms] = (modonCounts[ms] || 0) + 1;
+      // ACC Status as a proxy for final review if modon is missing
+      const acc = (r["ACC Status"]?.[0] || 'AWAITING').toUpperCase();
+      modonCounts[acc] = (modonCounts[acc] || 0) + 1;
 
-      const stage = r.designStage || 'Other';
-      stageCounts[stage] = (stageCounts[stage] || 0) + 1;
+      const priority = r.Priority || 'Medium';
+      stageCounts[priority] = (stageCounts[priority] || 0) + 1;
 
-      const rev = r.insiteReviewer || 'Unassigned';
-      reviewerCounts[rev] = (reviewerCounts[rev] || 0) + 1;
+      const reviewers = r["InSite Reviewer"] || [];
+      if (reviewers.length === 0) {
+        reviewerCounts['Unassigned'] = (reviewerCounts['Unassigned'] || 0) + 1;
+      } else {
+        reviewers.forEach(rev => {
+          reviewerCounts[rev] = (reviewerCounts[rev] || 0) + 1;
+        });
+      }
 
-      // Timeline processing - Robust Date Parsing
-      if (r.submissionDate) {
-        let d = new Date(r.submissionDate);
-
-        // Handle custom DD-MMM-YYYY if native parsing fails or is ambiguous
-        if (isNaN(d.getTime()) && r.submissionDate.includes('-')) {
-          const parts = r.submissionDate.split('-');
-          if (parts.length === 3) {
-            const months: Record<string, number> = {
-              JAN: 0, FEB: 1, MAR: 2, APR: 3, MAY: 4, JUN: 5, JUL: 6, AUG: 7, SEP: 8, OCT: 9, NOV: 10, DEC: 11
-            };
-            const m = months[parts[1].toUpperCase()];
-            if (m !== undefined) d = new Date(parseInt(parts[2]), m, parseInt(parts[0]));
-          }
-        }
-
+      // Timeline processing
+      const firstDate = r["Planned Submission Date"]?.[0];
+      if (firstDate) {
+        let d = new Date(firstDate);
         if (!isNaN(d.getTime())) {
           const monthYear = d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
           if (!timelineRaw[monthYear]) {
@@ -312,7 +307,7 @@ export default function BIMAnalyticsView({
     const rejectedPct = total > 0 ? Math.round((rejectedCount / total) * 100) : 0;
     const pendingPct = 100 - (approvedPct + rejectedPct);
 
-    const stakeholderSet = new Set(data.map(r => r.stakeholder));
+    const stakeholderSet = new Set(data.map(r => r.Stakeholder));
     const activeStakeholders = stakeholderSet.size;
 
     const calcPct = (curr: number, prev: number) => {
@@ -344,7 +339,7 @@ export default function BIMAnalyticsView({
 
   const stakeholderData = useMemo(() => {
     const counts: Record<string, number> = {};
-    data.forEach(r => { if (r.stakeholder) counts[r.stakeholder] = (counts[r.stakeholder] || 0) + 1; });
+    data.forEach(r => { if (r.Stakeholder) counts[r.Stakeholder] = (counts[r.Stakeholder] || 0) + 1; });
     return Object.entries(counts)
       .map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] }))
       .sort((a, b) => b.value - a.value).slice(0, 8);
@@ -563,7 +558,7 @@ export default function BIMAnalyticsView({
 
           <GlassCard padding="none" style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: CHART_TITLE_PADDING, borderBottom: '1px solid rgba(0, 63, 73, 0.05)' }}>
-              <h3 style={{ fontSize: 12, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Design Stage Breakdown</h3>
+              <h3 style={{ fontSize: 12, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Priority Breakdown</h3>
             </div>
             <div style={{ flex: 1, minHeight: 0, padding: CHART_BODY_PADDING }}>
               <ResponsiveContainer width="100%" height="100%">

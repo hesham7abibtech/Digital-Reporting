@@ -25,16 +25,47 @@ export async function GET(req: NextRequest) {
     }
 
     const userData = snapshot.docs[0].data();
-    
+
+    // Check for latest appeal ticket
+    let latestAppeal = null;
+    try {
+      const ticketsRef = adminDb.collection('tickets');
+      const ticketSnapshot = await ticketsRef
+        .where('email', '==', email)
+        .where('type', '==', 'REVOCATION_APPEAL')
+        .get();
+      
+      if (!ticketSnapshot.empty) {
+        // Sort in memory to avoid needing a composite index for orderBy
+        const sortedDocs = ticketSnapshot.docs.sort((a, b) => {
+          const aTime = a.data().createdAt?.toMillis?.() || 0;
+          const bTime = b.data().createdAt?.toMillis?.() || 0;
+          return bTime - aTime;
+        });
+
+        const tData = sortedDocs[0].data();
+        latestAppeal = {
+          status: tData.status,
+          message: tData.message || null,
+          adminResponse: tData.adminResponse || null,
+          createdAt: tData.createdAt?.toDate?.() || null,
+          updatedAt: tData.updatedAt?.toDate?.() || tData.createdAt?.toDate?.() || null
+        };
+      }
+    } catch (e) {
+      console.error('Latest ticket check failure:', e);
+    }
+
     // Only return blocking details, nothing else for security
     if (userData.status === 'SUSPENDED' && userData.blockingDetails) {
       return NextResponse.json({
         suspended: true,
-        blockingDetails: userData.blockingDetails
+        blockingDetails: userData.blockingDetails,
+        latestAppeal
       });
     }
 
-    return NextResponse.json({ suspended: false });
+    return NextResponse.json({ suspended: false, latestAppeal });
   } catch (error: any) {
     console.error('Error fetching blocking details:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

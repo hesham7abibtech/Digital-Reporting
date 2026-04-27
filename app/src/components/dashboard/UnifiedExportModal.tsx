@@ -153,10 +153,10 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
       const reviewers = new Set<string>();
       
       bimReviews.forEach(r => {
-        if (r.designStage) stages.add(r.designStage);
-        if (r.insiteBimReviewStatus) statuses.add(r.insiteBimReviewStatus);
-        if (r.stakeholder) stakeholders.add(r.stakeholder);
-        if (r.insiteReviewer) reviewers.add(r.insiteReviewer);
+        if (r.Priority) stages.add(r.Priority);
+        if (r["InSite Review Status"]) statuses.add(r["InSite Review Status"]);
+        if (r.Stakeholder) stakeholders.add(r.Stakeholder);
+        (r["InSite Reviewer"] || []).forEach(x => reviewers.add(x));
       });
       
       return {

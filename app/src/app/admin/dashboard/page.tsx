@@ -24,6 +24,7 @@ import {
   User,
   Layers,
   FileText,
+  Pencil,
   Loader2,
   Inbox,
   X,
@@ -87,6 +88,7 @@ import BlockUserModal from '@/components/admin/BlockUserModal';
 import HeaderBgCropper from '@/components/admin/HeaderBgCropper';
 import HomePageEditor from '@/components/admin/HomePageEditor';
 import { getApiEndpoint } from '@/lib/apiConfig';
+import { parseBimReviewsExcel, generateBimReviewId } from '@/lib/bimImportUtils';
 
 const DEFAULT_ALLOWED_DOMAINS = ['modon.com', 'insiteinternational.com'];
 
@@ -100,11 +102,15 @@ const DEFAULT_SUMMARY_FIELDS: ReportSummaryField[] = [
   { id: 'totalTasks', label: 'Total Tasks Count', value: '', isVisible: true }
 ];
 
-function formatDate(dateStr: string | null | undefined) {
-  if (!dateStr) return '—';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-').toUpperCase();
+function formatDate(d: any) {
+  if (!d) return '—';
+  try {
+    const date = d.toDate ? d.toDate() : new Date(d);
+    if (isNaN(date.getTime())) return '—';
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+      .replace(/ /g, '-')
+      .toUpperCase();
+  } catch (e) { return '—'; }
 }
 
 function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, usersSnapshot: any }) {
@@ -706,6 +712,7 @@ export default function AdminDashboardPage() {
   const [broadcastToDelete, setBroadcastToDelete] = useState<{ id: string, title: string } | null>(null);
   const [isSavingReport, setIsSavingReport] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isBimImportLoading, setIsBimImportLoading] = useState(false);
   const [bimImportConfirm, setBimImportConfirm] = useState<{ isOpen: boolean, records: any[] }>({ isOpen: false, records: [] });
   const bimFileInputRef = useRef<HTMLInputElement>(null);
@@ -789,6 +796,8 @@ export default function AdminDashboardPage() {
   const [selectedBimReview, setSelectedBimReview] = useState<BIMReview | null>(null);
   const [ticketToResolve, setTicketToResolve] = useState<any | null>(null);
   const [ticketToReject, setTicketToReject] = useState<any | null>(null);
+  const [rejectionResponse, setRejectionResponse] = useState('');
+  const [isRejecting, setIsRejecting] = useState(false);
   const [ticketToDelete, setTicketToDelete] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -883,25 +892,83 @@ export default function AdminDashboardPage() {
 
 
   // Snapshot Memoization to stabilize array references and prevent update depth loops
-  const memoizedTasks = useMemo(() =>
-    tasksSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)) || [],
-    [tasksSnapshot]);
+  const memoizedTasks = useMemo(() => {
+    const raw = tasksSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)) || [];
+    if (!searchQuery) return raw;
+    const q = searchQuery.toLowerCase();
+    return raw.filter(t => 
+      t.title.toLowerCase().includes(q) || 
+      t.id.toLowerCase().includes(q) || 
+      t.department.toLowerCase().includes(q) ||
+      (t.precinct || '').toLowerCase().includes(q)
+    );
+  }, [tasksSnapshot, searchQuery]);
 
-  const memoizedRegistry = useMemo(() =>
-    registrySnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as DashboardNavItem)) || [],
-    [registrySnapshot]);
+  const memoizedRegistry = useMemo(() => {
+    const raw = registrySnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as DashboardNavItem)) || [];
+    if (!searchQuery) return raw;
+    const q = searchQuery.toLowerCase();
+    return raw.filter(r => 
+      r.name.toLowerCase().includes(r.name.toLowerCase()) || 
+      r.description?.toLowerCase().includes(q) ||
+      r.category.toLowerCase().includes(q)
+    );
+  }, [registrySnapshot, searchQuery]);
 
-  const memoizedUsers = useMemo(() =>
-    usersSnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as any)) || [],
-    [usersSnapshot]);
+  const memoizedUsers = useMemo(() => {
+    const raw = usersSnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as any)) || [];
+    if (!searchQuery) return raw;
+    const q = searchQuery.toLowerCase();
+    return raw.filter(u => 
+      u.name?.toLowerCase().includes(q) || 
+      u.email?.toLowerCase().includes(q) ||
+      u.role?.toLowerCase().includes(q)
+    );
+  }, [usersSnapshot, searchQuery]);
 
-  const memoizedDepartments = useMemo(() =>
-    departmentsSnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as Department)) || [],
-    [departmentsSnapshot]);
+  const memoizedDepartments = useMemo(() => {
+    const raw = departmentsSnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as Department)) || [];
+    if (!searchQuery) return raw;
+    const q = searchQuery.toLowerCase();
+    return raw.filter(d => d.name.toLowerCase().includes(q) || d.abbreviation.toLowerCase().includes(q));
+  }, [departmentsSnapshot, searchQuery]);
 
-  const memoizedMembers = useMemo(() =>
-    membersSnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as TeamMember)) || [],
-    [membersSnapshot]);
+  const memoizedMembers = useMemo(() => {
+    const raw = membersSnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as TeamMember)) || [];
+    if (!searchQuery) return raw;
+    const q = searchQuery.toLowerCase();
+    return raw.filter(m => 
+      m.name.toLowerCase().includes(q) || 
+      m.email.toLowerCase().includes(q) ||
+      m.department.toLowerCase().includes(q)
+    );
+  }, [membersSnapshot, searchQuery]);
+
+  const memoizedBimReviews = useMemo(() => {
+    const raw = bimReviewsSnapshot?.docs.map(doc => {
+      const data = doc.data();
+      // Robust mapping: check for both new strict keys and old camelCase keys
+      return { 
+        id: doc.id, 
+        ...data,
+        "ACC Status": data["ACC Status"] || data.accStatus || (data.onAcc ? [data.onAcc] : []),
+        "InSite Review Due Date": data["InSite Review Due Date"] || data.insiteReviewDueDate || data.dueDate || null,
+        "Project": data["Project"] || data.project || "",
+        "Priority": data["Priority"] || data.priority || "MEDIUM",
+        "Stakeholder": data["Stakeholder"] || data.stakeholder || "",
+        "ID": data["ID"] || data.id || doc.id
+      } as BIMReview;
+    }) || [];
+    
+    if (!searchQuery) return raw;
+    const q = searchQuery.toLowerCase();
+    return raw.filter(r => 
+      r.Project.toLowerCase().includes(q) || 
+      (r.ID || '').toLowerCase().includes(q) ||
+      r.Stakeholder.toLowerCase().includes(q) ||
+      (r["ACC Status"] || []).some(s => s.toLowerCase().includes(q))
+    );
+  }, [bimReviewsSnapshot, searchQuery]);
 
   const handleManualSync = async () => {
     setIsSavingReport(true);
@@ -1020,72 +1087,32 @@ export default function AdminDashboardPage() {
   };
 
 
-  const handleBimExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBimExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = new Uint8Array(event.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet);
+    try {
+      const buffer = await file.arrayBuffer();
+      const records = await parseBimReviewsExcel(buffer);
 
-        if (json.length === 0) {
-          showToast('Packet analysis failure: Data stream is empty.', 'INFO');
-          return;
-        }
-
-        const normalizeExcelDate = (val: any) => {
-          if (!val) return null;
-          if (typeof val === 'number') {
-            const date = new Date(Math.round((val - 25569) * 86400 * 1000));
-            return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-          }
-          return String(val);
-        };
-
-        const sanitizeProjectName = (name: any) => {
-          if (!name || typeof name !== 'string') return name || '';
-          return name.replace(/\s*\(https?:\/\/[^\)]+\)/g, '').trim();
-        };
-
-        let lastProject = '';
-        const mappedRecords = json.map((row: any) => {
-          const currentProject = row['Project'] ? sanitizeProjectName(row['Project']) : '';
-          if (currentProject) lastProject = currentProject;
-          
-          return {
-            submissionDescription: row['Submission Description'] || '',
-            comments: row['Comments'] || '',
-            designStage: row['Design Stage'] || '',
-            insiteBimReviewStatus: row['InSite BIM Review Status'] || '',
-            insiteReviewDueDate: normalizeExcelDate(row['InSite Review Due Date']),
-            insiteReviewOutputUrl: row['InSite Review Output URL'] || '',
-            insiteReviewer: row['InSite Reviewer'] || '',
-            modonHillFinalReviewStatus: row['Modon/Hill Final Review Status'] || '',
-            onAcc: row['On ACC'] || 'NOT SHARED',
-            project: lastProject,
-            reviewNumber: row['Review Number'] ? String(row['Review Number']) : '',
-            stakeholder: row['Stakeholder'] || '',
-            submissionCategory: row['Submission Category'] 
-              ? String(row['Submission Category']).split(',').map((s: string) => s.trim()) 
-              : [],
-            submissionDate: normalizeExcelDate(row['Submission Date'])
-          };
-        });
-
-        setBimImportConfirm({ isOpen: true, records: mappedRecords });
-      } catch (err) {
-        console.error('BIM Import Failure:', err);
-        showToast('Digital transport integrity error: Ingestion failed.', 'ERROR');
-      } finally {
-        if (bimFileInputRef.current) bimFileInputRef.current.value = '';
+      if (records.length === 0) {
+        showToast('Packet analysis failure: Data stream is empty or no valid headers found.', 'INFO');
+        return;
       }
-    };
-    reader.readAsArrayBuffer(file);
+
+      // Ensure every record has a unique ID for Firestore
+      const processedRecords = records.map(rec => ({
+        ...rec,
+        ID: generateBimReviewId(rec)
+      }));
+
+      setBimImportConfirm({ isOpen: true, records: processedRecords });
+    } catch (err) {
+      console.error('BIM Import Failure:', err);
+      showToast('Digital transport integrity error: Ingestion failed.', 'ERROR');
+    } finally {
+      if (bimFileInputRef.current) bimFileInputRef.current.value = '';
+    }
   };
 
   const handleImportConfirm = async (strategy: 'APPEND' | 'OVERWRITE') => {
@@ -1731,7 +1758,18 @@ export default function AdminDashboardPage() {
                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               >
                 <GlassCard padding="none">
-                  <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ 
+                    padding: '16px 24px', 
+                    borderBottom: '1px solid var(--border)', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between', 
+                    background: '#ffffff',
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 10,
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
+                  }}>
                     <div>
                       <h2 style={{ fontSize: 13, fontWeight: 900, color: 'var(--teal)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                         {activeTab === 'users' ? 'Security & Identity Management' : activeTab === 'team' ? 'Project Resource Management' : activeTab === 'tasks' ? 'Deliverable Submission Pipeline' : activeTab === 'bim-reviews' ? 'BIM Strategic Review Matrix' : activeTab === 'branding' ? 'Identity & Visual Asset CMS' : activeTab === 'reports' ? 'Global Reporting Protocols' : activeTab === 'communications' ? 'Network Communications & Broadcasts' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1) + ' Intelligence'}
@@ -1750,6 +1788,8 @@ export default function AdminDashboardPage() {
                           <input
                             type="text"
                             placeholder="Filter records..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             style={{ 
                               padding: '10px 20px 10px 42px', 
                               borderRadius: 12, 
@@ -1922,14 +1962,15 @@ export default function AdminDashboardPage() {
                             </th>
                             {activeTab === 'bim-reviews' ? (
                               <>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Project Detail</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Phase</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Gate Status</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Final Audit</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Lead Reviewer</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Target Date</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Log History</th>
-                                <th style={{ textAlign: 'center', padding: '12px 24px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Control</th>
+                                <th style={{ textAlign: 'center', padding: '12px 10px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 60 }}>ID</th>
+                                <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 320 }}>Project & Milestones</th>
+                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 100 }}>Priority</th>
+                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 220 }}>Status & Stakeholder</th>
+                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 130 }}>ACC Status</th>
+                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 250 }}>InSite Reviewer</th>
+                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 140 }}>Review Due Date</th>
+                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 140 }}>Submission Log</th>
+                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 110 }}>Control</th>
                               </>
                             ) : activeTab === 'tickets' ? (
                               <>
@@ -1978,12 +2019,11 @@ export default function AdminDashboardPage() {
                         </thead>
                       )}
                       <tbody>
-                        {activeTab === 'tasks' && tasksSnapshot?.docs.map((doc: any, i: number) => {
-                          const task = doc.data() as Task;
-                          const isSelected = selectedIds.has(doc.id);
+                        {activeTab === 'tasks' && memoizedTasks.map((task, i) => {
+                          const isSelected = selectedIds.has(task.id);
                           return (
                             <motion.tr 
-                              key={doc.id || `task-${i}`} 
+                              key={task.id || `task-${i}`} 
                               whileHover={{ background: '#f8fafc' }}
                               style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
                               onClick={() => handleEditRecord(task)}
@@ -1992,7 +2032,7 @@ export default function AdminDashboardPage() {
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
-                                  onChange={(e) => toggleSelect(doc.id, e as any)}
+                                  onChange={(e) => toggleSelect(task.id, e as any)}
                                   style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
                                 />
                               </td>
@@ -2055,7 +2095,7 @@ export default function AdminDashboardPage() {
                                 </div>
                               </td>
                               <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 800, letterSpacing: '0.05em' }}>
+                                <div style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 800, letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                                   {formatDate(task.submittingDate)}
                                 </div>
                               </td>
@@ -2069,7 +2109,7 @@ export default function AdminDashboardPage() {
                                   </button>
                                   {can('tasks', 'delete') && (
                                     <button 
-                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'tasks', name: task.title, email: '' }); }}
+                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: task.id, col: 'tasks', name: task.title, email: '' }); }}
                                       style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
                                     >
                                       <Trash2 size={18} />
@@ -2102,16 +2142,15 @@ export default function AdminDashboardPage() {
                             </td>
                           </tr>
                         )}
-                         {activeTab === 'team' && teamActiveSubTab === 'personnel' && membersSnapshot?.docs.map((doc: any, i: number) => {
-                            const member = { id: doc.id, ...doc.data() } as any;
-                            const isSelected = selectedIds.has(doc.id);
+                         {activeTab === 'team' && teamActiveSubTab === 'personnel' && memoizedMembers.map((member, i) => {
+                            const isSelected = selectedIds.has(member.id);
                             
                             const matchedDept = departmentsSnapshot?.docs.find((d: any) => d.id === member.department || d.data().name === member.department)?.data();
                             const deptDisplay = matchedDept ? matchedDept.name : member.department || 'Awaiting Assignment';
 
                              return (
                             <motion.tr 
-                              key={doc.id || `member-${i}`} 
+                              key={member.id || `member-${i}`} 
                               whileHover={{ background: '#f8fafc' }}
                               style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
                               onClick={() => handleEditRecord(member)}
@@ -2120,7 +2159,7 @@ export default function AdminDashboardPage() {
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
-                                  onChange={(e) => toggleSelect(doc.id, e as any)}
+                                  onChange={(e) => toggleSelect(member.id, e as any)}
                                   style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
                                 />
                               </td>
@@ -2153,7 +2192,7 @@ export default function AdminDashboardPage() {
                                     </button>
                                     {can('team', 'delete') && (
                                       <button 
-                                        onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'members', name: member.name, email: member.email }); }}
+                                        onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: member.id, col: 'members', name: member.name, email: member.email }); }}
                                         style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
                                       >
                                         <Trash2 size={18} />
@@ -2165,16 +2204,15 @@ export default function AdminDashboardPage() {
                            );
                          })}
 
-                        {activeTab === 'team' && teamActiveSubTab === 'departments' && (departmentsSnapshot?.docs.length || 0) > 0 && departmentsSnapshot?.docs.map((doc: any) => {
-                          const dept = { id: doc.id, ...doc.data() } as any;
-                          const isSelected = selectedIds.has(doc.id);
+                        {activeTab === 'team' && teamActiveSubTab === 'departments' && memoizedDepartments.map((dept) => {
+                          const isSelected = selectedIds.has(dept.id);
                           return (
-                            <tr key={doc.id} style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms' }} onClick={() => handleEditRecord(dept)}>
+                            <tr key={dept.id} style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms' }} onClick={() => handleEditRecord(dept)}>
                               <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
-                                  onChange={(e) => toggleSelect(doc.id, e as any)}
+                                  onChange={(e) => toggleSelect(dept.id, e as any)}
                                   style={{ cursor: 'pointer', width: 16, height: 16, accentColor: 'var(--teal)' }}
                                 />
                               </td>
@@ -2186,7 +2224,7 @@ export default function AdminDashboardPage() {
                               </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
                                 <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>
-                                  {new Date(dept.updatedAt || dept.createdAt).toLocaleDateString()}
+                                  {formatDate(dept.updatedAt || dept.createdAt)}
                                 </div>
                               </td>
                               <td style={{ padding: '12px 32px', textAlign: 'center' }}>
@@ -2199,7 +2237,7 @@ export default function AdminDashboardPage() {
                                   </button>
                                   {can('team', 'delete') && (
                                     <button 
-                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'departments', name: dept.name, email: '' }); }}
+                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: dept.id, col: 'departments', name: dept.name, email: '' }); }}
                                       style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
                                     >
                                       <Trash2 size={18} />
@@ -2239,82 +2277,68 @@ export default function AdminDashboardPage() {
                             </td>
                           </tr>
                         )}
-                        {activeTab === 'bim-reviews' && bimReviewsSnapshot?.docs.map((doc: any, i: number) => {
-                          const review = { id: doc.id, ...doc.data() } as BIMReview;
-                          const isSelected = selectedIds.has(doc.id);
+                        {activeTab === 'bim-reviews' && memoizedBimReviews.map((review, i) => {
+                          const isSelected = selectedIds.has(review.id);
+                          const milestones = review["Milestone Submissions"] || [];
+                          const reviewers = review["InSite Reviewer"] || [];
+                          const dates = review["Planned Submission Date"] || [];
+                          const accStatuses = review["ACC Status"] || [];
+
                           return (
                             <motion.tr 
-                              key={doc.id || `bim-${i}`} 
+                              key={review.id || `bim-${i}`} 
                               whileHover={{ background: '#f8fafc' }}
                               style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
                               onClick={() => { setSelectedBimReview(review); setIsModalOpen(true); }}
                             >
-                              <td style={{ textAlign: 'center', padding: '32px 0' }} onClick={(e) => e.stopPropagation()}>
+                              <td style={{ textAlign: 'center', padding: '24px 0' }} onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
-                                  onChange={(e) => toggleSelect(doc.id, e as any)}
+                                  onChange={(e) => toggleSelect(review.id, e as any)}
                                   style={{ cursor: 'pointer', width: 20, height: 20, accentColor: 'var(--teal)' }}
                                 />
                               </td>
-                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                                <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text-primary)', letterSpacing: '0.02em', fontFamily: 'var(--font-heading)' }}>{review.project}</div>
-                                <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220, fontWeight: 700, letterSpacing: '0.05em' }}>{review.submissionDescription}</div>
+                              <td style={{ padding: '24px 10px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 800 }}>{review.ID || '—'}</div>
                               </td>
-                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                                <span style={{ fontSize: 10, background: 'var(--secondary)', color: 'var(--teal)', padding: '8px 16px', borderRadius: 10, fontWeight: 900, letterSpacing: '0.1em', border: '1px solid var(--border)', textTransform: 'uppercase' }}>{review.designStage}</span>
+                              <td style={{ padding: '24px 16px', textAlign: 'left' }}>
+                                <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-primary)', letterSpacing: '0.01em', fontFamily: 'var(--font-heading)', lineHeight: 1.4 }}>{review.Project}</div>
+                                <div style={{ fontSize: 9, color: 'var(--text-dim)', marginTop: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 280, fontWeight: 700, letterSpacing: '0.05em' }}>{milestones.join(', ') || '—'}</div>
                               </td>
-                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 800 }}>{review.insiteBimReviewStatus || '—'}</div>
-                                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 8, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{review.stakeholder}</div>
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                                <span style={{ fontSize: 10, background: 'var(--secondary)', color: 'var(--teal)', padding: '8px 16px', borderRadius: 10, fontWeight: 900, letterSpacing: '0.1em', border: '1px solid var(--border)', textTransform: 'uppercase' }}>{review.Priority}</span>
                               </td>
-                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 13, color: 'var(--status-success)', fontWeight: 900 }}>{review.modonHillFinalReviewStatus || '—'}</div>
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 800 }}>{review["InSite Review Status"] || '—'}</div>
+                                <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 6, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{review.Stakeholder}</div>
                               </td>
-                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                                  {review.insiteReviewer && (
-                                    <div style={{
-                                      width: 32, height: 32, borderRadius: 10,
-                                      background: 'var(--secondary)', border: '1px solid var(--border)',
-                                      color: 'var(--teal)', fontSize: 12, fontWeight: 900,
-                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                      flexShrink: 0, overflow: 'hidden', position: 'relative'
-                                    }}>
-                                      {userAvatarByUid[review.insiteReviewerId || ''] ? (
-                                        <img 
-                                          src={userAvatarByUid[review.insiteReviewerId || '']} 
-                                          alt={review.insiteReviewer} 
-                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                        />
-                                      ) : userAvatarByEmail[review.insiteReviewerEmail?.toLowerCase() || ''] ? (
-                                        <img 
-                                          src={userAvatarByEmail[review.insiteReviewerEmail?.toLowerCase() || '']} 
-                                          alt={review.insiteReviewer} 
-                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                        />
-                                      ) : userAvatarByExactName[review.insiteReviewer || ''] ? (
-                                        <img 
-                                          src={userAvatarByExactName[review.insiteReviewer || '']} 
-                                          alt={review.insiteReviewer} 
-                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                        />
-                                      ) : (
-                                        review.insiteReviewer?.charAt(0).toUpperCase()
-                                      )}
-                                    </div>
-                                  )}
-                                  <div style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 700 }}>{review.insiteReviewer || '—'}</div>
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                                <div style={{ 
+                                  fontSize: 10, 
+                                  color: (accStatuses[0]?.toUpperCase() === 'SHARED' || accStatuses[0]?.toUpperCase() === 'COMPLETED') ? '#059669' : '#f59e0b', 
+                                  fontWeight: 900,
+                                  background: (accStatuses[0]?.toUpperCase() === 'SHARED' || accStatuses[0]?.toUpperCase() === 'COMPLETED') ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                                  padding: '4px 8px',
+                                  borderRadius: 6,
+                                  border: `1px solid ${(accStatuses[0]?.toUpperCase() === 'SHARED' || accStatuses[0]?.toUpperCase() === 'COMPLETED') ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`,
+                                  display: 'inline-block'
+                                }}>
+                                  {accStatuses.join(', ') || 'NOT SHARED'}
                                 </div>
                               </td>
-                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 14, color: 'var(--status-warning)', fontWeight: 900, letterSpacing: '0.02em' }}>{review.insiteReviewDueDate || '—'}</div>
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 700, lineHeight: 1.4, maxWidth: 220, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{reviewers.join(', ') || '—'}</div>
+                                </div>
                               </td>
-                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 700 }}>{review.submissionDate || '—'}</div>
-                                <div style={{ fontSize: 10, color: review.onAcc === 'SHARED' ? 'var(--status-success)' : 'var(--status-error)', fontWeight: 900, marginTop: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{review.onAcc}</div>
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 13, color: '#FF7908', fontWeight: 900, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{review["InSite Review Due Date"] || '—'}</div>
                               </td>
-                              <td style={{ padding: '24px 32px', textAlign: 'center' }}>
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 700, whiteSpace: 'nowrap' }}>{dates[0] || '—'}</div>
+                              </td>
+                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); setSelectedBimReview(review); setIsModalOpen(true); }}
@@ -2324,7 +2348,7 @@ export default function AdminDashboardPage() {
                                   </button>
                                   {can('bimReviews', 'delete') && (
                                     <button 
-                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: doc.id, col: 'bimReviews', name: review.project, email: '' }); }}
+                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: review.id, col: 'bimReviews', name: review.Project, email: '' }); }}
                                       style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
                                     >
                                       <Trash2 size={18} />
@@ -2337,7 +2361,7 @@ export default function AdminDashboardPage() {
                         })}
                         {activeTab === 'bim-reviews' && bimReviewsSnapshot?.docs.length === 0 && (
                           <tr>
-                            <td colSpan={9} style={{ padding: '60px 40px', textAlign: 'center' }}>
+                            <td colSpan={10} style={{ padding: '60px 40px', textAlign: 'center' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
                                 <div style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--secondary)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                   <Layers size={24} style={{ color: 'var(--teal)' }} />
@@ -2351,19 +2375,18 @@ export default function AdminDashboardPage() {
                           </tr>
                         )}
 
-                        {activeTab === 'registry' && registrySnapshot?.docs.map((doc: any) => {
-                          const item = doc.data() as DashboardNavItem;
-                          const isSelected = selectedIds.has(doc.id);
+                        {activeTab === 'registry' && memoizedRegistry.map((item) => {
+                          const isSelected = selectedIds.has(item.id);
                             const regMatchedDept = departmentsSnapshot?.docs.find((d: any) => d.id === item.department || d.data().name === item.department)?.data();
                             const regDeptDisplay = regMatchedDept ? regMatchedDept.name : item.department || 'General';
 
                             return (
-                              <tr key={doc.id} style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms' }} onClick={() => handleEditRecord(item)}>
+                              <tr key={item.id} style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms' }} onClick={() => handleEditRecord(item)}>
                                 <td style={{ textAlign: 'center', padding: '16px 0' }} onClick={(e) => e.stopPropagation()}>
                                   <input
                                     type="checkbox"
                                     checked={isSelected}
-                                    onChange={(e) => toggleSelect(doc.id, e as any)}
+                                    onChange={(e) => toggleSelect(item.id, e as any)}
                                     style={{ cursor: 'pointer', width: 16, height: 16, accentColor: 'var(--teal)' }}
                                   />
                                 </td>
@@ -2399,12 +2422,11 @@ export default function AdminDashboardPage() {
                           </tr>
                         )}
 
-                        {activeTab === 'users' && activeSubTab === 'users' && usersSnapshot?.docs.map((doc: any) => {
-                          const userRec = doc.data();
-                          const isSelected = selectedIds.has(doc.id);
+                        {activeTab === 'users' && activeSubTab === 'users' && memoizedUsers.map((userRec) => {
+                          const isSelected = selectedIds.has(userRec.id);
                           return (
                             <motion.tr 
-                              key={doc.id} 
+                              key={userRec.id} 
                               whileHover={{ background: '#f8fafc' }}
                               style={{ borderBottom: '1px solid rgba(0, 63, 73, 0.05)', cursor: 'pointer', background: isSelected ? '#eef2ff' : '#ffffff', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)' }} 
                               onClick={() => handleEditRecord(userRec)}
@@ -2413,7 +2435,7 @@ export default function AdminDashboardPage() {
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
-                                  onChange={(e) => toggleSelect(doc.id, e as any)}
+                                  onChange={(e) => toggleSelect(userRec.id, e as any)}
                                   style={{ cursor: 'pointer', width: 18, height: 18, accentColor: 'var(--teal)' }}
                                 />
                               </td>
@@ -2541,11 +2563,15 @@ export default function AdminDashboardPage() {
                           const ticket = doc.data() as any;
                           const isSelected = selectedIds.has(doc.id);
                           const statusColors: Record<string, string> = {
+                            OPEN: '#f59e0b',
                             PENDING: '#f59e0b',
                             IN_PROGRESS: '#3b82f6',
                             RESOLVED: '#10b981',
+                            APPROVED: '#10b981',
                             REJECTED: '#ef4444'
                           };
+
+                          const safeDate = (d: any) => formatDate(d) === '—' ? '---' : formatDate(d);
 
                           return (
                             <motion.tr 
@@ -2594,30 +2620,50 @@ export default function AdminDashboardPage() {
                               </td>
                               <td style={{ padding: '32px' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
-                                  <div style={{ padding: '6px 16px', borderRadius: 100, background: `${statusColors[ticket.status]}20`, border: `1px solid ${statusColors[ticket.status]}40`, color: statusColors[ticket.status], fontSize: 10, fontWeight: 900, letterSpacing: '0.1em' }}>
-                                    {ticket.status}
+                                  <div style={{ 
+                                    padding: '6px 16px', borderRadius: 100, 
+                                    background: ticket.status === 'OPEN' ? '#f59e0b' : ticket.status === 'RESOLVED' ? '#10b981' : `${statusColors[ticket.status] || '#64748b'}20`, 
+                                    border: `1px solid ${statusColors[ticket.status] || '#64748b'}`, 
+                                    color: (ticket.status === 'OPEN' || ticket.status === 'RESOLVED') ? '#ffffff' : (statusColors[ticket.status] || '#64748b'), 
+                                    fontSize: 10, fontWeight: 900, letterSpacing: '0.1em',
+                                    boxShadow: (ticket.status === 'OPEN' || ticket.status === 'RESOLVED') ? '0 4px 12px rgba(0,0,0,0.1)' : 'none'
+                                  }}>
+                                    {ticket.status || 'OPEN'}
                                   </div>
-                                  <span style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 700 }}>{new Date(ticket.createdAt).toLocaleDateString()}</span>
+                                  <span style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 700 }}>{safeDate(ticket.createdAt)}</span>
                                 </div>
                               </td>
                               <td style={{ padding: '32px' }} onClick={(e) => e.stopPropagation()}>
                                 <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-                                  <button
-                                    onClick={() => setTicketToResolve({ id: doc.id, ticketId: ticket.id })}
-                                    className="elite-action-btn"
-                                    style={{ padding: 12, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', color: '#10b981', cursor: 'pointer' }}
-                                    title="Mark Resolved"
-                                  >
-                                    <Check size={18} />
-                                  </button>
-                                  <button
-                                    onClick={() => setTicketToReject({ id: doc.id, ticketId: ticket.id })}
-                                    className="elite-action-btn"
-                                    style={{ padding: 12, borderRadius: 12, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', cursor: 'pointer' }}
-                                    title="Reject Ticket"
-                                  >
-                                    <X size={18} />
-                                  </button>
+                                  {ticket.status === 'OPEN' ? (
+                                    <>
+                                      <button
+                                        onClick={() => setTicketToResolve({ id: doc.id, ticketId: ticket.id })}
+                                        className="elite-action-btn"
+                                        style={{ padding: 12, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', color: '#10b981', cursor: 'pointer' }}
+                                        title="Mark Resolved"
+                                      >
+                                        <Check size={18} />
+                                      </button>
+                                      <button
+                                        onClick={() => setTicketToReject({ id: doc.id, ticketId: ticket.id })}
+                                        className="elite-action-btn"
+                                        style={{ padding: 12, borderRadius: 12, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', cursor: 'pointer' }}
+                                        title="Reject Ticket"
+                                      >
+                                        <X size={18} />
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      onClick={() => setTicketToReject({ id: doc.id, ticketId: ticket.id })}
+                                      className="elite-action-btn"
+                                      style={{ padding: 12, borderRadius: 12, background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', color: '#3b82f6', cursor: 'pointer' }}
+                                      title="Modify Decision"
+                                    >
+                                      <Pencil size={18} />
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => setTicketToDelete({ id: doc.id, ticketId: ticket.id })}
                                     className="elite-action-btn"
@@ -3928,20 +3974,78 @@ export default function AdminDashboardPage() {
             )}
 
             {ticketToReject && (
-              <EliteConfirmModal
-                isOpen={!!ticketToReject}
-                onClose={() => setTicketToReject(null)}
-                onConfirm={async () => {
-                  const { updateDoc, doc: fsDoc } = await import('firebase/firestore');
-                  await updateDoc(fsDoc(db, 'tickets', ticketToReject.id), { status: 'REJECTED', updatedAt: new Date().toISOString() });
-                  showToast(`Ticket ${ticketToReject.ticketId} rejected.`, 'INFO');
-                  setTicketToReject(null);
-                }}
-                title="Deny Access"
-                message={`Formally deny and reject Access Ticket ${ticketToReject.ticketId}? This action will terminate the request.`}
-                confirmLabel="Confirm Rejection"
-                severity="WARNING"
-              />
+              <div style={{ position: 'fixed', inset: 0, zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0, 10, 12, 0.85)', backdropFilter: 'blur(12px)' }}>
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                  style={{ background: '#ffffff', padding: '40px', borderRadius: 32, width: '100%', maxWidth: 480, boxShadow: '0 40px 100px rgba(0,0,0,0.5)', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                >
+                  <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                    <ShieldOff size={32} color="#ef4444" />
+                  </div>
+                  <h3 style={{ fontSize: 20, fontWeight: 900, color: '#003f49', textAlign: 'center', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Deny Access Protocol</h3>
+                  <p style={{ fontSize: 13, color: '#64748b', textAlign: 'center', marginBottom: 24, lineHeight: 1.6 }}>
+                    Authorize the formal rejection of Access Ticket <strong style={{ color: '#003f49' }}>{ticketToReject.ticketId}</strong>. A mandatory justification must be provided to the user.
+                  </p>
+
+                  <div style={{ marginBottom: 24 }}>
+                    <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Rejection Narrative</label>
+                    <textarea 
+                      value={rejectionResponse}
+                      onChange={(e) => setRejectionResponse(e.target.value)}
+                      placeholder="Specify the administrative reason for this rejection..."
+                      style={{ 
+                        width: '100%', minHeight: 120, padding: 16, borderRadius: 16, 
+                        border: '1px solid rgba(0, 63, 73, 0.1)', background: '#f8fafc', 
+                        fontSize: 14, color: '#003f49', fontWeight: 600, outline: 'none', resize: 'none'
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <button
+                      onClick={() => { setTicketToReject(null); setRejectionResponse(''); }}
+                      disabled={isRejecting}
+                      style={{ flex: 1, padding: '14px', borderRadius: 14, background: '#f1f5f9', color: '#64748b', border: 'none', fontWeight: 800, fontSize: 12, cursor: isRejecting ? 'not-allowed' : 'pointer', transition: 'all 200ms' }}
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      disabled={isRejecting || !rejectionResponse.trim()}
+                      onClick={async () => {
+                        setIsRejecting(true);
+                        try {
+                          const { updateDoc, doc: fsDoc } = await import('firebase/firestore');
+                          await updateDoc(fsDoc(db, 'tickets', ticketToReject.id), { 
+                            status: 'REJECTED', 
+                            adminResponse: rejectionResponse,
+                            updatedAt: new Date().toISOString() 
+                          });
+                          showToast(`Ticket ${ticketToReject.ticketId} rejected with justification.`, 'INFO');
+                          setTicketToReject(null);
+                          setRejectionResponse('');
+                        } catch (err) {
+                          showToast('Failed to synchronize rejection protocol.', 'ERROR');
+                        } finally {
+                          setIsRejecting(false);
+                        }
+                      }}
+                      style={{ 
+                        flex: 2, padding: '14px', borderRadius: 14, 
+                        background: '#ef4444', color: '#ffffff', border: 'none', 
+                        fontWeight: 900, fontSize: 12, 
+                        cursor: (isRejecting || !rejectionResponse.trim()) ? 'not-allowed' : 'pointer', 
+                        transition: 'all 200ms', boxShadow: '0 10px 25px rgba(239, 68, 68, 0.25)',
+                        opacity: (isRejecting || !rejectionResponse.trim()) ? 0.6 : 1,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                      }}
+                    >
+                      {isRejecting ? <Loader2 className="animate-spin" size={16} /> : 'CONFIRM REJECTION'}
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
             )}
 
             {ticketToDelete && (

@@ -150,7 +150,7 @@ export default function Dashboard() {
       });
     } else {
       syncedBimReviews.forEach(r => {
-        const d = parseBimDate(r.submissionDate);
+        const d = parseBimDate(r["Planned Submission Date"]?.[0]);
         if (d) yearsSet.add(d.getFullYear());
       });
     }
@@ -177,7 +177,7 @@ export default function Dashboard() {
       });
     } else {
       syncedBimReviews.forEach(r => {
-        const d = parseBimDate(r.submissionDate);
+        const d = parseBimDate(r["Planned Submission Date"]?.[0]);
         if (d && d.getFullYear() === selectedYear) {
           monthsSet.add(d.getMonth());
         }
@@ -416,7 +416,7 @@ export default function Dashboard() {
     rangeEnd.setHours(23, 59, 59, 999);
 
     return result.filter(review => {
-      const d = parseBimDate(review.submissionDate);
+      const d = parseBimDate(review["Planned Submission Date"]?.[0]);
       if (!d) return false;
       return d >= rangeStart && d <= rangeEnd;
     });
@@ -426,44 +426,39 @@ export default function Dashboard() {
     return dateFilteredBimReviews.filter(review => {
       const searchStr = bimSearch.toLowerCase();
       
-      // Resolve reviewer name for search/matching
-      const m = syncedMembers.find(sm => 
-        (review.insiteReviewerId && sm.id === review.insiteReviewerId) || 
-        (review.insiteReviewerEmail && sm.email.toLowerCase() === review.insiteReviewerEmail.toLowerCase()) ||
-        (review.insiteReviewer && sm.name.toLowerCase() === review.insiteReviewer.toLowerCase())
-      );
-      const resolvedReviewer = m ? m.name : (review.insiteReviewer || '—');
+      const reviewers = review["InSite Reviewer"] || [];
+      const milestones = review["Milestone Submissions"] || [];
 
       const matchesSearch = !bimSearch ||
-        review.submissionDescription.toLowerCase().includes(searchStr) ||
-        review.project.toLowerCase().includes(searchStr) ||
-        review.stakeholder.toLowerCase().includes(searchStr) ||
-        resolvedReviewer.toLowerCase().includes(searchStr);
+        milestones.some((m: string) => m.toLowerCase().includes(searchStr)) ||
+        review.Project.toLowerCase().includes(searchStr) ||
+        review.Stakeholder.toLowerCase().includes(searchStr) ||
+        reviewers.some((r: string) => r.toLowerCase().includes(searchStr));
 
       const matchesStage = bimFilterStage.length === 0 || 
                           bimFilterStage.includes('All Stages') || 
-                          (bimFilterStage.includes('(Empty)') && (!review.designStage || review.designStage === '')) ||
-                          bimFilterStage.includes(review.designStage);
+                          (bimFilterStage.includes('(Empty)') && (!review.Priority || review.Priority === '')) ||
+                          bimFilterStage.includes(review.Priority);
       
       const matchesStatus = bimFilterStatus.length === 0 || 
                            bimFilterStatus.includes('All Statuses') || 
-                           (bimFilterStatus.includes('(Empty)') && (!review.insiteBimReviewStatus || review.insiteBimReviewStatus === '')) ||
-                           bimFilterStatus.includes(review.insiteBimReviewStatus);
+                           (bimFilterStatus.includes('(Empty)') && (!review["InSite Review Status"] || review["InSite Review Status"] === '')) ||
+                           bimFilterStatus.includes(review["InSite Review Status"]);
       
       const matchesStakeholder = bimFilterStakeholder.length === 0 || 
                                 bimFilterStakeholder.includes('All Stakeholders') || 
-                                (bimFilterStakeholder.includes('(Empty)') && (!review.stakeholder || review.stakeholder === '')) ||
-                                bimFilterStakeholder.includes(review.stakeholder);
+                                (bimFilterStakeholder.includes('(Empty)') && (!review.Stakeholder || review.Stakeholder === '')) ||
+                                bimFilterStakeholder.includes(review.Stakeholder);
       
       const matchesReviewer = bimFilterReviewer.length === 0 || 
                              bimFilterReviewer.includes('All Reviewers') || 
-                             (bimFilterReviewer.includes('(Empty)') && (resolvedReviewer === '—' || !resolvedReviewer)) ||
-                             bimFilterReviewer.includes(resolvedReviewer);
+                             (bimFilterReviewer.includes('(Empty)') && reviewers.length === 0) ||
+                             reviewers.some((r: string) => bimFilterReviewer.includes(r));
 
       const matchesPrecinct = bimFilterPrecinct.length === 0 || 
                              bimFilterPrecinct.includes('All Precincts') || 
-                             (bimFilterPrecinct.includes('(Empty)') && (!review.precinct || review.precinct.trim() === '')) ||
-                             bimFilterPrecinct.includes(review.precinct || '');
+                             (bimFilterPrecinct.includes('(Empty)') && (!review.Precinct || review.Precinct.length === 0)) ||
+                             (review.Precinct || []).some((p: string) => bimFilterPrecinct.includes(p));
 
       return matchesSearch && matchesStage && matchesStatus && matchesStakeholder && matchesReviewer && matchesPrecinct;
     });
@@ -493,7 +488,7 @@ export default function Dashboard() {
     prevEnd.setHours(23, 59, 59, 999);
 
     return syncedBimReviews.filter(review => {
-      const d = parseBimDate(review.submissionDate);
+      const d = parseBimDate(review["Planned Submission Date"]?.[0]);
       if (!d) return false;
       return d >= prevStart && d <= prevEnd;
     });
@@ -501,43 +496,34 @@ export default function Dashboard() {
 
   // Available BIM Filter Options
   const availableBimStages = useMemo(() => {
-    const raw = Array.from(new Set(dateFilteredBimReviews.map(r => r.designStage))).filter(Boolean).sort();
-    const hasEmpty = dateFilteredBimReviews.some(r => !r.designStage);
+    const raw = Array.from(new Set(dateFilteredBimReviews.map(r => r.Priority))).filter(Boolean).sort();
+    const hasEmpty = dateFilteredBimReviews.some(r => !r.Priority);
     return hasEmpty ? ['(Empty)', ...raw] : raw;
   }, [dateFilteredBimReviews]);
 
   const availableBimStatuses = useMemo(() => {
-    const raw = Array.from(new Set(dateFilteredBimReviews.map(r => r.insiteBimReviewStatus))).filter(Boolean).sort();
-    const hasEmpty = dateFilteredBimReviews.some(r => !r.insiteBimReviewStatus);
+    const raw = Array.from(new Set(dateFilteredBimReviews.map(r => r["InSite Review Status"]))).filter(Boolean).sort();
+    const hasEmpty = dateFilteredBimReviews.some(r => !r["InSite Review Status"]);
     return hasEmpty ? ['(Empty)', ...raw] : raw;
   }, [dateFilteredBimReviews]);
 
   const availableBimStakeholders = useMemo(() => {
-    const raw = Array.from(new Set(dateFilteredBimReviews.map(r => r.stakeholder))).filter(Boolean).sort();
-    const hasEmpty = dateFilteredBimReviews.some(r => !r.stakeholder);
+    const raw = Array.from(new Set(dateFilteredBimReviews.map(r => r.Stakeholder))).filter(Boolean).sort();
+    const hasEmpty = dateFilteredBimReviews.some(r => !r.Stakeholder);
     return hasEmpty ? ['(Empty)', ...raw] : raw;
   }, [dateFilteredBimReviews]);
 
   const availableBimPrecincts = useMemo(() => {
-    const raw = Array.from(new Set(dateFilteredBimReviews.map(r => r.precinct))).filter(Boolean).sort();
-    const hasEmpty = dateFilteredBimReviews.some(r => !r.precinct);
+    const raw = Array.from(new Set(dateFilteredBimReviews.flatMap((r: BIMReview) => r.Precinct || []))).filter(Boolean).sort();
+    const hasEmpty = dateFilteredBimReviews.some((r: BIMReview) => !r.Precinct || r.Precinct.length === 0);
     return hasEmpty ? ['(Empty)', ...raw] : raw;
   }, [dateFilteredBimReviews]);
+
   const availableBimReviewers = useMemo(() => {
-    let hasEmpty = false;
-    const raw = new Set(dateFilteredBimReviews.map(r => {
-      const m = syncedMembers.find(sm => 
-        (r.insiteReviewerId && sm.id === r.insiteReviewerId) || 
-        (r.insiteReviewerEmail && sm.email.toLowerCase() === r.insiteReviewerEmail.toLowerCase()) ||
-        (r.insiteReviewer && sm.name.toLowerCase() === r.insiteReviewer.toLowerCase())
-      );
-      if (!m && !r.insiteReviewer) hasEmpty = true;
-      return m ? m.name : (r.insiteReviewer || '—');
-    }));
-    const sorted = Array.from(raw).filter(v => v !== '—').sort();
-    const result = hasEmpty || Array.from(raw).includes('—') ? ['(Empty)', ...sorted] : sorted;
-    return result;
-  }, [dateFilteredBimReviews, syncedMembers]);
+    const raw = Array.from(new Set(dateFilteredBimReviews.flatMap((r: BIMReview) => r["InSite Reviewer"] || []))).filter(Boolean).sort();
+    const hasEmpty = dateFilteredBimReviews.some((r: BIMReview) => !r["InSite Reviewer"] || r["InSite Reviewer"].length === 0);
+    return hasEmpty ? ['(Empty)', ...raw] : raw;
+  }, [dateFilteredBimReviews]);
 
 
   const handleTaskClick = (task: Task) => {
@@ -550,58 +536,16 @@ export default function Dashboard() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
-        const data = new Uint8Array(event.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet);
+        const buffer = event.target?.result as ArrayBuffer;
+        const { parseBimReviewsExcel } = await import('@/lib/bimImportUtils');
+        const mappedRecords = await parseBimReviewsExcel(buffer);
 
-        if (json.length === 0) {
+        if (mappedRecords.length === 0) {
           showToast('No records found in the file.', 'INFO');
           return;
         }
-
-        const normalizeExcelDate = (val: any) => {
-          if (!val) return null;
-          if (typeof val === 'number') {
-            const date = new Date(Math.round((val - 25569) * 86400 * 1000));
-            return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-          }
-          return String(val);
-        };
-
-        const sanitizeProjectName = (name: any) => {
-          if (!name || typeof name !== 'string') return name || '';
-          return name.replace(/\s*\(https?:\/\/[^\)]+\)/g, '').trim();
-        };
-
-        let lastProject = '';
-        const mappedRecords = json.map((row: any) => {
-          const currentProject = row['Project'] ? sanitizeProjectName(row['Project']) : '';
-          if (currentProject) lastProject = currentProject;
-          
-          return {
-            submissionDescription: row['Submission Description'] || '',
-            comments: row['Comments'] || '',
-            designStage: row['Design Stage'] || '',
-            insiteBimReviewStatus: row['InSite BIM Review Status'] || '',
-            insiteReviewDueDate: normalizeExcelDate(row['InSite Review Due Date']),
-            insiteReviewOutputUrl: row['InSite Review Output URL'] || '',
-            insiteReviewer: row['InSite Reviewer'] || '',
-            modonHillFinalReviewStatus: row['Modon/Hill Final Review Status'] || '',
-            onAcc: row['On ACC'] || 'NOT SHARED',
-            project: lastProject,
-            precinct: row['Precinct'] || '',
-            reviewNumber: row['Review Number'] ? String(row['Review Number']) : '',
-            stakeholder: row['Stakeholder'] || '',
-            submissionCategory: row['Submission Category'] 
-              ? String(row['Submission Category']).split(',').map((s: string) => s.trim()) 
-              : [],
-            submissionDate: normalizeExcelDate(row['Submission Date'])
-          };
-        });
 
         setBimImportConfirm({ isOpen: true, records: mappedRecords });
       } catch (err) {
@@ -630,7 +574,7 @@ export default function Dashboard() {
   const handleDeleteBimReview = async () => {
     if (!bimToDelete) return;
     try {
-      await deleteBimReview(bimToDelete.id);
+      await deleteBimReview(bimToDelete.ID);
       showToast('Record deleted successfully.', 'SUCCESS');
       setBimToDelete(null);
     } catch (err) {
@@ -731,6 +675,7 @@ export default function Dashboard() {
                   flexWrap: 'wrap',
                   overflow: 'visible',
                   position: 'relative',
+                  zIndex: 100,
                   boxShadow: '0 12px 40px rgba(0, 63, 73, 0.12)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
@@ -749,7 +694,7 @@ export default function Dashboard() {
                     </h2>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto', flexShrink: 0, flexWrap: 'wrap', rowGap: 8, justifyContent: 'flex-end', alignContent: 'flex-start' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto', flexShrink: 0, flexWrap: 'wrap', rowGap: 8, justifyContent: 'flex-end', alignContent: 'flex-start', position: 'relative', zIndex: 1000 }}>
                     {/* Mode Switcher */}
                     <div style={{
                       display: 'flex', background: 'rgba(255, 255, 255, 0.7)', padding: 3, borderRadius: 12,
@@ -1125,7 +1070,7 @@ export default function Dashboard() {
       <EliteConfirmModal
         isOpen={!!bimToDelete}
         title="CRITICAL SECURITY: PURGE RECORD"
-        message={`Are you absolutely sure you want to permanently delete the review for "${bimToDelete?.project}"? This action bypasses standard recovery protocols.`}
+        message={`Are you absolutely sure you want to permanently delete the review for "${bimToDelete?.Project}"? This action bypasses standard recovery protocols.`}
         onConfirm={handleDeleteBimReview}
         onClose={() => setBimToDelete(null)}
         confirmLabel="PURGE RECORD"

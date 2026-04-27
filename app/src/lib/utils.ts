@@ -11,6 +11,20 @@ export function formatNumber(num: number): string {
   return num.toString();
 }
 
+export function formatDate(dateInput: any): string {
+  if (!dateInput) return '—';
+  try {
+    const date = dateInput.toDate ? dateInput.toDate() : new Date(dateInput);
+    if (isNaN(date.getTime())) return '—';
+    // Format: 27-APR-2026
+    return date.toLocaleDateString('en-GB', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric' 
+    }).replace(/ /g, '-').toUpperCase();
+  } catch (e) { return '—'; }
+}
+
 export function getRelativeTime(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();
@@ -23,7 +37,7 @@ export function getRelativeTime(dateString: string): string {
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-').toUpperCase();
 }
 
 export function getStatusColor(status: string): string {

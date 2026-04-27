@@ -74,7 +74,7 @@ class MailService {
     cc?: string | string[];
     bcc?: string | string[];
     subject: string;
-    type: 'ANNOUNCEMENT' | 'NEWS' | 'SYSTEM_ALERT' | 'PASSWORD_CHANGED' | 'ACCOUNT_APPROVED';
+    type: 'ANNOUNCEMENT' | 'NEWS' | 'SYSTEM_ALERT' | 'PASSWORD_CHANGED' | 'ACCOUNT_APPROVED' | 'REVOCATION_APPEAL';
     payload: any;
   }) {
     return this.call('/v1/mail/dispatch', params);

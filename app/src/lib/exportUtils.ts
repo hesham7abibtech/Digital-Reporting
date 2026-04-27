@@ -5,6 +5,7 @@ import { Task, ProjectMetadata, BIMReview } from './types';
 import { PRECINCTS, TASK_DELIVERABLE_TYPES, TASK_CDE_OPTIONS } from './constants';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
+import { formatDate } from './utils';
 
 // ─── Constants ──────────────────────────────────────────────────────────
 const MAX_COL_WIDTH = 60;
@@ -1109,21 +1110,21 @@ export async function exportToPDF(
  */
 export function getBimExportColumns(metadataExcluded: string[], format: 'excel' | 'pdf' = 'excel') {
   const baseColumns = [
-    { id: 'project', excelLabel: 'Project', pdfLabel: 'PROJECT', width: 30 },
-    { id: 'precinct', excelLabel: 'Precinct', pdfLabel: 'PRECINCT', width: 25 },
-    { id: 'stakeholder', excelLabel: 'Stakeholder', pdfLabel: 'STAKEHOLDER', width: 25 },
-    { id: 'reviewNumber', excelLabel: 'Review No.', pdfLabel: 'REV NO', width: 15 },
-    { id: 'submissionDescription', excelLabel: 'Submission Description', pdfLabel: 'DESCRIPTION', width: 50 },
-    { id: 'designStage', excelLabel: 'Design Stage', pdfLabel: 'STAGE', width: 20 },
-    { id: 'submissionDate', excelLabel: 'Submission Date', pdfLabel: 'SUBMISSION DATE', width: 20 },
-    { id: 'submissionCategory', excelLabel: 'Category', pdfLabel: 'CATEGORY', width: 25 },
-    { id: 'onAcc', excelLabel: 'ACC Submission Status', pdfLabel: 'ACC STATUS', width: 20 },
-    { id: 'insiteReviewer', excelLabel: 'InSite Reviewer', pdfLabel: 'REVIEWER', width: 25 },
-    { id: 'insiteReviewDueDate', excelLabel: 'Due Date', pdfLabel: 'DUE DATE', width: 20 },
-    { id: 'insiteBimReviewStatus', excelLabel: 'InSite Status', pdfLabel: 'INSITE STATUS', width: 20 },
-    { id: 'modonHillFinalReviewStatus', excelLabel: 'Modon/Hill Status', pdfLabel: 'MODON STATUS', width: 20 },
-    { id: 'comments', excelLabel: 'Comments', pdfLabel: 'COMMENTS', width: 40 },
-    { id: 'insiteReviewOutputUrl', excelLabel: 'Review Report Links', pdfLabel: 'REPORT LINKS', width: 25 }
+    { id: 'ID', excelLabel: 'ID', pdfLabel: 'ID', width: 20 },
+    { id: 'Project', excelLabel: 'Project', pdfLabel: 'PROJECT', width: 30 },
+    { id: 'Precinct', excelLabel: 'Precinct', pdfLabel: 'PRECINCT', width: 25 },
+    { id: 'Stakeholder', excelLabel: 'Stakeholder', pdfLabel: 'STAKEHOLDER', width: 25 },
+    { id: 'Milestone Submissions', excelLabel: 'Milestone Submissions', pdfLabel: 'MILESTONES', width: 50 },
+    { id: 'Submission Category', excelLabel: 'Submission Category', pdfLabel: 'CATEGORY', width: 25 },
+    { id: 'Planned Submission Date', excelLabel: 'Planned Submission Date', pdfLabel: 'PLANNED DATE', width: 20 },
+    { id: 'ACC Status', excelLabel: 'ACC Status', pdfLabel: 'ACC STATUS', width: 20 },
+    { id: 'Priority', excelLabel: 'Design Stage', pdfLabel: 'DESIGN STAGE', width: 25 },
+    { id: 'ACC Review ID', excelLabel: 'ACC Review ID', pdfLabel: 'ACC REV ID', width: 20 },
+    { id: 'InSite Review Status', excelLabel: 'InSite Review Status', pdfLabel: 'INSITE STATUS', width: 25 },
+    { id: 'InSite Review Due Date', excelLabel: 'InSite Review Due Date', pdfLabel: 'DUE DATE', width: 20 },
+    { id: 'InSite Reviewer', excelLabel: 'InSite Reviewer', pdfLabel: 'REVIEWER', width: 25 },
+    { id: 'InSite Review Output ACC URL', excelLabel: 'InSite Review Output ACC URL', pdfLabel: 'ACC URL', width: 25 },
+    { id: 'Comments', excelLabel: 'Comments', pdfLabel: 'COMMENTS', width: 40 }
   ];
 
   return baseColumns.map((col, idx) => ({
@@ -1139,22 +1140,31 @@ export function getBimExportColumns(metadataExcluded: string[], format: 'excel' 
  * BIM Analytics for Dashboard
  */
 function getBimDashboardAnalytics(reviews: BIMReview[]) {
-  const modonStatuses: Record<string, number> = {};
+  const priorityBreakdown: Record<string, number> = {};
   const insiteStatuses: Record<string, number> = {};
   const stakeholders: Record<string, number> = {};
+  const accStatuses: Record<string, number> = {};
+  let approvedCount = 0;
 
   reviews.forEach(r => {
-    modonStatuses[r.modonHillFinalReviewStatus || 'Awaiting'] = (modonStatuses[r.modonHillFinalReviewStatus || 'Awaiting'] || 0) + 1;
-    insiteStatuses[r.insiteBimReviewStatus || 'Pending'] = (insiteStatuses[r.insiteBimReviewStatus || 'Pending'] || 0) + 1;
-    stakeholders[r.stakeholder || 'N/A'] = (stakeholders[r.stakeholder || 'N/A'] || 0) + 1;
+    priorityBreakdown[r.Priority || 'MEDIUM'] = (priorityBreakdown[r.Priority || 'MEDIUM'] || 0) + 1;
+    insiteStatuses[r["InSite Review Status"] || 'Pending'] = (insiteStatuses[r["InSite Review Status"] || 'Pending'] || 0) + 1;
+    stakeholders[r.Stakeholder || 'N/A'] = (stakeholders[r.Stakeholder || 'N/A'] || 0) + 1;
+    
+    const acc = r["ACC Status"] || [];
+    acc.forEach(st => {
+      accStatuses[st] = (accStatuses[st] || 0) + 1;
+    });
+    if (acc.includes('SHARED') || acc.includes('APPROVED')) approvedCount++;
   });
 
   return {
     total: reviews.length,
-    modon: Object.entries(modonStatuses).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
+    approvedCount,
+    priority: Object.entries(priorityBreakdown).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
     insite: Object.entries(insiteStatuses).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
     stakeholders: Object.entries(stakeholders).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
-    approvedCount: modonStatuses['Approved'] || 0
+    modon: Object.entries(accStatuses).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
   };
 }
 
@@ -1198,8 +1208,15 @@ export async function exportBimToExcel(
 
     reviews.forEach((r, rIdx) => {
       const rowData = cols.map(c => {
-        if (c.id === 'insiteReviewOutputUrl') return r.insiteReviewOutputUrl ? 'View Report' : '-';
+        if (c.id === 'InSite Review Output ACC URL') return r["InSite Review Output ACC URL"] ? 'View Report' : '-';
         const val = (r as any)[c.id];
+        
+        // Handle Date fields specifically
+        if (c.id === 'InSite Review Due Date') return val ? formatDate(val) : '-';
+        if (c.id === 'Planned Submission Date' && Array.isArray(val)) {
+          return val.map(d => formatDate(d)).join('\n'); // Use newline for Excel multi-date
+        }
+        
         if (Array.isArray(val)) return val.join(', ');
         return val || '-';
       });
@@ -1209,7 +1226,7 @@ export async function exportBimToExcel(
       // Per-column alignment
       cols.forEach((c, cIdx) => {
         const cell = row.getCell(cIdx + 1);
-        cell.alignment = { horizontal: getColumnAlign(c.id), vertical: 'middle', wrapText: true };
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
       });
 
       // Zebra stripes
@@ -1225,10 +1242,10 @@ export async function exportBimToExcel(
       });
 
       // Hyperlink for review output URL
-      const linkIdx = cols.findIndex(c => c.id === 'insiteReviewOutputUrl');
-      if (linkIdx !== -1 && r.insiteReviewOutputUrl) {
+      const linkIdx = cols.findIndex(c => c.id === 'InSite Review Output ACC URL');
+      if (linkIdx !== -1 && r["InSite Review Output ACC URL"]) {
         const cell = row.getCell(linkIdx + 1);
-        cell.value = { text: 'View Report', hyperlink: r.insiteReviewOutputUrl };
+        cell.value = { text: 'View Report', hyperlink: r["InSite Review Output ACC URL"] };
         cell.font = { color: { argb: LINK_COLOR_ARGB }, underline: true, size: 10 };
       }
     });
@@ -1281,7 +1298,7 @@ export async function exportBimToExcel(
     });
 
     sheet.addRow([]);
-    sheet.addRow(['MODON/HILL STATUS BREAKDOWN']).font = { bold: true, size: 11 };
+    sheet.addRow(['ACC STATUS BREAKDOWN']).font = { bold: true, size: 11 };
     analytics.modon.forEach(s => {
       const row = sheet.addRow([s.name, s.value]);
       row.getCell(2).alignment = { horizontal: 'right' };
@@ -1414,9 +1431,9 @@ export async function exportBimToPDF(
     const kpiH = 30;
     const bimStats = [
       { label: 'TOTAL REVIEWS', value: analytics.total.toString() },
-      { label: 'APPROVED (MODON)', value: analytics.approvedCount.toString() },
       { label: 'STAKEHOLDERS', value: analytics.stakeholders.length.toString() },
-      { label: 'APPROVAL RATE', value: `${analytics.total > 0 ? Math.round((analytics.approvedCount / analytics.total) * 100) : 0}%` },
+      { label: 'PERIOD', value: dateRangeText || 'All Time' },
+      { label: 'GENERATED', value: formatGeneratedOn() },
     ];
 
     bimStats.forEach((s, i) => {
@@ -1436,8 +1453,8 @@ export async function exportBimToPDF(
     // Modon Status Table
     autoTable(doc, {
       startY: kpiY + kpiH + 12,
-      head: [['Modon/Hill Status', 'Count', 'Percentage']],
-      body: analytics.modon.map(s => [s.name, s.value.toString(), `${Math.round((s.value / analytics.total) * 100)}%`]),
+      head: [['Design Stage', 'Count', 'Percentage']],
+      body: analytics.priority.map(s => [s.name, s.value.toString(), `${analytics.total > 0 ? Math.round((s.value / analytics.total) * 100) : 0}%`]),
       margin: { left: 15, right: 15 },
       tableWidth: 140,
       styles: { fontSize: 8, cellPadding: 4 },
@@ -1467,26 +1484,33 @@ export async function exportBimToPDF(
     }
     const head = [cols.map(c => c.label)];
     const body = reviews.map(r => cols.map(c => {
-      if (c.id === 'insiteReviewOutputUrl') return r.insiteReviewOutputUrl ? 'View Report' : '-';
+      if (c.id === 'InSite Review Output ACC URL') return r["InSite Review Output ACC URL"] ? 'View Report' : '-';
       const val = (r as any)[c.id];
+      
+      // Handle Date fields specifically
+      if (c.id === 'InSite Review Due Date') return val ? formatDate(val) : '-';
+      if (c.id === 'Planned Submission Date' && Array.isArray(val)) {
+        return val.map(d => formatDate(d)).join(' | ');
+      }
+      
       return Array.isArray(val) ? val.join(', ') : (val || '-');
     }));
 
     // Per-column alignment
     const colStyles: Record<number, any> = {};
     cols.forEach((col, idx) => {
-      const align = getColumnAlign(col.id);
-      if (col.id === 'submissionDescription' || col.id === 'comments') {
+      const align = 'center'; // Standardized center align for most
+      if (col.id === 'Milestone Submissions' || col.id === 'Comments') {
         colStyles[idx] = { halign: 'left', overflow: 'linebreak', cellWidth: 'auto', minCellWidth: 25 };
-      } else if (col.id === 'insiteReviewOutputUrl') {
-        colStyles[idx] = { halign: align, cellWidth: 'auto', textColor: [5, 99, 193], minCellWidth: 20 };
+      } else if (col.id === 'InSite Review Output ACC URL') {
+        colStyles[idx] = { halign: 'center', cellWidth: 'auto', textColor: [5, 99, 193], minCellWidth: 20 };
       } else {
-        colStyles[idx] = { halign: align, cellWidth: 'auto' };
+        colStyles[idx] = { halign: 'center', cellWidth: 'auto' };
       }
     });
 
-    // Hyperlink column
-    const linkColIdx = cols.findIndex(c => c.id === 'insiteReviewOutputUrl');
+    // Hyperlink column - Match the exact ID from getBimExportColumns
+    const linkColIdx = cols.findIndex(c => c.id === 'InSite Review Output ACC URL');
 
     autoTable(doc, {
       head, body, theme: 'grid',
@@ -1518,8 +1542,8 @@ export async function exportBimToPDF(
       didDrawCell: (data) => {
         if (data.section === 'body' && data.column.index === linkColIdx && linkColIdx !== -1) {
           const review = reviews[data.row.index];
-          if (review?.insiteReviewOutputUrl && review.insiteReviewOutputUrl !== '-') {
-            doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: ensureAbsoluteUrl(review.insiteReviewOutputUrl) });
+          if (review?.["InSite Review Output ACC URL"] && review["InSite Review Output ACC URL"] !== '-') {
+            doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: ensureAbsoluteUrl(review["InSite Review Output ACC URL"]) });
           }
         }
       },

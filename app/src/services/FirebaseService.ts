@@ -157,15 +157,22 @@ export async function deleteRegistryItem(id: string) {
 // ─── BIM Review Operations ────────────────────────────────────────
 
 export async function upsertBimReview(review: any) {
-  const reviewDoc = doc(collections.bimReviews, review.id);
+  const id = review.ID || review.id;
+  if (!id) throw new Error("BIM Review ID is required");
+  
+  const reviewDoc = doc(collections.bimReviews, id);
   const cleanData = sanitizeData({
     ...review,
+    ID: id,
     updatedAt: new Date().toISOString()
   });
   
   if (!review.createdAt) {
     (cleanData as any).createdAt = new Date().toISOString();
   }
+
+  // Remove old lowercase id if present to avoid duplication
+  delete cleanData.id;
 
   await setDoc(reviewDoc, cleanData, { merge: true });
 }
@@ -188,19 +195,71 @@ export async function bulkUpsertBimReviews(reviews: any[], strategy: 'OVERWRITE'
 
   reviews.forEach((review) => {
     // Generate an ID if missing (for new imports)
-    const reviewId = review.id || `bim-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const reviewId = review.ID || review.id || `bim-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const reviewDoc = doc(collections.bimReviews, reviewId);
     
     const cleanData = sanitizeData({
       ...review,
-      id: reviewId,
+      ID: reviewId,
       updatedAt: new Date().toISOString(),
       createdAt: review.createdAt || new Date().toISOString()
     });
+    
+    delete cleanData.id;
+
     batch.set(reviewDoc, cleanData, { merge: true });
   });
 
   await batch.commit();
+}
+
+/**
+ * Migrates existing BIM reviews to the new strict schema
+ */
+export async function migrateBimReviews() {
+  const { getDocs } = await import('firebase/firestore');
+  const snapshot = await getDocs(collections.bimReviews);
+  const batch = writeBatch(db);
+  
+  let migratedCount = 0;
+
+  snapshot.docs.forEach(docSnap => {
+    const data = docSnap.data();
+    
+    // Check if already migrated
+    if (data.ID && data["Precinct"] && Array.isArray(data["Precinct"])) {
+      return;
+    }
+
+    const migrated: any = {
+      "ID": data.id || docSnap.id,
+      "Precinct": Array.isArray(data.precinct) ? data.precinct : (data.precinct ? [data.precinct] : []),
+      "Stakeholder": data.stakeholder || "",
+      "Project": data.project || "",
+      "Milestone Submissions": Array.isArray(data.milestoneSubmissions) ? data.milestoneSubmissions : (data.submissionDescription ? [data.submissionDescription] : []),
+      "Submission Category": Array.isArray(data.submissionCategory) ? data.submissionCategory : (data.submissionCategory ? [data.submissionCategory] : []),
+      "Planned Submission Date": Array.isArray(data.plannedSubmissionDate) ? data.plannedSubmissionDate : (data.submissionDate ? [data.submissionDate] : []),
+      "ACC Status": Array.isArray(data.accStatus) ? data.accStatus : (data.onAcc ? [data.onAcc] : []),
+      "Priority": data.priority || "MEDIUM",
+      "ACC Review ID": data.reviewNumber || data.accReviewId || "",
+      "InSite Review Status": data.insiteBimReviewStatus || "",
+      "InSite Review Due Date": data.insiteReviewDueDate || null,
+      "InSite Reviewer": Array.isArray(data.insiteReviewer) ? data.insiteReviewer : (data.insiteReviewer ? [data.insiteReviewer] : []),
+      "InSite Review Output ACC URL": data.insiteReviewOutputUrl || "",
+      "Comments": data.comments || "",
+      createdAt: data.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    batch.set(docSnap.ref, migrated);
+    migratedCount++;
+  });
+
+  if (migratedCount > 0) {
+    await batch.commit();
+  }
+  
+  return migratedCount;
 }
 
 /**
