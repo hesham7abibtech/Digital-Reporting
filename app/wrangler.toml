@@ -6,3 +6,5 @@ pages_build_output_dir = ".vercel/output/static"
 [vars]
 # Ensure environment variables are bound to the functions
 NODE_VERSION = "20"
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "DigitalReporting"
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET = "DigitalReporting"
