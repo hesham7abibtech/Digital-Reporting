@@ -1,23 +1,14 @@
-# 1. Authorize Script Execution (MANDATORY)
-# Run this once in a PowerShell window to unlock your environment
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-
-
-# 2. Purge & Sync
+# 1. Purge & Sync
 # Remove local build artifacts to ensure a clean state
 Remove-Item -Recurse -Force app\.next, app\.vercel, app\out -ErrorAction SilentlyContinue
 
-
-
-npm run build
-
-# 3. Commit & Push to GitHub
+# 2. Commit & Push to GitHub
 # Cloudflare Pages will automatically detect changes and build in its native Linux environment
 git add -A
-git commit -m "update"
+git commit -m "UI: finalized dashboard scrolling and BIM analytics structure"
 git push
 
-# 4. Deployment Status
+# 3. Deployment Status
 Write-Host "⚡️ Sync Complete!" -ForegroundColor Cyan
 Write-Host "⚡️ Cloudflare is now building your site in the cloud (bypassing Windows local build limits)." -ForegroundColor Green
 Write-Host "⚡️ Monitor: https://dash.cloudflare.com/" -ForegroundColor Yellow

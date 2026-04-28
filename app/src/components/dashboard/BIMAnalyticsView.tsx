@@ -121,6 +121,73 @@ function renderDonutLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent 
   );
 }
 
+/* ── Chart Card Wrapper ── */
+function ChartCard({ title, subtitle, children, delay, height = 350, titleColor = '#003f49' }: any) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.4 }}
+      style={{ height: '100%', minHeight: height }}
+    >
+      <GlassCard padding="none" hover={false} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(0, 63, 73, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 className="brand-heading" style={{ fontSize: 13, fontWeight: 950, color: titleColor, margin: 0, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{title}</h3>
+            {subtitle && <p style={{ fontSize: 10, color: 'rgba(0, 63, 73, 0.4)', margin: '2px 0 0', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{subtitle}</p>}
+          </div>
+        </div>
+        <div style={{ flex: 1, padding: '12px', minHeight: 0, position: 'relative' }}>
+          {children}
+        </div>
+      </GlassCard>
+    </motion.div>
+  );
+}
+
+function NoDataPlaceholder() {
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'rgba(0, 63, 73, 0.2)', gap: 10 }}>
+      <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(0, 63, 73, 0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Database size={20} />
+      </div>
+      <span style={{ fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Insufficient Analytics Data</span>
+    </div>
+  );
+}
+
+function InteractivePieChart({ data, total, onClick }: any) {
+  return (
+    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+      <PieChart>
+        <Pie
+          data={data}
+          innerRadius={55}
+          outerRadius={75}
+          paddingAngle={4}
+          dataKey="value"
+          onMouseEnter={(_, index) => index}
+          onClick={(data) => onClick && onClick(data.name)}
+          cursor="pointer"
+          stroke="none"
+          label={renderDonutLabel}
+          labelLine={false}
+        >
+          {data.map((entry: any, i: number) => (
+            <Cell 
+              key={i} 
+              fill={entry.color} 
+              style={{ filter: `drop-shadow(0 4px 10px ${entry.color}30)` }}
+            />
+          ))}
+        </Pie>
+        <Tooltip content={<DonutTooltip total={total} />} />
+        <Legend content={<PremiumLegend />} verticalAlign="bottom" />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+}
+
 /* ── KPI Card with Hover Tooltip ── */
 function KPICard({ label, value, icon, color, trend, pctChange, suffix, delay, displayValue, tooltipTitle, tooltipDetails, tooltipAlign = 'center' }: {
   label: string; value: number; icon: React.ReactNode; color: string;
@@ -145,18 +212,23 @@ function KPICard({ label, value, icon, color, trend, pctChange, suffix, delay, d
       transition={{ delay, duration: 0.4 }}
       className="glass-card"
       style={{
-        padding: '10px 12px',
+        padding: '12px 14px',
         position: 'relative',
         overflow: 'visible',
         cursor: 'pointer',
         border: isHovered ? `1px solid ${color}40` : '1px solid rgba(255,255,255,0.08)',
         transition: 'border 0.3s ease',
-        zIndex: isHovered ? 1000 : 1
+        zIndex: isHovered ? 1000 : 1,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        minHeight: 85
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '16px 0 0 16px' }} />
+      <div style={{ position: 'absolute', left: 0, top: '20%', bottom: '20%', width: 3, background: color, borderRadius: '0 4px 4px 0' }} />
       <div style={{ position: 'absolute', top: -30, right: -30, width: 80, height: 80, background: `radial-gradient(circle, ${color}15 0%, transparent 70%)`, pointerEvents: 'none' }} />
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -172,7 +244,19 @@ function KPICard({ label, value, icon, color, trend, pctChange, suffix, delay, d
           {suffix && <span style={{ fontSize: 12, fontWeight: 800, color: 'rgba(0, 63, 73, 0.5)' }}>{suffix}</span>}
         </div>
       </div>
-      <p style={{ fontSize: 10, color: 'rgba(0, 63, 73, 0.85)', marginTop: 2, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+      <div style={{ marginTop: 'auto' }}>
+        <p style={{ 
+          fontSize: 11, 
+          color: 'rgba(0, 63, 73, 0.85)', 
+          margin: 0, 
+          fontWeight: 950, 
+          textTransform: 'uppercase', 
+          letterSpacing: '0.06em',
+          lineHeight: 1.2
+        }}>
+          {label}
+        </p>
+      </div>
 
       <AnimatePresence>
         {isHovered && tooltipDetails && (
@@ -251,9 +335,18 @@ export default function BIMAnalyticsView({
   const CHART_TITLE_PADDING = '12px 16px';
   const CHART_BODY_PADDING = '8px 12px 12px';
 
+  const stakeholderData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    data.forEach(r => { if (r.Stakeholder) counts[r.Stakeholder] = (counts[r.Stakeholder] || 0) + 1; });
+    return Object.entries(counts)
+      .map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] }))
+      .sort((a, b) => b.value - a.value).slice(0, 8);
+  }, [data]);
+
   const {
     total, prevTotal, totalPct, totalTrend, approvalRate, statusCounts, modonCounts, activeStakeholders,
-    stageData, reviewerData, timelineData, approvedPct, rejectedPct, pendingPct
+    stageData, reviewerData, timelineData, approvedPct, rejectedPct, pendingPct,
+    insights
   } = useMemo(() => {
     const total = data.length;
     const prevTotal = previousPeriodData.length;
@@ -275,13 +368,28 @@ export default function BIMAnalyticsView({
       const priority = r.Priority || 'Medium';
       stageCounts[priority] = (stageCounts[priority] || 0) + 1;
 
-      const reviewers = r["InSite Reviewer"] || [];
-      if (reviewers.length === 0) {
+      const reviewersRaw = r["InSite Reviewer"] || [];
+      if (reviewersRaw.length === 0) {
         reviewerCounts['Unassigned'] = (reviewerCounts['Unassigned'] || 0) + 1;
       } else {
-        reviewers.forEach(rev => {
-          reviewerCounts[rev] = (reviewerCounts[rev] || 0) + 1;
+        // Handle both arrays and comma-separated strings within arrays
+        const taskReviewers = new Set<string>();
+        reviewersRaw.forEach(rev => {
+          if (typeof rev === 'string') {
+            rev.split(',').forEach(p => {
+              const cleaned = p.trim();
+              if (cleaned) taskReviewers.add(cleaned);
+            });
+          }
         });
+
+        if (taskReviewers.size === 0) {
+          reviewerCounts['Unassigned'] = (reviewerCounts['Unassigned'] || 0) + 1;
+        } else {
+          taskReviewers.forEach(revName => {
+            reviewerCounts[revName] = (reviewerCounts[revName] || 0) + 1;
+          });
+        }
       }
 
       // Timeline processing
@@ -330,20 +438,28 @@ export default function BIMAnalyticsView({
       sortDate: data.date.getTime()
     })).sort((a, b) => a.sortDate - b.sortDate);
 
+    const insights = (() => {
+      const list = [];
+      if (approvalRate > 80) list.push({ text: "High Submission Integrity: 80%+ of reviews are meeting Modon approval standards.", color: '#10b981', icon: <Trophy size={14} /> });
+      else if (approvalRate < 50 && total > 0) list.push({ text: "Quality Alert: Approval rate is currently below 50%. Review project priority alignment.", color: '#f43f5e', icon: <AlertTriangle size={14} /> });
+
+      const pendingCount = statusCounts['PENDING'] || 0;
+      if (pendingCount > 10) list.push({ text: `Backlog Detected: ${pendingCount} reviews are awaiting InSite action. Allocate resources to clear latency.`, color: '#f59e0b', icon: <Clock size={14} /> });
+      
+      const topStakeholder = stakeholderData[0]?.name;
+      if (topStakeholder) list.push({ text: `Critical Path: ${topStakeholder} is the highest contributor this period. Monitor for bottlenecks.`, color: '#6366f1', icon: <Zap size={14} /> });
+
+      return list.slice(0, 3);
+    })();
+
     return {
       total, prevTotal, totalPct: calcPct(total, prevTotal), totalTrend: calcTrend(total, prevTotal),
       approvalRate, statusCounts, modonCounts, activeStakeholders,
-      stageData, reviewerData, timelineData, approvedPct, rejectedPct, pendingPct
+      stageData, reviewerData, timelineData, approvedPct, rejectedPct, pendingPct,
+      insights
     };
   }, [data, previousPeriodData]);
 
-  const stakeholderData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    data.forEach(r => { if (r.Stakeholder) counts[r.Stakeholder] = (counts[r.Stakeholder] || 0) + 1; });
-    return Object.entries(counts)
-      .map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] }))
-      .sort((a, b) => b.value - a.value).slice(0, 8);
-  }, [data]);
 
   const statusDonutData = useMemo(() => {
     return Object.entries(statusCounts).map(([name, value], i) => ({
@@ -352,7 +468,7 @@ export default function BIMAnalyticsView({
   }, [statusCounts]);
 
   return (
-    <motion.div id="bim-analytics-export-root" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} style={{ display: 'flex', flexDirection: 'column', gap: SECTION_GAP, width: '100%', maxWidth: '100%', height: '100%', minHeight: 0, overflow: 'hidden' }}>
+    <motion.div id="bim-analytics-export-root" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} style={{ display: 'flex', flexDirection: 'column', gap: SECTION_GAP, width: '100%', maxWidth: '100%', minHeight: '100%', overflow: 'visible' }}>
       <GlassCard style={{ padding: 0, overflow: 'visible' }}>
         <div style={{ padding: HEADER_BLOCK_PADDING, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, rowGap: 10, flexWrap: 'wrap', position: 'relative', zIndex: 100 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -476,21 +592,17 @@ export default function BIMAnalyticsView({
         />
       </div>
 
-      <div id="bim-analytics-charts" style={{ width: '100%', maxWidth: '100%', overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: SECTION_GAP }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gap: SECTION_GAP, flex: '1 1 0', minHeight: 0 }}>
-          <GlassCard padding="none" style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: CHART_TITLE_PADDING, borderBottom: '1px solid rgba(0, 63, 73, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: 14, fontWeight: 950, color: '#003f49', margin: 0, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Stakeholder Submission Volume</h3>
-              <span style={{ fontSize: 10, color: '#d0ab82', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Volume Distribution</span>
-            </div>
-            <div style={{ flex: 1, minHeight: 0, padding: CHART_BODY_PADDING, minWidth: 0 }}>
-              <ResponsiveContainer width="100%" height="100%" debounce={100}>
+      <div id="bim-analytics-charts" style={{ width: '100%', maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: SECTION_GAP }}>
+        {/* Row 1: 3-Column Performance Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: SECTION_GAP }}>
+          <ChartCard title="Stakeholder Submission Volume" subtitle="Top contributing partners" delay={0.1}>
+            {stakeholderData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={100}>
                 <BarChart data={stakeholderData} layout="vertical" margin={{ left: 40, right: 30 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0, 63, 73, 0.05)" horizontal={false} />
                   <XAxis type="number" hide />
                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#003f49', fontSize: 11, fontWeight: 950 }} width={120} />
-                  <Tooltip content={<PremiumTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                  <Legend content={<PremiumLegend />} verticalAlign="bottom" />
+                  <Tooltip content={<PremiumTooltip />} cursor={{ fill: 'rgba(0, 63, 73, 0.02)' }} />
                   <Bar name="Review Volume" dataKey="value" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: GOLD, fontSize: 11, fontWeight: 950 }}>
                     {stakeholderData.map((entry, index) => (
                       <Cell key={index} fill={entry.color} fillOpacity={0.8} />
@@ -498,16 +610,12 @@ export default function BIMAnalyticsView({
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-          </GlassCard>
+            ) : <NoDataPlaceholder />}
+          </ChartCard>
 
-          <GlassCard padding="none" style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: CHART_TITLE_PADDING, borderBottom: '1px solid rgba(0, 63, 73, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: 14, fontWeight: 950, color: '#003f49', margin: 0, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Review Progression Timeline</h3>
-              <span style={{ fontSize: 10, color: '#d0ab82', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Submission Trend</span>
-            </div>
-            <div style={{ flex: 1, minHeight: 0, padding: CHART_BODY_PADDING, minWidth: 0 }}>
-              <ResponsiveContainer width="100%" height="100%" debounce={100}>
+          <ChartCard title="Review Progression Timeline" subtitle="Submission activity trend" delay={0.15}>
+            {timelineData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={100}>
                 <AreaChart data={timelineData}>
                   <defs>
                     <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
@@ -515,11 +623,10 @@ export default function BIMAnalyticsView({
                       <stop offset="95%" stopColor={GOLD} stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0, 63, 73, 0.05)" vertical={false} />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#003f49', fontSize: 11, fontWeight: 950 }} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: '#003f49', fontSize: 11, fontWeight: 950 }} dx={-10} />
                   <Tooltip content={<PremiumTooltip />} />
-                  <Legend content={<PremiumLegend />} verticalAlign="bottom" />
                   <Area
                     name="Submission Trend"
                     type="monotone"
@@ -532,60 +639,41 @@ export default function BIMAnalyticsView({
                   />
                 </AreaChart>
               </ResponsiveContainer>
-            </div>
-          </GlassCard>
-        </div>
+            ) : <NoDataPlaceholder />}
+          </ChartCard>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: SECTION_GAP, flex: '1 1 0', minHeight: 0 }}>
-          <GlassCard padding="none" style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: CHART_TITLE_PADDING, borderBottom: '1px solid rgba(0, 63, 73, 0.05)' }}>
-              <h3 style={{ fontSize: 12, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.08em' }}>InSite Status</h3>
-            </div>
-            <div style={{ flex: 1, minHeight: 0, padding: CHART_BODY_PADDING }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={statusDonutData} innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value" label={renderDonutLabel} labelLine={false}>
-                    {statusDonutData.map((entry, index) => (
-                      <Cell key={index} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<DonutTooltip total={total} />} />
-                  <Legend content={<PremiumLegend />} verticalAlign="bottom" />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </GlassCard>
-
-          <GlassCard padding="none" style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: CHART_TITLE_PADDING, borderBottom: '1px solid rgba(0, 63, 73, 0.05)' }}>
-              <h3 style={{ fontSize: 12, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Design Stage Breakdown</h3>
-            </div>
-            <div style={{ flex: 1, minHeight: 0, padding: CHART_BODY_PADDING }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={stageData} innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value" label={renderDonutLabel} labelLine={false}>
-                    {stageData.map((entry, index) => (
-                      <Cell key={index} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<DonutTooltip total={total} />} />
-                  <Legend content={<PremiumLegend />} verticalAlign="bottom" />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </GlassCard>
-
-          <GlassCard padding="none" style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: CHART_TITLE_PADDING, borderBottom: '1px solid rgba(0, 63, 73, 0.05)' }}>
-              <h3 style={{ fontSize: 12, fontWeight: 950, color: '#003f49', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Reviewer Workload</h3>
-            </div>
-            <div style={{ flex: 1, minHeight: 0, padding: CHART_BODY_PADDING }}>
-              <ResponsiveContainer width="100%" height="100%">
+          <ChartCard title="Reviewer Workload" subtitle="Internal resource distribution" delay={0.2}>
+            {reviewerData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={reviewerData} layout="vertical">
                   <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#003f49', fontSize: 11, fontWeight: 950 }} width={80} />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={(props: any) => {
+                      const { x, y, payload } = props;
+                      const text = payload.value;
+                      const truncated = text.length > 20 ? text.slice(0, 18) + '…' : text;
+                      return (
+                        <g transform={`translate(${x},${y})`}>
+                          <text 
+                            x={-10} 
+                            y={0} 
+                            dy={4} 
+                            textAnchor="end" 
+                            fill="#003f49" 
+                            style={{ fontSize: 11, fontWeight: 950 }}
+                          >
+                            {truncated}
+                          </text>
+                        </g>
+                      );
+                    }} 
+                    width={140} 
+                  />
                   <Tooltip content={<PremiumTooltip />} />
-                  <Legend content={<PremiumLegend />} verticalAlign="bottom" />
                   <Bar name="Reviewer Load" dataKey="value" radius={[0, 4, 4, 0]} barSize={12} label={{ position: 'right', fill: GOLD, fontSize: 10, fontWeight: 950 }}>
                     {reviewerData.map((entry, index) => (
                       <Cell key={index} fill={entry.color} fillOpacity={0.8} />
@@ -593,8 +681,72 @@ export default function BIMAnalyticsView({
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-          </GlassCard>
+            ) : <NoDataPlaceholder />}
+          </ChartCard>
+        </div>
+
+        {/* Row 2: Donuts + AI Insights */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: SECTION_GAP }}>
+          <ChartCard title="InSite Status Breakdown" subtitle="Current review lifecycle" delay={0.25}>
+            {statusDonutData.length > 0 ? (
+              <InteractivePieChart data={statusDonutData} total={total} />
+            ) : <NoDataPlaceholder />}
+          </ChartCard>
+
+          <ChartCard title="Design Stage Distribution" subtitle="Project priority mapping" delay={0.3}>
+            {stageData.length > 0 ? (
+              <InteractivePieChart data={stageData} total={total} />
+            ) : <NoDataPlaceholder />}
+          </ChartCard>
+
+          {/* Smart Insights Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35, duration: 0.4 }}
+          >
+            <GlassCard padding="none" hover={false} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid rgba(0, 63, 73, 0.05)' }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(208, 171, 130, 0.15)', color: '#d0ab82', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Zap size={16} />
+                </div>
+                <h3 className="brand-heading" style={{ fontSize: 13, fontWeight: 950, color: '#d0ab82', margin: 0, letterSpacing: '0.1em', textTransform: 'uppercase' }}>BIM AI INSIGHTS</h3>
+              </div>
+              <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: 8, flex: 1, overflowY: 'auto' }}>
+                {insights.length > 0 ? insights.map((insight, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -6 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 + i * 0.05 }}
+                    style={{
+                      display: 'flex', alignItems: 'flex-start', gap: 10,
+                      padding: '10px 14px', borderRadius: 12,
+                      background: 'rgba(255, 255, 255, 0.7)',
+                      border: `1px solid rgba(0, 63, 73, 0.1)`,
+                      boxShadow: '0 2px 8px rgba(0, 63, 73, 0.05)'
+                    }}
+                  >
+                    <div style={{
+                      width: 24, height: 24, borderRadius: 6, flexShrink: 0,
+                      background: `${insight.color}15`, color: insight.color,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1
+                    }}>
+                      {insight.icon}
+                    </div>
+                    <p style={{ fontSize: 12, fontWeight: 900, color: '#003f49', lineHeight: 1.4, margin: 0 }}>
+                      {insight.text}
+                    </p>
+                  </motion.div>
+                )) : (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.3 }}>
+                    <Zap size={24} style={{ marginBottom: 8 }} />
+                    <span style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase' }}>Intelligence Offline</span>
+                  </div>
+                )}
+              </div>
+            </GlassCard>
+          </motion.div>
         </div>
       </div> {/* End #bim-analytics-charts */}
     </motion.div>

@@ -272,17 +272,22 @@ function KPICard({ label, value, icon, color, trend, pctChange, suffix, delay, d
       transition={{ delay, duration: 0.4 }}
       className="glass-card"
       style={{ 
-        padding: '10px 12px', 
+        padding: '12px 14px', 
         position: 'relative', 
         overflow: 'visible', 
         cursor: 'pointer',
-        zIndex: isHovered ? 10001 : 1 // Dynamically elevate card on hover
+        zIndex: isHovered ? 10001 : 1,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        minHeight: 85
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Left accent */}
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '16px 0 0 16px' }} />
+      <div style={{ position: 'absolute', left: 0, top: '20%', bottom: '20%', width: 3, background: color, borderRadius: '0 4px 4px 0' }} />
 
       {/* Glow */}
       <div style={{
@@ -308,7 +313,19 @@ function KPICard({ label, value, icon, color, trend, pctChange, suffix, delay, d
           {suffix && <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-dim)' }}>{suffix}</span>}
         </div>
       </div>
-      <p style={{ fontSize: 10, color: '#003f49', marginTop: 3, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+      <div style={{ marginTop: 'auto' }}>
+        <p style={{ 
+          fontSize: 11, 
+          color: '#003f49', 
+          margin: 0, 
+          fontWeight: 950, 
+          textTransform: 'uppercase', 
+          letterSpacing: '0.06em',
+          lineHeight: 1.2
+        }}>
+          {label}
+        </p>
+      </div>
 
       {/* ── Hover Tooltip ── */}
       <AnimatePresence>

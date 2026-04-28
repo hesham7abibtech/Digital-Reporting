@@ -15,8 +15,13 @@ import BIMReviewsTable from '@/components/dashboard/BIMReviewsTable';
 import NotificationPanel from '@/components/dashboard/NotificationPanel';
 import BIMAnalyticsView from '@/components/dashboard/BIMAnalyticsView';
 import BrandedLoader from '@/components/layout/BrandedLoader';
+import dynamic from 'next/dynamic';
 
-import TaskDetailModal from '@/components/dashboard/TaskDetailModal';
+const TaskDetailModal = dynamic(() => import('@/components/dashboard/TaskDetailModal'), { ssr: false });
+const BIMReviewEditorModal = dynamic(() => import('@/components/admin/BIMReviewEditorModal'), { ssr: false });
+const BIMImportConfirmModal = dynamic(() => import('@/components/admin/BIMImportConfirmModal'), { ssr: false });
+const EliteConfirmModal = dynamic(() => import('@/components/shared/EliteConfirmModal'), { ssr: false });
+
 import EliteDropdown from '@/components/dashboard/EliteDropdown';
 import type { Task } from '@/lib/types';
 import { useTimeZone } from '@/context/TimeZoneContext';
@@ -31,9 +36,6 @@ import * as XLSX from 'xlsx';
 import { useToast } from '@/components/shared/EliteToast';
 import { deleteBimReview, bulkUpsertBimReviews } from '@/services/FirebaseService';
 
-import BIMReviewEditorModal from '@/components/admin/BIMReviewEditorModal';
-import BIMImportConfirmModal from '@/components/admin/BIMImportConfirmModal';
-import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import type { BIMReview } from '@/lib/types';
 
 const getTaskRange = (t: Task) => {
@@ -971,7 +973,7 @@ export default function Dashboard() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.25 }}
-                      style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}
+                      style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', paddingRight: 4 }}
                     >
                       {activeReport === 'BIM_REVIEWS' ? (
                         <BIMAnalyticsView
