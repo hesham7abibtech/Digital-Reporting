@@ -1563,8 +1563,8 @@ export async function exportBimToPDF(
 
   // ── Load Logos ──
   const logos = {
-    modon: await loadLogoWithAspect('/logos/modon_logo.png'),
-    insite: await loadLogoWithAspect('/logos/insite_logo.png')
+    modon: (await loadLogoWithAspect('/logos/modon_logo.png')) || undefined,
+    insite: (await loadLogoWithAspect('/logos/insite_logo.png')) || undefined
   };
 
   const drawHeaderStrip = (title: string, sub: string = projectName) => {
