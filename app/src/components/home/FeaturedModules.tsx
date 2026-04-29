@@ -64,6 +64,7 @@ export default function FeaturedModules({ items }: FeaturedModulesProps) {
                 boxShadow: '0 4px 20px rgba(0, 63, 73, 0.03)',
                 transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)',
                 cursor: 'default', position: 'relative', overflow: 'hidden',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
               }}
               onMouseEnter={e => {
                 const el = e.currentTarget as HTMLElement;

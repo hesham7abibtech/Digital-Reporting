@@ -79,6 +79,7 @@ export default function ProjectOverview({ config }: ProjectOverviewProps) {
                 boxShadow: '0 4px 20px rgba(0, 63, 73, 0.04)',
                 transition: 'all 300ms ease',
                 cursor: 'default',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
               }}
               onMouseEnter={e => {
                 (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';

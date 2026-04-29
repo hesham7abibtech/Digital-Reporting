@@ -17,11 +17,16 @@ export default function HeroSection({ config, isLoggedIn, onExploreCick, onLogin
       position: 'relative', height: '100vh', width: '100%', overflow: 'hidden',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      {/* Background Image with Parallax-like subtle zoom */}
+      {/* Background Image with Parallax-like infinite zoom */}
       <motion.div
-        initial={{ scale: 1.1 }}
+        initial={{ scale: 1.15 }}
         animate={{ scale: 1 }}
-        transition={{ duration: 12, ease: 'easeOut' }}
+        transition={{ 
+          duration: 20, 
+          repeat: Infinity, 
+          repeatType: 'reverse', 
+          ease: 'easeInOut' 
+        }}
         style={{
           position: 'absolute', inset: 0, zIndex: 0,
           backgroundImage: `url(${config.backgroundUrl})`,
