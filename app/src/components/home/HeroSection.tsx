@@ -54,7 +54,7 @@ export default function HeroSection({ config, isLoggedIn, onExploreCick, onLogin
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 1 }}
           style={{
-            display: 'flex', alignItems: 'center', gap: 28, marginBottom: 20,
+            display: 'flex', alignItems: 'center', gap: 28, marginBottom: 40,
             padding: '12px 32px',
             background: 'rgba(255, 255, 255, 0.02)',
             backdropFilter: 'blur(12px)',
@@ -83,7 +83,7 @@ export default function HeroSection({ config, isLoggedIn, onExploreCick, onLogin
           transition={{ delay: 0.4, duration: 0.7 }}
           style={{
             fontSize: 15, fontWeight: 900, color: '#ffffff',
-            textTransform: 'uppercase', letterSpacing: '0.35em', marginBottom: 18,
+            textTransform: 'uppercase', letterSpacing: '0.35em', marginBottom: 32,
             textShadow: '0 1px 3px rgba(0,0,0,0.9), 0 3px 10px rgba(0,0,0,0.5)',
             width: '100%', textAlign: 'center',
             background: 'linear-gradient(90deg, rgba(208,171,130,0.0), rgba(208,171,130,0.15), rgba(208,171,130,0.0))',
@@ -102,7 +102,7 @@ export default function HeroSection({ config, isLoggedIn, onExploreCick, onLogin
           style={{
             width: '100%',
             maxWidth: 500,
-            marginBottom: 32,
+            marginBottom: 48,
             display: 'flex',
             justifyContent: 'center'
           }}
@@ -126,7 +126,7 @@ export default function HeroSection({ config, isLoggedIn, onExploreCick, onLogin
           transition={{ delay: 0.9, duration: 0.7 }}
           style={{
             fontSize: 'clamp(16px, 2vw, 21px)', color: 'rgba(255, 255, 255, 0.9)',
-            maxWidth: 600, margin: '0 auto 40px', lineHeight: 1.6,
+            maxWidth: 600, margin: '0 auto 56px', lineHeight: 1.6,
             fontWeight: 500,
             textShadow: '0 1px 4px rgba(0,0,0,0.6), 0 3px 12px rgba(0,0,0,0.3)',
             textAlign: 'center',
@@ -140,7 +140,7 @@ export default function HeroSection({ config, isLoggedIn, onExploreCick, onLogin
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.1, duration: 0.7 }}
-          style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}
+          style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}
         >
           <motion.button
             whileHover={{ scale: 1.05, boxShadow: '0 12px 40px rgba(208, 171, 130, 0.4)' }}
