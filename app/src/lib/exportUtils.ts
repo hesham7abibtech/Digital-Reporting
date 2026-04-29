@@ -101,6 +101,22 @@ async function loadLogoBase64(path: string): Promise<string> {
   }
 }
 
+/** Load a logo and also capture its natural aspect ratio (width / height). */
+async function loadLogoWithAspect(path: string): Promise<{ data: string; aspect: number } | null> {
+  try {
+    const data = await loadLogoBase64(path);
+    if (!data) return null;
+    return await new Promise((resolve) => {
+      const img = new window.Image();
+      img.onload = () => resolve({ data, aspect: img.naturalWidth / img.naturalHeight });
+      img.onerror = () => resolve(null);
+      img.src = data;
+    });
+  } catch {
+    return null;
+  }
+}
+
 function getExportLinks(t: Task, filters?: { types: string[], cdes: string[] }) {
   const fData = getFilteredTaskData(t, filters);
   const combinedLinks = fData.vectors.length > 0
@@ -156,75 +172,167 @@ function buildPdfChartTheme(metadata?: ProjectMetadata): PdfChartTheme {
   };
 }
 
+type LogoDims = { data: string; aspect: number };
+
 function drawPdfChartGallery(
   doc: jsPDF,
   chartImages: CapturedChart[],
   metadata: ProjectMetadata | undefined,
   title: string,
-  subtitle: string
+  subtitle: string,
+  logos?: { modon?: LogoDims; insite?: LogoDims },
+  projectName?: string
 ) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const theme = buildPdfChartTheme(metadata);
-
-  doc.addPage();
-  doc.setFillColor(255, 255, 255);
-  doc.rect(0, 0, pageWidth, pageHeight, 'F');
-  doc.setTextColor(...theme.titleColor);
-  doc.setFontSize(15);
-  doc.setFont('helvetica', 'bold');
-  doc.text(title, 15, 20);
-  doc.setTextColor(100, 116, 139);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text(subtitle, 15, 27);
-
-  let y = 34;
-  const panelX = 12;
-  const panelW = pageWidth - 24;
+  const accentColor = hexToRgb(metadata?.reportAccentColor || '#D4AF37');
 
   for (const chart of chartImages) {
-    const baseW = Math.max(1, chart.width / 2);
-    const baseH = Math.max(1, chart.height / 2);
-    const contentW = panelW - 8;
-    const scale = Math.min(contentW / baseW, 170 / baseH);
-    const drawW = baseW * scale;
-    const drawH = baseH * scale;
-    const panelH = drawH + 14 + (chart.title ? 7 : 0);
+    doc.addPage();
 
-    if (y + panelH > pageHeight - 14) {
-      doc.addPage();
+    const isFullDashboard = chartImages.length === 1 &&
+      (chart.title?.toLowerCase().includes('dashboard') || chart.title?.toLowerCase().includes('analytics'));
+
+    if (isFullDashboard) {
+      // ── White PDF page with dark header strip ──
       doc.setFillColor(255, 255, 255);
       doc.rect(0, 0, pageWidth, pageHeight, 'F');
-      y = 14;
-    }
 
-    doc.setDrawColor(...theme.panelBorder);
-    doc.setFillColor(...theme.panelBg);
-    doc.roundedRect(panelX, y, panelW, panelH, 3, 3, 'FD');
+      // Dark header strip height
+      const headerH = 22;
 
-    if (chart.title) {
-      doc.setTextColor(...theme.titleColor);
+      // Dark header background
+      doc.setFillColor(13, 17, 23);
+      doc.rect(0, 0, pageWidth, headerH, 'F');
+
+      // Gold left accent bar (full height)
+      doc.setFillColor(...accentColor);
+      doc.rect(0, 0, 3, pageHeight, 'F');
+
+      // ── Title in header ──
+      doc.setTextColor(255, 255, 255); // white — clean on dark strip
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text(chart.title.toUpperCase(), panelX + 6, y + 6);
-    }
+      doc.text(title.toUpperCase(), 10, headerH / 2 + 1.5);
+      if (projectName) {
+        doc.setFontSize(6.5);
+        doc.setTextColor(160, 180, 180);
+        doc.setFont('helvetica', 'normal');
+        doc.text(projectName.toUpperCase(), 10, headerH / 2 + 7);
+      }
 
-    const imgX = panelX + (panelW - drawW) / 2;
-    const imgY = y + (chart.title ? 9 : 5);
-    doc.addImage(chart.imageData, 'PNG', imgX, imgY, drawW, drawH);
-    y += panelH + 6;
+      // ── Logos in header (right-aligned, vertically centered, correctly scaled) ──
+      const logoH = 7;
+      const logoPadding = 4;
+      let logoX = pageWidth - 8;
+
+      if (logos?.insite) {
+        const w = logoH * logos.insite.aspect;
+        logoX -= w;
+        try { doc.addImage(logos.insite.data, 'PNG', logoX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
+        logoX -= logoPadding;
+      }
+
+      if (logos?.modon) {
+        const w = logoH * logos.modon.aspect;
+        logoX -= w;
+        const modonLeftX = logoX;
+        try { doc.addImage(logos.modon.data, 'PNG', modonLeftX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
+        // Separator: midpoint between modon right edge and insite left edge
+        if (logos.insite) {
+          const sepX = modonLeftX + w + logoPadding / 2;
+          doc.setDrawColor(208, 171, 130);
+          doc.setLineWidth(0.6);
+          doc.line(sepX, (headerH - logoH) / 2 + 1, sepX, (headerH - logoH) / 2 + logoH - 1);
+        }
+        logoX -= logoPadding;
+      }
+
+      // ── Dashboard image fills remaining space below header ──
+      const baseW = Math.max(1, chart.width / 3);
+      const baseH = Math.max(1, chart.height / 3);
+      const availH = pageHeight - headerH;
+      const scaleX = pageWidth / baseW;
+      const scaleY = availH / baseH;
+      const scale = Math.min(scaleX, scaleY);
+      const drawW = baseW * scale;
+      const drawH = baseH * scale;
+      const xOff = (pageWidth - drawW) / 2;
+      const yOff = headerH + (availH - drawH) / 2;
+
+      doc.addImage(chart.imageData, 'PNG', xOff, yOff, drawW, drawH);
+    } else {
+      // ── Light panel layout for individual card captures ──
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      doc.setTextColor(...theme.titleColor);
+      doc.setFontSize(15);
+      doc.setFont('helvetica', 'bold');
+      doc.text(title, 15, 20);
+      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(subtitle, 15, 27);
+
+      let y = 34;
+      const panelX = 12;
+      const panelW = pageWidth - 24;
+      const baseW = Math.max(1, chart.width / 2);
+      const baseH = Math.max(1, chart.height / 2);
+      const contentW = panelW - 8;
+      const contentH = 170;
+      const scale = Math.min(contentW / baseW, contentH / baseH);
+      const drawW = baseW * scale;
+      const drawH = baseH * scale;
+      const panelH = drawH + 14 + (chart.title ? 7 : 0);
+
+      if (y + panelH > pageHeight - 14) {
+        doc.addPage();
+        doc.setFillColor(255, 255, 255);
+        doc.rect(0, 0, pageWidth, pageHeight, 'F');
+        y = 14;
+      }
+
+      doc.setFillColor(...theme.panelBg);
+      doc.setDrawColor(...theme.panelBorder);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(panelX, y, panelW, panelH, 4, 4, 'FD');
+
+      if (chart.title) {
+        doc.setTextColor(...theme.titleColor);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(chart.title.toUpperCase(), panelX + 7, y + 10);
+      }
+      doc.addImage(chart.imageData, 'PNG', panelX + 4, y + (chart.title ? 14 : 7), drawW, drawH);
+      y += panelH + 10;
+    }
   }
 }
 
 /**
- * Captures chart DOM elements as high-resolution PNG images.
- * Uses html2canvas to render the actual DOM as displayed in the browser.
+ * Captures the hidden export-mode dashboard as a high-resolution PNG.
+ * Always targets the off-screen export wrapper (#export-only-capture-root)
+ * so the filter bar is never included and the layout is landscape-optimised.
  */
 export async function captureChartImages(containerSelector: string, options: ChartCaptureOptions = {}): Promise<CapturedChart[]> {
   try {
     const html2canvas = (await import('html2canvas')).default;
-    const container = document.querySelector(containerSelector);
+
+    // ── For the deliverables dashboard, always use the dedicated export wrapper ──
+    // This prevents accidentally capturing the live dashboard (which shows the filter bar).
+    let container: Element | null = null;
+    if (containerSelector) {
+      container = document.querySelector(containerSelector);
+    }
+    
+    // Fallback ONLY if no specific selector was provided or found, 
+    // and we are in full-dashboard mode.
+    if (!container && options.mode === 'full-dashboard') {
+      container = document.querySelector('#export-only-capture-root #analytics-dashboard-export-root');
+    }
+
     if (!container) {
       console.warn(`Chart container not found: ${containerSelector}`);
       return [];
@@ -234,8 +342,9 @@ export async function captureChartImages(containerSelector: string, options: Cha
       const canvas = await html2canvas(container as HTMLElement, {
         scale: 3,
         useCORS: true,
-        backgroundColor: null,
+        backgroundColor: '#0d1117',
         logging: false,
+        allowTaint: false,
       });
       return [{
         imageData: canvas.toDataURL('image/png'),
@@ -245,52 +354,26 @@ export async function captureChartImages(containerSelector: string, options: Cha
       }];
     }
 
-    // Find all chart card elements within the container
+    // Individual chart card capture (cards mode)
     const chartCards = container.querySelectorAll('.recharts-responsive-container');
     if (chartCards.length === 0) {
-      // Fallback: capture the entire container as one image
       const canvas = await html2canvas(container as HTMLElement, {
-        scale: 3,
-        useCORS: true,
-        backgroundColor: null,
-        logging: false,
+        scale: 3, useCORS: true, backgroundColor: null, logging: false,
       });
-      return [{
-        imageData: canvas.toDataURL('image/png'),
-        width: canvas.width,
-        height: canvas.height,
-        title: 'Dashboard Analytics'
-      }];
+      return [{ imageData: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height, title: 'Dashboard Analytics' }];
     }
 
     const images: CapturedChart[] = [];
-    
-    // Capture each chart's parent GlassCard
     const glassCards = container.querySelectorAll('.glass-card');
     for (let i = 0; i < glassCards.length; i++) {
       const card = glassCards[i] as HTMLElement;
-      // Skip non-chart cards (e.g. insights panel without recharts)
       if (!card.querySelector('.recharts-responsive-container')) continue;
-      
       try {
-        const canvas = await html2canvas(card, {
-          scale: 3,
-          useCORS: true,
-          backgroundColor: null,
-          logging: false,
-        });
+        const canvas = await html2canvas(card, { scale: 3, useCORS: true, backgroundColor: null, logging: false });
         const titleEl = card.querySelector('h3') || card.querySelector('h2');
-        images.push({
-          imageData: canvas.toDataURL('image/png'),
-          width: canvas.width,
-          height: canvas.height,
-          title: titleEl?.textContent || `Chart ${i + 1}`
-        });
-      } catch (err) {
-        console.warn(`Failed to capture chart ${i}:`, err);
-      }
+        images.push({ imageData: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height, title: titleEl?.textContent || `Chart ${i + 1}` });
+      } catch (err) { console.warn(`Failed to capture chart ${i}:`, err); }
     }
-
     return images;
   } catch (err) {
     console.error('Chart capture failed:', err);
@@ -802,6 +885,18 @@ export async function exportToPDF(
   const accentColor = hexToRgb(metadata?.reportAccentColor || '#D4AF37');
   const headerTextColor = hexToRgb(metadata?.reportHeaderTextColor || '#D4AF37');
 
+  // ── Pre-load logos with aspect ratios ──
+  type LogoDims = { data: string; aspect: number };
+  const logos: { modon?: LogoDims; insite?: LogoDims } = {};
+  try {
+    const [modonResult, insiteResult] = await Promise.allSettled([
+      loadLogoWithAspect('/logos/modon_logo.png'),
+      loadLogoWithAspect('/logos/insite_logo.png'),
+    ]);
+    if (modonResult.status === 'fulfilled' && modonResult.value) logos.modon = modonResult.value;
+    if (insiteResult.status === 'fulfilled' && insiteResult.value) logos.insite = insiteResult.value;
+  } catch (_) {}
+
   // Fetch departments for resolution
   let departmentsMap: Record<string, string> = {};
   try {
@@ -815,25 +910,66 @@ export async function exportToPDF(
 
   // ── Cover Page ──
   const drawCover = () => {
+    const headerH = 22;
+
+    // Page background
     doc.setFillColor(...bgColor);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+    // Dark header strip (same as all pages)
+    doc.setFillColor(13, 17, 23);
+    doc.rect(0, 0, pageWidth, headerH, 'F');
+
+    // Gold left accent bar (full height)
     doc.setFillColor(...accentColor);
-    doc.rect(0, 0, 5, pageHeight, 'F');
+    doc.rect(0, 0, 3, pageHeight, 'F');
+
+    // Gold bottom border of header strip
+    doc.setDrawColor(...accentColor);
+    doc.setLineWidth(0.4);
+    doc.line(0, headerH, pageWidth, headerH);
+
+    // ── Logos in header (right-aligned, vertically centered) ──
+    const logoH = 9;
+    const logoPad = 5;
+    let logoX = pageWidth - 14;
+
+    if (logos.insite) {
+      const w = logoH * logos.insite.aspect;
+      logoX -= w;
+      try { doc.addImage(logos.insite.data, 'PNG', logoX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
+      logoX -= logoPad;
+    }
+    if (logos.modon) {
+      const w = logoH * logos.modon.aspect;
+      logoX -= w;
+      const modonLeftX = logoX;
+      try { doc.addImage(logos.modon.data, 'PNG', modonLeftX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
+      if (logos.insite) {
+        const sepX = modonLeftX + w + logoPad / 2;
+        doc.setDrawColor(208, 171, 130);
+        doc.setLineWidth(0.8);
+        doc.line(sepX, (headerH - logoH) / 2 + 1, sepX, (headerH - logoH) / 2 + logoH - 1);
+      }
+    }
+
+    // ── Content below header ──
+    const cY = headerH + 8; // content baseline below strip
 
     doc.setTextColor(...headerTextColor);
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text(metadata?.reportBranding || 'KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT', 20, 42);
+    doc.text(metadata?.reportBranding || 'KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT', 20, cY + 12);
 
     doc.setFontSize(48);
     const title = perspective === 'dashboard' ? 'ANALYTICS INSIGHTS' : (perspective === 'both' ? 'EXECUTIVE MASTER REPORT' : (metadata?.reportTitle || 'EXECUTIVE SUMMARY'));
-    doc.text(title, 20, 62);
+    doc.text(title, 20, cY + 32);
 
     doc.setFontSize(18);
-    doc.setTextColor(30, 41, 59); // Dark slate for 100% contrast
-    doc.text(perspective === 'dashboard' ? 'VISUAL PERFORMANCE & METRIC SUMMARY' : (perspective === 'both' ? 'CONSOLIDATED ANALYTICS & REGISTRY TRANSCRIPT' : (metadata?.reportSubtitle || 'OPERATIONAL PERFORMANCE & DELIVERABLES')), 20, 74);
+    doc.setTextColor(30, 41, 59);
+    doc.text(perspective === 'dashboard' ? 'VISUAL PERFORMANCE & METRIC SUMMARY' : (perspective === 'both' ? 'CONSOLIDATED ANALYTICS & REGISTRY TRANSCRIPT' : (metadata?.reportSubtitle || 'OPERATIONAL PERFORMANCE & DELIVERABLES')), 20, cY + 44);
 
-    let currentY = 100;
+    let currentY = cY + 68;
     const summaryFields = metadata?.reportSummaryFields || [];
     summaryFields.forEach(f => {
       if (!f.isVisible) return;
@@ -852,13 +988,13 @@ export async function exportToPDF(
       doc.setFont('helvetica', 'bold');
       doc.text(`${f.label}:`, 20, currentY);
       const labelW = doc.getTextWidth(`${f.label}: `);
-      doc.setTextColor(30, 41, 59); // Dark slate for 100% contrast
+      doc.setTextColor(30, 41, 59);
       doc.setFont('helvetica', 'normal');
       doc.text(val, 20 + labelW, currentY);
       currentY += 15;
     });
 
-    doc.setTextColor(30, 41, 59); // Dark slate for 100% contrast
+    doc.setTextColor(30, 41, 59);
     doc.setFontSize(10);
     doc.text(metadata?.reportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM', 20, pageHeight - 15);
   };
@@ -878,14 +1014,15 @@ export async function exportToPDF(
 
   // ── Dashboard Page ──
   const drawDashboard = () => {
-    // Capture-first: if live dashboard images are available, use them as the primary export output.
     if (chartImages && chartImages.length > 0) {
       drawPdfChartGallery(
         doc,
         chartImages,
         metadata,
         'ANALYTICS VISUAL REPORT',
-        `Captured from live ${tasks.length}-record dashboard view`
+        `Captured from live ${tasks.length}-record dashboard view`,
+        logos,
+        metadata?.projectName
       );
       return;
     }
@@ -964,13 +1101,52 @@ export async function exportToPDF(
 
   // ── Table Registry Page ──
   const drawTable = () => {
+    const headerH = 22;
     doc.addPage();
     doc.setFillColor(255, 255, 255);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-    doc.setTextColor(30, 41, 59);
-    doc.setFontSize(12);
-    doc.text(metadata?.reportBranding || 'KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT', 15, 22);
+    // Dark header strip
+    doc.setFillColor(13, 17, 23);
+    doc.rect(0, 0, pageWidth, headerH, 'F');
+
+    // Gold left accent bar
+    doc.setFillColor(...accentColor);
+    doc.rect(0, 0, 3, pageHeight, 'F');
+
+    // Gold bottom border
+    doc.setDrawColor(...accentColor);
+    doc.setLineWidth(0.4);
+    doc.line(0, headerH, pageWidth, headerH);
+
+    // Header title
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DELIVERABLES REGISTRY', 10, headerH / 2 + 1.5);
+
+    // Logos in header
+    const logoH = 7;
+    const logoPad = 4;
+    let logoX = pageWidth - 8;
+    if (logos.insite) {
+      const w = logoH * logos.insite.aspect;
+      logoX -= w;
+      try { doc.addImage(logos.insite.data, 'PNG', logoX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
+      logoX -= logoPad;
+    }
+    if (logos.modon) {
+      const w = logoH * logos.modon.aspect;
+      logoX -= w;
+      const modonLeftX = logoX;
+      try { doc.addImage(logos.modon.data, 'PNG', modonLeftX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
+      if (logos.insite) {
+        const sepX = modonLeftX + w + logoPad / 2;
+        doc.setDrawColor(208, 171, 130);
+        doc.setLineWidth(0.6);
+        doc.line(sepX, (headerH - logoH) / 2 + 1, sepX, (headerH - logoH) / 2 + logoH - 1);
+      }
+    }
 
     // Empty state
     if (tasks.length === 0) {
@@ -1023,7 +1199,7 @@ export async function exportToPDF(
     });
 
     autoTable(doc, {
-      startY: 30,
+      startY: 34,
       head,
       body,
       theme: 'grid',
@@ -1380,36 +1556,157 @@ export async function exportBimToPDF(
   const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const bgColor = hexToRgb(metadata?.reportBgColor || '#0a0a0f');
+  const bgColor = hexToRgb(metadata?.reportBgColor || '#f8fafc');
   const accentColor = hexToRgb(metadata?.reportAccentColor || '#D4AF37');
+  const headerTextColor = hexToRgb('#0f172a');
+  const projectName = metadata?.projectName || 'Project Master';
+
+  // ── Load Logos ──
+  const logos = {
+    modon: await loadLogoWithAspect('/logos/modon_logo.png'),
+    insite: await loadLogoWithAspect('/logos/insite_logo.png')
+  };
+
+  const drawHeaderStrip = (title: string, sub: string = projectName) => {
+    const headerH = 22;
+    doc.setFillColor(13, 17, 23);
+    doc.rect(0, 0, pageWidth, headerH, 'F');
+
+    // Left gold bar
+    doc.setFillColor(...accentColor);
+    doc.rect(0, 0, 3, pageHeight, 'F');
+
+    // Bottom gold line
+    doc.setDrawColor(...accentColor);
+    doc.setLineWidth(0.4);
+    doc.line(0, headerH, pageWidth, headerH);
+
+    // Title text
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title.toUpperCase(), 10, headerH / 2 + 1.5);
+
+    if (sub) {
+      doc.setFontSize(6.5);
+      doc.setTextColor(160, 180, 180);
+      doc.setFont('helvetica', 'normal');
+      doc.text(sub.toUpperCase(), 10, headerH / 2 + 7);
+    }
+
+    // Logos right-aligned
+    const logoH = 7;
+    const logoPadding = 4;
+    let logoX = pageWidth - 8;
+
+    if (logos.insite) {
+      const w = logoH * logos.insite.aspect;
+      logoX -= w;
+      try { doc.addImage(logos.insite.data, 'PNG', logoX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
+      logoX -= logoPadding;
+    }
+
+    if (logos.modon) {
+      const w = logoH * logos.modon.aspect;
+      logoX -= w;
+      const modonLeftX = logoX;
+      try { doc.addImage(logos.modon.data, 'PNG', modonLeftX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
+      if (logos.insite) {
+        const sepX = modonLeftX + w + logoPadding / 2;
+        doc.setDrawColor(208, 171, 130);
+        doc.setLineWidth(0.6);
+        doc.line(sepX, (headerH - logoH) / 2 + 1, sepX, (headerH - logoH) / 2 + logoH - 1);
+      }
+    }
+    return headerH;
+  };
 
   const drawCover = () => {
+    const headerH = 22;
     doc.setFillColor(...bgColor);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
-    doc.setTextColor(...accentColor);
-    doc.setFontSize(40);
+
+    // Dark header strip
+    doc.setFillColor(13, 17, 23);
+    doc.rect(0, 0, pageWidth, headerH, 'F');
+    doc.setFillColor(...accentColor);
+    doc.rect(0, 0, 3, pageHeight, 'F');
+    doc.setDrawColor(...accentColor);
+    doc.setLineWidth(0.4);
+    doc.line(0, headerH, pageWidth, headerH);
+
+    // Logos on cover
+    const logoH = 9;
+    const logoPad = 5;
+    let logoX = pageWidth - 14;
+
+    if (logos.insite) {
+      const w = logoH * logos.insite.aspect;
+      logoX -= w;
+      try { doc.addImage(logos.insite.data, 'PNG', logoX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
+      logoX -= logoPad;
+    }
+    if (logos.modon) {
+      const w = logoH * logos.modon.aspect;
+      logoX -= w;
+      const modonLeftX = logoX;
+      try { doc.addImage(logos.modon.data, 'PNG', modonLeftX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
+      if (logos.insite) {
+        const sepX = modonLeftX + w + logoPad / 2;
+        doc.setDrawColor(208, 171, 130);
+        doc.setLineWidth(0.8);
+        doc.line(sepX, (headerH - logoH) / 2 + 1, sepX, (headerH - logoH) / 2 + logoH - 1);
+      }
+    }
+
+    const cY = headerH + 8;
+    doc.setTextColor(...headerTextColor);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('BIM REVIEW MATRIX', 20, 60);
+    doc.text(metadata?.reportBranding || 'KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT', 20, cY + 12);
+
+    doc.setFontSize(48);
+    doc.text('BIM REVIEW MATRIX', 20, cY + 32);
+
     doc.setFontSize(18);
     doc.setTextColor(30, 41, 59);
-    doc.text(metadata?.projectName || 'Project Master Registry', 20, 75);
-    doc.setFontSize(12);
-    doc.text(`Period: ${dateRangeText || 'All Time'}`, 20, 90);
-    doc.text(`Generated: ${formatGeneratedOn()}`, 20, 100);
-    doc.setFontSize(10);
+    doc.text('ANALYTICS & REGISTRY TRANSCRIPT', 20, cY + 44);
+
+    let currentY = cY + 68;
+    const stats = [
+      { label: 'Project Name', value: projectName },
+      { label: 'Active Period', value: dateRangeText || 'All Time' },
+      { label: 'Generated On', value: formatGeneratedOn() },
+      { label: 'Total Reviews', value: reviews.length.toString() }
+    ];
+
+    stats.forEach(s => {
+      doc.setTextColor(...accentColor);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${s.label}:`, 20, currentY);
+      const labelW = doc.getTextWidth(`${s.label}: `);
+      doc.setTextColor(30, 41, 59);
+      doc.setFont('helvetica', 'normal');
+      doc.text(s.value, 20 + labelW, currentY);
+      currentY += 15;
+    });
+
     doc.setTextColor(30, 41, 59);
-    doc.text(metadata?.reportFooter || 'PRIVATE & CONFIDENTIAL', 20, pageHeight - 15);
+    doc.setFontSize(10);
+    doc.text(metadata?.reportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM', 20, pageHeight - 15);
   };
 
   const drawDashboard = () => {
-    // Capture-first: if live dashboard images are available, use them as the primary export output.
     if (chartImages && chartImages.length > 0) {
       drawPdfChartGallery(
         doc,
         chartImages,
         metadata,
-        'BIM ANALYTICS CHARTS',
-        `Captured from live BIM dashboard (${reviews.length} reviews)`
+        'BIM ANALYTICS REPORT',
+        `Captured from live BIM dashboard (${reviews.length} reviews)`,
+        logos,
+        projectName
       );
       return;
     }
@@ -1421,20 +1718,17 @@ export async function exportBimToPDF(
     doc.setFillColor(255, 255, 255);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-    doc.setTextColor(30, 41, 59);
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('BIM REVIEW PERFORMANCE DASHBOARD', 15, 25);
+    const headerH = drawHeaderStrip('BIM PERFORMANCE DASHBOARD');
 
     // KPI Row
-    const kpiY = 35;
+    const kpiY = headerH + 12;
     const kpiW = (pageWidth - 45) / 4;
     const kpiH = 30;
     const bimStats = [
       { label: 'TOTAL REVIEWS', value: analytics.total.toString() },
       { label: 'STAKEHOLDERS', value: analytics.stakeholders.length.toString() },
-      { label: 'PERIOD', value: dateRangeText || 'All Time' },
-      { label: 'GENERATED', value: formatGeneratedOn() },
+      { label: 'APPROVAL RATE', value: `${analytics.total > 0 ? Math.round((analytics.approvedCount / analytics.total) * 100) : 0}%` },
+      { label: 'PENDING ACTION', value: (analytics.insite.find(s => s.name.toUpperCase().includes('PENDING'))?.value || 0).toString() },
     ];
 
     bimStats.forEach((s, i) => {
@@ -1451,28 +1745,26 @@ export async function exportBimToPDF(
       doc.text(s.value, x + 6, kpiY + 24);
     });
 
-    // Modon Status Table
     autoTable(doc, {
       startY: kpiY + kpiH + 12,
-      head: [['Design Stage', 'Count', 'Percentage']],
+      head: [['Design Stage Distribution', 'Count', 'Percentage']],
       body: analytics.priority.map(s => [s.name, s.value.toString(), `${analytics.total > 0 ? Math.round((s.value / analytics.total) * 100) : 0}%`]),
       margin: { left: 15, right: 15 },
       tableWidth: 140,
-      styles: { fontSize: 8, cellPadding: 4 },
-      headStyles: { fillColor: HEADER_SLATE, fontStyle: 'bold', halign: 'center' },
+      styles: { fontSize: 8, cellPadding: 4, valign: 'middle' },
+      headStyles: { fillColor: HEADER_SLATE, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
       alternateRowStyles: { fillColor: PDF_ZEBRA_EVEN },
       columnStyles: { 0: { halign: 'left' }, 1: { halign: 'right' }, 2: { halign: 'right' } }
     });
-
   };
 
   const drawTable = () => {
     doc.addPage();
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    const headerH = drawHeaderStrip('BIM REVIEW REGISTRY');
 
-    // Empty state
     if (reviews.length === 0) {
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, pageWidth, pageHeight, 'F');
       doc.setFontSize(16);
       doc.setTextColor(100, 116, 139);
       doc.text('No Data Based on Selected Filters', pageWidth / 2, pageHeight / 2, { align: 'center' });
@@ -1487,60 +1779,32 @@ export async function exportBimToPDF(
     const body = reviews.map(r => cols.map(c => {
       if (c.id === 'InSite Review Output ACC URL') return r["InSite Review Output ACC URL"] ? 'View Report' : '-';
       const val = (r as any)[c.id];
-      
-      // Handle Date fields specifically
       if (c.id === 'InSite Review Due Date') return val ? formatDate(val) : '-';
-      if (c.id === 'Planned Submission Date' && Array.isArray(val)) {
-        return val.map(d => formatDate(d)).join(' | ');
-      }
-      
+      if (c.id === 'Planned Submission Date' && Array.isArray(val)) return val.map(d => formatDate(d)).join(' | ');
       return Array.isArray(val) ? val.join(', ') : (val || '-');
     }));
 
-    // Per-column alignment
     const colStyles: Record<number, any> = {};
     cols.forEach((col, idx) => {
-      const align = 'center'; // Standardized center align for most
       if (col.id === 'Milestone Submissions' || col.id === 'Comments') {
         colStyles[idx] = { halign: 'left', overflow: 'linebreak', cellWidth: 'auto', minCellWidth: 25 };
-      } else if (col.id === 'InSite Review Output ACC URL') {
-        colStyles[idx] = { halign: 'center', cellWidth: 'auto', textColor: [5, 99, 193], minCellWidth: 20 };
       } else {
-        colStyles[idx] = { halign: 'center', cellWidth: 'auto' };
+        colStyles[idx] = { halign: 'center' };
       }
     });
 
-    // Hyperlink column - Match the exact ID from getBimExportColumns
-    const linkColIdx = cols.findIndex(c => c.id === 'InSite Review Output ACC URL');
-
     autoTable(doc, {
-      head, body, theme: 'grid',
-      margin: { top: 15, bottom: 15, left: 8, right: 8 },
-      showHead: 'everyPage',
-      rowPageBreak: 'avoid',
-      headStyles: {
-        fillColor: HEADER_SLATE,
-        fontSize: 5.5,
-        halign: 'center',
-        valign: 'middle',
-        overflow: 'linebreak',
-        cellPadding: 2,
-        minCellHeight: 10,
-        fontStyle: 'bold',
-      },
-      styles: {
-        fontSize: 5,
-        halign: 'center',
-        valign: 'middle',
-        cellPadding: 2,
-        overflow: 'linebreak',
-        minCellHeight: 8,
-      },
-      alternateRowStyles: {
-        fillColor: PDF_ZEBRA_EVEN,
-      },
+      startY: headerH + 8,
+      head,
+      body,
+      theme: 'grid',
+      styles: { fontSize: 7, cellPadding: 2, overflow: 'linebreak', halign: 'center' },
+      headStyles: { fillColor: HEADER_SLATE, textColor: [255, 255, 255], fontStyle: 'bold' },
       columnStyles: colStyles,
+      alternateRowStyles: { fillColor: PDF_ZEBRA_EVEN },
+      margin: { left: 8, right: 8 },
       didDrawCell: (data) => {
+        const linkColIdx = cols.findIndex(c => c.id === 'InSite Review Output ACC URL');
         if (data.section === 'body' && data.column.index === linkColIdx && linkColIdx !== -1) {
           const review = reviews[data.row.index];
           if (review?.["InSite Review Output ACC URL"] && review["InSite Review Output ACC URL"] !== '-') {
@@ -1551,7 +1815,7 @@ export async function exportBimToPDF(
       didDrawPage: () => {
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
-        doc.text(metadata?.reportFooter || 'PRIVATE & CONFIDENTIAL', pageWidth / 2, pageHeight - 8, { align: 'center' });
+        doc.text(metadata?.reportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM', pageWidth / 2, pageHeight - 8, { align: 'center' });
       }
     });
   };

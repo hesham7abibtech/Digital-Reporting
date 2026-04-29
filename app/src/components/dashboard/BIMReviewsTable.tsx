@@ -409,13 +409,18 @@ const thStyle: React.CSSProperties = {
 };
 
 const headerInputStyle: React.CSSProperties = {
-  padding: '10px 16px', borderRadius: 12,
-  background: 'rgba(0, 63, 73, 0.4)', border: '1px solid rgba(198, 224, 224, 0.3)',
-  fontSize: 13, color: '#FFFFFF', outline: 'none',
-  transition: 'all 0.2s ease',
-  paddingLeft: 42,
-  width: 280,
-  backdropFilter: 'blur(8px)'
+  padding: '10px 16px', 
+  borderRadius: 14,
+  background: 'rgba(0, 0, 0, 0.45)', 
+  border: '1.5px solid rgba(255, 255, 255, 0.2)',
+  fontSize: 13, 
+  color: '#FFFFFF', 
+  outline: 'none',
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  paddingLeft: 46,
+  width: 320,
+  backdropFilter: 'blur(12px)',
+  boxShadow: 'inset 0 2px 10px rgba(0, 0, 0, 0.2)'
 };
 
 export default function BIMReviewsTable({
@@ -523,20 +528,32 @@ export default function BIMReviewsTable({
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: 16,
-            background: 'rgba(251, 250, 245, 0.99)',
-            borderBottom: '1px solid rgba(0, 63, 73, 0.15)',
-            borderRadius: '16px 16px 0 0'
+            background: '#003f49',
+            borderBottom: '2px solid rgba(208, 171, 130, 0.3)',
+            borderRadius: '16px 16px 0 0',
+            position: 'relative'
           }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', width: '100%', gap: 16 }}>
-          <div style={{ position: 'relative' }}>
-            <Search size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#003f49' }} />
+          <div style={{ position: 'relative', flex: 1, maxWidth: 500 }}>
+            <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#FFFFFF', opacity: 0.9 }} />
             <input
               type="text"
               placeholder="Search Reviews..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ ...headerInputStyle, background: 'rgba(255, 255, 255, 0.8)', color: '#003f49', borderColor: 'rgba(0, 63, 73, 0.25)', fontWeight: 600 }}
+              style={{ 
+                ...headerInputStyle, 
+                background: 'rgba(0, 0, 0, 0.4)', 
+                color: '#ffffff', 
+                borderColor: 'rgba(255, 255, 255, 0.25)', 
+                fontWeight: 900,
+                letterSpacing: '0.02em'
+              }}
             />
+            <style>{`
+              input::placeholder { color: rgba(255, 255, 255, 0.4) !important; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; font-size: 10px; }
+              input:focus { border-color: #d0ab82 !important; box-shadow: 0 0 15px rgba(208, 171, 130, 0.15), inset 0 2px 10px rgba(0, 0, 0, 0.3) !important; }
+            `}</style>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginLeft: 'auto' }}>
@@ -607,19 +624,22 @@ export default function BIMReviewsTable({
                 }}
                 title="Clear Filter Constraints"
                 style={{
-                  padding: '8px 14px',
-                  borderRadius: 10,
-                  background: 'rgba(255, 76, 79, 0.1)',
-                  color: '#FF4C4F',
-                  border: '1px solid rgba(255, 76, 79, 0.2)',
+                  padding: '10px 18px',
+                  borderRadius: 14,
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  color: '#fca5a5',
+                  border: '1.5px solid rgba(239, 68, 68, 0.4)',
                   fontSize: 11,
-                  fontWeight: 800,
+                  fontWeight: 950,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 6,
-                  transition: 'all 0.2s'
+                  gap: 8,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  transition: 'all 0.3s ease'
                 }}
+                className="hover:bg-[rgba(239,68,68,0.25)] hover:scale-105"
               >
                 <RefreshCw size={14} />
                 Reset Filters

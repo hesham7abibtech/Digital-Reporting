@@ -93,7 +93,10 @@ export default function BimExportMenu({
       let chartImages: CapturedChart[] = [];
       if (perspective === 'dashboard' || perspective === 'both') {
         onProgress(20);
-        chartImages = await captureChartImages('#bim-analytics-export-root', {
+        // Wait for off-screen render & chart animations
+        await new Promise(r => setTimeout(r, 600));
+
+        chartImages = await captureChartImages('#bim-export-capture-root', {
           mode: 'full-dashboard',
           title: 'BIM Analytics Dashboard'
         });
@@ -122,34 +125,35 @@ export default function BimExportMenu({
   return (
     <div style={{ position: 'relative' }} ref={menuRef}>
       <motion.button
-        whileHover={{ scale: 1.02 }}
+        whileHover={{ scale: 1.02, boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4), 0 0 15px rgba(208, 171, 130, 0.2)' }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setIsOpen(!isOpen)}
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
-          padding: '10px 20px',
-          background: '#003f49',
-          border: '1.5px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: 14,
+          gap: 12,
+          padding: '10px 24px',
+          background: 'linear-gradient(135deg, #003f49 0%, #000000 100%)',
+          border: '2.5px solid rgba(208, 171, 130, 0.45)',
+          borderRadius: 16,
           color: '#FFFFFF',
-          fontSize: 12,
+          fontSize: 12.5,
           fontWeight: 950,
           cursor: 'pointer',
-          transition: 'all 200ms',
-          boxShadow: '0 8px 30px rgba(0, 63, 73, 0.2)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: '0 8px 35px rgba(0, 0, 0, 0.5), 0 0 10px rgba(208, 171, 130, 0.1)',
           outline: 'none',
           textTransform: 'uppercase',
-          letterSpacing: '0.05em'
+          letterSpacing: '0.12em'
         }}
       >
-        <Download size={16} />
+        <Download size={16} color="#d0ab82" strokeWidth={3} />
         <span>BIM Review Export</span>
         <ChevronDown 
           size={14} 
+          color="#d0ab82"
           style={{ 
-            transition: 'transform 200ms', 
+            transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)', 
             transform: isOpen ? 'rotate(180deg)' : 'rotate(0)' 
           }} 
         />
@@ -158,54 +162,80 @@ export default function BimExportMenu({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            initial={{ opacity: 0, y: 15, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            style={{ position: 'absolute', top: '100%', right: 0, marginTop: 10, zIndex: 10000, width: 280, background: '#003f49', backdropFilter: 'blur(32px)', border: '1.5px solid rgba(255, 255, 255, 0.1)', borderRadius: 24, boxShadow: '0 25px 60px rgba(0, 0, 0, 0.4)', padding: 12, overflow: 'hidden' }}
+            exit={{ opacity: 0, y: 10, scale: 0.96 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            style={{ 
+              position: 'absolute', 
+              top: '100%', 
+              right: 0, 
+              marginTop: 12, 
+              zIndex: 10000, 
+              width: 300, 
+              background: 'rgba(0, 0, 0, 0.95)', 
+              backdropFilter: 'blur(32px)', 
+              border: '2px solid rgba(212, 175, 55, 0.2)', 
+              borderTop: '3px solid #d0ab82',
+              borderRadius: 24, 
+              boxShadow: '0 30px 70px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.05)', 
+              padding: 10, 
+              overflow: 'hidden' 
+            }}
           >
             <div style={{ 
-              padding: '12px 16px 8px 16px', 
+              padding: '14px 16px 10px 16px', 
               fontSize: 10, 
               fontWeight: 950, 
-              color: 'rgba(255, 255, 255, 0.25)', 
+              color: '#d0ab82', 
               textTransform: 'uppercase', 
-              letterSpacing: '0.12em',
-              borderBottom: '1px solid rgba(255,255,255,0.05)',
-              marginBottom: 6,
-              background: 'rgba(0,0,0,0.1)',
-              userSelect: 'none',
-              pointerEvents: 'none'
+              letterSpacing: '0.15em',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              marginBottom: 8,
+              opacity: 0.8
             }}>
               Select Output Format
             </div>
             
             <button
               onClick={() => triggerConfirmation('pdf')}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px', background: 'transparent', border: 'none', borderRadius: 10, color: 'white', cursor: 'pointer', textAlign: 'left' }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '14px', background: 'transparent', border: 'none', borderRadius: 16, color: 'white', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s ease' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(212, 175, 55, 0.08)';
+                e.currentTarget.style.transform = 'translateX(4px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.transform = 'translateX(0)';
+              }}
             >
-              <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                <FileText size={20} />
+              <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(239, 68, 68, 0.12)', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239, 68, 68, 0.25)', boxShadow: '0 0 15px rgba(239, 68, 68, 0.1)' }}>
+                <FileText size={22} strokeWidth={2.5} />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: 13, fontWeight: 700 }}>Signature PDF Portfolio</span>
-                <span style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.4)' }}>Elite branded document</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ fontSize: 13, fontWeight: 900, color: '#ffffff', letterSpacing: '0.02em' }}>Signature PDF Portfolio</span>
+                <span style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.5)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Elite branded document</span>
               </div>
             </button>
 
             <button
               onClick={() => triggerConfirmation('excel')}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px', background: 'transparent', border: 'none', borderRadius: 10, color: 'white', cursor: 'pointer', textAlign: 'left' }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '14px', background: 'transparent', border: 'none', borderRadius: 16, color: 'white', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s ease' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(52, 211, 153, 0.08)';
+                e.currentTarget.style.transform = 'translateX(4px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.transform = 'translateX(0)';
+              }}
             >
-              <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                <Table size={20} />
+              <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(16, 185, 129, 0.12)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(16, 185, 129, 0.25)', boxShadow: '0 0 15px rgba(16, 185, 129, 0.1)' }}>
+                <Table size={22} strokeWidth={2.5} />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: 13, fontWeight: 700 }}>Master Excel Registry</span>
-                <span style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.4)' }}>Technical data matrix</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ fontSize: 13, fontWeight: 900, color: '#ffffff', letterSpacing: '0.02em' }}>Master Excel Registry</span>
+                <span style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.5)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Technical data matrix</span>
               </div>
             </button>
           </motion.div>

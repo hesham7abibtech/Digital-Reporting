@@ -6,7 +6,7 @@ import Header from '@/components/layout/Header';
 import ProjectHeader from '@/components/dashboard/ProjectHeader';
 import KPICards from '@/components/dashboard/KPICards';
 import ActiveTasks from '@/components/dashboard/ActiveTasks';
-import AnalyticsDashboardView from '@/components/dashboard/AnalyticsDashboardView';
+import PremiumAnalyticsDashboardView from '@/components/dashboard/PremiumAnalyticsDashboardView';
 import DashboardRegistry from '@/components/dashboard/DashboardRegistry';
 import ChartsSection from '@/components/dashboard/ChartsSection';
 import ExportMenu from '@/components/dashboard/ExportMenu';
@@ -390,9 +390,23 @@ export default function Dashboard() {
       result = result.filter(t => {
         const d = syncedDepartments.find(sd => sd.id === t.department || sd.name === t.department);
         const resolvedName = d ? d.name : (t.department || 'General');
+
+        const legacyTypes = (Array.isArray(t.deliverableType) ? t.deliverableType : [t.deliverableType]).filter((v): v is string => !!v);
+        const vectorTypes = (t.vectors || []).map(v => v.type);
+        const allTypes = [...legacyTypes, ...vectorTypes].join(' ').toLowerCase();
+
+        const legacyCde = (Array.isArray(t.cde) ? t.cde : [t.cde]).filter((v): v is string => !!v);
+        const vectorCde = (t.vectors || []).map(v => v.cde);
+        const allCde = [...legacyCde, ...vectorCde].join(' ').toLowerCase();
+
         return t.title.toLowerCase().includes(q) ||
                resolvedName.toLowerCase().includes(q) ||
-               t.id.toLowerCase().includes(q);
+               t.id.toLowerCase().includes(q) ||
+               allTypes.includes(q) ||
+               allCde.includes(q) ||
+               (t.submitterName || '').toLowerCase().includes(q) ||
+               (t.description || '').toLowerCase().includes(q) ||
+               (t.precinct || '').toLowerCase().includes(q);
       });
     }
     return result;
@@ -435,7 +449,12 @@ export default function Dashboard() {
         milestones.some((m: string) => m.toLowerCase().includes(searchStr)) ||
         review.Project.toLowerCase().includes(searchStr) ||
         review.Stakeholder.toLowerCase().includes(searchStr) ||
-        reviewers.some((r: string) => r.toLowerCase().includes(searchStr));
+        reviewers.some((r: string) => r.toLowerCase().includes(searchStr)) ||
+        (review.Comments || '').toLowerCase().includes(searchStr) ||
+        (review["Review Number"] || '').toString().toLowerCase().includes(searchStr) ||
+        (review["InSite Review Status"] || '').toLowerCase().includes(searchStr) ||
+        (review.Priority || '').toLowerCase().includes(searchStr) ||
+        (review.Precinct || []).join(' ').toLowerCase().includes(searchStr);
 
       const matchesStage = bimFilterStage.length === 0 || 
                           bimFilterStage.includes('All Stages') || 
@@ -666,9 +685,9 @@ export default function Dashboard() {
 
                 <div style={{
                   padding: '10px 16px',
-                  background: 'rgba(251, 250, 245, 0.98)', // Premium solid cotton base for sticky logic
-                  backdropFilter: 'blur(40px)',
-                  border: '1px solid rgba(0, 63, 73, 0.15)',
+                  background: 'rgba(0, 0, 0, 0.75)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
                   borderRadius: 20,
                   display: 'flex',
                   alignItems: 'flex-start',
@@ -678,19 +697,19 @@ export default function Dashboard() {
                   overflow: 'visible',
                   position: 'relative',
                   zIndex: 2000,
-                  boxShadow: '0 12px 40px rgba(0, 63, 73, 0.12)'
+                  boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
                     <div style={{
                       width: 38, height: 38, borderRadius: 12,
-                      background: 'rgba(0, 63, 73, 0.08)',
+                      background: 'rgba(255, 255, 255, 0.05)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      border: '1px solid rgba(0, 63, 73, 0.2)'
+                      border: '1px solid rgba(255, 255, 255, 0.1)'
                     }}>
-                      <CalendarRange size={16} color="var(--teal)" />
+                      <CalendarRange size={16} color="#a5f3fc" />
                     </div>
-                    <h2 style={{ fontSize: 13, fontWeight: 900, color: '#003f49', letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>
-                      {activeReport === 'DELIVERABLES' ? 'Deliverables Registry' : 'BIM Review Matrix'} — <span style={{ color: 'var(--teal)' }}>
+                    <h2 style={{ fontSize: 13, fontWeight: 900, color: '#ffffff', letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>
+                      {activeReport === 'DELIVERABLES' ? 'Deliverables Registry' : 'BIM Review Matrix'} — <span style={{ color: '#a5f3fc' }}>
                         {activeReport === 'DELIVERABLES' ? filteredTasks.length : filteredBimReviews.length} ITEMS
                       </span>
                     </h2>
@@ -699,35 +718,36 @@ export default function Dashboard() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto', flexShrink: 0, flexWrap: 'wrap', rowGap: 8, justifyContent: 'flex-end', alignContent: 'flex-start', position: 'relative', zIndex: 2100 }}>
                     {/* Mode Switcher */}
                     <div style={{
-                      display: 'flex', background: 'rgba(255, 255, 255, 0.7)', padding: 3, borderRadius: 12,
-                      border: '1px solid rgba(0, 63, 73, 0.2)', position: 'relative'
+                      display: 'flex', background: '#000000', padding: 3, borderRadius: 12,
+                      border: '1px solid rgba(255, 255, 255, 0.25)', position: 'relative'
                     }}>
                       {['all', 'monthly', 'custom'].map((mode) => (
-                        <button
+                        <motion.button
                           key={mode}
+                          whileHover={{ background: 'rgba(255, 255, 255, 0.05)' }}
                           onClick={() => setFilterMode(mode as any)}
                           style={{
-                            padding: '6px 16px', borderRadius: 10, fontSize: 10, fontWeight: 900,
+                            padding: '6px 16px', borderRadius: 10, fontSize: 10, fontWeight: 950,
                             textTransform: 'uppercase', letterSpacing: '0.05em', border: 'none',
                             cursor: 'pointer', position: 'relative', zIndex: 1,
-                            background: filterMode === mode ? 'var(--teal)' : 'transparent',
-                            color: filterMode === mode ? 'white' : '#003f49',
+                            background: filterMode === mode ? '#003f49' : 'transparent',
+                            color: '#ffffff',
                             transition: 'all 0.3s ease',
-                            opacity: filterMode === mode ? 1 : 0.7
+                            opacity: filterMode === mode ? 1 : 0.85
                           }}
                         >
                           {filterMode === mode && (
                             <motion.div
                               layoutId="mode-bg"
                               style={{
-                                position: 'absolute', inset: 0, background: 'var(--teal)',
+                                position: 'absolute', inset: 0, background: '#003f49',
                                 borderRadius: 9, border: '1px solid rgba(212, 175, 55, 0.2)',
                                 zIndex: -1
                               }}
                             />
                           )}
                           {mode === 'all' ? 'Lifecycle' : mode === 'monthly' ? 'Monthly' : 'Custom'}
-                        </button>
+                        </motion.button>
                       ))}
                     </div>
 
@@ -761,35 +781,52 @@ export default function Dashboard() {
                           initial={{ opacity: 0, x: 20 }}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: -20 }}
-                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 12px', background: 'rgba(0, 63, 73, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.1)' }}
+                          style={{ 
+                            display: 'flex', alignItems: 'center', gap: 10, padding: '6px 14px', 
+                            background: '#000000', borderRadius: 12, border: '2px solid rgba(208, 171, 130, 0.4)' 
+                          }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <Calendar size={12} color="var(--teal)" />
-                            <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>From</span>
+                            <Calendar size={13} color="#D4AF37" strokeWidth={2.5} />
+                            <span style={{ fontSize: 10, fontWeight: 900, color: 'rgba(255, 255, 255, 0.6)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>From</span>
                             <input
                               type="date"
                               value={startDate}
                               onChange={e => setStartDate(e.target.value)}
-                              style={{ background: 'none', border: 'none', color: 'var(--teal)', fontSize: 11, fontWeight: 700, outline: 'none', cursor: 'pointer' }}
+                              style={{ 
+                                background: 'none', border: 'none', color: '#ffffff', 
+                                fontSize: 11, fontWeight: 950, outline: 'none', cursor: 'pointer',
+                                colorScheme: 'dark' // Force dark calendar picker
+                              }}
                             />
                           </div>
-                          <div style={{ width: 1, height: 16, background: 'rgba(0, 63, 73, 0.1)' }} />
+                          <div style={{ width: 1, height: 18, background: 'rgba(255, 255, 255, 0.15)' }} />
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <Calendar size={12} color="var(--teal)" />
-                            <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>To</span>
+                            <Calendar size={13} color="#D4AF37" strokeWidth={2.5} />
+                            <span style={{ fontSize: 10, fontWeight: 900, color: 'rgba(255, 255, 255, 0.6)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>To</span>
                             <input
                               type="date"
                               value={endDate}
                               onChange={e => setEndDate(e.target.value)}
-                              style={{ background: 'none', border: 'none', color: 'var(--teal)', fontSize: 11, fontWeight: 700, outline: 'none', cursor: 'pointer' }}
+                              style={{ 
+                                background: 'none', border: 'none', color: '#ffffff', 
+                                fontSize: 11, fontWeight: 950, outline: 'none', cursor: 'pointer',
+                                colorScheme: 'dark'
+                              }}
                             />
                           </div>
                           {(startDate || endDate) && (
                             <button
                               onClick={() => { setStartDate(''); setEndDate(''); }}
-                              style={{ background: 'rgba(212, 175, 55, 0.15)', border: 'none', borderRadius: 4, padding: '2px 6px', color: '#D4AF37', cursor: 'pointer', display: 'flex', marginLeft: 4 }}
+                              style={{ 
+                                background: 'rgba(212, 175, 55, 0.15)', border: 'none', borderRadius: 6, 
+                                padding: '4px', color: '#D4AF37', cursor: 'pointer', display: 'flex', 
+                                marginLeft: 4, transition: 'all 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(212, 175, 55, 0.25)'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(212, 175, 55, 0.15)'}
                             >
-                              <X size={12} />
+                              <X size={14} strokeWidth={3} />
                             </button>
                           )}
                         </motion.div>
@@ -800,34 +837,37 @@ export default function Dashboard() {
 
                     {/* Integrated View Navigator */}
                     <div style={{
-                      display: 'flex', background: 'rgba(255, 255, 255, 0.7)', padding: 3, borderRadius: 10, border: '1px solid rgba(0, 63, 73, 0.2)'
+                      display: 'flex', background: '#000000', padding: 3, borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.25)'
                     }}>
                       {[
                         { key: 'table' as const, label: 'Table View', icon: <TableProperties size={13} /> },
                         { key: 'dashboard' as const, label: 'Dashboard', icon: <BarChart3 size={13} /> },
                       ].map((tab) => (
-                        <button
+                        <motion.button
                           key={tab.key}
+                          whileHover={{ background: 'rgba(255, 255, 255, 0.1)' }}
                           onClick={() => setActiveView(tab.key)}
                           style={{
-                            padding: '6px 14px',
+                            padding: '6px 16px',
                             borderRadius: 8,
                             fontSize: 10,
-                            fontWeight: 900,
-                            border: 'none',
+                            fontWeight: 950,
+                            border: activeView === tab.key ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
                             cursor: 'pointer',
-                            background: activeView === tab.key ? 'var(--teal)' : 'transparent',
-                            color: activeView === tab.key ? 'var(--aqua)' : '#003f49',
+                            background: activeView === tab.key ? '#003f49' : 'transparent',
+                            color: '#ffffff',
                             display: 'flex',
                             alignItems: 'center',
                             gap: 6,
                             transition: 'all 0.3s ease',
-                            opacity: activeView === tab.key ? 1 : 0.7
+                            opacity: activeView === tab.key ? 1 : 0.95,
+                            letterSpacing: '0.12em',
+                            boxShadow: activeView === tab.key ? '0 4px 15px rgba(0, 63, 73, 0.3)' : 'none'
                           }}
                         >
                           {tab.icon}
                           {tab.label.toUpperCase()}
-                        </button>
+                        </motion.button>
                       ))}
                     </div>
 
@@ -998,9 +1038,11 @@ export default function Dashboard() {
                           availablePrecincts={availableBimPrecincts}
                         />
                       ) : (
-                        <AnalyticsDashboardView
+                        <PremiumAnalyticsDashboardView
                           tasks={filteredTasks}
                           previousPeriodTasks={previousPeriodTasks}
+                          departments={syncedDepartments}
+                          members={syncedMembers}
                           search={search}
                           setSearch={setSearch}
                           filterDept={filterDept}
@@ -1015,9 +1057,6 @@ export default function Dashboard() {
                           filterPrecinct={filterPrecinct}
                           setFilterPrecinct={setFilterPrecinct}
                           availablePrecincts={availablePrecincts}
-                          onTaskClick={handleTaskClick}
-                          departments={syncedDepartments}
-                          members={syncedMembers}
                         />
                       )}
                     </motion.div>
@@ -1194,6 +1233,37 @@ export default function Dashboard() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Hidden Export Wrappers — off-screen, landscape A4 ratio */}
+      <div style={{ position: 'absolute', top: '-20000px', left: '-20000px', width: '1600px', opacity: 0.01, pointerEvents: 'none', zIndex: -1 }}>
+        {/* Deliverables Capture Root */}
+        <div id="export-only-capture-root" style={{ width: '1600px', height: '900px', marginBottom: '100px' }}>
+          <PremiumAnalyticsDashboardView
+            tasks={filteredTasks}
+            previousPeriodTasks={previousPeriodTasks}
+            departments={syncedDepartments}
+            members={syncedMembers}
+            isExportMode={true}
+          />
+        </div>
+
+        {/* BIM Capture Root */}
+        <div id="bim-export-capture-root-container" style={{ width: '1600px', height: '900px' }}>
+          <BIMAnalyticsView
+            id="bim-export-capture-root"
+            data={filteredBimReviews}
+            previousPeriodData={previousPeriodBimReviews}
+            search={bimSearch}
+            filterStage={bimFilterStage}
+            filterStatus={bimFilterStatus}
+            filterStakeholder={bimFilterStakeholder}
+            filterReviewer={bimFilterReviewer}
+            filterPrecinct={bimFilterPrecinct}
+            isExportMode={true}
+          />
+        </div>
+      </div>
+
 
 
     </div>

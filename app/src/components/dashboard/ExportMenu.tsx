@@ -130,34 +130,35 @@ export default function ExportMenu({
   return (
     <div style={{ position: 'relative' }} ref={menuRef}>
       <motion.button
-        whileHover={{ scale: 1.02 }}
+        whileHover={{ scale: 1.02, boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4), 0 0 15px rgba(208, 171, 130, 0.2)' }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setIsOpen(!isOpen)}
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
-          padding: '10px 18px',
-          background: 'var(--teal)',
-          border: '1px solid rgba(0, 63, 73, 0.2)',
-          borderRadius: 12,
-          color: 'var(--aqua)',
-          fontSize: 12,
-          fontWeight: 800,
+          gap: 12,
+          padding: '10px 24px',
+          background: 'linear-gradient(135deg, #003f49 0%, #000000 100%)',
+          border: '2.5px solid rgba(208, 171, 130, 0.45)',
+          borderRadius: 16,
+          color: '#FFFFFF',
+          fontSize: 12.5,
+          fontWeight: 950,
           cursor: 'pointer',
-          transition: 'all 200ms',
-          boxShadow: '0 4px 15px rgba(0, 63, 73, 0.15)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: '0 8px 35px rgba(0, 0, 0, 0.5), 0 0 10px rgba(208, 171, 130, 0.1)',
           outline: 'none',
           textTransform: 'uppercase',
-          letterSpacing: '0.05em'
+          letterSpacing: '0.12em'
         }}
       >
-        <Download size={16} />
+        <Download size={16} color="#d0ab82" strokeWidth={3} />
         <span>Export Registry</span>
         <ChevronDown 
           size={14} 
+          color="#d0ab82"
           style={{ 
-            transition: 'transform 200ms', 
+            transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)', 
             transform: isOpen ? 'rotate(180deg)' : 'rotate(0)' 
           }} 
         />
@@ -166,27 +167,38 @@ export default function ExportMenu({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            initial={{ opacity: 0, y: 15, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            exit={{ opacity: 0, y: 10, scale: 0.96 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             style={{
               position: 'absolute',
               top: '100%',
               right: 0,
-              marginTop: 8,
+              marginTop: 12,
               zIndex: 10000,
-              width: 240,
-              background: '#003f49',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(198, 224, 224, 0.2)',
-              borderRadius: 16,
-              boxShadow: '0 20px 50px rgba(0,63,73,0.3)',
-              padding: 6,
+              width: 300,
+              background: 'rgba(0, 0, 0, 0.95)',
+              backdropFilter: 'blur(32px)',
+              border: '2px solid rgba(212, 175, 55, 0.2)',
+              borderTop: '3px solid #d0ab82',
+              borderRadius: 24,
+              boxShadow: '0 30px 70px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.05)',
+              padding: 10,
               overflow: 'hidden'
             }}
           >
-            <div style={{ padding: '8px 12px 4px 12px', fontSize: 10, fontWeight: 900, color: 'rgba(198, 224, 224, 0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            <div style={{ 
+              padding: '14px 16px 10px 16px', 
+              fontSize: 10, 
+              fontWeight: 950, 
+              color: '#d0ab82', 
+              textTransform: 'uppercase', 
+              letterSpacing: '0.15em',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              marginBottom: 8,
+              opacity: 0.8
+            }}>
               Select Output Format
             </div>
             

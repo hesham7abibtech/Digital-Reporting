@@ -476,21 +476,22 @@ export default function ActiveTasks({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(0, 63, 73, 0.15)',
           flexWrap: 'wrap',
           gap: 16,
-          background: 'rgba(251, 250, 245, 0.99)',
-          borderRadius: '16px 16px 0 0'
+          background: '#003f49',
+          borderBottom: '2px solid rgba(208, 171, 130, 0.3)',
+          borderRadius: '16px 16px 0 0',
+          position: 'relative'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', width: '100%', gap: 16 }}>
-            <div style={{ position: 'relative', flex: 1, maxWidth: 320 }}>
-              <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#003f49' }} />
+            <div style={{ position: 'relative', flex: 1, maxWidth: 500 }}>
+              <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255, 255, 255, 0.7)' }} />
               <input
                 type="text"
                 placeholder="Search Deliverables..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                style={{ ...headerInputStyle, background: 'rgba(255, 255, 255, 0.8)', color: '#003f49', borderColor: 'rgba(0, 63, 73, 0.25)', fontWeight: 600 }}
+                style={{ ...headerInputStyle, background: 'rgba(0, 0, 0, 0.3)', color: '#ffffff', borderColor: 'rgba(255, 255, 255, 0.15)', fontWeight: 600 }}
               />
             </div>
 
@@ -556,22 +557,24 @@ export default function ActiveTasks({
                   if (setFilterPrecinct) setFilterPrecinct([]);
                 }}
                 title="Clear All Data Filters"
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: 10,
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  color: '#ef4444',
-                  border: '1px solid rgba(239, 68, 68, 0.2)',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  transition: 'all 0.2s'
-                }}
-                className="hover:bg-[rgba(239, 68, 68, 0.15)]"
-              >
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: 14,
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    color: '#fca5a5',
+                    border: '1.5px solid rgba(239, 68, 68, 0.4)',
+                    fontSize: 11,
+                    fontWeight: 950,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    transition: 'all 0.3s ease'
+                  }}
+                  className="hover:bg-[rgba(239,68,68,0.25)] hover:scale-105"
+                >
                 <RefreshCw size={14} />
                 Reset Filters
               </button>
