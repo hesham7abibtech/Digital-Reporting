@@ -94,41 +94,30 @@ export default function HeroSection({ config, isLoggedIn, onExploreCick, onLogin
           {config.subtitle}
         </motion.p>
 
-        {/* Title — Two Lines */}
-        <motion.h1
+        {/* Main Logo — Replacing Ras El Hekma & Wadi Yemm */}
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.8 }}
-          className="brand-heading"
           style={{
-            fontSize: 'clamp(36px, 6vw, 72px)', color: '#ffffff',
-            margin: '0 0 24px', lineHeight: 1.1,
-            textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.5), 0 8px 30px rgba(0,0,0,0.3)',
-            fontWeight: 400,
-            width: '100%', textAlign: 'center',
+            width: '100%',
+            maxWidth: 500,
+            marginBottom: 32,
+            display: 'flex',
+            justifyContent: 'center'
           }}
         >
-          {config.title}
-        </motion.h1>
-
-        {/* Wadi Yemm — Second Title Line */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.75, duration: 0.7 }}
-          className="brand-heading"
-          style={{
-            fontSize: 'clamp(20px, 4vw, 36px)', color: '#E2B37E',
-            margin: '-12px 0 28px', lineHeight: 1.2,
-            textShadow: '0 2px 15px rgba(0,0,0,1), 0 4px 30px rgba(0,0,0,0.8)',
-            fontWeight: 900,
-            letterSpacing: '0.25em',
-            textAlign: 'center',
-            textTransform: 'uppercase'
-          }}
-        >
-          Wadi Yemm
-        </motion.p>
+          <img 
+            src="/logos/ras_el_hekma_logo.png" 
+            alt="Ras El Hekma" 
+            style={{ 
+              width: '100%', 
+              height: 'auto', 
+              maxHeight: 200, 
+              objectFit: 'contain'
+            }} 
+          />
+        </motion.div>
 
         {/* Tagline */}
         <motion.p
