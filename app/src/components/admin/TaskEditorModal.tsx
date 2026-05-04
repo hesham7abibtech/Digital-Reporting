@@ -92,22 +92,12 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         };
       }) || []);
 
-    // Only show ACTIVE project team members within the selected department (or legacy members without status)
-    const selectedDept = departments.find(d => d.id === formData.department || d.name === formData.department);
-    const selectedDeptId = selectedDept?.id;
-    const selectedDeptName = selectedDept?.name;
-
+    // Only show ACTIVE project team members (or legacy members without status)
     return list.filter(p => {
       const isStatusValid = p.status === 'ACTIVE' || !p.status;
-
-      // Real-time filtering based on category ID (Normalized) or Name (Legacy)
-      const matchesId = selectedDeptId && p.department === selectedDeptId;
-      const matchesName = selectedDeptName && p.department?.toLowerCase() === selectedDeptName.toLowerCase();
-      const respondsToDepartment = matchesId || matchesName;
-
-      return isStatusValid && respondsToDepartment;
+      return isStatusValid;
     });
-  }, [membersSnapshot, formData.department, departments]);
+  }, [membersSnapshot]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -410,16 +400,16 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                     submitterName: selected ? selected.name : ''
                   });
                 }}
-                disabled={isActuallyReadOnly || !formData.department}
+                disabled={isActuallyReadOnly}
                 style={{
                   width: '100%', padding: '12px 16px', borderRadius: 12,
-                  background: (!formData.department || isActuallyReadOnly) ? 'rgba(0,0,0,0.02)' : '#eef2ff',
+                  background: isActuallyReadOnly ? 'rgba(0,0,0,0.02)' : '#eef2ff',
                   border: (showErrors && !formData.submitterId) ? '2px solid #ef4444' : '1px solid rgba(0, 63, 73, 0.15)',
                   color: '#003f49', fontSize: 13, fontWeight: 700, outline: 'none',
-                  cursor: (!formData.department || isActuallyReadOnly) ? 'not-allowed' : 'pointer'
+                  cursor: isActuallyReadOnly ? 'not-allowed' : 'pointer'
                 }}
               >
-                <option value="">{formData.department ? 'Unassigned Personnel' : 'Select Task Category First'}</option>
+                <option value="">Select Personnel</option>
                 {personnel.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
               </select>
             </div>

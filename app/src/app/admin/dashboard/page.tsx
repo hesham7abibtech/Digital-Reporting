@@ -54,7 +54,9 @@ import {
   EyeOff,
   Eye,
   Mail,
-  UserPlus
+  UserPlus,
+  Tag,
+  UserCheck
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -713,6 +715,11 @@ export default function AdminDashboardPage() {
   const [isSavingReport, setIsSavingReport] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterPrecinct, setFilterPrecinct] = useState('');
+  const [filterSubmitter, setFilterSubmitter] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
   const [isBimImportLoading, setIsBimImportLoading] = useState(false);
   const [bimImportConfirm, setBimImportConfirm] = useState<{ isOpen: boolean, records: any[] }>({ isOpen: false, records: [] });
   const bimFileInputRef = useRef<HTMLInputElement>(null);
@@ -893,16 +900,55 @@ export default function AdminDashboardPage() {
 
   // Snapshot Memoization to stabilize array references and prevent update depth loops
   const memoizedTasks = useMemo(() => {
-    const raw = tasksSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)) || [];
-    if (!searchQuery) return raw;
-    const q = searchQuery.toLowerCase();
-    return raw.filter(t => 
-      t.title.toLowerCase().includes(q) || 
-      t.id.toLowerCase().includes(q) || 
-      t.department.toLowerCase().includes(q) ||
-      (t.precinct || '').toLowerCase().includes(q)
-    );
-  }, [tasksSnapshot, searchQuery]);
+    let raw = tasksSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)) || [];
+
+    // Apply Search Query
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      raw = raw.filter(t => 
+        t.title.toLowerCase().includes(q) || 
+        t.id.toLowerCase().includes(q) || 
+        t.department.toLowerCase().includes(q) ||
+        (t.precinct || '').toLowerCase().includes(q)
+      );
+    }
+
+    // Apply Category Filter
+    if (filterCategory) {
+      raw = raw.filter(t => t.department === filterCategory || t.department.toLowerCase() === filterCategory.toLowerCase());
+    }
+
+    // Apply Precinct Filter
+    if (filterPrecinct) {
+      raw = raw.filter(t => t.precinct === filterPrecinct);
+    }
+
+    // Apply Submitter Filter
+    if (filterSubmitter) {
+      raw = raw.filter(t => t.submitterId === filterSubmitter);
+    }
+
+    // Apply Date Range Filter
+    if (filterDateFrom) {
+      const from = new Date(filterDateFrom);
+      raw = raw.filter(t => {
+        if (!t.submittingDate) return false;
+        const d = new Date(t.submittingDate);
+        return d >= from;
+      });
+    }
+    if (filterDateTo) {
+      const to = new Date(filterDateTo);
+      to.setHours(23, 59, 59, 999);
+      raw = raw.filter(t => {
+        if (!t.submittingDate) return false;
+        const d = new Date(t.submittingDate);
+        return d <= to;
+      });
+    }
+
+    return raw;
+  }, [tasksSnapshot, searchQuery, filterCategory, filterPrecinct, filterSubmitter, filterDateFrom, filterDateTo]);
 
   const memoizedRegistry = useMemo(() => {
     const raw = registrySnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as DashboardNavItem)) || [];
@@ -1958,6 +2004,97 @@ export default function AdminDashboardPage() {
                       )}
                     </div>
                   </div>
+
+                  {/* Enhanced Filter System for Deliverable Matrix */}
+                  {activeTab === 'tasks' && (
+                    <div style={{ 
+                      padding: '8px 24px 16px 24px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 12, 
+                      flexWrap: 'wrap',
+                      background: 'rgba(255, 255, 255, 0.5)',
+                      borderBottom: '1px solid rgba(0, 63, 73, 0.05)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc', padding: '8px 14px', borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.08)', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                        <Tag size={14} color="#003f49" style={{ opacity: 0.6 }} />
+                        <select 
+                          value={filterCategory} 
+                          onChange={(e) => setFilterCategory(e.target.value)}
+                          style={{ background: 'transparent', border: 'none', color: '#003f49', fontSize: 11, fontWeight: 800, outline: 'none', cursor: 'pointer', appearance: 'none', minWidth: 120 }}
+                        >
+                          <option value="">All Categories</option>
+                          {memoizedDepartments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc', padding: '8px 14px', borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.08)', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                        <Building2 size={14} color="#003f49" style={{ opacity: 0.6 }} />
+                        <select 
+                          value={filterPrecinct} 
+                          onChange={(e) => setFilterPrecinct(e.target.value)}
+                          style={{ background: 'transparent', border: 'none', color: '#003f49', fontSize: 11, fontWeight: 800, outline: 'none', cursor: 'pointer', appearance: 'none', minWidth: 120 }}
+                        >
+                          <option value="">All Precincts</option>
+                          {PRECINCTS.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc', padding: '8px 14px', borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.08)', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                        <UserCheck size={14} color="#003f49" style={{ opacity: 0.6 }} />
+                        <select 
+                          value={filterSubmitter} 
+                          onChange={(e) => setFilterSubmitter(e.target.value)}
+                          style={{ background: 'transparent', border: 'none', color: '#003f49', fontSize: 11, fontWeight: 800, outline: 'none', cursor: 'pointer', appearance: 'none', minWidth: 140 }}
+                        >
+                          <option value="">All Submitters</option>
+                          {memoizedMembers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f8fafc', padding: '8px 14px', borderRadius: 12, border: '1px solid rgba(0, 63, 73, 0.08)', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                        <Clock size={14} color="#003f49" style={{ opacity: 0.6 }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <input 
+                            type="date" 
+                            value={filterDateFrom} 
+                            onChange={(e) => setFilterDateFrom(e.target.value)}
+                            style={{ background: 'transparent', border: 'none', color: '#003f49', fontSize: 11, fontWeight: 800, outline: 'none', cursor: 'pointer', width: 110 }}
+                          />
+                          <span style={{ fontSize: 10, color: '#003f49', opacity: 0.4, fontWeight: 900 }}>TO</span>
+                          <input 
+                            type="date" 
+                            value={filterDateTo} 
+                            onChange={(e) => setFilterDateTo(e.target.value)}
+                            style={{ background: 'transparent', border: 'none', color: '#003f49', fontSize: 11, fontWeight: 800, outline: 'none', cursor: 'pointer', width: 110 }}
+                          />
+                        </div>
+                      </div>
+
+                      {(filterCategory || filterPrecinct || filterSubmitter || filterDateFrom || filterDateTo || searchQuery) && (
+                        <button 
+                          onClick={() => {
+                            setFilterCategory('');
+                            setFilterPrecinct('');
+                            setFilterSubmitter('');
+                            setFilterDateFrom('');
+                            setFilterDateTo('');
+                            setSearchQuery('');
+                          }}
+                          style={{ 
+                            background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', 
+                            color: '#ef4444', fontSize: 10, fontWeight: 900, padding: '8px 18px', 
+                            borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                            textTransform: 'uppercase', letterSpacing: '0.1em', transition: 'all 200ms',
+                            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.1)'
+                          }}
+                        >
+                          <X size={14} />
+                          Clear Intel
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <div style={{ overflowX: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'communications' || activeTab === 'homepage') ? 'hidden' : 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'communications' || activeTab === 'homepage') ? 'fixed' : 'auto' }}>
                       {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'communications' && activeTab !== 'homepage' && !(activeTab === 'users' && activeSubTab === 'policies') && (
