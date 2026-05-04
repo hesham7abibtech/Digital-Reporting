@@ -10,16 +10,8 @@ export function useRegistryView(defaultView: RegistryViewMode = 'table') {
   const [activeView, setActiveViewState] = useState<RegistryViewMode>(defaultView);
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Hydrate from localStorage on mount
+  // Hydrate from localStorage on mount - DISABLED to ensure Table View is always the default on load
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === 'table' || stored === 'dashboard') {
-        setActiveViewState(stored);
-      }
-    } catch {
-      // localStorage unavailable
-    }
     setIsHydrated(true);
   }, []);
 
