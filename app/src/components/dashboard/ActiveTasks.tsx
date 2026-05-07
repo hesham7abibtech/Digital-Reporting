@@ -18,15 +18,15 @@ type SortField = 'title' | 'completion' | 'submittingDate' | 'id' | 'department'
 type SortDir = 'asc' | 'desc';
 
 const INITIAL_COLUMNS: ColumnDef<SortField>[] = [
-  { id: 'id', field: 'id', label: 'ID', align: 'center', priority: 'high', defaultWidth: 110, alwaysVisible: true },
-  { id: 'title', field: 'title', label: 'Task Name', align: 'center', priority: 'high', defaultWidth: 220, alwaysVisible: true },
-  { id: 'department', field: 'department', label: 'Task Category', align: 'center', priority: 'medium', defaultWidth: 140 },
-  { id: 'precinct', field: 'precinct', label: 'Precinct', align: 'center', priority: 'medium', defaultWidth: 120 },
-  { id: 'submitterName', field: 'submitterName', label: 'Submitter', align: 'center', priority: 'medium', defaultWidth: 180 },
-  { id: 'submittingDate', field: 'submittingDate', label: 'Submission Date', align: 'center', priority: 'medium', defaultWidth: 125 },
-  { id: 'deliverableType', field: 'deliverableType', label: 'Deliverable Type', align: 'center', priority: 'medium', defaultWidth: 150 },
-  { id: 'cde', field: 'cde', label: 'CDE', align: 'center', priority: 'low', defaultWidth: 200 },
-  { id: 'links', field: 'id', label: 'Deliverables Links', align: 'center', priority: 'low', defaultWidth: 240 }
+  { id: 'id', field: 'id', label: 'ID', align: 'center', priority: 'high', defaultWidth: 140, alwaysVisible: true },
+  { id: 'title', field: 'title', label: 'Task Name', align: 'left', priority: 'high', defaultWidth: 380, alwaysVisible: true },
+  { id: 'department', field: 'department', label: 'Category', align: 'center', priority: 'medium', defaultWidth: 220 },
+  { id: 'precinct', field: 'precinct', label: 'Precinct', align: 'center', priority: 'medium', defaultWidth: 150 },
+  { id: 'submitterName', field: 'submitterName', label: 'Submitter', align: 'center', priority: 'medium', defaultWidth: 280 },
+  { id: 'submittingDate', field: 'submittingDate', label: 'Date', align: 'center', priority: 'medium', defaultWidth: 130 },
+  { id: 'deliverableType', field: 'deliverableType', label: 'Type', align: 'center', priority: 'medium', defaultWidth: 100 },
+  { id: 'cde', field: 'cde', label: 'CDE', align: 'center', priority: 'low', defaultWidth: 180 },
+  { id: 'links', field: 'id', label: 'Links', align: 'center', priority: 'low', defaultWidth: 240 }
 ];
 
 function ResizeHandle({ columnWidth, onWidthChange }: { columnWidth: number, onWidthChange: (w: number) => void }) {
@@ -102,13 +102,19 @@ function TaskRow({
 
   const isVisible = (id: string) => visibleColumns.some(c => c.id === id);
 
-  // Resolve submitter avatar
-  const submitterProfile = (members || []).find((m: TeamMember) => 
-    (task.submitterId && m.id === task.submitterId) || 
-    (task.submitterEmail && m.email.toLowerCase() === task.submitterEmail.toLowerCase()) ||
-    (task.submitterName && m.name.toLowerCase() === task.submitterName.toLowerCase())
+  // Resolve submitter avatars
+  const submitterIds = Array.isArray(task.submitterId) ? task.submitterId : (task.submitterId ? [task.submitterId] : []);
+  const submitterEmails = Array.isArray(task.submitterEmail) ? task.submitterEmail : (task.submitterEmail ? [task.submitterEmail] : []);
+  const submitterNames = Array.isArray(task.submitterName) ? task.submitterName : (task.submitterName ? [task.submitterName] : []);
+
+  const submitterProfiles = (members || []).filter((m: TeamMember) => 
+    submitterIds.includes(m.id) || 
+    submitterEmails.some(email => email.toLowerCase() === m.email.toLowerCase()) ||
+    submitterNames.some(name => name.toLowerCase() === m.name.toLowerCase())
   );
-  const avatarUrl = submitterProfile?.avatar;
+  
+  // Use profiles if found, otherwise fallback to names from task
+  const displayNames = submitterProfiles.length > 0 ? submitterProfiles.map(p => p.name) : submitterNames;
 
   return (
     <motion.tr
@@ -117,7 +123,7 @@ function TaskRow({
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.02, duration: 0.2 }}
       onClick={() => onClick?.(task)}
-      style={{ borderBottom: '1px solid rgba(198, 224, 224, 0.15)', cursor: 'pointer', transition: 'background 200ms' }}
+      style={{ cursor: 'pointer' }}
       className="hover:bg-[rgba(255,255,255,0.03)]"
     >
       {visibleColumns.map(col => {
@@ -132,47 +138,65 @@ function TaskRow({
         );
 
         if (col.id === 'title') return (
-          <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle', minWidth: isCustomized ? undefined : 220, maxWidth: col.width || 450 }}>
-            <p style={{ 
-              fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', margin: 0, 
-              whiteSpace: 'normal', 
-              wordBreak: 'break-word',
-              lineHeight: 1.4
-            }}>{task.title}</p>
+          <td key={col.id} style={{ 
+            padding: '16px 24px', textAlign: 'left', verticalAlign: 'middle',
+            whiteSpace: 'normal'
+          }}>
+            <span style={{ 
+              fontSize: 14, 
+              fontWeight: 900, 
+              color: '#003f49',
+              lineHeight: 1.4,
+              display: 'block',
+              letterSpacing: '-0.01em'
+            }}>
+              {task.title}
+            </span>
           </td>
         );
         if (col.id === 'department') return (
           <td key={col.id} style={{ 
-            padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle',
+            padding: '16px 14px', textAlign: 'center', verticalAlign: 'middle',
             whiteSpace: 'normal',
             wordBreak: 'break-word'
           }}>
-            {(() => {
-              const d = (departments || []).find((dept: Department) => dept.id === task.department || dept.name === task.department);
-              const deptColor = getDepartmentColor(d?.name || task.department);
-              return (
-                <span style={{ 
-                  fontSize: 11,
-                  fontWeight: 900,
-                  padding: '5px 12px',
-                  background: `${deptColor}14`,
-                  border: `1.5px solid ${deptColor}66`,
-                  color: '#003f49',
-                  borderRadius: '10px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  whiteSpace: 'normal',
-                  boxShadow: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 'fit-content',
-                  maxWidth: '100%'
-                }}>
-                  {d ? d.name : task.department || 'General'}
-                </span>
-              );
-            })()}
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }}>
+              {(() => {
+                const depts = Array.isArray(task.department) ? task.department : (task.department ? [task.department] : ['General']);
+                return depts.map((deptIdOrName, idx) => {
+                  const d = (departments || []).find((dept: Department) => dept.id === deptIdOrName || dept.name === deptIdOrName);
+                  const deptName = d ? d.name : deptIdOrName;
+                  const deptColor = getDepartmentColor(deptName);
+                  return (
+                    <motion.span 
+                      key={idx}
+                      whileHover={{ scale: 1.05, y: -2 }}
+                      style={{ 
+                        fontSize: 9.5,
+                        fontWeight: 950,
+                        padding: '6px 14px',
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        border: `1.5px solid ${deptColor}`,
+                        color: deptColor,
+                        borderRadius: '10px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        whiteSpace: 'nowrap',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: `0 4px 12px ${deptColor}20`,
+                        backdropFilter: 'blur(8px)',
+                        textShadow: `0 1px 2px rgba(0,0,0,0.1)`
+                      }}
+                    >
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: deptColor, marginRight: 8, boxShadow: `0 0 8px ${deptColor}` }} />
+                      {deptName}
+                    </motion.span>
+                  );
+                });
+              })()}
+            </div>
           </td>
         );
         
@@ -189,34 +213,88 @@ function TaskRow({
         );
 
         if (col.id === 'submitterName') return (
-          <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-              {(submitterProfile?.name || task.submitterName) && (
-                <div style={{ 
-                  width: 26, height: 26, borderRadius: '8px', 
-                  background: avatarUrl ? 'transparent' : 'var(--accent)', 
-                  border: '1px solid var(--accent)', 
-                  color: 'var(--teal)', fontSize: 10, fontWeight: 900, 
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                  flexShrink: 0, boxShadow: '0 0 10px rgba(197, 160, 89, 0.3)',
-                  overflow: 'hidden'
-                }}>
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt={submitterProfile?.name || task.submitterName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    (submitterProfile?.name || task.submitterName || '??').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-                  )}
-                </div>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <span style={{ 
-                  fontSize: 13, fontWeight: 700, color: 'var(--text-primary)',
-                  whiteSpace: 'normal',
-                  wordBreak: 'break-word'
-                }}>
-                  {submitterProfile?.name || task.submitterName || '—'}
-                </span>
+          <td key={col.id} style={{ padding: '16px 20px', textAlign: 'center', verticalAlign: 'middle' }}>
+            <div style={{ 
+              display: 'inline-flex', 
+              flexDirection: 'row', 
+              flexWrap: 'wrap',
+              alignItems: 'center', 
+              justifyContent: 'center',
+              gap: 14,
+              padding: '8px 16px',
+              borderRadius: 20,
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(0, 63, 73, 0.03) 100%)',
+              border: '1.5px solid rgba(0, 63, 73, 0.08)',
+              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.02)',
+              minWidth: 'auto'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {submitterProfiles.length > 0 ? (
+                  submitterProfiles.slice(0, 3).map((p, i) => (
+                    <motion.div 
+                      key={p.id} 
+                      title={p.name}
+                      whileHover={{ scale: 1.3, rotate: 5, zIndex: 50, boxShadow: '0 12px 25px rgba(0,0,0,0.4)', borderColor: '#B08D3E' }}
+                      whileTap={{ scale: 0.95 }}
+                      style={{ 
+                        width: 32, height: 32, borderRadius: '12px', 
+                        background: p.avatar ? 'transparent' : 'linear-gradient(135deg, #003f49 0%, #000000 100%)', 
+                        border: '2px solid #ffffff', 
+                        color: '#B08D3E', fontSize: 10, fontWeight: 950, 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                        flexShrink: 0, boxShadow: '0 8px 20px rgba(0, 0, 0, 0.25)',
+                        overflow: 'hidden',
+                        marginLeft: i > 0 ? -12 : 0,
+                        zIndex: 10 - i,
+                        position: 'relative',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      {p.avatar ? (
+                        <img src={p.avatar} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        (p.name || '??').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                      )}
+                    </motion.div>
+                  ))
+                ) : (
+                  submitterNames.length > 0 && (
+                    <div style={{ 
+                      width: 32, height: 32, borderRadius: '12px', 
+                      background: 'linear-gradient(135deg, #003f49 0%, #000000 100%)', 
+                      border: '2px solid #ffffff', 
+                      color: '#B08D3E', fontSize: 10, fontWeight: 950, 
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                      flexShrink: 0, boxShadow: '0 8px 20px rgba(0, 0, 0, 0.25)',
+                    }}>
+                      {submitterNames[0].split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                    </div>
+                  )
+                )}
+                {submitterNames.length > 3 && (
+                  <div style={{ 
+                    width: 32, height: 32, borderRadius: '12px', 
+                    background: '#ffffff', border: '2px solid #003f49', 
+                    color: '#003f49', fontSize: 10, fontWeight: 950, 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                    marginLeft: -12, zIndex: 1, position: 'relative',
+                    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.15)'
+                  }}>
+                    +{submitterNames.length - 3}
+                  </div>
+                )}
               </div>
+              <span style={{ 
+                fontSize: 11.5, 
+                fontWeight: 850, 
+                color: '#003f49',
+                whiteSpace: 'normal',
+                maxWidth: '100%',
+                letterSpacing: '0.02em',
+                textTransform: 'uppercase'
+              }}>
+                {displayNames.join(', ') || '—'}
+              </span>
             </div>
           </td>
         );
@@ -233,22 +311,22 @@ function TaskRow({
 
         if (col.id === 'deliverableType') {
           const activeTypes = (filterType || []).filter(v => v !== 'All Types');
-          const activeCDEs = (filterCDE || []).filter(v => v !== 'All Environments');
+          const activeCDEs = (filterCDE || []).filter(v => v !== 'All CDE');
 
           const legacyTypes = (Array.isArray(task.deliverableType) ? task.deliverableType : [task.deliverableType]).filter((v): v is string => !!v);
           
           // Filter Legacy Types
-          const filteredLegacyTypes = legacyTypes.filter(type => activeTypes.length === 0 || activeTypes.includes(type));
+          const filteredLegacyTypes = legacyTypes.filter(type => activeTypes.length === 0 || activeTypes.some(at => at.toUpperCase() === type.toUpperCase()));
 
           // Filter Vectors surgically
           const filteredVectors = (task.vectors || []).filter(v => {
-            const typeMatch = activeTypes.length === 0 || activeTypes.includes(v.type);
-            const cdeMatch = activeCDEs.length === 0 || activeCDEs.includes(v.cde);
+            const typeMatch = activeTypes.length === 0 || activeTypes.some(at => at.toUpperCase() === v.type.toUpperCase());
+            const cdeMatch = activeCDEs.length === 0 || activeCDEs.some(ac => ac.toUpperCase() === v.cde.toUpperCase());
             return typeMatch && cdeMatch;
           });
 
           const vectorTypes = filteredVectors.map(v => v.type);
-          const allTypes = Array.from(new Set([...filteredLegacyTypes, ...vectorTypes]));
+          const allTypes = Array.from(new Set([...filteredLegacyTypes, ...vectorTypes].map(v => v.trim().toUpperCase())));
 
           return (
             <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
@@ -272,22 +350,22 @@ function TaskRow({
 
         if (col.id === 'cde') {
           const activeTypes = (filterType || []).filter(v => v !== 'All Types');
-          const activeCDEs = (filterCDE || []).filter(v => v !== 'All Environments');
+          const activeCDEs = (filterCDE || []).filter(v => v !== 'All CDE');
           
           const legacyCdes = (Array.isArray(task.cde) ? task.cde : [task.cde]).filter((v): v is string => !!v);
 
           // Filter Legacy CDEs 
-          const filteredLegacyCdes = legacyCdes.filter(c => activeCDEs.length === 0 || activeCDEs.includes(c));
+          const filteredLegacyCdes = legacyCdes.filter(c => activeCDEs.length === 0 || activeCDEs.some(ac => ac.toUpperCase() === c.toUpperCase()));
 
           // Filter Vectors surgically (Must match both Type and CDE filter if present)
           const filteredVectors = (task.vectors || []).filter(v => {
-            const typeMatch = activeTypes.length === 0 || activeTypes.includes(v.type);
-            const cdeMatch = activeCDEs.length === 0 || activeCDEs.includes(v.cde);
+            const typeMatch = activeTypes.length === 0 || activeTypes.some(at => at.toUpperCase() === v.type.toUpperCase());
+            const cdeMatch = activeCDEs.length === 0 || activeCDEs.some(ac => ac.toUpperCase() === v.cde.toUpperCase());
             return typeMatch && cdeMatch;
           });
 
           const vectorCdes = filteredVectors.map(v => v.cde);
-          const allCdes = Array.from(new Set([...filteredLegacyCdes, ...vectorCdes]));
+          const allCdes = Array.from(new Set([...filteredLegacyCdes, ...vectorCdes].map(v => v.trim().toUpperCase())));
 
           return (
             <td key={col.id} style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
@@ -299,7 +377,7 @@ function TaskRow({
                     border: '1px solid rgba(0, 63, 73, 0.2)', 
                     borderRadius: '20px', color: 'var(--aqua)', whiteSpace: 'normal', textTransform: 'uppercase',
                     letterSpacing: '0.08em',
-                    wordBreak: 'break-word',                    boxShadow: '0 2px 10px rgba(0, 63, 73, 0.15)',
+                    boxShadow: '0 2px 10px rgba(0, 63, 73, 0.15)',
                     display: 'flex', alignItems: 'center', gap: 6
                   }}>{env}</span>
                 ))}
@@ -311,15 +389,15 @@ function TaskRow({
 
         if (col.id === 'links') {
           const activeTypes = (filterType || []).filter(v => v !== 'All Types');
-          const activeCDEs = (filterCDE || []).filter(v => v !== 'All Environments');
+          const activeCDEs = (filterCDE || []).filter(v => v !== 'All CDE');
 
           const legacyTypes = (Array.isArray(task.deliverableType) ? task.deliverableType : [task.deliverableType]).filter((v): v is string => !!v);
           const legacyCdes = (Array.isArray(task.cde) ? task.cde : [task.cde]).filter((v): v is string => !!v);
 
           // Filter Vectors surgically
           const filteredVectors = (task.vectors || []).filter(v => {
-            const typeMatch = activeTypes.length === 0 || activeTypes.includes(v.type);
-            const cdeMatch = activeCDEs.length === 0 || activeCDEs.includes(v.cde);
+            const typeMatch = activeTypes.length === 0 || activeTypes.some(at => at.toUpperCase() === v.type.toUpperCase());
+            const cdeMatch = activeCDEs.length === 0 || activeCDEs.some(ac => ac.toUpperCase() === v.cde.toUpperCase());
             return typeMatch && cdeMatch;
           });
 
@@ -327,8 +405,8 @@ function TaskRow({
           const filteredLegacyLinks = (task.links || []).filter((l, i) => {
             const typeAtIdx = legacyTypes[i] || legacyTypes[0];
             const cdeAtIdx = legacyCdes[i] || legacyCdes[0];
-            const typeMatch = activeTypes.length === 0 || activeTypes.includes(typeAtIdx);
-            const cdeMatch = activeCDEs.length === 0 || activeCDEs.includes(cdeAtIdx);
+            const typeMatch = activeTypes.length === 0 || (typeAtIdx && activeTypes.some(at => at.toUpperCase() === typeAtIdx.toUpperCase()));
+            const cdeMatch = activeCDEs.length === 0 || (cdeAtIdx && activeCDEs.some(ac => ac.toUpperCase() === cdeAtIdx.toUpperCase()));
             return typeMatch && cdeMatch;
           });
 
@@ -401,6 +479,9 @@ export default function ActiveTasks({
   filterPrecinct = [],
   setFilterPrecinct,
   availablePrecincts = [],
+  filterSubmitter = [],
+  setFilterSubmitter,
+  availableSubmitters = [],
   members = [],
   departments = []
 }: {
@@ -420,6 +501,9 @@ export default function ActiveTasks({
   filterPrecinct?: string[];
   setFilterPrecinct?: (v: string[]) => void;
   availablePrecincts?: string[];
+  filterSubmitter?: string[];
+  setFilterSubmitter?: (v: string[]) => void;
+  availableSubmitters?: string[];
   members?: TeamMember[];
   departments?: Department[];
 }) {
@@ -448,15 +532,25 @@ export default function ActiveTasks({
 
     result.sort((a: Task, b: Task) => {
       let cmp = 0;
-      if (sortField === 'title') cmp = a.title.localeCompare(b.title);
-      else if (sortField === 'id') cmp = a.id.localeCompare(b.id);
+      const getVal = (v: any): string => {
+        if (Array.isArray(v)) return v.join(',');
+        if (v === null || v === undefined) return '';
+        return String(v);
+      };
 
-      else if (sortField === 'submittingDate') cmp = new Date(a.submittingDate || 0).getTime() - new Date(b.submittingDate || 0).getTime();
-      else if (sortField === 'department') cmp = a.department.localeCompare(b.department);
-      else if (sortField === 'submitterName') cmp = (a.submitterName || '').localeCompare(b.submitterName || '');
-      else if (sortField === 'deliverableType') cmp = (Array.isArray(a.deliverableType) ? a.deliverableType.join(',') : (a.deliverableType || '')).localeCompare(Array.isArray(b.deliverableType) ? b.deliverableType.join(',') : (b.deliverableType || ''));
-      else if (sortField === 'cde') cmp = (Array.isArray(a.cde) ? a.cde.join(',') : (a.cde || '')).localeCompare(Array.isArray(b.cde) ? b.cde.join(',') : (b.cde || ''));
-      else if (sortField === 'precinct') cmp = (a.precinct || '').localeCompare(b.precinct || '');
+      if (sortField === 'title') cmp = getVal(a.title).localeCompare(getVal(b.title));
+      else if (sortField === 'id') cmp = getVal(a.id).localeCompare(getVal(b.id));
+      else if (sortField === 'submittingDate') {
+        const d1 = new Date(a.submittingDate || 0).getTime();
+        const d2 = new Date(b.submittingDate || 0).getTime();
+        cmp = d1 - d2;
+      }
+      else if (sortField === 'department') cmp = getVal(a.department).localeCompare(getVal(b.department));
+      else if (sortField === 'submitterName') cmp = getVal(a.submitterName).localeCompare(getVal(b.submitterName));
+      else if (sortField === 'deliverableType') cmp = getVal(a.deliverableType).localeCompare(getVal(b.deliverableType));
+      else if (sortField === 'cde') cmp = getVal(a.cde).localeCompare(getVal(b.cde));
+      else if (sortField === 'precinct') cmp = getVal(a.precinct).localeCompare(getVal(b.precinct));
+      
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return result;
@@ -511,7 +605,7 @@ export default function ActiveTasks({
               value={filterType}
               options={availableTypes.map(t => ({ label: t, value: t }))}
               onChange={setFilterType}
-              menuLabel="Deliverable Type"
+              menuLabel="Type"
               isMulti={true}
               allLabel="All Types"
             />
@@ -520,9 +614,9 @@ export default function ActiveTasks({
               value={filterCDE}
               options={availableCDEs.map(c => ({ label: c, value: c }))}
               onChange={setFilterCDE}
-              menuLabel="Environments"
+              menuLabel="CDE"
               isMulti={true}
-              allLabel="All Environments"
+              allLabel="All CDE"
             />
 
             <EliteDropdown
@@ -532,6 +626,15 @@ export default function ActiveTasks({
               menuLabel="Precincts"
               isMulti={true}
               allLabel="All Precincts"
+            />
+
+            <EliteDropdown
+              value={filterSubmitter}
+              options={availableSubmitters.map(s => ({ label: s, value: s }))}
+              onChange={setFilterSubmitter || (() => {})}
+              menuLabel="Submitters"
+              isMulti={true}
+              allLabel="All Submitters"
             />
 
             <ColumnSettingsDropdown
@@ -545,8 +648,9 @@ export default function ActiveTasks({
             {(search || 
               (filterDept.length > 0 && !filterDept.includes('All Categories')) ||
               (filterType.length > 0 && !filterType.includes('All Types')) || 
-              (filterCDE.length > 0 && !filterCDE.includes('All Environments')) ||
-              (filterPrecinct.length > 0 && !filterPrecinct.includes('All Precincts'))
+              (filterCDE.length > 0 && !filterCDE.includes('All CDE')) ||
+              (filterPrecinct.length > 0 && !filterPrecinct.includes('All Precincts')) ||
+              (filterSubmitter.length > 0 && !filterSubmitter.includes('All Submitters'))
             ) && (
               <button
                 onClick={() => {
@@ -555,6 +659,7 @@ export default function ActiveTasks({
                   setFilterType([]);
                   setFilterCDE([]);
                   if (setFilterPrecinct) setFilterPrecinct([]);
+                  if (setFilterSubmitter) setFilterSubmitter([]);
                 }}
                 title="Clear All Data Filters"
                   style={{
@@ -602,7 +707,7 @@ export default function ActiveTasks({
 
         <div
           style={{
-            overflowX: isCustomized ? 'auto' : 'hidden',
+            overflowX: 'auto',
             overflowY: 'auto',
             paddingBottom: 4,
             flex: 1,
@@ -616,20 +721,24 @@ export default function ActiveTasks({
             .elite-scrollbar::-webkit-scrollbar-track { background: rgba(0, 63, 73, 0.05); border-radius: 10px; }
             .elite-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 63, 73, 0.35); border-radius: 10px; }
             .elite-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 63, 73, 0.6); }
-            .elite-column-dividers th:not(:last-child) {
-              position: relative;
+            .elite-column-dividers tr {
+              transition: all 0.2s ease;
             }
-            .elite-column-dividers th:not(:last-child)::after {
-              content: '';
-              position: absolute;
-              right: 0;
-              top: 25%;
-              bottom: 25%;
-              width: 1.5px;
-              background: rgba(0, 63, 73, 0.4);
+            .elite-column-dividers tr:hover {
+              background: rgba(176, 141, 62, 0.05) !important;
+              box-shadow: inset 4px 0 0 #B08D3E;
+            }
+            .elite-column-dividers td {
+              border-bottom: 1px solid rgba(0, 63, 73, 0.05);
+            }
+            .elite-column-dividers tr:not(:last-child) td {
+              border-bottom: 1.5px solid rgba(176, 141, 62, 0.1) !important;
+            }
+            .elite-column-dividers tr:hover td {
+              border-bottom-color: rgba(176, 141, 62, 0.3) !important;
             }
             .elite-column-dividers td:not(:last-child) {
-              border-right: 1.5px solid rgba(0, 63, 73, 0.15) !important;
+              border-right: 1.5px solid rgba(0, 63, 73, 0.08) !important;
             }
           `}</style>
           <table className="elite-column-dividers" style={{ width: isCustomized ? 'max-content' : '100%', borderCollapse: 'collapse', tableLayout: isCustomized ? 'fixed' : 'auto', minWidth: '100%' }}>

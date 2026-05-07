@@ -28,6 +28,9 @@ interface ExportMenuProps {
   filterPrecinct: string[];
   setFilterPrecinct: (val: string[]) => void;
   availablePrecincts: string[];
+  filterSubmitter: string[];
+  setFilterSubmitter: (val: string[]) => void;
+  availableSubmitters: string[];
   // Date states
   selectedYear: number;
   setSelectedYear: (y: number) => void;
@@ -52,6 +55,7 @@ export default function ExportMenu({
   filterType, setFilterType, availableTypes,
   filterCDE, setFilterCDE, availableCDEs,
   filterPrecinct, setFilterPrecinct, availablePrecincts,
+  filterSubmitter, setFilterSubmitter, availableSubmitters,
   selectedYear, setSelectedYear, yearOptions,
   selectedMonth, setSelectedMonth, monthOptions,
   startDate, setStartDate, endDate, setEndDate,
@@ -85,7 +89,7 @@ export default function ExportMenu({
     type: 'pdf' | 'excel', 
     perspective: 'table' | 'dashboard' | 'both', 
     onProgress: (p: number) => void,
-    filters?: { types: string[], cdes: string[], precincts?: string[] },
+    filters?: { types?: string[], cdes?: string[], precincts?: string[], categories?: string[], submitters?: string[] },
     selectedColumns?: string[]
   ) => {
     onProgress(10);
@@ -276,6 +280,9 @@ export default function ExportMenu({
         filterPrecinct={filterPrecinct}
         setFilterPrecinct={setFilterPrecinct}
         availablePrecincts={availablePrecincts}
+        filterSubmitter={filterSubmitter}
+        setFilterSubmitter={setFilterSubmitter}
+        availableSubmitters={availableSubmitters}
         departments={departments}
         members={members}
       />

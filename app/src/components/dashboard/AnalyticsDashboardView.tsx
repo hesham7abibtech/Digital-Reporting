@@ -470,22 +470,53 @@ export default function AnalyticsDashboardView({
       return m ? m.name : (name || 'Unassigned');
     };
 
-    const categoriesSet = new Set(tasks.map(t => getResolvedDept(t.department || '')));
+    const categoriesSet = new Set();
+    tasks.forEach(t => {
+      const depts = Array.isArray(t.department) ? t.department : (t.department ? [t.department] : []);
+      depts.forEach(d => categoriesSet.add(getResolvedDept(d)));
+    });
     const categoriesActive = categoriesSet.size;
     const categoriesList = Array.from(categoriesSet);
-    const prevCategories = new Set(previousPeriodTasks.map(t => getResolvedDept(t.department))).size;
+    
+    const prevCategoriesSet = new Set();
+    previousPeriodTasks.forEach(t => {
+      const depts = Array.isArray(t.department) ? t.department : (t.department ? [t.department] : []);
+      depts.forEach(d => prevCategoriesSet.add(getResolvedDept(d)));
+    });
+    const prevCategories = prevCategoriesSet.size;
 
-    const submittersSet = new Set(tasks.map(t => getResolvedSubmitter(t.submitterName || '', t.submitterEmail)));
+    const submittersSet = new Set();
+    tasks.forEach(t => {
+      const names = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
+      const emails = Array.isArray(t.submitterEmail) ? t.submitterEmail : (t.submitterEmail ? [t.submitterEmail] : []);
+      names.forEach((name, i) => {
+        submittersSet.add(getResolvedSubmitter(name, emails[i]));
+      });
+    });
     const activeSubmitters = submittersSet.size;
+
     const topSubmitters = (() => {
       const counts: Record<string, number> = {};
       tasks.forEach(t => { 
-        const name = getResolvedSubmitter(t.submitterName || '', t.submitterEmail);
-        counts[name] = (counts[name] || 0) + 1; 
+        const names = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
+        const emails = Array.isArray(t.submitterEmail) ? t.submitterEmail : (t.submitterEmail ? [t.submitterEmail] : []);
+        names.forEach((name, i) => {
+          const resName = getResolvedSubmitter(name, emails[i]);
+          counts[resName] = (counts[resName] || 0) + 1;
+        });
       });
       return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
     })();
-    const prevSubmitters = new Set(previousPeriodTasks.map(t => getResolvedSubmitter(t.submitterName || '', t.submitterEmail))).size;
+
+    const prevSubmittersSet = new Set();
+    previousPeriodTasks.forEach(t => {
+      const names = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
+      const emails = Array.isArray(t.submitterEmail) ? t.submitterEmail : (t.submitterEmail ? [t.submitterEmail] : []);
+      names.forEach((name, i) => {
+        prevSubmittersSet.add(getResolvedSubmitter(name, emails[i]));
+      });
+    });
+    const prevSubmitters = prevSubmittersSet.size;
 
     // Most used CDE
     const cdeCounts: Record<string, number> = {};
@@ -542,8 +573,11 @@ export default function AnalyticsDashboardView({
     };
 
     tasks.forEach(t => { 
-      const name = getResolvedDept(t.department);
-      counts[name] = (counts[name] || 0) + 1; 
+      const depts = Array.isArray(t.department) ? t.department : (t.department ? [t.department] : []);
+      depts.forEach(d => {
+        const name = getResolvedDept(d);
+        counts[name] = (counts[name] || 0) + 1;
+      });
     });
     return Object.entries(counts)
       .map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] }))
@@ -581,8 +615,12 @@ export default function AnalyticsDashboardView({
     };
 
     tasks.forEach(t => {
-      const name = getResolvedSubmitter(t.submitterName || '', t.submitterEmail);
-      counts[name] = (counts[name] || 0) + 1;
+      const names = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
+      const emails = Array.isArray(t.submitterEmail) ? t.submitterEmail : (t.submitterEmail ? [t.submitterEmail] : []);
+      names.forEach((name, i) => {
+        const resName = getResolvedSubmitter(name, emails[i]);
+        counts[resName] = (counts[resName] || 0) + 1;
+      });
     });
     return Object.entries(counts)
       .map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] }))
@@ -800,9 +838,9 @@ export default function AnalyticsDashboardView({
                 value={filterCDE}
                 options={availableCDEs.map(c => ({ label: c, value: c }))}
                 onChange={setFilterCDE}
-                menuLabel="CDE (Environment)"
+                menuLabel="CDE"
                 isMulti={true}
-                allLabel="All Environments"
+                allLabel="All CDE"
               />
             )}
 
@@ -820,7 +858,7 @@ export default function AnalyticsDashboardView({
             {(search || 
               (filterDept.length > 0 && !filterDept.includes('All Categories')) || 
               (filterType.length > 0 && !filterType.includes('All Types')) || 
-              (filterCDE.length > 0 && !filterCDE.includes('All Environments')) ||
+              (filterCDE.length > 0 && !filterCDE.includes('All CDE')) ||
               (filterPrecinct.length > 0 && !filterPrecinct.includes('All Precincts'))
             ) && (
               <button

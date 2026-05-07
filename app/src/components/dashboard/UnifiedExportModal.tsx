@@ -62,6 +62,9 @@ export interface UnifiedExportModalProps {
   filterPrecinct?: string[];
   setFilterPrecinct?: (val: string[]) => void;
   availablePrecincts?: string[];
+  filterSubmitter?: string[];
+  setFilterSubmitter?: (val: string[]) => void;
+  availableSubmitters?: string[];
 
   // BIM filters
   filterStage?: string[];
@@ -84,7 +87,7 @@ export interface UnifiedExportModalProps {
 
 // ─── Styles ─────────────────────────────────────────────────────────────
 
-const GOLD = '#d0ab82';
+const GOLD = '#B08D3E';
 const TEAL = '#003f49';
 
 const sectionLabel: React.CSSProperties = {
@@ -113,6 +116,7 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
     filterType = [], setFilterType, availableTypes = [],
     filterCDE = [], setFilterCDE, availableCDEs = [],
     filterPrecinct = [], setFilterPrecinct, availablePrecincts = [],
+    filterSubmitter = [], setFilterSubmitter, availableSubmitters = [],
     // BIM
     filterStage = [], setFilterStage, availableStages = [],
     filterStatus = [], setFilterStatus, availableStatuses = [],
@@ -124,27 +128,36 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
   // Dynamic extraction from data to ensure filters only show existing values
   const effectiveAvailableOptions = useMemo(() => {
     if (reportType === 'DELIVERABLES') {
-      const depts = new Set<string>();
-      const types = new Set<string>();
-      const cdes = new Set<string>();
-      const precincts = new Set<string>();
+      const deptsSet = new Set<string>();
+      const typesSet = new Set<string>();
+      const cdesSet = new Set<string>();
+      const precinctsSet = new Set<string>();
       
       tasks.forEach(t => {
         // Resolve Dept Name
-        const d = departments.find(sd => sd.id === t.department || sd.name === t.department);
-        const resolvedName = d ? d.name : (t.department || 'General');
-        depts.add(resolvedName);
+        const depts = Array.isArray(t.department) ? t.department : (t.department ? [t.department] : []);
+        depts.forEach(deptIdOrName => {
+          const d = (departments || []).find(sd => sd.id === deptIdOrName || sd.name === deptIdOrName);
+          deptsSet.add(d ? d.name : (deptIdOrName || 'General'));
+        });
 
-        if (t.deliverableType) (Array.isArray(t.deliverableType) ? t.deliverableType : [t.deliverableType]).forEach(x => types.add(x));
-        if (t.cde) (Array.isArray(t.cde) ? t.cde : [t.cde]).forEach(x => cdes.add(x));
-        if (t.precinct) precincts.add(t.precinct);
+        const legacyTypes = Array.isArray(t.deliverableType) ? t.deliverableType : (t.deliverableType ? [t.deliverableType] : []);
+        const vectorTypes = (t.vectors || []).map(v => v.type);
+        [...legacyTypes, ...vectorTypes].forEach(x => typesSet.add(x.trim().toUpperCase()));
+
+        const legacyCdes = Array.isArray(t.cde) ? t.cde : (t.cde ? [t.cde] : []);
+        const vectorCdes = (t.vectors || []).map(v => v.cde);
+        [...legacyCdes, ...vectorCdes].forEach(x => cdesSet.add(x.trim().toUpperCase()));
+
+        if (t.precinct) precinctsSet.add(t.precinct.trim().toUpperCase());
       });
       
       return {
-        depts: Array.from(depts).sort(),
-        types: Array.from(types).sort(),
-        cdes: Array.from(cdes).sort(),
-        precincts: Array.from(precincts).sort()
+        depts: Array.from(deptsSet).filter(Boolean).sort(),
+        types: Array.from(typesSet).filter(Boolean).sort(),
+        cdes: Array.from(cdesSet).filter(Boolean).sort(),
+        precincts: Array.from(precinctsSet).filter(Boolean).sort(),
+        submitters: (availableSubmitters || []).length > 0 ? availableSubmitters : []
       };
     } else {
       const stages = new Set<string>();
@@ -163,10 +176,11 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
         stages: Array.from(stages).sort(),
         statuses: Array.from(statuses).sort(),
         stakeholders: Array.from(stakeholders).sort(),
-        reviewers: Array.from(reviewers).sort()
+        reviewers: Array.from(reviewers).sort(),
+        submitters: (availableSubmitters || []).length > 0 ? availableSubmitters : []
       };
     }
-  }, [reportType, tasks, bimReviews, departments]);
+  }, [reportType, tasks, bimReviews, departments, availableSubmitters]);
   
   const [status, setStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle');
   const [progress, setProgress] = useState(0);
@@ -234,8 +248,10 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
 
       const filters = reportType === 'DELIVERABLES' ? {
         types: filterType.filter(t => t !== 'All Types'),
-        cdes: filterCDE.filter(c => c !== 'All Environments'),
-        precincts: filterPrecinct.filter(p => p !== 'All Precincts')
+        cdes: filterCDE.filter(c => c !== 'All CDE'),
+        precincts: filterPrecinct.filter(p => p !== 'All Precincts'),
+        categories: filterDept.filter(d => d !== 'All Categories'),
+        submitters: filterSubmitter.filter(s => s !== 'All Submitters')
       } : undefined;
 
       const result = await onConfirm(
@@ -322,7 +338,7 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
 
           {/* ══════════ HEADER ══════════ */}
           <div style={{
-            padding: '18px 28px',
+            padding: '14px 24px',
             background: 'linear-gradient(135deg, rgba(0, 63, 73, 0.06) 0%, rgba(208, 171, 130, 0.08) 100%)',
             borderBottom: `1px solid rgba(0, 63, 73, 0.1)`,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -344,7 +360,7 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
                 <p style={{
                   fontSize: 13, margin: '6px 0 0 0', fontWeight: 1000,
                   textTransform: 'uppercase', letterSpacing: '0.1em',
-                  color: '#b8944e', // Deep Golden Brown for high contrast
+                  color: GOLD, // Ultra Contrast Gold
                   display: 'flex', alignItems: 'center', gap: 10
                 }}>
                   <span style={{ fontSize: 11, padding: '2px 8px', background: 'rgba(184, 148, 78, 0.15)', borderRadius: 6, color: '#916d2e', marginRight: 4 }}>
@@ -387,10 +403,10 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
 
                   {/* ── LEFT SIDEBAR ── */}
                   <div style={{
-                    padding: '24px 20px',
+                    padding: '16px 16px',
                     background: 'rgba(0, 63, 73, 0.03)',
                     borderRight: '1px solid rgba(0, 63, 73, 0.1)',
-                    display: 'flex', flexDirection: 'column', gap: 24,
+                    display: 'flex', flexDirection: 'column', gap: 14,
                     overflowY: 'auto',
                     overflowX: 'hidden'
                   }}>
@@ -411,7 +427,7 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
                             key={opt.id}
                             onClick={() => setPerspective(opt.id)}
                             style={{
-                              padding: '14px 16px', borderRadius: 16,
+                              padding: '10px 14px', borderRadius: 14,
                               background: perspective === opt.id ? 'rgba(208, 171, 130, 0.15)' : 'rgba(255, 255, 255, 0.8)',
                               border: `2px solid ${perspective === opt.id ? GOLD : 'rgba(0, 63, 73, 0.1)'}`,
                               display: 'flex', alignItems: 'center', gap: 14,
@@ -447,7 +463,7 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
                         background: 'rgba(0,63,73,0.05)',
                         borderRadius: 14, padding: 4,
                         border: '1.5px solid rgba(0,63,73,0.1)',
-                        marginBottom: 16,
+                        marginBottom: 10,
                       }}>
                         {(['all', 'monthly', 'custom'] as const).map(mode => (
                           <button
@@ -526,31 +542,42 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
                         <Shield size={16} color={GOLD} strokeWidth={2.5} />
                         Filter Specifications
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {reportType === 'DELIVERABLES' ? (
                           <>
                               {setFilterDept && (
                                 <EliteDropdown
+                                  variant="export"
                                   value={filterDept} options={(effectiveAvailableOptions?.depts || []).map(d => ({ label: d, value: d }))}
                                   onChange={setFilterDept} isMulti allLabel="All Categories" menuLabel="Categories" fullWidth
                                 />
                               )}
                               {setFilterType && (
                                 <EliteDropdown
+                                  variant="export"
                                   value={filterType} options={(effectiveAvailableOptions?.types || []).map(t => ({ label: t, value: t }))}
                                   onChange={setFilterType} isMulti allLabel="All Types" menuLabel="Deliverable Types" fullWidth
                                 />
                               )}
                               {setFilterCDE && (
                                 <EliteDropdown
+                                  variant="export"
                                   value={filterCDE} options={(effectiveAvailableOptions?.cdes || []).map(c => ({ label: c, value: c }))}
-                                  onChange={setFilterCDE} isMulti allLabel="All Environments" menuLabel="CDE Environments" fullWidth
+                                  onChange={setFilterCDE} isMulti allLabel="All CDE" menuLabel="CDE" fullWidth
                                 />
                               )}
                               {setFilterPrecinct && (
                                 <EliteDropdown
+                                  variant="export"
                                   value={filterPrecinct} options={(effectiveAvailableOptions?.precincts || []).map(p => ({ label: p, value: p }))}
                                   onChange={setFilterPrecinct} isMulti allLabel="All Precincts" menuLabel="Precincts" fullWidth
+                                />
+                              )}
+                              {setFilterSubmitter && (
+                                <EliteDropdown
+                                  variant="export"
+                                  value={filterSubmitter} options={(effectiveAvailableOptions?.submitters || []).map(s => ({ label: s, value: s }))}
+                                  onChange={setFilterSubmitter} isMulti allLabel="All Submitters" menuLabel="Submitters" fullWidth
                                 />
                               )}
                           </>
@@ -558,24 +585,28 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
                           <>
                               {setFilterStage && (
                                 <EliteDropdown
+                                  variant="export"
                                   value={filterStage} options={(availableStages.length > 0 ? availableStages : effectiveAvailableOptions?.stages || []).map(s => ({ label: s, value: s }))}
                                   onChange={setFilterStage} isMulti allLabel="All Stages" menuLabel="Design Stages" fullWidth
                                 />
                               )}
                               {setFilterStatus && (
                                 <EliteDropdown
+                                  variant="export"
                                   value={filterStatus} options={(availableStatuses.length > 0 ? availableStatuses : effectiveAvailableOptions?.statuses || []).map(s => ({ label: s, value: s }))}
                                   onChange={setFilterStatus} isMulti allLabel="All Statuses" menuLabel="Review Status" fullWidth
                                 />
                               )}
                               {setFilterStakeholder && (
                                 <EliteDropdown
+                                  variant="export"
                                   value={filterStakeholder} options={(availableStakeholders.length > 0 ? availableStakeholders : effectiveAvailableOptions?.stakeholders || []).map(s => ({ label: s, value: s }))}
                                   onChange={setFilterStakeholder} isMulti allLabel="All Stakeholders" menuLabel="Stakeholders" fullWidth
                                 />
                               )}
                               {setFilterReviewer && (
                                 <EliteDropdown
+                                  variant="export"
                                   value={filterReviewer} options={(availableReviewers.length > 0 ? availableReviewers : effectiveAvailableOptions?.reviewers || []).map(s => ({ label: s, value: s }))}
                                   onChange={setFilterReviewer} isMulti allLabel="All Reviewers" menuLabel="Reviewers" fullWidth
                                 />
@@ -587,11 +618,11 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
                   </div>
 
                   {/* ── RIGHT MAIN CONTENT ── */}
-                  <div style={{ padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: 24, overflowX: 'hidden' }}>
+                  <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 16, overflowX: 'hidden' }}>
 
                     {/* Record Summary Card */}
                     <div style={{
-                      padding: '20px 24px',
+                      padding: '14px 20px',
                       background: 'rgba(0, 63, 73, 0.04)',
                       borderRadius: 20,
                       border: '1.5px solid rgba(0, 63, 73, 0.1)',
@@ -615,7 +646,7 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
                     {/* Column Selection */}
                     {(perspective === 'table' || perspective === 'both') && (
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                           <div style={sectionLabel}>
                             <Database size={16} color={GOLD} strokeWidth={2.5} />
                             Export Column Schema ({selectedCount}/{totalCount} Selected)
@@ -649,8 +680,8 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
                         <div style={{
                           display: 'grid',
                           gridTemplateColumns: 'repeat(2, 1fr)',
-                          gap: 10,
-                          padding: '20px',
+                          gap: 8,
+                          padding: '14px',
                           background: 'rgba(0, 63, 73, 0.02)',
                           borderRadius: 24,
                           border: '1.5px solid rgba(0, 63, 73, 0.1)',
@@ -666,8 +697,8 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
                                 key={col.id}
                                 onClick={() => toggleColumn(col.id)}
                                 style={{
-                                  display: 'flex', alignItems: 'center', gap: 12,
-                                  padding: '12px 16px', borderRadius: 14,
+                                  display: 'flex', alignItems: 'center', gap: 10,
+                                  padding: '8px 14px', borderRadius: 12,
                                   background: isSelected ? 'rgba(0, 63, 73, 0.05)' : 'rgba(255, 255, 255, 0.9)',
                                   border: `1.5px solid ${isSelected ? GOLD : 'rgba(0, 63, 73, 0.15)'}`,
                                   boxShadow: isSelected ? `0 4px 12px rgba(208, 171, 130, 0.1)` : 'none',

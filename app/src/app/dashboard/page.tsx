@@ -81,8 +81,9 @@ export default function Dashboard() {
   const [filterMode, setFilterMode] = useState<'monthly' | 'custom' | 'all'>('all');
   const [filterDept, setFilterDept] = useState<string[]>(['All Categories']);
   const [filterType, setFilterType] = useState<string[]>(['All Types']);
-  const [filterCDE, setFilterCDE] = useState<string[]>(['All Environments']);
+  const [filterCDE, setFilterCDE] = useState<string[]>(['All CDE']);
   const [filterPrecinct, setFilterPrecinct] = useState<string[]>(['All Precincts']);
+  const [filterSubmitter, setFilterSubmitter] = useState<string[]>(['All Submitters']);
   const [search, setSearch] = useState('');
   const { activeView, setActiveView } = useRegistryView('table');
   const [activeReport, setActiveReport] = useState<'DELIVERABLES' | 'BIM_REVIEWS'>('DELIVERABLES');
@@ -230,15 +231,16 @@ export default function Dashboard() {
   // Dynamic filter options based on tasks in the selected date range
   const availableDepts = useMemo(() => {
     let hasEmpty = false;
-    const rawDepts = new Set(dateFilteredTasks.map(t => {
-      if (!t.department) hasEmpty = true;
-      return t.department;
+    const rawDepts = new Set(dateFilteredTasks.flatMap(t => {
+      const depts = Array.isArray(t.department) ? t.department : (t.department ? [t.department] : []);
+      if (depts.length === 0) hasEmpty = true;
+      return depts;
     }));
     const resolved = Array.from(rawDepts).filter(Boolean).map(raw => {
       const d = syncedDepartments.find(sd => sd.id === raw || sd.name === raw);
       return d ? d.name : (raw || 'General');
     });
-    const result = Array.from(new Set(resolved)).sort();
+    const result = Array.from(new Set(resolved)).sort() as string[];
     if (hasEmpty) result.unshift('(Empty)');
     return result;
   }, [dateFilteredTasks, syncedDepartments]);
@@ -250,23 +252,23 @@ export default function Dashboard() {
       const vector = (t.vectors || []).map(v => v.type);
       const combined = [...legacy, ...vector];
       if (combined.length === 0) hasEmpty = true;
-      return combined;
+      return combined.map(v => v.trim().toUpperCase());
     }));
-    const result = Array.from(rawTypes).sort();
+    const result = Array.from(rawTypes).sort() as string[];
     if (hasEmpty) result.unshift('(Empty)');
     return result;
   }, [dateFilteredTasks]);
 
   const availableCDEs = useMemo(() => {
     let hasEmpty = false;
-    const rawCdes = new Set(dateFilteredTasks.flatMap(t => {
+    const rawCDEs = new Set(dateFilteredTasks.flatMap(t => {
       const legacy = (Array.isArray(t.cde) ? t.cde : [t.cde]).filter((v): v is string => !!v);
       const vector = (t.vectors || []).map(v => v.cde);
       const combined = [...legacy, ...vector];
       if (combined.length === 0) hasEmpty = true;
-      return combined;
+      return combined.map(v => v.trim().toUpperCase());
     }));
-    const result = Array.from(rawCdes).sort();
+    const result = Array.from(rawCDEs).sort() as string[];
     if (hasEmpty) result.unshift('(Empty)');
     return result;
   }, [dateFilteredTasks]);
@@ -281,6 +283,40 @@ export default function Dashboard() {
     if (hasEmpty) result.unshift('(Empty)');
     return result;
   }, [dateFilteredTasks]);
+
+  const availableSubmitters = useMemo(() => {
+    let hasEmpty = false;
+    const rawNames = new Set<string>();
+    
+    dateFilteredTasks.forEach(t => {
+      const names = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
+      const ids = Array.isArray(t.submitterId) ? t.submitterId : (t.submitterId ? [t.submitterId] : []);
+      const emails = Array.isArray(t.submitterEmail) ? t.submitterEmail : (t.submitterEmail ? [t.submitterEmail] : []);
+      
+      let foundAny = false;
+      
+      // Add explicit names
+      names.forEach(n => { rawNames.add(n); foundAny = true; });
+      
+      // Resolve IDs to names
+      ids.forEach(id => {
+        const m = syncedMembers.find(sm => sm.id === id);
+        if (m?.name) { rawNames.add(m.name); foundAny = true; }
+      });
+      
+      // Resolve Emails to names
+      emails.forEach(email => {
+        const m = syncedMembers.find(sm => sm.email.toLowerCase() === email.toLowerCase());
+        if (m?.name) { rawNames.add(m.name); foundAny = true; }
+      });
+      
+      if (!foundAny) hasEmpty = true;
+    });
+    
+    const result = Array.from(rawNames).filter(Boolean).sort() as string[];
+    if (hasEmpty) result.unshift('(Empty)');
+    return result;
+  }, [dateFilteredTasks, syncedMembers]);
 
   // Reset filters if they are no longer available in the new pool
   useEffect(() => {
@@ -298,9 +334,9 @@ export default function Dashboard() {
   }, [availableTypes, filterType]);
 
   useEffect(() => {
-    if (filterCDE.includes('All Environments')) return;
+    if (filterCDE.includes('All CDE')) return;
     const valid = filterCDE.filter(c => availableCDEs.includes(c));
-    if (valid.length === 0) setFilterCDE(['All Environments']);
+    if (valid.length === 0) setFilterCDE(['All CDE']);
     else if (valid.length !== filterCDE.length) setFilterCDE(valid);
   }, [availableCDEs, filterCDE]);
 
@@ -310,6 +346,13 @@ export default function Dashboard() {
     if (valid.length === 0) setFilterPrecinct(['All Precincts']);
     else if (valid.length !== filterPrecinct.length) setFilterPrecinct(valid);
   }, [availablePrecincts, filterPrecinct]);
+
+  useEffect(() => {
+    if (filterSubmitter.includes('All Submitters')) return;
+    const valid = filterSubmitter.filter(s => availableSubmitters.includes(s));
+    if (valid.length === 0) setFilterSubmitter(['All Submitters']);
+    else if (valid.length !== filterSubmitter.length) setFilterSubmitter(valid);
+  }, [availableSubmitters, filterSubmitter]);
 
   // Tasks from the previous equivalent period for KPI growth comparisons
   const previousPeriodTasks = useMemo(() => {
@@ -347,10 +390,14 @@ export default function Dashboard() {
     // Apply Department filter
     if (filterDept.length > 0 && !filterDept.includes('All Categories')) {
       result = result.filter(t => {
-        if (filterDept.includes('(Empty)') && (!t.department || t.department.trim() === '')) return true;
-        const d = syncedDepartments.find(sd => sd.id === t.department || sd.name === t.department);
-        const resolvedName = d ? d.name : (t.department || 'General');
-        return filterDept.includes(resolvedName);
+        const depts = Array.isArray(t.department) ? t.department : (t.department ? [t.department] : []);
+        if (filterDept.includes('(Empty)') && depts.length === 0) return true;
+        
+        return depts.some(deptId => {
+          const d = syncedDepartments.find(sd => sd.id === deptId || sd.name === deptId);
+          const resolvedName = d ? d.name : (deptId || 'General');
+          return filterDept.includes(resolvedName);
+        });
       });
     }
 
@@ -359,18 +406,18 @@ export default function Dashboard() {
       result = result.filter(t => {
         const legacy = (Array.isArray(t.deliverableType) ? t.deliverableType : [t.deliverableType]).filter((v): v is string => !!v);
         const vector = (t.vectors || []).map(v => v.type);
-        const combined = [...legacy, ...vector];
+        const combined = [...legacy, ...vector].map(v => v.trim().toUpperCase());
         if (filterType.includes('(Empty)') && combined.length === 0) return true;
         return combined.some(type => filterType.includes(type));
       });
     }
 
     // Apply CDE Environment filter
-    if (filterCDE.length > 0 && !filterCDE.includes('All Environments')) {
+    if (filterCDE.length > 0 && !filterCDE.includes('All CDE')) {
       result = result.filter(t => {
         const legacy = (Array.isArray(t.cde) ? t.cde : [t.cde]).filter((v): v is string => !!v);
         const vector = (t.vectors || []).map(v => v.cde);
-        const combined = [...legacy, ...vector];
+        const combined = [...legacy, ...vector].map(v => v.trim().toUpperCase());
         if (filterCDE.includes('(Empty)') && combined.length === 0) return true;
         return combined.some(env => filterCDE.includes(env));
       });
@@ -379,8 +426,31 @@ export default function Dashboard() {
     // Apply Precinct filter
     if (filterPrecinct.length > 0 && !filterPrecinct.includes('All Precincts')) {
       result = result.filter(t => {
-        if (filterPrecinct.includes('(Empty)') && (!t.precinct || t.precinct.trim() === '')) return true;
-        return filterPrecinct.includes(t.precinct || '');
+        const p = (t.precinct || '').trim().toUpperCase();
+        if (filterPrecinct.includes('(Empty)') && p === '') return true;
+        return filterPrecinct.includes(p);
+      });
+    }
+
+    // Apply Submitter filter
+    if (filterSubmitter.length > 0 && !filterSubmitter.includes('All Submitters')) {
+      result = result.filter(t => {
+        const names = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
+        const ids = Array.isArray(t.submitterId) ? t.submitterId : (t.submitterId ? [t.submitterId] : []);
+        const emails = Array.isArray(t.submitterEmail) ? t.submitterEmail : (t.submitterEmail ? [t.submitterEmail] : []);
+        
+        const resolvedNames = [...names];
+        ids.forEach(id => {
+          const m = syncedMembers.find(sm => sm.id === id);
+          if (m?.name) resolvedNames.push(m.name);
+        });
+        emails.forEach(email => {
+          const m = syncedMembers.find(sm => sm.email.toLowerCase() === email.toLowerCase());
+          if (m?.name) resolvedNames.push(m.name);
+        });
+
+        if (filterSubmitter.includes('(Empty)') && resolvedNames.length === 0) return true;
+        return resolvedNames.some(name => filterSubmitter.includes(name));
       });
     }
 
@@ -388,8 +458,11 @@ export default function Dashboard() {
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(t => {
-        const d = syncedDepartments.find(sd => sd.id === t.department || sd.name === t.department);
-        const resolvedName = d ? d.name : (t.department || 'General');
+        const depts = Array.isArray(t.department) ? t.department : (t.department ? [t.department] : []);
+        const resolvedDepts = depts.map(deptId => {
+          const d = syncedDepartments.find(sd => sd.id === deptId || sd.name === deptId);
+          return d ? d.name : (deptId || 'General');
+        }).join(' ').toLowerCase();
 
         const legacyTypes = (Array.isArray(t.deliverableType) ? t.deliverableType : [t.deliverableType]).filter((v): v is string => !!v);
         const vectorTypes = (t.vectors || []).map(v => v.type);
@@ -399,18 +472,34 @@ export default function Dashboard() {
         const vectorCde = (t.vectors || []).map(v => v.cde);
         const allCde = [...legacyCde, ...vectorCde].join(' ').toLowerCase();
 
+        const legacyNames = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
+        const ids = Array.isArray(t.submitterId) ? t.submitterId : (t.submitterId ? [t.submitterId] : []);
+        const emails = Array.isArray(t.submitterEmail) ? t.submitterEmail : (t.submitterEmail ? [t.submitterEmail] : []);
+        
+        const resolvedNames = [...legacyNames];
+        ids.forEach(id => {
+          const m = syncedMembers.find(sm => sm.id === id);
+          if (m?.name) resolvedNames.push(m.name);
+        });
+        emails.forEach(email => {
+          const m = syncedMembers.find(sm => sm.email.toLowerCase() === email.toLowerCase());
+          if (m?.name) resolvedNames.push(m.name);
+        });
+        
+        const allNames = resolvedNames.join(' ').toLowerCase();
+
         return t.title.toLowerCase().includes(q) ||
-               resolvedName.toLowerCase().includes(q) ||
+               resolvedDepts.includes(q) ||
                t.id.toLowerCase().includes(q) ||
                allTypes.includes(q) ||
                allCde.includes(q) ||
-               (t.submitterName || '').toLowerCase().includes(q) ||
+               allNames.includes(q) ||
                (t.description || '').toLowerCase().includes(q) ||
                (t.precinct || '').toLowerCase().includes(q);
       });
     }
     return result;
-  }, [dateFilteredTasks, filterDept, filterType, filterCDE, filterPrecinct, search, syncedDepartments]);
+  }, [dateFilteredTasks, filterDept, filterType, filterCDE, filterPrecinct, filterSubmitter, search, syncedDepartments]);
 
 
 
@@ -833,6 +922,9 @@ export default function Dashboard() {
                       ) : null}
                     </AnimatePresence>
 
+                    <div style={{ width: 1, height: 24, background: 'rgba(255, 255, 255, 0.1)' }} />
+                    
+
                     <div style={{ width: 1, height: 24, background: 'rgba(0, 63, 73, 0.1)' }} />
 
                     {/* Integrated View Navigator */}
@@ -902,6 +994,9 @@ export default function Dashboard() {
                             filterPrecinct={filterPrecinct}
                             setFilterPrecinct={setFilterPrecinct}
                             availablePrecincts={availablePrecincts}
+                            filterSubmitter={filterSubmitter}
+                            setFilterSubmitter={setFilterSubmitter}
+                            availableSubmitters={availableSubmitters}
                             departments={syncedDepartments}
                             members={syncedMembers}
                           />
@@ -1001,6 +1096,9 @@ export default function Dashboard() {
                           filterPrecinct={filterPrecinct}
                           setFilterPrecinct={setFilterPrecinct}
                           availablePrecincts={availablePrecincts}
+                          filterSubmitter={filterSubmitter}
+                          setFilterSubmitter={setFilterSubmitter}
+                          availableSubmitters={availableSubmitters}
                           members={syncedMembers}
                           departments={syncedDepartments}
                         />
@@ -1057,6 +1155,9 @@ export default function Dashboard() {
                           filterPrecinct={filterPrecinct}
                           setFilterPrecinct={setFilterPrecinct}
                           availablePrecincts={availablePrecincts}
+                          filterSubmitter={filterSubmitter}
+                          setFilterSubmitter={setFilterSubmitter}
+                          availableSubmitters={availableSubmitters}
                         />
                       )}
                     </motion.div>

@@ -143,12 +143,15 @@ export default function ChartsSection({ position = 'full', tasks: externalTasks 
     const deptMap: Record<string, { active: number, done: number }> = {};
     depts.forEach(d => deptMap[d] = { active: 0, done: 0 });
     data.forEach(t => {
-      const shortDept = t.department.substring(0, 4);
-      const match = depts.find(d => shortDept.startsWith(d));
-      if (match) {
-        if (t.status === 'COMPLETED') deptMap[match].done++;
-        else deptMap[match].active++;
-      }
+      const taskDepts = Array.isArray(t.department) ? t.department : (t.department ? [t.department] : []);
+      taskDepts.forEach(dept => {
+        const shortDept = dept.substring(0, 4);
+        const match = depts.find(d => shortDept.startsWith(d));
+        if (match) {
+          if (t.status === 'COMPLETED') deptMap[match].done++;
+          else deptMap[match].active++;
+        }
+      });
     });
     return depts.map(d => ({ name: d, ...deptMap[d] }));
   }, [data]);

@@ -46,26 +46,35 @@ const getFileIcon = (type: string) => {
 export default function TaskDetailModal({ task, isOpen, onClose, activeFilters, members = [], departments = [] }: TaskDetailModalProps) {
   const { formatDate, formatTime } = useTimeZone();
   const { showToast } = useToast();
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<{ url: string; name: string } | null>(null);
 
   if (!task) return null;
 
   // Resolve department
-  const dept = (departments || []).find(d => d.id === task.department || d.name === task.department);
-  const resolvedDeptName = dept ? dept.name : (task.department || 'General');
+  const depts = Array.isArray(task.department) ? task.department : (task.department ? [task.department] : []);
+  const resolvedDeptNames = depts.map(deptIdOrName => {
+    const d = (departments || []).find(d => d.id === deptIdOrName || d.name === deptIdOrName);
+    return d ? d.name : deptIdOrName;
+  });
+  const resolvedDeptName = resolvedDeptNames.length > 0 ? resolvedDeptNames.join(', ') : 'General';
+  const primaryDeptName = resolvedDeptNames[0] || 'General';
 
   // Resolve submitter profile
-  const submitterProfile = members.find(m =>
-    (task.submitterEmail && m.email.toLowerCase() === task.submitterEmail.toLowerCase()) ||
-    (task.submitterName && m.name.toLowerCase() === task.submitterName.toLowerCase())
+  const submitterEmails = Array.isArray(task.submitterEmail) ? task.submitterEmail : (task.submitterEmail ? [task.submitterEmail] : []);
+  const submitterNames = Array.isArray(task.submitterName) ? task.submitterName : (task.submitterName ? [task.submitterName] : []);
+
+  const submitterProfiles = members.filter(m =>
+    submitterEmails.some(e => e?.toLowerCase() === m.email?.toLowerCase()) ||
+    submitterNames.some(n => n?.toLowerCase() === m.name?.toLowerCase())
   );
-  const submitterAvatar = submitterProfile?.avatar;
-  const resolvedSubmitterName = submitterProfile?.name || task.submitterName || 'Unassigned';
+
+  const resolvedSubmitterName = submitterNames.length > 0 ? submitterNames.join(', ') : 'Unassigned';
+  const resolvedSubmitterEmail = submitterEmails.length > 0 ? submitterEmails.join(', ') : '';
 
   const filteredVectors = task.vectors?.filter(v => {
     if (!activeFilters) return true;
     const activeTypes = activeFilters.types?.filter(t => t !== 'All Types') || [];
-    const activeCDEs = activeFilters.cdes?.filter(c => c !== 'All Environments') || [];
+    const activeCDEs = activeFilters.cdes?.filter(c => c !== 'All CDE') || [];
 
     const typeMatch = activeTypes.length === 0 || activeTypes.includes(v.type);
     const cdeMatch = activeCDEs.length === 0 || activeCDEs.includes(v.cde);
@@ -125,9 +134,9 @@ export default function TaskDetailModal({ task, isOpen, onClose, activeFilters, 
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <div style={{
                   width: 44, height: 44, borderRadius: 12,
-                  background: 'rgba(212, 175, 55, 0.15)',
-                  border: '1px solid rgba(212, 175, 55, 0.3)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D4AF37'
+                  background: 'rgba(176, 141, 62, 0.15)',
+                  border: '1px solid rgba(176, 141, 62, 0.3)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#B08D3E'
                 }}>
                   <Building2 size={24} />
                 </div>
@@ -135,8 +144,8 @@ export default function TaskDetailModal({ task, isOpen, onClose, activeFilters, 
                   <h2 className="brand-heading" style={{ fontSize: 20, fontWeight: 900, color: '#ffffff', margin: 0, letterSpacing: '0.01em', textTransform: 'uppercase' }}>{task.title}</h2>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
                     <span style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.6)', fontWeight: 800, letterSpacing: '0.05em' }}>{task.id}</span>
-                    <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(212, 175, 55, 0.4)' }} />
-                    <span style={{ fontSize: 12, color: '#D4AF37', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                    <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(176, 141, 62, 0.4)' }} />
+                    <span style={{ fontSize: 12, color: '#B08D3E', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                       {resolvedDeptName}
                     </span>
                   </div>
@@ -195,54 +204,110 @@ export default function TaskDetailModal({ task, isOpen, onClose, activeFilters, 
                       {[
                         { label: 'Submission Date', value: formatDate(task.submittingDate || (task as any).actualEndDate || (task as any).actualStartDate), icon: Calendar },
                         { label: 'Project Precinct', value: task.precinct || 'General', icon: Building2 },
-                        { label: 'Registry Category', value: resolvedDeptName, icon: Tag, color: getDepartmentColor(resolvedDeptName) },
+                        { label: 'Registry Category', value: resolvedDeptName, icon: Tag, color: getDepartmentColor(primaryDeptName) },
                         {
                           label: 'Responsible Entity',
                           value: resolvedSubmitterName,
-                          subtitle: submitterProfile?.email || task.submitterEmail,
+                          subtitle: resolvedSubmitterEmail,
                           icon: UserCheck,
-                          isAvatar: true,
-                          avatarUrl: submitterAvatar,
-                          onAvatarClick: () => {
-                            if (submitterAvatar) {
-                              setPreviewImage(submitterAvatar);
-                            } else {
-                              showToast('No profile photo has been added yet.', 'INFO');
-                            }
-                          }
+                          isSubmitters: true,
+                          profiles: submitterProfiles
                         }
                       ].map((item, i) => (
                         <div key={i} style={{
-                          padding: '20px 24px', borderRadius: 16,
+                          padding: '24px', borderRadius: 20,
                           background: '#ffffff',
-                          border: '1.5px solid rgba(0, 63, 73, 0.12)',
-                          display: 'flex', alignItems: 'center', gap: 16,
-                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
-                          transition: 'all 0.2s'
+                          border: '1.5px solid rgba(0, 63, 73, 0.08)',
+                          display: 'flex', 
+                          flexDirection: (item as any).isSubmitters ? 'column' : 'row',
+                          alignItems: 'center', 
+                          gap: 16,
+                          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.04)',
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          cursor: 'default'
                         }}>
                           <div
-                            onClick={(item as any).onAvatarClick}
                             style={{
                               width: 40, height: 40, borderRadius: 12,
                               background: 'rgba(0, 63, 73, 0.05)',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               color: '#003F49',
-                              overflow: 'hidden',
-                              cursor: (item as any).isAvatar ? 'pointer' : 'default',
-                              border: (item as any).isAvatar && (item as any).avatarUrl ? '1.5px solid #003F49' : '1px solid rgba(0, 63, 73, 0.1)'
+                              position: 'relative',
+                              overflow: 'visible'
                             }}
                           >
-                            {(item as any).isAvatar && (item as any).avatarUrl ? (
-                              <img src={(item as any).avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            {(item as any).isSubmitters ? (
+                              <div style={{ display: 'flex', alignItems: 'center' }}>
+                                {(item as any).profiles.length > 0 ? (
+                                  (item as any).profiles.slice(0, 2).map((p: any, idx: number) => (
+                                    <motion.div
+                                      key={p.id}
+                                      title={p.name}
+                                      whileHover={{ scale: 1.25, rotate: 3, zIndex: 50, boxShadow: '0 15px 35px rgba(0,0,0,0.4)', borderColor: '#B08D3E' }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={() => {
+                                        if (p.avatar) {
+                                          setPreviewData({ url: p.avatar, name: p.name });
+                                        } else {
+                                          showToast('No profile photo has been added yet.', 'INFO');
+                                        }
+                                      }}
+                                      style={{
+                                        width: 38, height: 38, borderRadius: 12,
+                                        border: '2.5px solid #ffffff',
+                                        marginLeft: idx > 0 ? -12 : 0,
+                                        zIndex: 10 - idx,
+                                        overflow: 'hidden',
+                                        cursor: p.avatar ? 'pointer' : 'default',
+                                        background: p.avatar ? 'transparent' : 'linear-gradient(135deg, #003F49 0%, #000000 100%)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: '#B08D3E', fontSize: 11, fontWeight: 900,
+                                        boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                      }}
+                                    >
+                                      {p.avatar ? (
+                                        <img src={p.avatar} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                      ) : (
+                                        p.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                                      )}
+                                    </motion.div>
+                                  ))
+                                ) : (
+                                  <item.icon size={20} />
+                                )}
+                                {(item as any).profiles.length > 2 && (
+                                  <div style={{
+                                    width: 24, height: 24, borderRadius: 8,
+                                    background: '#B08D3E', color: '#ffffff',
+                                    fontSize: 9, fontWeight: 900,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    marginLeft: -8, zIndex: 6, border: '2px solid #ffffff'
+                                  }}>
+                                    +{(item as any).profiles.length - 2}
+                                  </div>
+                                )}
+                              </div>
                             ) : (
                               <item.icon size={20} />
                             )}
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <span style={{ fontSize: 12, fontWeight: 950, color: 'rgba(0, 63, 73, 0.6)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{item.label}</span>
-                            <span style={{ fontSize: 14, fontWeight: 950, color: item.color || '#003F49' }}>{item.value}</span>
+                          <div style={{ 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            gap: 2,
+                            alignItems: (item as any).isSubmitters ? 'center' : 'flex-start',
+                            textAlign: (item as any).isSubmitters ? 'center' : 'left'
+                          }}>
+                            <span style={{ fontSize: 11, fontWeight: 950, color: 'rgba(0, 63, 73, 0.5)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{item.label}</span>
+                            <span style={{ 
+                              fontSize: (item as any).isSubmitters ? 15 : 14, 
+                              fontWeight: 950, 
+                              color: item.color || '#003F49',
+                              lineHeight: 1.2
+                            }}>{item.value}</span>
                             {(item as any).subtitle && (
-                              <span style={{ fontSize: 11, color: 'rgba(0, 63, 73, 0.4)', fontWeight: 700, marginTop: -1 }}>{(item as any).subtitle}</span>
+                              <span style={{ fontSize: 10, color: 'rgba(0, 63, 73, 0.4)', fontWeight: 700, marginTop: 1 }}>{(item as any).subtitle}</span>
                             )}
                           </div>
                         </div>
@@ -254,24 +319,24 @@ export default function TaskDetailModal({ task, isOpen, onClose, activeFilters, 
 
                 {/* Column 2: Deliverable Matrix Terminal */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <div style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '0 4px', marginBottom: 8
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <Globe size={18} color="#D4AF37" strokeWidth={2.5} />
-                        <h4 style={{ fontSize: 13, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>Associated Records</h4>
-                      </div>
-                      <span style={{ fontSize: 11, fontWeight: 1000, color: '#D4AF37', background: 'rgba(212, 175, 55, 0.12)', border: '1px solid rgba(212, 175, 55, 0.2)', padding: '5px 12px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        {filteredVectors.length} Linked Items
-                      </span>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '0 4px', marginBottom: 8
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <Globe size={18} color="#B08D3E" strokeWidth={2.5} />
+                      <h4 style={{ fontSize: 13, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>Delivrable Link</h4>
                     </div>
+                    <span style={{ fontSize: 11, fontWeight: 1000, color: '#B08D3E', background: 'rgba(176, 141, 62, 0.12)', border: '1px solid rgba(176, 141, 62, 0.2)', padding: '5px 12px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      {filteredVectors.length} Linked Items
+                    </span>
+                  </div>
 
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(2, 1fr)',
-                      gap: 14
-                    }}>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: 14
+                  }}>
                     {filteredVectors.length > 0 ? (
                       filteredVectors.map((vector, i) => (
                         <motion.a
@@ -279,7 +344,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, activeFilters, 
                           href={vector.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          whileHover={{ x: 4, background: 'rgba(212, 175, 55, 0.05)', borderColor: 'rgba(212, 175, 55, 0.3)' }}
+                          whileHover={{ x: 4, background: 'rgba(176, 141, 62, 0.05)', borderColor: 'rgba(176, 141, 62, 0.3)' }}
                           style={{
                             background: '#ffffff',
                             borderRadius: 16,
@@ -297,14 +362,14 @@ export default function TaskDetailModal({ task, isOpen, onClose, activeFilters, 
                             <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(0, 63, 73, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#003F49' }}>
                               <FileCode size={20} />
                             </div>
-                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                               <span style={{ fontSize: 14, fontWeight: 950, color: '#003F49' }}>{vector.label}</span>
-                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                 <span style={{ fontSize: 10, fontWeight: 1000, color: 'rgba(0, 63, 73, 0.5)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{vector.type}</span>
-                                 <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#D4AF37' }} />
-                                 <span style={{ fontSize: 10, fontWeight: 1000, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{vector.cde}</span>
-                               </div>
-                             </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              <span style={{ fontSize: 14, fontWeight: 950, color: '#003F49' }}>{vector.label}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: 10, fontWeight: 1000, color: 'rgba(0, 63, 73, 0.5)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{vector.type}</span>
+                                <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#B08D3E' }} />
+                                <span style={{ fontSize: 10, fontWeight: 1000, color: '#B08D3E', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{vector.cde}</span>
+                              </div>
+                            </div>
                           </div>
                           <ExternalLink size={14} color="#003F49" style={{ opacity: 0.4 }} />
                         </motion.a>
@@ -344,32 +409,65 @@ export default function TaskDetailModal({ task, isOpen, onClose, activeFilters, 
 
             {/* Image Preview Overlay */}
             <AnimatePresence>
-              {previewImage && (
+            {previewData && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  onClick={() => setPreviewImage(null)}
+                  onClick={() => setPreviewData(null)}
                   style={{
                     position: 'fixed', inset: 0, zIndex: 10000,
-                    background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(10px)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40,
+                    background: 'rgba(0, 0, 0, 0.9)', backdropFilter: 'blur(20px)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40,
                     cursor: 'zoom-out'
                   }}
                 >
-                  <motion.img
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    src={previewImage}
-                    alt="Preview"
-                    style={{ maxWidth: '90%', maxHeight: '90%', borderRadius: 12, boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}
-                  />
-                  <button
-                    onClick={() => setPreviewImage(null)}
-                    style={{ position: 'absolute', top: 30, right: 30, background: 'white', border: 'none', borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}
                   >
-                    <X size={20} color="#000" />
+                    <img
+                      src={previewData.url}
+                      alt={previewData.name}
+                      style={{ 
+                        maxWidth: '85vw', maxHeight: '70vh', 
+                        borderRadius: 24, border: '4px solid #ffffff',
+                        boxShadow: '0 30px 100px rgba(0,0,0,0.8)' 
+                      }}
+                    />
+                    <div style={{ textAlign: 'center' }}>
+                      <h3 style={{ 
+                        fontSize: 28, fontWeight: 900, color: '#ffffff', margin: 0, 
+                        textTransform: 'uppercase', letterSpacing: '0.1em',
+                        textShadow: '0 4px 20px rgba(0,0,0,0.5)'
+                      }}>
+                        {previewData.name}
+                      </h3>
+                      <div style={{ 
+                        height: 2, width: 60, background: '#B08D3E', 
+                        margin: '12px auto 0', borderRadius: 2 
+                      }} />
+                      <p style={{ 
+                        fontSize: 12, color: '#B08D3E', fontWeight: 900, 
+                        marginTop: 12, textTransform: 'uppercase', letterSpacing: '0.2em'
+                      }}>
+                        Verified Identity Profile
+                      </p>
+                    </div>
+                  </motion.div>
+                  <button
+                    onClick={() => setPreviewData(null)}
+                    style={{ 
+                      position: 'absolute', top: 30, right: 30, 
+                      background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', 
+                      borderRadius: '50%', width: 50, height: 50, 
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                      cursor: 'pointer', color: 'white', transition: 'all 0.3s'
+                    }}
+                  >
+                    <X size={24} />
                   </button>
                 </motion.div>
               )}

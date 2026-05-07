@@ -79,10 +79,23 @@ function formatReportDate(dateStr: string | null | undefined): string {
 }
 
 function formatGeneratedOn(): string {
-  return new Date().toLocaleString('en-US', {
-    year: 'numeric', month: 'numeric', day: 'numeric',
-    hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true
-  });
+  const date = new Date();
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = date.toLocaleString('en-GB', { month: 'short' }).toUpperCase();
+  const year = date.getFullYear();
+  
+  const timeStr = date.toLocaleTimeString('en-US', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+  }).toUpperCase();
+  
+  // Extract time zone offset (e.g. UTC+3)
+  const offset = -date.getTimezoneOffset();
+  const absOffset = Math.abs(offset);
+  const hours = Math.floor(absOffset / 60);
+  const mins = absOffset % 60;
+  const tzStr = `UTC${offset >= 0 ? '+' : '-'}${hours}${mins > 0 ? ':' + String(mins).padStart(2, '0') : ''}`;
+  
+  return `${day}-${month}-${year} ${timeStr} (${tzStr})`;
 }
 
 async function loadLogoBase64(path: string): Promise<string> {
@@ -117,7 +130,13 @@ async function loadLogoWithAspect(path: string): Promise<{ data: string; aspect:
   }
 }
 
-function getExportLinks(t: Task, filters?: { types: string[], cdes: string[] }) {
+function getExportLinks(t: Task, filters?: { 
+  types?: string[], 
+  cdes?: string[], 
+  precincts?: string[], 
+  categories?: string[], 
+  submitters?: string[] 
+}) {
   const fData = getFilteredTaskData(t, filters);
   const combinedLinks = fData.vectors.length > 0
     ? fData.vectors.map(v => ({ label: `${v.type} (${v.cde})`, url: ensureAbsoluteUrl(v.url) }))
@@ -140,6 +159,156 @@ function hexToRgb(hex: string): [number, number, number] {
   }
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [180, 180, 180];
+}
+
+/** 
+ * Draws an ultra-premium horizontal divider with accent glow and geometric detail.
+ */
+function drawElitePremiumDivider(doc: jsPDF, x: number, y: number, width: number, accentColor: [number, number, number]) {
+  // Main structural line
+  doc.setDrawColor(...accentColor);
+  doc.setLineWidth(0.6);
+  doc.line(x, y, x + width, y);
+
+  // Subtle outer glow lines (using lighter version of accent)
+  const lighterAccent: [number, number, number] = [
+    Math.min(255, accentColor[0] + 40),
+    Math.min(255, accentColor[1] + 40),
+    Math.min(255, accentColor[2] + 40)
+  ];
+  doc.setDrawColor(...lighterAccent);
+  doc.setLineWidth(0.15);
+  doc.line(x, y + 0.5, x + width, y + 0.5);
+  doc.line(x, y - 0.5, x + width, y - 0.5);
+
+  // Decorative center diamond
+  const centerX = x + width / 2;
+  doc.setFillColor(...accentColor);
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.2);
+  
+  // Draw diamond
+  doc.lines([
+    [2, 0], [0, 2], [-2, 0], [0, -2]
+  ], centerX - 2, y, [1, 1], 'FD');
+
+  // Small end-caps
+  doc.setFillColor(...accentColor);
+  doc.circle(x, y, 0.6, 'F');
+  doc.circle(x + width, y, 0.6, 'F');
+}
+
+/**
+ * Shared helper to draw the standard premium header on any PDF page.
+ */
+function drawStandardPdfPageHeader(doc: jsPDF, title: string, logos: any, accentColor: [number, number, number]) {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const headerH = 22;
+
+  // Dark header strip
+  doc.setFillColor(13, 17, 23);
+  doc.rect(0, 0, pageWidth, headerH, 'F');
+
+  // Gold left accent bar
+  doc.setFillColor(...accentColor);
+  doc.rect(0, 0, 3, pageHeight, 'F');
+
+  // Elite Premium Divider below header
+  drawElitePremiumDivider(doc, 0, headerH, pageWidth, accentColor);
+
+  // Header title
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text(title.toUpperCase(), 10, headerH / 2 + 1.5);
+
+  // Logos in header
+  const logoH = 7;
+  const logoPad = 4;
+  let logoX = pageWidth - 8;
+  if (logos.insite) {
+    const w = logoH * logos.insite.aspect;
+    logoX -= w;
+    try { doc.addImage(logos.insite.data, 'PNG', logoX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
+    logoX -= logoPad;
+  }
+  if (logos.modon) {
+    const w = logoH * logos.modon.aspect;
+    logoX -= w;
+    const modonLeftX = logoX;
+    try { doc.addImage(logos.modon.data, 'PNG', modonLeftX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
+    if (logos.insite) {
+      const sepX = modonLeftX + w + logoPad / 2;
+      doc.setDrawColor(208, 171, 130);
+      doc.setLineWidth(0.6);
+      doc.line(sepX, (headerH - logoH) / 2 + 1, sepX, (headerH - logoH) / 2 + logoH - 1);
+    }
+  }
+}
+function drawPremiumFilterBar(doc: jsPDF, x: number, y: number, width: number, filters: any, accentColor: [number, number, number]) {
+  const filterEntries: { label: string; value: string; color: [number, number, number] }[] = [];
+  
+  const getFilterVal = (list: string[], allLabel: string) => {
+    if (!list || list.length === 0 || list.includes(allLabel)) return 'ALL';
+    if (list.length > 2) return `${list.length} SELECTED (${list.slice(0, 2).join(', ')}...)`;
+    return list.join(', ');
+  };
+
+  filterEntries.push({ label: 'CATEGORIES', value: getFilterVal(filters?.categories, 'All Categories'), color: [70, 130, 180] });
+  filterEntries.push({ label: 'TYPES', value: getFilterVal(filters?.types, 'All Types'), color: [147, 112, 219] });
+  filterEntries.push({ label: 'CDE', value: getFilterVal(filters?.cdes, 'All CDE'), color: [60, 179, 113] });
+  filterEntries.push({ label: 'PRECINCTS', value: getFilterVal(filters?.precincts, 'All Precincts'), color: [255, 99, 71] });
+  filterEntries.push({ label: 'SUBMITTERS', value: getFilterVal(filters?.submitters, 'All Submitters'), color: [218, 165, 32] });
+
+  if (filterEntries.length === 0) return;
+
+  const barH = 12;
+  const barY = y - barH / 2;
+  
+  // Premium glass-morphism style background
+  doc.setFillColor(245, 248, 250);
+  doc.setDrawColor(200, 210, 220);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(x, barY, width, barH, 3, 3, 'FD');
+
+  // Left accent line
+  doc.setFillColor(...accentColor);
+  doc.rect(x, barY + 2, 1.5, barH - 4, 'F');
+
+  let currentX = x + 6;
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'bold');
+
+  filterEntries.forEach((entry, idx) => {
+    // Small icon dot
+    doc.setFillColor(...entry.color);
+    doc.circle(currentX, barY + barH / 2, 1.2, 'F');
+    
+    // Label
+    doc.setTextColor(100, 116, 139);
+    doc.setFont('helvetica', 'bold');
+    doc.text(entry.label, currentX + 4, barY + barH / 2 + 0.8);
+    
+    const labelW = doc.getTextWidth(entry.label);
+    
+    // Value
+    doc.setTextColor(30, 41, 59);
+    doc.setFont('helvetica', 'normal');
+    const displayVal = entry.value.toUpperCase();
+    doc.text(displayVal, currentX + labelW + 7, barY + barH / 2 + 0.8);
+    
+    const valW = doc.getTextWidth(displayVal);
+    
+    currentX += labelW + valW + 18;
+    
+    // Separator
+    if (idx < filterEntries.length - 1 && currentX < x + width - 10) {
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.2);
+      doc.line(currentX - 8, barY + 3, currentX - 8, barY + barH - 3);
+    }
+  });
 }
 
 // ─── Chart Capture ──────────────────────────────────────────────────────
@@ -444,16 +613,18 @@ function getDashboardAnalytics(tasks: Task[]) {
   const submitters: Record<string, number> = {};
 
   tasks.forEach(t => {
-    categories[t.department] = (categories[t.department] || 0) + 1;
+    const depts = Array.isArray(t.department) ? t.department : (t.department ? [t.department] : []);
+    depts.forEach(d => { categories[d] = (categories[d] || 0) + 1; });
+    
     if (Array.isArray(t.deliverableType)) {
       t.deliverableType.forEach(type => { types[type] = (types[type] || 0) + 1; });
     }
     if (Array.isArray(t.cde)) {
       t.cde.forEach(env => { cde[env] = (cde[env] || 0) + 1; });
     }
-    if (t.submitterName) {
-      submitters[t.submitterName] = (submitters[t.submitterName] || 0) + 1;
-    }
+    
+    const names = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
+    names.forEach(name => { submitters[name] = (submitters[name] || 0) + 1; });
   });
 
   return {
@@ -468,9 +639,15 @@ function getDashboardAnalytics(tasks: Task[]) {
 
 // ─── Filtered Task Data Helper ──────────────────────────────────────────
 
-function getFilteredTaskData(t: Task, filters?: { types: string[], cdes: string[] }) {
+function getFilteredTaskData(t: Task, filters?: { 
+  types?: string[], 
+  cdes?: string[], 
+  precincts?: string[], 
+  categories?: string[], 
+  submitters?: string[] 
+}) {
   const activeTypes = (filters?.types || []).filter(v => v !== 'All Types');
-  const activeCDEs = (filters?.cdes || []).filter(v => v !== 'All Environments');
+  const activeCDEs = (filters?.cdes || []).filter(v => v !== 'All CDE');
 
   const legacyTypes = (Array.isArray(t.deliverableType) ? t.deliverableType : [t.deliverableType]).filter((v): v is string => !!v);
   const legacyCdes = (Array.isArray(t.cde) ? t.cde : [t.cde]).filter((v): v is string => !!v);
@@ -509,7 +686,13 @@ export async function exportToExcel(
   metadata: ProjectMetadata | undefined,
   dateRangeText: string | undefined,
   perspective: 'table' | 'dashboard' | 'both' = 'table',
-  filters?: { types: string[], cdes: string[] },
+  filters?: { 
+    types?: string[], 
+    cdes?: string[], 
+    precincts?: string[], 
+    categories?: string[], 
+    submitters?: string[] 
+  },
   chartImages?: CapturedChart[]
 ) {
   const workbook = new ExcelJS.Workbook();
@@ -576,13 +759,16 @@ export async function exportToExcel(
     tasks.forEach((t, tIdx) => {
       const fData = filteredTasksData[tIdx];
       const rowData: any[] = [];
-      const resolvedDept = departmentsMap[t.department] || t.department;
+      const depts = Array.isArray(t.department) ? t.department : (t.department ? [t.department] : []);
+      const resolvedDepts = depts.map(d => departmentsMap[d] || d);
+      const subNames = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
+
       visibleColumns.forEach(c => {
         if (c.id === 'id') rowData.push(t.id.toUpperCase());
         else if (c.id === 'title') rowData.push(t.title);
-        else if (c.id === 'department') rowData.push(resolvedDept);
+        else if (c.id === 'department') rowData.push(resolvedDepts.join(' | '));
         else if (c.id === 'precinct') rowData.push(t.precinct || '-');
-        else if (c.id === 'submitterName') rowData.push(t.submitterName || '-');
+        else if (c.id === 'submitterName') rowData.push(subNames.join(' | ') || '-');
         else if (c.id === 'submittingDate') rowData.push(formatReportDate(t.submittingDate));
         else if (c.id === 'deliverableType') rowData.push(fData.types.join(' | '));
         else if (c.id === 'cde') rowData.push(fData.cdes.join(' | '));
@@ -745,6 +931,37 @@ export async function exportToExcel(
     });
 
     summarySheet.addRow([]);
+    
+    // Filter Parameters Section
+    summarySheet.addRow(['ACTIVE FILTER PARAMETERS']).font = { bold: true, size: 12, color: { argb: 'FF1E293B' } };
+    summarySheet.addRow([]);
+
+    const getFilt = (list: string[] | undefined) => {
+      if (!list || list.length === 0) return 'ALL';
+      return list.join(', ').toUpperCase();
+    };
+
+    const filterData = [
+      ['Categories', getFilt(filters?.categories)],
+      ['Deliverable Types', getFilt(filters?.types)],
+      ['CDE Environments', getFilt(filters?.cdes)],
+      ['Precincts', getFilt(filters?.precincts)],
+      ['Submitters', getFilt(filters?.submitters)],
+    ];
+
+    filterData.forEach(([label, val], idx) => {
+      const row = summarySheet.addRow([label, val]);
+      row.getCell(1).font = { bold: true, size: 10, color: { argb: 'FF64748B' } };
+      row.getCell(2).font = { size: 10, color: { argb: 'FF334155' } };
+      row.getCell(2).alignment = { horizontal: 'right' };
+      const fill = idx % 2 === 0 ? 'FFF1F5F9' : 'FFFFFFFF';
+      row.eachCell(cell => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fill } };
+        cell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+      });
+    });
+
+    summarySheet.addRow([]);
 
 
     summarySheet.addRow(['VISUALIZATION DATA MAPPING']).font = { bold: true };
@@ -854,6 +1071,37 @@ export async function exportToExcel(
       row.getCell(1).font = { bold: true };
     });
 
+    summarySheet.addRow([]);
+    
+    // Filter Parameters Section for Executive Summary
+    summarySheet.addRow(['ACTIVE FILTER PARAMETERS']).font = { bold: true, size: 12, color: { argb: 'FF1E293B' } };
+    summarySheet.addRow([]);
+
+    const getFilt = (list: string[] | undefined) => {
+      if (!list || list.length === 0) return 'ALL';
+      return list.join(', ').toUpperCase();
+    };
+
+    const filterData = [
+      ['Categories', getFilt(filters?.categories)],
+      ['Deliverable Types', getFilt(filters?.types)],
+      ['CDE Environments', getFilt(filters?.cdes)],
+      ['Precincts', getFilt(filters?.precincts)],
+      ['Submitters', getFilt(filters?.submitters)],
+    ];
+
+    filterData.forEach(([label, val], idx) => {
+      const row = summarySheet.addRow([label, val]);
+      row.getCell(1).font = { bold: true, size: 10, color: { argb: 'FF64748B' } };
+      row.getCell(2).font = { size: 10, color: { argb: 'FF334155' } };
+      row.getCell(2).alignment = { horizontal: 'right' };
+      const fill = idx % 2 === 0 ? 'FFF1F5F9' : 'FFFFFFFF';
+      row.eachCell(cell => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fill } };
+        cell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+      });
+    });
+
     // Comprehensive Master Registry
     addRegistrySheet('Comprehensive Registry');
   }
@@ -874,7 +1122,13 @@ export async function exportToPDF(
   metadata: ProjectMetadata | undefined,
   dateRangeText: string | undefined,
   perspective: 'table' | 'dashboard' | 'both' = 'table',
-  filters?: { types: string[], cdes: string[] },
+  filters?: { 
+    types?: string[], 
+    cdes?: string[], 
+    precincts?: string[], 
+    categories?: string[], 
+    submitters?: string[] 
+  },
   chartImages?: CapturedChart[]
 ) {
   const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
@@ -916,45 +1170,11 @@ export async function exportToPDF(
     doc.setFillColor(...bgColor);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-    // Dark header strip (same as all pages)
-    doc.setFillColor(13, 17, 23);
-    doc.rect(0, 0, pageWidth, headerH, 'F');
-
-    // Gold left accent bar (full height)
-    doc.setFillColor(...accentColor);
-    doc.rect(0, 0, 3, pageHeight, 'F');
-
-    // Gold bottom border of header strip
-    doc.setDrawColor(...accentColor);
-    doc.setLineWidth(0.4);
-    doc.line(0, headerH, pageWidth, headerH);
-
-    // ── Logos in header (right-aligned, vertically centered) ──
-    const logoH = 9;
-    const logoPad = 5;
-    let logoX = pageWidth - 14;
-
-    if (logos.insite) {
-      const w = logoH * logos.insite.aspect;
-      logoX -= w;
-      try { doc.addImage(logos.insite.data, 'PNG', logoX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
-      logoX -= logoPad;
-    }
-    if (logos.modon) {
-      const w = logoH * logos.modon.aspect;
-      logoX -= w;
-      const modonLeftX = logoX;
-      try { doc.addImage(logos.modon.data, 'PNG', modonLeftX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
-      if (logos.insite) {
-        const sepX = modonLeftX + w + logoPad / 2;
-        doc.setDrawColor(208, 171, 130);
-        doc.setLineWidth(0.8);
-        doc.line(sepX, (headerH - logoH) / 2 + 1, sepX, (headerH - logoH) / 2 + logoH - 1);
-      }
-    }
+    // Shared Header Helper
+    drawStandardPdfPageHeader(doc, perspective === 'dashboard' ? 'ANALYTICS INSIGHTS' : (perspective === 'both' ? 'EXECUTIVE MASTER REPORT' : (metadata?.reportTitle || 'EXECUTIVE SUMMARY')), logos, accentColor);
 
     // ── Content below header ──
-    const cY = headerH + 8; // content baseline below strip
+    const cY = 30; // content baseline below strip (increased for clearance)
 
     doc.setTextColor(...headerTextColor);
     doc.setFontSize(11);
@@ -994,22 +1214,33 @@ export async function exportToPDF(
       currentY += 15;
     });
 
+    // ── Ultra Premium Filter Row on Cover ──
+    const filterBarY = pageHeight - 35;
+    drawPremiumFilterBar(doc, 20, filterBarY, pageWidth - 40, filters, accentColor);
+
     doc.setTextColor(30, 41, 59);
     doc.setFontSize(10);
     doc.text(metadata?.reportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM', 20, pageHeight - 15);
   };
 
-  // ── Section Divider ──
+  // ── Section Divider Page ──
   const drawDivider = (title: string) => {
     doc.addPage();
     doc.setFillColor(...bgColor);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    
+    // Background accent block
     doc.setFillColor(...accentColor);
     doc.rect(0, pageHeight / 2 - 25, pageWidth, 50, 'F');
+    
+    // Premium Dividers flanking the text
+    drawElitePremiumDivider(doc, 20, pageHeight / 2 - 30, pageWidth - 40, [255, 255, 255]);
+    drawElitePremiumDivider(doc, 20, pageHeight / 2 + 30, pageWidth - 40, [255, 255, 255]);
+
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
-    doc.text(title, pageWidth / 2, pageHeight / 2 + 3, { align: 'center' });
+    doc.text(title.toUpperCase(), pageWidth / 2, pageHeight / 2 + 3, { align: 'center' });
   };
 
   // ── Dashboard Page ──
@@ -1031,16 +1262,11 @@ export async function exportToPDF(
     doc.setFillColor(255, 255, 255);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-    doc.setTextColor(30, 41, 59);
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('EXECUTIVE PERFORMANCE DASHBOARD', 15, 25);
+    // Header strip
+    drawStandardPdfPageHeader(doc, 'EXECUTIVE PERFORMANCE DASHBOARD', logos, accentColor);
 
-    // Filter summary
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    const filterText = `Refined by: ${filters?.types?.join(', ') || 'All Types'} // ${filters?.cdes?.join(', ') || 'All Environments'}`;
-    doc.text(filterText, 15, 33);
+    // Premium Filter Bar in one row
+    drawPremiumFilterBar(doc, 15, 30, pageWidth - 30, filters, accentColor);
 
     // KPI Grid
     const analytics = getDashboardAnalytics(tasks);
@@ -1101,52 +1327,8 @@ export async function exportToPDF(
 
   // ── Table Registry Page ──
   const drawTable = () => {
-    const headerH = 22;
     doc.addPage();
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-    // Dark header strip
-    doc.setFillColor(13, 17, 23);
-    doc.rect(0, 0, pageWidth, headerH, 'F');
-
-    // Gold left accent bar
-    doc.setFillColor(...accentColor);
-    doc.rect(0, 0, 3, pageHeight, 'F');
-
-    // Gold bottom border
-    doc.setDrawColor(...accentColor);
-    doc.setLineWidth(0.4);
-    doc.line(0, headerH, pageWidth, headerH);
-
-    // Header title
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text('DELIVERABLES REGISTRY', 10, headerH / 2 + 1.5);
-
-    // Logos in header
-    const logoH = 7;
-    const logoPad = 4;
-    let logoX = pageWidth - 8;
-    if (logos.insite) {
-      const w = logoH * logos.insite.aspect;
-      logoX -= w;
-      try { doc.addImage(logos.insite.data, 'PNG', logoX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
-      logoX -= logoPad;
-    }
-    if (logos.modon) {
-      const w = logoH * logos.modon.aspect;
-      logoX -= w;
-      const modonLeftX = logoX;
-      try { doc.addImage(logos.modon.data, 'PNG', modonLeftX, (headerH - logoH) / 2, w, logoH); } catch (_) {}
-      if (logos.insite) {
-        const sepX = modonLeftX + w + logoPad / 2;
-        doc.setDrawColor(208, 171, 130);
-        doc.setLineWidth(0.6);
-        doc.line(sepX, (headerH - logoH) / 2 + 1, sepX, (headerH - logoH) / 2 + logoH - 1);
-      }
-    }
+    // Header will be handled by didDrawPage
 
     // Empty state
     if (tasks.length === 0) {
@@ -1167,14 +1349,17 @@ export async function exportToPDF(
       const fData = filteredTasksData[tIdx];
       const combinedLinks = getExportLinks(t, filters);
       const linksLabels = combinedLinks.map(l => l.label).join('\n');
-      const resolvedDept = departmentsMap[t.department] || t.department;
+      
+      const depts = Array.isArray(t.department) ? t.department : (t.department ? [t.department] : []);
+      const resolvedDepts = depts.map(d => departmentsMap[d] || d);
+      const subNames = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
 
       return visibleCols.map(c => {
         if (c.id === 'id') return t.id.toUpperCase();
         if (c.id === 'title') return t.title;
-        if (c.id === 'department') return resolvedDept;
+        if (c.id === 'department') return resolvedDepts.join(' | ');
         if (c.id === 'precinct') return t.precinct || '-';
-        if (c.id === 'submitterName') return t.submitterName || '-';
+        if (c.id === 'submitterName') return subNames.join(' | ') || '-';
         if (c.id === 'submittingDate') return formatReportDate(t.submittingDate);
         if (c.id === 'deliverableType') return fData.types.join(' | ') || '-';
         if (c.id === 'cde') return fData.cdes.join(' | ') || '-';
@@ -1203,7 +1388,7 @@ export async function exportToPDF(
       head,
       body,
       theme: 'grid',
-      margin: { top: 15, bottom: 15, left: 8, right: 8 },
+      margin: { top: 34, bottom: 15, left: 8, right: 8 },
       showHead: 'everyPage',
       rowPageBreak: 'avoid',
       headStyles: {
@@ -1244,7 +1429,10 @@ export async function exportToPDF(
         }
       },
       didDrawPage: (data) => {
-        // Repeat branding on every page
+        // Draw the standard premium header on EVERY page of the table
+        drawStandardPdfPageHeader(doc, 'DELIVERABLES REGISTRY', logos, accentColor);
+
+        // Repeat branding on every page footer
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
         doc.text(
@@ -1576,10 +1764,8 @@ export async function exportBimToPDF(
     doc.setFillColor(...accentColor);
     doc.rect(0, 0, 3, pageHeight, 'F');
 
-    // Bottom gold line
-    doc.setDrawColor(...accentColor);
-    doc.setLineWidth(0.4);
-    doc.line(0, headerH, pageWidth, headerH);
+    // Elite Premium Divider below header
+    drawElitePremiumDivider(doc, 0, headerH, pageWidth, accentColor);
 
     // Title text
     doc.setTextColor(255, 255, 255);
@@ -1631,9 +1817,8 @@ export async function exportBimToPDF(
     doc.rect(0, 0, pageWidth, headerH, 'F');
     doc.setFillColor(...accentColor);
     doc.rect(0, 0, 3, pageHeight, 'F');
-    doc.setDrawColor(...accentColor);
-    doc.setLineWidth(0.4);
-    doc.line(0, headerH, pageWidth, headerH);
+    // Elite Premium Divider below header
+    drawElitePremiumDivider(doc, 0, headerH, pageWidth, accentColor);
 
     // Logos on cover
     const logoH = 9;

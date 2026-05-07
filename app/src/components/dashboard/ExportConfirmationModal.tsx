@@ -79,7 +79,7 @@ export default function ExportConfirmationModal({
       
       const filters = {
         types: filterType.filter(t => t !== 'All Types'),
-        cdes: filterCDE.filter(c => c !== 'All Environments'),
+        cdes: filterCDE.filter(c => c !== 'All CDE'),
         precincts: filterPrecinct.filter(p => p !== 'All Precincts')
       };
 
@@ -342,8 +342,8 @@ export default function ExportConfirmationModal({
                               options={availableCDEs.map(c => ({ label: c, value: c }))} 
                               onChange={setFilterCDE} 
                               isMulti={true}
-                              allLabel="All Environments"
-                              menuLabel="Environment Nodes"
+                              allLabel="All CDE"
+                              menuLabel="CDE"
                               fullWidth={true}
                             />
                           </div>

@@ -123,7 +123,13 @@ function Row({ task, index, onClick }: { task: Task; index: number; onClick?: (t
           </div>
         </div>
       <td style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
-        <span style={{ fontSize: 13, color: getDepartmentColor(task.department), fontWeight: 500 }}>{task.department}</span>
+        <span style={{ 
+          fontSize: 13, 
+          color: getDepartmentColor(Array.isArray(task.department) ? task.department[0] : (task.department || '')), 
+          fontWeight: 500 
+        }}>
+          {Array.isArray(task.department) ? task.department.join(', ') : (task.department || 'General')}
+        </span>
       </td>
       <td style={{ padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>

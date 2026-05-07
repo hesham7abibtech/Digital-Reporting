@@ -516,16 +516,39 @@ export default function ProfileInfoModal({ isOpen, onClose, userProfile }: Profi
             style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(20px)' }}
           />
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            style={{ position: 'relative', zIndex: 1, maxWidth: '90%', maxHeight: '90%' }}
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}
           >
             <img 
               src={formData.avatar} 
               alt="Avatar Full View" 
-              style={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '80vh', borderRadius: 24, boxShadow: '0 30px 100px rgba(0,0,0,0.8)' }} 
+              style={{ 
+                width: 'auto', height: 'auto', maxWidth: '85vw', maxHeight: '70vh', 
+                borderRadius: 32, border: '4px solid #ffffff',
+                boxShadow: '0 30px 100px rgba(0,0,0,0.8)' 
+              }} 
             />
+            <div style={{ textAlign: 'center' }}>
+              <h3 style={{ 
+                fontSize: 28, fontWeight: 900, color: '#ffffff', margin: 0, 
+                textTransform: 'uppercase', letterSpacing: '0.1em',
+                textShadow: '0 4px 20px rgba(0,0,0,0.5)'
+              }}>
+                {formData.name}
+              </h3>
+              <div style={{ 
+                height: 2, width: 60, background: '#B08D3E', 
+                margin: '12px auto 0', borderRadius: 2 
+              }} />
+              <p style={{ 
+                fontSize: 12, color: '#B08D3E', fontWeight: 900, 
+                marginTop: 12, textTransform: 'uppercase', letterSpacing: '0.2em'
+              }}>
+                Authenticated User Profile
+              </p>
+            </div>
             <button
               onClick={() => setIsPreviewOpen(false)}
               style={{

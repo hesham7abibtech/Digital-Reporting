@@ -25,7 +25,7 @@ const THEME = {
   textPrimary: '#ffffff',
   textSecondary: '#d1d5db', // Light gray for labels (better hierarchy than pure white)
   textMuted: 'rgba(255, 255, 255, 0.85)', // Very bright for axis ticks
-  primary: '#e6c29a', // Brighter Gold
+  primary: '#B08D3E', // Brighter Gold
   secondary: '#a5f3fc', // Brighter Cyan
   accent: '#34d399', // Brighter Emerald
   warning: '#fbbf24', // Brighter Amber
@@ -33,7 +33,7 @@ const THEME = {
 };
 
 const CHART_COLORS = [
-  '#e6c29a', // Brighter Gold
+  '#B08D3E', // Brighter Gold
   '#34d399', // Emerald
   '#a5f3fc', // Cyan
   '#fb923c', // Orange
@@ -285,6 +285,9 @@ interface PremiumAnalyticsDashboardViewProps {
   filterPrecinct?: string[];
   setFilterPrecinct?: (val: string[]) => void;
   availablePrecincts?: string[];
+  filterSubmitter?: string[];
+  setFilterSubmitter?: (val: string[]) => void;
+  availableSubmitters?: string[];
 }
 
 export default function PremiumAnalyticsDashboardView({
@@ -297,6 +300,7 @@ export default function PremiumAnalyticsDashboardView({
   filterType = [], setFilterType, availableTypes = [],
   filterCDE = [], setFilterCDE, availableCDEs = [],
   filterPrecinct = [], setFilterPrecinct, availablePrecincts = [],
+  filterSubmitter = [], setFilterSubmitter, availableSubmitters = [],
   isExportMode = false
 }: PremiumAnalyticsDashboardViewProps & { isExportMode?: boolean }) {
   const [isExporting, setIsExporting] = useState(false);
@@ -319,14 +323,29 @@ export default function PremiumAnalyticsDashboardView({
       return m ? m.name : (name || 'Unassigned');
     };
 
-    const categoriesSet = new Set(tasks.map(t => getResolvedDept(t.department || '')));
-    const submittersSet = new Set(tasks.map(t => getResolvedSubmitter(t.submitterName || '', t.submitterEmail)));
+    const categoriesSet = new Set<string>();
+    tasks.forEach(t => {
+      const depts = Array.isArray(t.department) ? t.department : (t.department ? [t.department] : []);
+      depts.forEach(d => categoriesSet.add(getResolvedDept(d)));
+    });
+
+    const submittersSet = new Set<string>();
+    tasks.forEach(t => {
+      const names = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
+      const emails = Array.isArray(t.submitterEmail) ? t.submitterEmail : (t.submitterEmail ? [t.submitterEmail] : []);
+      names.forEach((name, idx) => {
+        submittersSet.add(getResolvedSubmitter(name, emails[idx]));
+      });
+    });
 
     // Category Data
     const catCounts: Record<string, number> = {};
     tasks.forEach(t => {
-      const name = getResolvedDept(t.department);
-      catCounts[name] = (catCounts[name] || 0) + 1;
+      const depts = Array.isArray(t.department) ? t.department : (t.department ? [t.department] : []);
+      depts.forEach(d => {
+        const name = getResolvedDept(d);
+        catCounts[name] = (catCounts[name] || 0) + 1;
+      });
     });
     const categoryData = Object.entries(catCounts)
       .map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] }))
@@ -352,8 +371,12 @@ export default function PremiumAnalyticsDashboardView({
     // Submitter Data
     const subCounts: Record<string, number> = {};
     tasks.forEach(t => {
-      const name = getResolvedSubmitter(t.submitterName || '', t.submitterEmail);
-      subCounts[name] = (subCounts[name] || 0) + 1;
+      const names = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
+      const emails = Array.isArray(t.submitterEmail) ? t.submitterEmail : (t.submitterEmail ? [t.submitterEmail] : []);
+      names.forEach((name, idx) => {
+        const resolved = getResolvedSubmitter(name, emails[idx]);
+        subCounts[resolved] = (subCounts[resolved] || 0) + 1;
+      });
     });
     const submitterData = Object.entries(subCounts)
       .map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] }))
@@ -362,7 +385,12 @@ export default function PremiumAnalyticsDashboardView({
 
     // Type Data
     const typeCounts: Record<string, number> = {};
-    tasks.forEach(t => (t.deliverableType || []).forEach(dt => { typeCounts[dt] = (typeCounts[dt] || 0) + 1; }));
+    tasks.forEach(t => {
+      const legacyTypes = Array.isArray(t.deliverableType) ? t.deliverableType : (t.deliverableType ? [t.deliverableType] : []);
+      const vectorTypes = (t.vectors || []).map(v => v.type);
+      const allTypes = Array.from(new Set([...legacyTypes, ...vectorTypes].map(v => v.trim().toUpperCase())));
+      allTypes.forEach(dt => { typeCounts[dt] = (typeCounts[dt] || 0) + 1; });
+    });
     const typeData = Object.entries(typeCounts)
       .map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] }))
       .sort((a, b) => b.value - a.value);
@@ -370,7 +398,12 @@ export default function PremiumAnalyticsDashboardView({
 
     // CDE Data
     const cdeCounts: Record<string, number> = {};
-    tasks.forEach(t => (t.cde || []).forEach(c => { cdeCounts[c] = (cdeCounts[c] || 0) + 1; }));
+    tasks.forEach(t => {
+      const legacyCdes = Array.isArray(t.cde) ? t.cde : (t.cde ? [t.cde] : []);
+      const vectorCdes = (t.vectors || []).map(v => v.cde);
+      const allCdes = Array.from(new Set([...legacyCdes, ...vectorCdes].map(v => v.trim().toUpperCase())));
+      allCdes.forEach(c => { cdeCounts[c] = (cdeCounts[c] || 0) + 1; });
+    });
     const cdeData = Object.entries(cdeCounts)
       .map(([name, value], i) => ({ name, value, color: CHART_COLORS[(i + 4) % CHART_COLORS.length] }))
       .sort((a, b) => b.value - a.value);
@@ -508,7 +541,7 @@ export default function PremiumAnalyticsDashboardView({
                 <EliteDropdown value={filterType} options={availableTypes.map(s => ({ label: s, value: s }))} onChange={setFilterType} menuLabel="Type" isMulti allLabel="All Types" />
               )}
               {setFilterCDE && (
-                <EliteDropdown value={filterCDE} options={availableCDEs.map(s => ({ label: s, value: s }))} onChange={setFilterCDE} menuLabel="Environment" isMulti allLabel="All Environments" />
+                <EliteDropdown value={filterCDE} options={availableCDEs.map(s => ({ label: s, value: s }))} onChange={setFilterCDE} menuLabel="CDE" isMulti allLabel="All CDE" />
               )}
               {setFilterPrecinct && (
                 <EliteDropdown value={filterPrecinct} options={availablePrecincts.map(s => ({ label: s, value: s }))} onChange={setFilterPrecinct} menuLabel="Precinct" isMulti allLabel="All Precincts" />
@@ -516,7 +549,7 @@ export default function PremiumAnalyticsDashboardView({
               {(
                 (filterDept.length > 0 && !filterDept.includes('All Categories')) ||
                 (filterType.length > 0 && !filterType.includes('All Types')) ||
-                (filterCDE.length > 0 && !filterCDE.includes('All Environments')) ||
+                (filterCDE.length > 0 && !filterCDE.includes('All CDE')) ||
                 (filterPrecinct.length > 0 && !filterPrecinct.includes('All Precincts'))
               ) && (
                   <button

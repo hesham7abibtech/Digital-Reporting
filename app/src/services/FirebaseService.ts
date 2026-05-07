@@ -263,28 +263,30 @@ export async function migrateBimReviews() {
 }
 
 /**
- * Bulk Upsert Tasks with Overwrite or Append strategy
+ * Bulk Upsert Tasks with Overwrite, Append, or Update strategy
  */
-export async function bulkUpsertTasks(tasks: Task[], strategy: 'OVERWRITE' | 'APPEND') {
+export async function bulkUpsertTasks(tasks: Task[], strategy: 'OVERWRITE' | 'APPEND' | 'UPDATE') {
   const batch = writeBatch(db);
   const { getDocs } = await import('firebase/firestore');
+
+  // Fetch departments for intelligent ID re-coding if needed
+  const deptsSnapshot = await getDocs(collections.departments);
+  const departments = deptsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as any));
 
   if (strategy === 'OVERWRITE') {
     // 1. Purge existing records for a fresh slate
     const snapshot = await getDocs(collections.tasks);
     snapshot.docs.forEach(d => batch.delete(d.ref));
-
-    // 2. Fetch departments for intelligent ID re-coding
-    const deptsSnapshot = await getDocs(collections.departments);
-    const departments = deptsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as any));
     
-    // 3. Track sequential counters per department abbreviation
+    // 2. Track sequential counters per department abbreviation
     const counters: Record<string, number> = {};
 
     tasks.forEach((task) => {
-      // Normalize department lookup
-      const d = departments.find((dept: any) => dept.id === task.department || dept.name === task.department);
-      const abbr = d?.abbreviation || (task.department ? String(task.department).slice(0, 3).toUpperCase() : 'GEN');
+      // Normalize department lookup - Use first department for ID generation
+      const depts = Array.isArray(task.department) ? task.department : (task.department ? [task.department] : []);
+      const primaryDeptId = depts[0];
+      const d = departments.find((dept: any) => dept.id === primaryDeptId || dept.name === primaryDeptId);
+      const abbr = d?.abbreviation || (primaryDeptId ? String(primaryDeptId).slice(0, 3).toUpperCase() : 'GEN');
       
       if (!counters[abbr]) counters[abbr] = 100;
       const sequentialId = `REH - ${abbr} - ${counters[abbr]}`;
@@ -301,12 +303,44 @@ export async function bulkUpsertTasks(tasks: Task[], strategy: 'OVERWRITE' | 'AP
       });
       batch.set(taskDoc, cleanData, { merge: true });
     });
-  } else {
-    // Simple Append mode
+  } else if (strategy === 'APPEND') {
+    // Keep existing, add ALL imported as NEW records with fresh IDs
+    const counters: Record<string, number> = {};
+    
     tasks.forEach((task) => {
-      const taskId = task.id || `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const taskDoc = doc(collections.tasks, taskId);
+      const depts = Array.isArray(task.department) ? task.department : (task.department ? [task.department] : []);
+      const primaryDeptId = depts[0];
+      const d = departments.find((dept: any) => dept.id === primaryDeptId || dept.name === primaryDeptId);
+      const abbr = d?.abbreviation || (primaryDeptId ? String(primaryDeptId).slice(0, 3).toUpperCase() : 'GEN');
       
+      const uniqueSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const newId = `REH-${abbr}-NEW-${uniqueSuffix}`;
+
+      const taskDoc = doc(collections.tasks, newId);
+      const cleanData = sanitizeData({
+        ...task,
+        id: newId,
+        updatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        status: task.status || 'NOT_STARTED',
+        completion: task.completion ?? 0
+      });
+      batch.set(taskDoc, cleanData, { merge: true });
+    });
+  } else {
+    // UPDATE / UPSERT Strategy: Use existing IDs if they match, otherwise add new
+    tasks.forEach((task) => {
+      // If task has no ID, we need to generate one
+      let taskId = task.id;
+      if (!taskId) {
+        const depts = Array.isArray(task.department) ? task.department : (task.department ? [task.department] : []);
+        const primaryDeptId = depts[0];
+        const d = departments.find((dept: any) => dept.id === primaryDeptId || dept.name === primaryDeptId);
+        const abbr = d?.abbreviation || (primaryDeptId ? String(primaryDeptId).slice(0, 3).toUpperCase() : 'GEN');
+        taskId = `REH-${abbr}-UPSERT-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      }
+
+      const taskDoc = doc(collections.tasks, taskId);
       const cleanData = sanitizeData({
         ...task,
         id: taskId,

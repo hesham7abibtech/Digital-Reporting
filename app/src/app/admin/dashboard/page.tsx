@@ -908,14 +908,17 @@ export default function AdminDashboardPage() {
       raw = raw.filter(t => 
         t.title.toLowerCase().includes(q) || 
         t.id.toLowerCase().includes(q) || 
-        t.department.toLowerCase().includes(q) ||
+        (Array.isArray(t.department) ? t.department : [t.department]).some(d => d.toLowerCase().includes(q)) ||
         (t.precinct || '').toLowerCase().includes(q)
       );
     }
 
     // Apply Category Filter
     if (filterCategory) {
-      raw = raw.filter(t => t.department === filterCategory || t.department.toLowerCase() === filterCategory.toLowerCase());
+      raw = raw.filter(t => {
+        const depts = Array.isArray(t.department) ? t.department : (t.department ? [t.department] : []);
+        return depts.some(d => d === filterCategory || d.toLowerCase() === filterCategory.toLowerCase());
+      });
     }
 
     // Apply Precinct Filter
@@ -925,7 +928,10 @@ export default function AdminDashboardPage() {
 
     // Apply Submitter Filter
     if (filterSubmitter) {
-      raw = raw.filter(t => t.submitterId === filterSubmitter);
+      raw = raw.filter(t => {
+        const ids = Array.isArray(t.submitterId) ? t.submitterId : (t.submitterId ? [t.submitterId] : []);
+        return ids.includes(filterSubmitter);
+      });
     }
 
     // Apply Date Range Filter
@@ -1233,17 +1239,9 @@ export default function AdminDashboardPage() {
         error: 'Please select a precinct from the list.'
       });
 
-      // Category Dropdown (Column D)
-      if (deptNames.length > 0) {
-        (sheet as any).dataValidations.add('D2:D500', {
-          type: 'list',
-          allowBlank: true,
-          formulae: [`"${deptNames.join(',')}"`],
-          showErrorMessage: true,
-          errorTitle: 'Invalid Category',
-          error: 'Please select a valid Task Category.'
-        });
-      }
+      // Category Instruction (Column D) - No strict validation to allow multi-select
+      const deptInstruction = deptNames.length > 0 ? `Valid: ${deptNames.join(', ')}. Use '|' for multiple.` : 'Enter Task Category. Use "|" for multiple.';
+      sheet.getCell('D1').note = deptInstruction;
 
 
       
@@ -1251,9 +1249,10 @@ export default function AdminDashboardPage() {
         id: 'T-001 (Optional)',
         title: 'Sample Asset Title',
         precinct: PRECINCTS[0],
-        department: deptNames[0] || 'BIM',
+        department: deptNames.slice(0, 2).join(' | ') || 'BIM | ARCH',
         submittingDate: '11-APR-2026',
         deliverableType: 'RVT | IFC',
+        submitterName: 'Member A | Member B',
         cde: 'ACC | BIM360',
         linkLabel: 'Access Description',
         url: 'https://...'
@@ -1337,7 +1336,10 @@ export default function AdminDashboardPage() {
         };
 
         const mappedTasks = json.map((row: any) => {
-          const category = String(row['Task Category'] || '');
+          const rawCategory = String(row['Task Category'] || '');
+          const categories = rawCategory.split(/[|,]/).map(s => s.trim()).filter(Boolean);
+          const primaryCategory = categories[0] || 'BIM';
+          
           const importId = String(row['ID'] || '').replace(' (Optional)', '').trim();
           
           const vectorType = String(row['Deliverable Type'] || '');
@@ -1357,22 +1359,26 @@ export default function AdminDashboardPage() {
           }
 
           const rawSubmitter = String(row['Submitter'] || '').trim();
-          const matchedMember = memoizedMembers.find(m => 
-            m.name?.toLowerCase().trim() === rawSubmitter.toLowerCase() ||
-            m.email?.toLowerCase().trim() === rawSubmitter.toLowerCase()
-          );
+          const submitterParts = rawSubmitter.split(/[|,]/).map(s => s.trim()).filter(Boolean);
+          
+          const matchedMembers = submitterParts.map(part => {
+            return memoizedMembers.find(m => 
+              m.name?.toLowerCase().trim() === part.toLowerCase() ||
+              m.email?.toLowerCase().trim() === part.toLowerCase()
+            );
+          });
 
           return {
-            id: importId && !importId.startsWith('T-001') ? importId : getImportNextId(category),
+            id: importId && !importId.startsWith('T-001') ? importId : getImportNextId(primaryCategory),
             title: String(row['Task Definition / Asset'] || ''),
             precinct: row['Project Precinct'] || '',
-            department: category,
-            submitterName: matchedMember ? matchedMember.name : rawSubmitter,
-            submitterId: matchedMember ? matchedMember.id : '',
-            submitterEmail: matchedMember ? matchedMember.email : '',
+            department: categories,
+            submitterName: matchedMembers.map((m, i) => m ? m.name : submitterParts[i]),
+            submitterId: matchedMembers.map(m => m ? m.id : '').filter(Boolean),
+            submitterEmail: matchedMembers.map(m => m ? m.email : '').filter(Boolean),
             submittingDate: normalizeExcelDate(row['Submission Date']),
-            deliverableType: vectorType ? vectorType.split('|').map(s => s.trim()) : [],
-            cde: vectorCde ? vectorCde.split('|').map(s => s.trim()) : [],
+            deliverableType: vectorType ? vectorType.split(/[|,]/).map(s => s.trim()).filter(Boolean) : [],
+            cde: vectorCde ? vectorCde.split(/[|,]/).map(s => s.trim()).filter(Boolean) : [],
             fileShareLink: vectorUrl,
             description: '',
             completion: 0,
@@ -1399,7 +1405,7 @@ export default function AdminDashboardPage() {
     reader.readAsArrayBuffer(file);
   };
 
-  const handleCommitTaskImport = async (strategy: 'APPEND' | 'OVERWRITE') => {
+  const handleCommitTaskImport = async (strategy: 'APPEND' | 'OVERWRITE' | 'UPDATE') => {
     setIsTaskImportLoading(true);
     try {
       const { bulkUpsertTasks } = await import('@/services/FirebaseService');
@@ -2214,32 +2220,68 @@ export default function AdminDashboardPage() {
                               </td>
                               <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                                 {(() => {
-                                  const d = memoizedDepartments.find(dept => dept.id === task.department || dept.name === task.department);
+                                  const depts = Array.isArray(task.department) ? task.department : (task.department ? [task.department] : []);
                                   return (
-                                    <span style={{ fontSize: 10, background: 'var(--secondary)', color: 'var(--teal)', padding: '8px 16px', borderRadius: 10, fontWeight: 900, letterSpacing: '0.1em', border: '1px solid var(--border)', textTransform: 'uppercase' }}>
-                                      {d ? d.name : task.department || '—'}
-                                    </span>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}>
+                                      {depts.map((deptIdOrName, idx) => {
+                                        const d = memoizedDepartments.find(dept => dept.id === deptIdOrName || dept.name === deptIdOrName);
+                                        return (
+                                          <span key={idx} style={{ fontSize: 9, background: 'var(--secondary)', color: 'var(--teal)', padding: '4px 10px', borderRadius: 8, fontWeight: 900, letterSpacing: '0.08em', border: '1px solid var(--border)', textTransform: 'uppercase' }}>
+                                            {d ? d.name : deptIdOrName}
+                                          </span>
+                                        );
+                                      })}
+                                      {depts.length === 0 && <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>—</span>}
+                                    </div>
                                   );
                                 })()}
                               </td>
                               <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                                  {task.submitterName && (
-                                    <div style={{
-                                      width: 32, height: 32, borderRadius: 10,
-                                      background: 'var(--secondary)', border: '1px solid var(--border)',
-                                      color: 'var(--teal)', fontSize: 12, fontWeight: 900,
-                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                      flexShrink: 0, overflow: 'hidden'
-                                    }}>
-                                      {userAvatarByUid[task.submitterId || ''] ? (
-                                        <img src={userAvatarByUid[task.submitterId || '']} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                      ) : (
-                                        task.submitterName.charAt(0).toUpperCase()
-                                      )}
-                                    </div>
-                                  )}
-                                  <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>{task.submitterName || '—'}</span>
+                                  {(() => {
+                                    const names = Array.isArray(task.submitterName) ? task.submitterName : (task.submitterName ? [task.submitterName] : []);
+                                    const ids = Array.isArray(task.submitterId) ? task.submitterId : (task.submitterId ? [task.submitterId] : []);
+                                    if (names.length === 0) return <span style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 600 }}>—</span>;
+                                    
+                                    return (
+                                      <>
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                          {ids.slice(0, 3).map((id, i) => (
+                                            <div key={id} style={{
+                                              width: 24, height: 24, borderRadius: 8,
+                                              background: 'var(--secondary)', border: '1.5px solid #ffffff',
+                                              color: 'var(--teal)', fontSize: 9, fontWeight: 900,
+                                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                              flexShrink: 0, overflow: 'hidden',
+                                              marginLeft: i > 0 ? -8 : 0,
+                                              zIndex: 10 - i,
+                                              position: 'relative'
+                                            }}>
+                                              {userAvatarByUid[id] ? (
+                                                <img src={userAvatarByUid[id]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                              ) : (
+                                                (names[i] || '?').charAt(0).toUpperCase()
+                                              )}
+                                            </div>
+                                          ))}
+                                          {ids.length > 3 && (
+                                            <div style={{
+                                              width: 24, height: 24, borderRadius: 8,
+                                              background: '#e2e8f0', border: '1.5px solid #ffffff',
+                                              color: '#64748b', fontSize: 8, fontWeight: 900,
+                                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                              marginLeft: -8, zIndex: 1, position: 'relative'
+                                            }}>
+                                              +{ids.length - 3}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                          {names.join(', ')}
+                                        </span>
+                                      </>
+                                    );
+                                  })()}
                                 </div>
                               </td>
                               <td style={{ padding: '12px 16px', textAlign: 'center' }}>

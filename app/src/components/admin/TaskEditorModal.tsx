@@ -12,6 +12,7 @@ import { useCollection, useDocument } from 'react-firebase-hooks/firestore';
 import { collection, query, orderBy, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import EliteDatePicker from '@/components/shared/EliteDatePicker';
+import EliteDropdown from '@/components/dashboard/EliteDropdown';
 import { PRECINCTS } from '@/lib/constants';
 
 interface TaskEditorProps {
@@ -64,7 +65,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
   const [formData, setFormData] = useState<Partial<Task>>({
     title: '',
     description: '',
-    department: 'BIM',
+    department: [],
     completion: 0,
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     fileShareLink: '',
@@ -73,9 +74,9 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
     vectors: [],
     submittingDate: new Date().toISOString(),
     pendingReviewDate: null,
-    submitterName: '',
-    submitterEmail: '',
-    submitterId: '',
+    submitterName: [],
+    submitterEmail: [],
+    submitterId: [],
     precinct: ''
   });
 
@@ -147,7 +148,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         ...task,
         title: task.title || '',
         description: task.description || '',
-        department: task.department || 'BIM',
+        department: Array.isArray(task.department) ? task.department : (task.department ? [task.department] : []),
         completion: task.completion || 0,
         timeZone: task.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone,
         fileShareLink: task.fileShareLink || '',
@@ -155,9 +156,9 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         cde: Array.isArray(task.cde) ? task.cde : (task.cde ? [task.cde] : []),
         vectors: task.vectors || [],
         submittingDate: task.submittingDate || (task as any).actualEndDate || (task as any).actualStartDate || new Date().toISOString(),
-        submitterName: task.submitterName || '',
-        submitterEmail: task.submitterEmail || '',
-        submitterId: task.submitterId || '',
+        submitterName: Array.isArray(task.submitterName) ? task.submitterName : (task.submitterName ? [task.submitterName] : []),
+        submitterEmail: Array.isArray(task.submitterEmail) ? task.submitterEmail : (task.submitterEmail ? [task.submitterEmail] : []),
+        submitterId: Array.isArray(task.submitterId) ? task.submitterId : (task.submitterId ? [task.submitterId] : []),
         precinct: task.precinct || '',
       });
 
@@ -185,7 +186,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         id: newId,
         title: '',
         description: '',
-        department: '',
+        department: [],
         completion: 0,
         attachments: 0,
         files: [],
@@ -198,9 +199,9 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
         cde: [],
         submittingDate: '',
         pendingReviewDate: null,
-        submitterName: '',
-        submitterEmail: '',
-        submitterId: '',
+        submitterName: [],
+        submitterEmail: [],
+        submitterId: [],
         precinct: '',
         updatedAt: new Date().toISOString(),
       });
@@ -211,7 +212,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
   const handleSave = async () => {
     // Blocking Validation for Mandatory Fields
     const hasVectors = (formData.vectors || []).length > 0;
-    if (!formData.title?.trim() || !formData.department || !formData.precinct?.trim() || !formData.submitterId || !formData.submittingDate || !hasVectors) {
+    if (!formData.title?.trim() || !formData.department?.length || !formData.precinct?.trim() || !formData.submitterId?.length || !formData.submittingDate || !hasVectors) {
       setShowErrors(true);
       showToast('Please fill in all fields. Only Notes are optional.', 'ERROR');
       return;
@@ -265,9 +266,10 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
 
   const isActuallyReadOnly = readOnly || (!task && readOnly);
 
-  const handleDeptChange = (val: string) => {
-    const newId = generateNewId(val);
-    setFormData(prev => ({ ...prev, department: val, id: newId }));
+  const handleDeptChange = (vals: string[]) => {
+    const primaryDept = vals[0] || 'BIM';
+    const newId = generateNewId(primaryDept);
+    setFormData(prev => ({ ...prev, department: vals, id: newId }));
   };
 
   if (!isOpen) return null;
@@ -368,50 +370,41 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
                 <Tag size={12} color="#003F49" />
                 <span style={{ fontSize: 10, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Task Category</span>
               </div>
-              <select
-                value={departments.find(d => d.id === formData.department || d.name === formData.department)?.id || ''}
-                onChange={e => handleDeptChange(e.target.value)}
-                disabled={isActuallyReadOnly}
-                style={{
-                  width: '100%', padding: '12px 16px', borderRadius: 12, background: '#eef2ff',
-                  border: (showErrors && !formData.department) ? '2px solid #ef4444' : '1px solid rgba(0, 63, 73, 0.15)',
-                  color: '#003f49', fontSize: 13, fontWeight: 700, outline: 'none', appearance: 'none'
-                }}
-              >
-                <option value="">Select Category</option>
-                {departments.map(d => (<option key={d.id} value={d.id}>{d.name}</option>))}
-              </select>
+              <EliteDropdown
+                value={formData.department || []}
+                options={departments.map(d => ({ label: d.name, value: d.id }))}
+                onChange={handleDeptChange}
+                isMulti={true}
+                allLabel="Select Categories"
+                fullWidth={true}
+                variant="form"
+                error={showErrors && (!formData.department || formData.department.length === 0)}
+              />
             </div>
 
-            {/* Submitter */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <UserCheck size={12} color="#D4AF37" />
                 <span style={{ fontSize: 10, fontWeight: 950, color: '#003F49', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Submitter Signature</span>
               </div>
-              <select
-                value={formData.submitterId || ''}
-                onChange={e => {
-                  const selected = personnel.find(p => p.id === e.target.value);
+              <EliteDropdown
+                value={formData.submitterId || []}
+                options={personnel.map(p => ({ label: p.name, value: p.id }))}
+                onChange={(vals: string[]) => {
+                  const selectedPersonnel = personnel.filter(p => vals.includes(p.id));
                   setFormData({
                     ...formData,
-                    submitterId: e.target.value,
-                    submitterEmail: selected ? selected.email : '',
-                    submitterName: selected ? selected.name : ''
+                    submitterId: vals,
+                    submitterEmail: selectedPersonnel.map(p => p.email),
+                    submitterName: selectedPersonnel.map(p => p.name)
                   });
                 }}
-                disabled={isActuallyReadOnly}
-                style={{
-                  width: '100%', padding: '12px 16px', borderRadius: 12,
-                  background: isActuallyReadOnly ? 'rgba(0,0,0,0.02)' : '#eef2ff',
-                  border: (showErrors && !formData.submitterId) ? '2px solid #ef4444' : '1px solid rgba(0, 63, 73, 0.15)',
-                  color: '#003f49', fontSize: 13, fontWeight: 700, outline: 'none',
-                  cursor: isActuallyReadOnly ? 'not-allowed' : 'pointer'
-                }}
-              >
-                <option value="">Select Personnel</option>
-                {personnel.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
-              </select>
+                isMulti={true}
+                allLabel="Select Signatures"
+                fullWidth={true}
+                variant="form"
+                error={showErrors && (!formData.submitterId || formData.submitterId.length === 0)}
+              />
             </div>
 
 

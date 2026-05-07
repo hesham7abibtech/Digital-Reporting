@@ -55,7 +55,7 @@ export interface Task {
   id: string;
   title: string;
   description: string;
-  department: string;
+  department: string[];
   status?: TaskStatus;
   completion: number;
   attachments: number;
@@ -70,9 +70,9 @@ export interface Task {
   cde?: string[];
   pendingReviewDate?: string | null; // When task entered PENDING_REVIEW status
   submittingDate?: string | null;
-  submitterName?: string;
-  submitterEmail?: string;
-  submitterId?: string;
+  submitterName?: string[];
+  submitterEmail?: string[];
+  submitterId?: string[];
   precinct?: string;
 
   createdAt: string;
