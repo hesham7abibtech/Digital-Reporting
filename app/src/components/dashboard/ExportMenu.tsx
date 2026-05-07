@@ -89,7 +89,17 @@ export default function ExportMenu({
     type: 'pdf' | 'excel', 
     perspective: 'table' | 'dashboard' | 'both', 
     onProgress: (p: number) => void,
-    filters?: { types?: string[], cdes?: string[], precincts?: string[], categories?: string[], submitters?: string[] },
+    filters?: { 
+      types?: string[], 
+      cdes?: string[], 
+      precincts?: string[],
+      categories?: string[],
+      submitters?: string[],
+      stages?: string[],
+      statuses?: string[],
+      stakeholders?: string[],
+      reviewers?: string[]
+    },
     selectedColumns?: string[]
   ) => {
     onProgress(10);
@@ -101,7 +111,7 @@ export default function ExportMenu({
       let chartImages: CapturedChart[] = [];
       if (perspective === 'dashboard' || perspective === 'both') {
         onProgress(30);
-        chartImages = await captureChartImages('#analytics-dashboard-export-root', {
+        chartImages = await captureChartImages('#analytics-dashboard-export-root-offscreen', {
           mode: 'full-dashboard',
           title: 'Deliverables Analytics Dashboard'
         });

@@ -65,6 +65,8 @@ function DarkGlassCard({ children, style = {}, className = '' }: { children: Rea
 
 function DarkChartCard({ title, subtitle, children, delay = 0, height = '100%' }: { title: string, subtitle?: string, children: React.ReactNode, delay?: number, height?: string | number }) {
   const [mounted, setMounted] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 150);
     return () => clearTimeout(timer);
@@ -75,16 +77,26 @@ function DarkChartCard({ title, subtitle, children, delay = 0, height = '100%' }
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.5, ease: 'easeOut' }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{ height: '100%' }}
     >
-      <DarkGlassCard style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '16px 20px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 }}>
+      <DarkGlassCard style={{ 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column',
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        transform: isHovered ? 'translateY(-6px)' : 'none',
+        boxShadow: isHovered ? '0 30px 60px rgba(0, 0, 0, 0.6)' : 'none',
+        border: isHovered ? `1px solid ${THEME.primary}40` : `1px solid ${THEME.cardBorder}`
+      }}>
+        <div style={{ padding: '20px 24px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 }}>
           <div>
-            <h3 style={{ fontSize: '14px', color: THEME.textPrimary, margin: 0, fontWeight: 700, letterSpacing: '0.02em', fontFamily: 'Inter, sans-serif' }}>{title}</h3>
-            {subtitle && <p style={{ fontSize: '11px', color: THEME.textMuted, margin: '4px 0 0', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{subtitle}</p>}
+            <h3 style={{ fontSize: '15px', color: THEME.textPrimary, margin: 0, fontWeight: 950, letterSpacing: '0.05em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>{title}</h3>
+            {subtitle && <p style={{ fontSize: '10px', color: THEME.textMuted, margin: '6px 0 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{subtitle}</p>}
           </div>
         </div>
-        <div style={{ flex: 1, padding: '8px 16px 16px', position: 'relative', minHeight: 0 }}>
+        <div style={{ flex: 1, padding: '8px 20px 20px', position: 'relative', minHeight: 0 }}>
           {mounted ? children : (
             <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: THEME.textMuted, fontSize: '12px', fontWeight: 600 }}>Loading Data...</div>
           )}
@@ -171,19 +183,19 @@ function DarkTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      padding: '14px 20px', borderRadius: '12px',
-      background: '#000000',
+      padding: '16px 22px', borderRadius: '14px',
+      background: 'rgba(0, 0, 0, 0.95)',
       border: `2px solid ${THEME.cardBorder}`,
-      boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(208, 171, 130, 0.1)',
       zIndex: 99999,
-      backdropFilter: 'blur(20px)'
+      backdropFilter: 'blur(25px)',
+      boxShadow: '0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(176, 141, 62, 0.2)',
     }}>
-      {label && <p style={{ fontWeight: 900, color: '#ffffff', margin: '0 0 10px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</p>}
+      {label && <p style={{ fontWeight: 950, color: '#ffffff', margin: '0 0 14px', fontSize: '15px', textTransform: 'uppercase', letterSpacing: '0.15em', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>{label}</p>}
       {payload.map((p: any, i: number) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
-          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: p.color || p.fill, border: '1.5px solid rgba(255, 255, 255, 0.2)' }} />
-          <span style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{p.name}:</span>
-          <span style={{ color: '#ffffff', fontWeight: 950, fontSize: '14px' }}>{p.value}</span>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
+          <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: p.color || p.fill, border: '2px solid rgba(255, 255, 255, 0.3)', boxShadow: `0 0 10px ${p.color || p.fill}60` }} />
+          <span style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{p.name}:</span>
+          <span style={{ color: '#ffffff', fontWeight: 950, fontSize: '16px' }}>{p.value}</span>
         </div>
       ))}
     </div>
@@ -194,55 +206,91 @@ function DarkDonutTooltip({ active, payload, total }: any) {
   if (!active || !payload?.length) return null;
   const d = payload[0];
   const pct = total > 0 ? ((d.value / total) * 100).toFixed(1) : '0';
+  const color = d.payload.color || THEME.primary;
   return (
     <div style={{
-      padding: '14px 18px', borderRadius: '12px', minWidth: '180px',
-      background: THEME.bgBase,
-      border: `1px solid ${d.payload.color || THEME.primary}`,
-      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)',
+      padding: '18px 24px', borderRadius: '16px', minWidth: '220px',
+      background: 'rgba(10, 10, 15, 0.98)',
+      border: `2px solid ${color}`,
       pointerEvents: 'none',
-      zIndex: 1000
+      zIndex: 1000,
+      backdropFilter: 'blur(20px)',
+      boxShadow: `0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px ${color}40`,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-        <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: d.payload.color || THEME.primary }} />
-        <span style={{ fontSize: '12px', fontWeight: 700, color: THEME.textPrimary, textTransform: 'uppercase' }}>{d.name}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+        <span style={{ width: '14px', height: '14px', borderRadius: '4px', background: color, boxShadow: `0 0 10px ${color}` }} />
+        <span style={{ fontSize: '14px', fontWeight: 900, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{d.name}</span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '4px' }}>
-        <span style={{ fontSize: '24px', fontWeight: 800, color: THEME.textPrimary }}>{d.value}</span>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '10px' }}>
+        <span style={{ fontSize: '32px', fontWeight: 950, color: '#ffffff', lineHeight: 1 }}>{d.value}</span>
+        <span style={{ fontSize: '14px', color: THEME.textSecondary, fontWeight: 700 }}>UNITS</span>
       </div>
-      <div style={{ width: '100%', height: '6px', borderRadius: '3px', background: THEME.cardBg, overflow: 'hidden', marginBottom: '6px' }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: d.payload.color || THEME.primary }} />
+      <div style={{ width: '100%', height: '8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', overflow: 'hidden', marginBottom: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: color, boxShadow: `0 0 15px ${color}` }} />
       </div>
-      <span style={{ fontSize: '11px', color: THEME.textSecondary, fontWeight: 600 }}>{pct}% OF TOTAL</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: '12px', color: THEME.textSecondary, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contribution</span>
+        <span style={{ fontSize: '13px', color: color, fontWeight: 950 }}>{pct}%</span>
+      </div>
     </div>
   );
 }
 
-function renderDarkDonutLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) {
+function renderDarkDonutLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, fill }: any) {
   const RADIAN = Math.PI / 180;
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  if (percent < 0.05) return null;
+  
+  if (percent < 0.04) return null;
+
+  // LUMINOSITY CONTRAST ENGINE
+  const getContrastColor = (hexColor: string) => {
+    if (!hexColor || typeof hexColor !== 'string') return '#ffffff';
+    let hex = hexColor.replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(s => s + s).join('');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.65 ? '#000000' : '#ffffff';
+  };
+
+  const textColor = getContrastColor(fill);
+
   return (
-    <text x={x} y={y} fill="#ffffff" textAnchor="middle" dominantBaseline="central" fontSize="11" fontWeight="700" style={{ pointerEvents: 'none', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+    <text 
+      x={x} y={y} 
+      fill={textColor} 
+      textAnchor="middle" 
+      dominantBaseline="central" 
+      fontSize="12" 
+      fontWeight="950" 
+      style={{ 
+        pointerEvents: 'none', 
+        textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+        letterSpacing: '0.02em'
+      }}
+    >
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   );
 }
 
 const darkAxisProps = {
-  tick: { fill: THEME.textMuted, fontSize: 12, fontWeight: 700, fontFamily: 'Inter' },
+  tick: { fill: THEME.textMuted, fontSize: 13, fontWeight: 800, fontFamily: 'Inter' },
   axisLine: { stroke: THEME.cardBorder, strokeWidth: 1.5 },
   tickLine: { stroke: THEME.cardBorder, strokeWidth: 1.5 },
 };
 
 function WrappingXAxisTick(props: any) {
   const { x, y, payload } = props;
-  const words = (payload.value || '').split(' ');
+  const words = (payload.value || '').split(/[\s-]+/);
+  const processedWords = words.map((w: string) => w.length > 10 ? w.substring(0, 9) + '..' : w);
+  
   return (
     <g transform={`translate(${x},${y})`}>
-      {words.map((word: string, i: number) => (
+      {processedWords.slice(0, 3).map((word: string, i: number) => (
         <text
           key={i}
           x={0}
@@ -250,10 +298,10 @@ function WrappingXAxisTick(props: any) {
           dy={12}
           textAnchor="middle"
           fill={THEME.textMuted}
-          fontSize={9}
-          fontWeight={800}
+          fontSize={10}
+          fontWeight={950}
           fontFamily="Inter"
-          style={{ textTransform: 'uppercase', letterSpacing: '0.02em' }}
+          style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
         >
           {word}
         </text>
@@ -301,13 +349,14 @@ export default function PremiumAnalyticsDashboardView({
   filterCDE = [], setFilterCDE, availableCDEs = [],
   filterPrecinct = [], setFilterPrecinct, availablePrecincts = [],
   filterSubmitter = [], setFilterSubmitter, availableSubmitters = [],
-  isExportMode = false
-}: PremiumAnalyticsDashboardViewProps & { isExportMode?: boolean }) {
+  isExportMode = false,
+  id
+}: PremiumAnalyticsDashboardViewProps & { isExportMode?: boolean, id?: string }) {
   const [isExporting, setIsExporting] = useState(false);
   const dashboardRef = useRef<HTMLDivElement>(null);
 
   // ─── Data Computations (similar to original) ─────────────────────────
-  const { kpiStats, categoryData, timelineData, submitterData, typeData, typeTotal, cdeData, cdeTotal } = useMemo(() => {
+  const { kpiStats, categoryData, timelineData, precinctData, submitterData, typeData, typeTotal, cdeData, cdeTotal } = useMemo(() => {
     const totalDeliverables = tasks.length;
 
     const getResolvedDept = (raw: string) => {
@@ -368,6 +417,16 @@ export default function PremiumAnalyticsDashboardView({
         return { name: `${mNames[parseInt(m) - 1]} ${y.slice(2)}`, value: count };
       });
 
+    // Precinct Data
+    const precinctCounts: Record<string, number> = {};
+    tasks.forEach(t => {
+      const p = t.precinct || 'N/A';
+      precinctCounts[p] = (precinctCounts[p] || 0) + 1;
+    });
+    const precinctData = Object.entries(precinctCounts)
+      .map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] }))
+      .sort((a, b) => b.value - a.value);
+
     // Submitter Data
     const subCounts: Record<string, number> = {};
     tasks.forEach(t => {
@@ -395,6 +454,7 @@ export default function PremiumAnalyticsDashboardView({
       .map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] }))
       .sort((a, b) => b.value - a.value);
     const typeTotal = typeData.reduce((s, d) => s + d.value, 0);
+    const primaryType = typeData[0]?.name || '-';
 
     // CDE Data
     const cdeCounts: Record<string, number> = {};
@@ -414,8 +474,9 @@ export default function PremiumAnalyticsDashboardView({
         totalDeliverables,
         activeCategories: categoriesSet.size,
         activeSubmitters: submittersSet.size,
+        primaryType,
       },
-      categoryData, timelineData, submitterData, typeData, typeTotal, cdeData, cdeTotal
+      categoryData, timelineData, precinctData, submitterData, typeData, typeTotal, cdeData, cdeTotal
     };
   }, [tasks, departments, members]);
 
@@ -509,7 +570,7 @@ export default function PremiumAnalyticsDashboardView({
   };
 
   return (
-    <div id="analytics-dashboard-export-root" style={{
+    <div id={id || "analytics-dashboard-export-root"} style={{
       background: isExportMode ? '#0d1117' : THEME.bgBase,
       minHeight: isExportMode ? '900px' : '100%',
       height: isExportMode ? '900px' : undefined,
@@ -546,18 +607,22 @@ export default function PremiumAnalyticsDashboardView({
               {setFilterPrecinct && (
                 <EliteDropdown value={filterPrecinct} options={availablePrecincts.map(s => ({ label: s, value: s }))} onChange={setFilterPrecinct} menuLabel="Precinct" isMulti allLabel="All Precincts" />
               )}
-              {(
-                (filterDept.length > 0 && !filterDept.includes('All Categories')) ||
+              {setFilterSubmitter && (
+                <EliteDropdown value={filterSubmitter} options={availableSubmitters.map(s => ({ label: s, value: s }))} onChange={setFilterSubmitter} menuLabel="Submitter" isMulti allLabel="All Submitters" />
+              )}
+              {((filterDept.length > 0 && !filterDept.includes('All Categories')) ||
                 (filterType.length > 0 && !filterType.includes('All Types')) ||
                 (filterCDE.length > 0 && !filterCDE.includes('All CDE')) ||
-                (filterPrecinct.length > 0 && !filterPrecinct.includes('All Precincts'))
+                (filterPrecinct.length > 0 && !filterPrecinct.includes('All Precincts')) ||
+                (filterSubmitter.length > 0 && !filterSubmitter.includes('All Submitters'))
               ) && (
                   <button
                     onClick={() => {
-                      if (setFilterDept) setFilterDept([]);
-                      if (setFilterType) setFilterType([]);
-                      if (setFilterCDE) setFilterCDE([]);
-                      if (setFilterPrecinct) setFilterPrecinct([]);
+                      if (setFilterDept) setFilterDept(['All Categories']);
+                      if (setFilterType) setFilterType(['All Types']);
+                      if (setFilterCDE) setFilterCDE(['All CDE']);
+                      if (setFilterPrecinct) setFilterPrecinct(['All Precincts']);
+                      if (setFilterSubmitter) setFilterSubmitter(['All Submitters']);
                     }}
                     style={{
                       background: 'transparent', border: 'none', color: '#ef4444', fontSize: 11, fontWeight: 700, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderRadius: 8, textTransform: 'uppercase', letterSpacing: '0.05em'
@@ -582,7 +647,7 @@ export default function PremiumAnalyticsDashboardView({
           flexDirection: 'column',
           gap: isExportMode ? '14px' : '32px',
           height: isExportMode ? '100%' : 'calc(100vh - 110px)',
-          minHeight: isExportMode ? '0' : '750px',
+          minHeight: isExportMode ? '0' : '1350px',
           overflow: 'hidden',
           boxSizing: 'border-box',
         }}
@@ -590,7 +655,7 @@ export default function PremiumAnalyticsDashboardView({
         {/* KPI Top Row */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: 'repeat(5, 1fr)',
           gap: isExportMode ? '10px' : '32px',
           height: isExportMode ? '76px' : '120px',
           flexShrink: 0,
@@ -600,6 +665,7 @@ export default function PremiumAnalyticsDashboardView({
           <DarkKPICard label="Total Deliverables" value={kpiStats.totalDeliverables} icon={<Database size={isExportMode ? 15 : 20} />} color={THEME.primary} delay={0.1} hoverData={categoryData} />
           <DarkKPICard label="Active Categories" value={kpiStats.activeCategories} icon={<FolderOpen size={isExportMode ? 15 : 20} />} color={THEME.secondary} delay={0.2} hoverData={categoryData.slice(0, 5)} />
           <DarkKPICard label="Team Members" value={kpiStats.activeSubmitters} icon={<Users size={isExportMode ? 15 : 20} />} color={THEME.accent} delay={0.3} hoverData={submitterData.slice(0, 5)} />
+          <DarkKPICard label="Primary Type" value={kpiStats.primaryType} icon={<FileText size={isExportMode ? 15 : 20} />} color="#c084fc" delay={0.35} hoverData={typeData.slice(0, 5)} />
           <DarkKPICard label="Primary Environment" value={cdeData[0]?.name || '-'} icon={<CloudCog size={isExportMode ? 15 : 20} />} color={THEME.warning} delay={0.4} hoverData={cdeData} />
         </div>
 
@@ -633,9 +699,9 @@ export default function PremiumAnalyticsDashboardView({
           </DarkChartCard>
 
           {/* Top Right: Deliverables by Category */}
-          <DarkChartCard title="Deliverables by Category" subtitle="Distribution across departments" delay={0.6}>
+          <DarkChartCard title="Deliverables by Category" subtitle="Top organizational distribution" delay={0.6}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={categoryData.slice(0, 7)} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} layout="vertical">
+              <BarChart data={categoryData.slice(0, 12)} margin={{ top: 10, right: 30, left: -10, bottom: 0 }} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={THEME.cardBorder} />
                 <XAxis type="number" {...darkAxisProps} />
                 <YAxis dataKey="name" type="category" width={100} {...darkAxisProps} tick={{ ...darkAxisProps.tick, fontSize: 10 }} />
@@ -649,10 +715,10 @@ export default function PremiumAnalyticsDashboardView({
             </ResponsiveContainer>
           </DarkChartCard>
 
-          {/* Bottom Left: Submitter Performance */}
-          <DarkChartCard title="Top Submitters" subtitle="Activity by team member" delay={0.7}>
+          {/* Bottom Left: Precinct Distribution */}
+          <DarkChartCard title="Precinct Distribution" subtitle="Activity by project location" delay={0.7}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={submitterData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={precinctData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={THEME.cardBorder} />
                 <XAxis
                   dataKey="name"
@@ -664,8 +730,8 @@ export default function PremiumAnalyticsDashboardView({
                 />
                 <YAxis {...darkAxisProps} />
                 <Tooltip content={<DarkTooltip />} cursor={{ fill: THEME.cardBorder, opacity: 0.4 }} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={24} isAnimationActive={false}>
-                  {submitterData.map((entry, index) => (
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={42} isAnimationActive={false} label={{ position: 'top', fill: THEME.textPrimary, fontSize: 11, fontWeight: 900 }}>
+                  {precinctData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Bar>
@@ -678,13 +744,26 @@ export default function PremiumAnalyticsDashboardView({
             <DarkChartCard title="Asset Types" subtitle="Deliverable classification" delay={0.8}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={typeData} cx="40%" cy="50%" innerRadius="45%" outerRadius="70%" paddingAngle={2} dataKey="value" stroke="none" labelLine={false} label={renderDarkDonutLabel} isAnimationActive={false}>
+                  <Pie 
+                    data={typeData} 
+                    cx="50%" 
+                    cy="45%" 
+                    innerRadius="40%" 
+                    outerRadius="72%" 
+                    paddingAngle={3} 
+                    minAngle={8}
+                    dataKey="value" 
+                    stroke="none" 
+                    labelLine={false} 
+                    label={renderDarkDonutLabel} 
+                    isAnimationActive={false}
+                  >
                     {typeData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip content={<DarkDonutTooltip total={typeTotal} />} />
-                  <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" wrapperStyle={{ fontSize: 9, color: THEME.textPrimary, textTransform: 'uppercase', fontWeight: 800, paddingLeft: '20px', lineHeight: '24px' }} />
+                  <Legend layout="horizontal" verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: 10, color: THEME.textPrimary, textTransform: 'uppercase', fontWeight: 950, paddingTop: '20px' }} />
                 </PieChart>
               </ResponsiveContainer>
             </DarkChartCard>
@@ -692,13 +771,26 @@ export default function PremiumAnalyticsDashboardView({
             <DarkChartCard title="CDE Environments" subtitle="System utilization" delay={0.9}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={cdeData} cx="40%" cy="50%" innerRadius="45%" outerRadius="70%" paddingAngle={2} dataKey="value" stroke="none" labelLine={false} label={renderDarkDonutLabel} isAnimationActive={false}>
+                  <Pie 
+                    data={cdeData} 
+                    cx="50%" 
+                    cy="45%" 
+                    innerRadius="40%" 
+                    outerRadius="72%" 
+                    paddingAngle={3} 
+                    minAngle={8}
+                    dataKey="value" 
+                    stroke="none" 
+                    labelLine={false} 
+                    label={renderDarkDonutLabel} 
+                    isAnimationActive={false}
+                  >
                     {cdeData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip content={<DarkDonutTooltip total={cdeTotal} />} />
-                  <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" wrapperStyle={{ fontSize: 9, color: THEME.textPrimary, textTransform: 'uppercase', fontWeight: 800, paddingLeft: '20px', lineHeight: '24px' }} />
+                  <Legend layout="horizontal" verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: 10, color: THEME.textPrimary, textTransform: 'uppercase', fontWeight: 950, paddingTop: '20px' }} />
                 </PieChart>
               </ResponsiveContainer>
             </DarkChartCard>

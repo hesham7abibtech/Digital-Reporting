@@ -63,11 +63,11 @@ export default function BIMImportConfirmModal({
                 }}>
                   <tr>
                     <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Project & Milestone</th>
-                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Priority</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Design Stage</th>
                     <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>InSite Status</th>
                     <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Stakeholder</th>
-                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>ACC Status</th>
-                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Submission Date</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>ACC Review ID</th>
+                    <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase' }}>Due Date</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -77,16 +77,16 @@ export default function BIMImportConfirmModal({
                         <div>{rec.Project}</div>
                         <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>{(rec["Milestone Submissions"] || []).join(', ')}</div>
                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-secondary)' }}>{rec.Priority}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-secondary)' }}>{rec["Design Stage"]}</td>
                       <td style={{ padding: '12px 16px', fontSize: 12 }}>
                         <span style={{ background: 'var(--secondary)', color: 'var(--teal)', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 900 }}>{rec["InSite Review Status"] || 'PENDING'}</span>
                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-secondary)' }}>{rec.Stakeholder}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: '#059669', fontWeight: 800 }}>
-                        {(rec["ACC Status"] || []).length > 0 ? (rec["ACC Status"] || []).join(', ') : 'NOT SHARED'}
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-dim)', fontWeight: 800 }}>
+                        {rec["ACC Review ID"] || '—'}
                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-secondary)', fontWeight: 700 }}>
-                        {(rec["Planned Submission Date"] || [])[0] || '—'}
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: '#FF7908', fontWeight: 700 }}>
+                        {rec["InSite Review Due Date"] || '—'}
                       </td>
                     </tr>
                   ))}
@@ -116,7 +116,7 @@ export default function BIMImportConfirmModal({
                     transition: 'all 200ms'
                   }}
                 >
-                  <Database size={16} />
+                  {isLoading ? <Loader2 className="animate-spin" size={16} /> : <Database size={16} />}
                   APPEND RECORDS
                 </button>
 
@@ -130,7 +130,7 @@ export default function BIMImportConfirmModal({
                     boxShadow: '0 8px 20px rgba(239, 68, 68, 0.3)', transition: 'all 200ms'
                   }}
                 >
-                  <Trash2 size={16} />
+                  {isLoading ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
                   OVERWRITE MATRIX
                 </button>
               </div>

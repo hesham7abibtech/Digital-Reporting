@@ -118,19 +118,18 @@ export async function parseBimReviewsExcel(buffer: ArrayBuffer): Promise<Partial
       return {
         "ID": String(getVal(['ID', 'id', 'record id', 'uid', 'reference'], 0)),
         "Precinct": parseMultiValue(getVal(['Precinct', 'site', 'location', 'area'], 1)),
-        "Stakeholder": String(getVal(['Stakeholder', 'consultant', 'lead', 'party', 'company'], 2)),
-        "Project": String(getVal(['Project', 'project name', 'project detail', 'development'], 3)),
+        "Project": String(getVal(['Project', 'project name', 'project detail', 'development'], 2)),
+        "Stakeholder": String(getVal(['Stakeholder', 'consultant', 'lead', 'party', 'company'], 3)),
+        "Submitter": String(getVal(['Submitter', 'author', 'originator', 'submitted by', 'created by', 'owner'], 13)), // Enhanced mapping
         "Milestone Submissions": parseMultiValue(getVal(['Milestone Submissions', 'description', 'milestone', 'deliverable'], 4)),
         "Submission Category": parseMultiValue(getVal(['Submission Category', 'category', 'type', 'submission type'], 5)),
-        "Planned Submission Date": parseMultiDate(getVal(['Planned Submission Date', 'submission date', 'target date', 'planned date'], 6)),
-        "ACC Status": parseMultiValue(getVal(['ACC Status', 'on acc', 'audit status', 'acc audit', 'status'], 7)),
-        "Priority": String(getVal(['Priority', 'stage', 'phase', 'design stage'], 8) || 'MEDIUM'),
-        "ACC Review ID": String(getVal(['ACC Review ID', 'review #', 'review id', 'acc id'], 9)),
-        "InSite Review Status": String(getVal(['InSite Review Status', 'review status', 'gate status', 'insite status'], 10)),
-        "InSite Review Due Date": parseExcelDate(getVal(['InSite Review Due Date', 'due date', 'review due date', 'due'], 11)),
-        "InSite Reviewer": parseMultiValue(getVal(['InSite Reviewer', 'reviewer', 'reviewer name'], 12)),
-        "InSite Review Output ACC URL": String(getVal(['InSite Review Output ACC URL', 'acc url', 'output url', 'link', 'url'], 13)),
-        "Comments": String(getVal(['Comments', 'comment', 'notes'], 14)),
+        "Design Stage": String(getVal(['Design Stage', 'stage', 'phase', 'priority'], 6) || 'Detailed Design'),
+        "ACC Review ID": String(getVal(['ACC Review ID', 'review #', 'review id', 'acc id'], 7)),
+        "InSite Review Status": String(getVal(['InSite Review Status', 'review status', 'gate status', 'insite status'], 8)),
+        "InSite Review Due Date": parseExcelDate(getVal(['InSite Review Due Date', 'due date', 'review due date', 'due'], 9)),
+        "InSite Reviewer": parseMultiValue(getVal(['InSite Reviewer', 'reviewer', 'reviewer name'], 10)),
+        "InSite Review Output ACC URL": String(getVal(['InSite Review Output ACC URL', 'acc url', 'output url', 'link', 'url'], 11)),
+        "General Comments": String(getVal(['General Comments', 'comments', 'comment', 'notes'], 12)),
       };
     }).filter((r): r is any => r !== null && !!(r.Project || r.ID));
 

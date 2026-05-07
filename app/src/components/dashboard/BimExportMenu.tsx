@@ -29,6 +29,14 @@ interface BimExportMenuProps {
   filterReviewer: string[];
   setFilterReviewer: (val: string[]) => void;
   availableReviewers: string[];
+  
+  filterPrecinct: string[];
+  setFilterPrecinct: (val: string[]) => void;
+  availablePrecincts: string[];
+  
+  filterSubmitter: string[];
+  setFilterSubmitter: (val: string[]) => void;
+  availableSubmitters: string[];
 
   // Global mode and dates
   filterMode: 'monthly' | 'custom' | 'all';
@@ -52,6 +60,8 @@ export default function BimExportMenu({
   filterStatus, setFilterStatus, availableStatuses,
   filterStakeholder, setFilterStakeholder, availableStakeholders,
   filterReviewer, setFilterReviewer, availableReviewers,
+  filterPrecinct, setFilterPrecinct, availablePrecincts,
+  filterSubmitter, setFilterSubmitter, availableSubmitters,
   filterMode, setFilterMode, selectedYear, setSelectedYear, yearOptions,
   selectedMonth, setSelectedMonth, monthOptions,
   startDate, setStartDate, endDate, setEndDate,
@@ -84,7 +94,17 @@ export default function BimExportMenu({
     type: 'pdf' | 'excel', 
     perspective: 'table' | 'dashboard' | 'both', 
     onProgress: (p: number) => void,
-    filters?: { types: string[], cdes: string[] },
+    filters?: { 
+      types?: string[], 
+      cdes?: string[], 
+      precincts?: string[],
+      categories?: string[],
+      submitters?: string[],
+      stages?: string[],
+      statuses?: string[],
+      stakeholders?: string[],
+      reviewers?: string[]
+    },
     selectedColumns?: string[]
   ) => {
     onProgress(10);
@@ -96,7 +116,7 @@ export default function BimExportMenu({
         // Wait for off-screen render & chart animations
         await new Promise(r => setTimeout(r, 600));
 
-        chartImages = await captureChartImages('#bim-export-capture-root', {
+        chartImages = await captureChartImages('#bim-analytics-export-root-offscreen', {
           mode: 'full-dashboard',
           title: 'BIM Analytics Dashboard'
         });
@@ -107,12 +127,12 @@ export default function BimExportMenu({
       if (type === 'excel') {
         await new Promise(r => setTimeout(r, 600));
         onProgress(40);
-        result = await exportBimToExcel(bimReviews, projectMetadata, dateRangeText, perspective, selectedColumns, chartImages);
+        result = await exportBimToExcel(bimReviews, projectMetadata, dateRangeText, perspective, filters, selectedColumns, chartImages);
         onProgress(90);
       } else {
         await new Promise(r => setTimeout(r, 800));
         onProgress(40);
-        result = await exportBimToPDF(bimReviews, projectMetadata, dateRangeText, perspective, selectedColumns, chartImages);
+        result = await exportBimToPDF(bimReviews, projectMetadata, dateRangeText, perspective, filters, selectedColumns, chartImages);
         onProgress(90);
       }
       return result;
@@ -275,6 +295,12 @@ export default function BimExportMenu({
         filterReviewer={filterReviewer}
         setFilterReviewer={setFilterReviewer}
         availableReviewers={availableReviewers}
+        filterPrecinct={filterPrecinct}
+        setFilterPrecinct={setFilterPrecinct}
+        availablePrecincts={availablePrecincts}
+        filterSubmitter={filterSubmitter}
+        setFilterSubmitter={setFilterSubmitter}
+        availableSubmitters={availableSubmitters}
         members={members}
       />
     </div>

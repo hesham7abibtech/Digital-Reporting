@@ -324,19 +324,18 @@ export interface BIMReview {
   id: string;
   "ID": string;
   "Precinct": string[];
-  "Stakeholder": string;
   "Project": string;
+  "Stakeholder": string;
+  "Submitter": string;
   "Milestone Submissions": string[];
   "Submission Category": string[];
-  "Planned Submission Date": string[]; // Array of ISO Dates, properly formatted
-  "ACC Status": string[];
-  "Priority": string;
+  "Design Stage": string;
   "ACC Review ID": string;
   "InSite Review Status": string;
   "InSite Review Due Date": string | null;
   "InSite Reviewer": string[];
   "InSite Review Output ACC URL": string;
-  "Comments": string;
+  "General Comments": string;
   createdAt: string;
   updatedAt: string;
 }

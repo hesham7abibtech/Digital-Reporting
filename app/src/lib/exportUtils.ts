@@ -255,11 +255,20 @@ function drawPremiumFilterBar(doc: jsPDF, x: number, y: number, width: number, f
     return list.join(', ');
   };
 
-  filterEntries.push({ label: 'CATEGORIES', value: getFilterVal(filters?.categories, 'All Categories'), color: [70, 130, 180] });
-  filterEntries.push({ label: 'TYPES', value: getFilterVal(filters?.types, 'All Types'), color: [147, 112, 219] });
-  filterEntries.push({ label: 'CDE', value: getFilterVal(filters?.cdes, 'All CDE'), color: [60, 179, 113] });
-  filterEntries.push({ label: 'PRECINCTS', value: getFilterVal(filters?.precincts, 'All Precincts'), color: [255, 99, 71] });
-  filterEntries.push({ label: 'SUBMITTERS', value: getFilterVal(filters?.submitters, 'All Submitters'), color: [218, 165, 32] });
+  // Deliverables Filters
+  if (filters?.categories) filterEntries.push({ label: 'CATEGORIES', value: getFilterVal(filters.categories, 'All Categories'), color: [70, 130, 180] });
+  if (filters?.types) filterEntries.push({ label: 'TYPES', value: getFilterVal(filters.types, 'All Types'), color: [147, 112, 219] });
+  if (filters?.cdes) filterEntries.push({ label: 'CDE', value: getFilterVal(filters.cdes, 'All CDE'), color: [60, 179, 113] });
+  
+  // BIM Filters
+  if (filters?.stages) filterEntries.push({ label: 'STAGES', value: getFilterVal(filters.stages, 'All Stages'), color: [70, 130, 180] });
+  if (filters?.statuses) filterEntries.push({ label: 'STATUS', value: getFilterVal(filters.statuses, 'All Statuses'), color: [147, 112, 219] });
+  if (filters?.stakeholders) filterEntries.push({ label: 'STAKEHOLDERS', value: getFilterVal(filters.stakeholders, 'All Stakeholders'), color: [60, 179, 113] });
+  if (filters?.reviewers) filterEntries.push({ label: 'REVIEWERS', value: getFilterVal(filters.reviewers, 'All Reviewers'), color: [255, 121, 8] });
+  
+  // Common Filters
+  if (filters?.precincts) filterEntries.push({ label: 'PRECINCTS', value: getFilterVal(filters.precincts, 'All Precincts'), color: [255, 99, 71] });
+  if (filters?.submitters) filterEntries.push({ label: 'SUBMITTERS', value: getFilterVal(filters.submitters, 'All Submitters'), color: [218, 165, 32] });
 
   if (filterEntries.length === 0) return;
 
@@ -277,18 +286,18 @@ function drawPremiumFilterBar(doc: jsPDF, x: number, y: number, width: number, f
   doc.rect(x, barY + 2, 1.5, barH - 4, 'F');
 
   let currentX = x + 6;
-  doc.setFontSize(7.5);
+  doc.setFontSize(7); // Slightly smaller to fit more if needed
   doc.setFont('helvetica', 'bold');
 
   filterEntries.forEach((entry, idx) => {
     // Small icon dot
     doc.setFillColor(...entry.color);
-    doc.circle(currentX, barY + barH / 2, 1.2, 'F');
+    doc.circle(currentX, barY + barH / 2, 1.1, 'F');
     
     // Label
     doc.setTextColor(100, 116, 139);
     doc.setFont('helvetica', 'bold');
-    doc.text(entry.label, currentX + 4, barY + barH / 2 + 0.8);
+    doc.text(entry.label, currentX + 3, barY + barH / 2 + 0.8);
     
     const labelW = doc.getTextWidth(entry.label);
     
@@ -296,17 +305,17 @@ function drawPremiumFilterBar(doc: jsPDF, x: number, y: number, width: number, f
     doc.setTextColor(30, 41, 59);
     doc.setFont('helvetica', 'normal');
     const displayVal = entry.value.toUpperCase();
-    doc.text(displayVal, currentX + labelW + 7, barY + barH / 2 + 0.8);
+    doc.text(displayVal, currentX + labelW + 5, barY + barH / 2 + 0.8);
     
     const valW = doc.getTextWidth(displayVal);
     
-    currentX += labelW + valW + 18;
+    currentX += labelW + valW + 14; // Tightened spacing
     
     // Separator
     if (idx < filterEntries.length - 1 && currentX < x + width - 10) {
       doc.setDrawColor(226, 232, 240);
       doc.setLineWidth(0.2);
-      doc.line(currentX - 8, barY + 3, currentX - 8, barY + barH - 3);
+      doc.line(currentX - 6, barY + 3, currentX - 6, barY + barH - 3);
     }
   });
 }
@@ -611,6 +620,7 @@ function getDashboardAnalytics(tasks: Task[]) {
   const types: Record<string, number> = {};
   const cde: Record<string, number> = {};
   const submitters: Record<string, number> = {};
+  const precincts: Record<string, number> = {};
 
   tasks.forEach(t => {
     const depts = Array.isArray(t.department) ? t.department : (t.department ? [t.department] : []);
@@ -625,15 +635,23 @@ function getDashboardAnalytics(tasks: Task[]) {
     
     const names = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
     names.forEach(name => { submitters[name] = (submitters[name] || 0) + 1; });
+
+    const p = t.precinct || 'N/A';
+    precincts[p] = (precincts[p] || 0) + 1;
   });
+
+  const typeEntries = Object.entries(types).sort((a, b) => b[1] - a[1]);
+  const primaryType = typeEntries[0] ? typeEntries[0][0] : '-';
 
   return {
     total: tasks.length,
     categories: Object.entries(categories).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
-    types: Object.entries(types).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
+    types: typeEntries.map(([name, value]) => ({ name, value })),
     cde: Object.entries(cde).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
     submitters: Object.entries(submitters).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
-    activeSubmitters: Object.keys(submitters).length
+    precincts: Object.entries(precincts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
+    activeSubmitters: Object.keys(submitters).length,
+    primaryType
   };
 }
 
@@ -913,7 +931,8 @@ export async function exportToExcel(
       ['Total Deliverables', analytics.total],
       ['Active Technical Categories', analytics.categories.length],
       ['Unique Project Submitters', analytics.activeSubmitters],
-      ['Primary CDE Environment', analytics.cde[0]?.name || 'N/A'],
+      ['Primary Deliverable Type', analytics.primaryType],
+      ['Primary CDE Environment', (analytics as any).cde[0]?.name || 'N/A'],
       ['Report Period', dateRangeText || 'All Time'],
       ['Generated On', formatGeneratedOn()],
     ];
@@ -990,7 +1009,8 @@ export async function exportToExcel(
 
     addGroup('Functional Categories', analytics.categories);
     addGroup('Deliverable Types', analytics.types);
-    addGroup('CDE Usage', analytics.cde);
+    addGroup('CDE Usage', (analytics as any).cde);
+    addGroup('Precinct Distribution', (analytics as any).precincts);
     addGroup('Team Contributions', analytics.submitters);
 
     // 3. Chart Images (if provided)
@@ -1277,8 +1297,8 @@ export async function exportToPDF(
     const stats = [
       { label: 'TOTAL DELIVERABLES', value: analytics.total.toString() },
       { label: 'ACTIVE CATEGORIES', value: analytics.categories.length.toString() },
-      { label: 'PROJECT SUBMITTERS', value: analytics.activeSubmitters.toString() },
-      { label: 'PRIMARY CDE', value: (analytics.cde[0]?.name || 'N/A').toUpperCase() }
+      { label: 'PRIMARY TYPE', value: (analytics as any).primaryType.toUpperCase() },
+      { label: 'PRIMARY CDE', value: ((analytics as any).cde[0]?.name || 'N/A').toUpperCase() }
     ];
 
     stats.forEach((s, i) => {
@@ -1312,7 +1332,29 @@ export async function exportToPDF(
       head: [['Category', 'Count', 'Weight']],
       body: deptStats.map(({ name, value }) => [name, value.toString(), `${Math.round((value / tasks.length) * 100)}%`]),
       margin: { left: 8, right: 8 },
-      tableWidth: 120,
+      tableWidth: (pageWidth - 45) / 2,
+      styles: { fontSize: 8, cellPadding: 4, valign: 'middle' },
+      headStyles: { fillColor: HEADER_SLATE, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+      alternateRowStyles: { fillColor: PDF_ZEBRA_EVEN },
+      columnStyles: {
+        0: { halign: 'left' },
+        1: { halign: 'right' },
+        2: { halign: 'right' },
+      }
+    });
+
+    // Precinct Distribution Table
+    const precinctStats = (analytics as any).precincts || [];
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DISTRIBUTION BY PRECINCT', pageWidth / 2 + 5, catStartY);
+
+    autoTable(doc, {
+      startY: catStartY + 4,
+      head: [['Precinct', 'Count', 'Weight']],
+      body: precinctStats.map(({ name, value }: any) => [name, value.toString(), `${Math.round((value / tasks.length) * 100)}%`]),
+      margin: { left: pageWidth / 2 + 5, right: 8 },
+      tableWidth: (pageWidth - 45) / 2,
       styles: { fontSize: 8, cellPadding: 4, valign: 'middle' },
       headStyles: { fillColor: HEADER_SLATE, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
       alternateRowStyles: { fillColor: PDF_ZEBRA_EVEN },
@@ -1475,20 +1517,18 @@ export async function exportToPDF(
 export function getBimExportColumns(metadataExcluded: string[], format: 'excel' | 'pdf' = 'excel') {
   const baseColumns = [
     { id: 'ID', excelLabel: 'ID', pdfLabel: 'ID', width: 20 },
-    { id: 'Project', excelLabel: 'Project', pdfLabel: 'PROJECT', width: 30 },
     { id: 'Precinct', excelLabel: 'Precinct', pdfLabel: 'PRECINCT', width: 25 },
+    { id: 'Project', excelLabel: 'Project', pdfLabel: 'PROJECT', width: 30 },
     { id: 'Stakeholder', excelLabel: 'Stakeholder', pdfLabel: 'STAKEHOLDER', width: 25 },
     { id: 'Milestone Submissions', excelLabel: 'Milestone Submissions', pdfLabel: 'MILESTONE SUBMISSIONS', width: 50 },
     { id: 'Submission Category', excelLabel: 'Submission Category', pdfLabel: 'SUBMISSION CATEGORY', width: 25 },
-    { id: 'Planned Submission Date', excelLabel: 'Planned Submission Date', pdfLabel: 'PLANNED SUBMISSION DATE', width: 20 },
-    { id: 'ACC Status', excelLabel: 'ACC Status', pdfLabel: 'ACC STATUS', width: 20 },
-    { id: 'Priority', excelLabel: 'Design Stage', pdfLabel: 'DESIGN STAGE', width: 25 },
+    { id: 'Design Stage', excelLabel: 'Design Stage', pdfLabel: 'DESIGN STAGE', width: 25 },
     { id: 'ACC Review ID', excelLabel: 'ACC Review ID', pdfLabel: 'ACC REVIEW ID', width: 20 },
     { id: 'InSite Review Status', excelLabel: 'InSite Review Status', pdfLabel: 'INSITE REVIEW STATUS', width: 25 },
     { id: 'InSite Review Due Date', excelLabel: 'InSite Review Due Date', pdfLabel: 'INSITE REVIEW DUE DATE', width: 20 },
     { id: 'InSite Reviewer', excelLabel: 'InSite Reviewer', pdfLabel: 'INSITE REVIEWER', width: 25 },
     { id: 'InSite Review Output ACC URL', excelLabel: 'InSite Review Output ACC URL', pdfLabel: 'INSITE REVIEW OUTPUT ACC URL', width: 25 },
-    { id: 'Comments', excelLabel: 'Comments', pdfLabel: 'COMMENTS', width: 40 }
+    { id: 'General Comments', excelLabel: 'General Comments', pdfLabel: 'GENERAL COMMENTS', width: 40 }
   ];
 
   return baseColumns.map((col, idx) => ({
@@ -1504,31 +1544,21 @@ export function getBimExportColumns(metadataExcluded: string[], format: 'excel' 
  * BIM Analytics for Dashboard
  */
 function getBimDashboardAnalytics(reviews: BIMReview[]) {
-  const priorityBreakdown: Record<string, number> = {};
+  const stageBreakdown: Record<string, number> = {};
   const insiteStatuses: Record<string, number> = {};
   const stakeholders: Record<string, number> = {};
-  const accStatuses: Record<string, number> = {};
-  let approvedCount = 0;
 
   reviews.forEach(r => {
-    priorityBreakdown[r.Priority || 'MEDIUM'] = (priorityBreakdown[r.Priority || 'MEDIUM'] || 0) + 1;
+    stageBreakdown[r["Design Stage"] || 'UNKNOWN'] = (stageBreakdown[r["Design Stage"] || 'UNKNOWN'] || 0) + 1;
     insiteStatuses[r["InSite Review Status"] || 'Pending'] = (insiteStatuses[r["InSite Review Status"] || 'Pending'] || 0) + 1;
     stakeholders[r.Stakeholder || 'N/A'] = (stakeholders[r.Stakeholder || 'N/A'] || 0) + 1;
-    
-    const acc = r["ACC Status"] || [];
-    acc.forEach(st => {
-      accStatuses[st] = (accStatuses[st] || 0) + 1;
-    });
-    if (acc.includes('SHARED') || acc.includes('APPROVED')) approvedCount++;
   });
 
   return {
     total: reviews.length,
-    approvedCount,
-    priority: Object.entries(priorityBreakdown).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
+    stage: Object.entries(stageBreakdown).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
     insite: Object.entries(insiteStatuses).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
     stakeholders: Object.entries(stakeholders).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
-    modon: Object.entries(accStatuses).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
   };
 }
 
@@ -1540,6 +1570,14 @@ export async function exportBimToExcel(
   metadata: ProjectMetadata | undefined,
   dateRangeText: string | undefined,
   perspective: 'table' | 'dashboard' | 'both' = 'table',
+  filters?: {
+    stages?: string[],
+    statuses?: string[],
+    stakeholders?: string[],
+    reviewers?: string[],
+    precincts?: string[],
+    submitters?: string[]
+  },
   selectedColumns?: string[],
   chartImages?: CapturedChart[]
 ) {
@@ -1577,9 +1615,6 @@ export async function exportBimToExcel(
         
         // Handle Date fields specifically
         if (c.id === 'InSite Review Due Date') return val ? formatDate(val) : '-';
-        if (c.id === 'Planned Submission Date' && Array.isArray(val)) {
-          return val.map(d => formatDate(d)).join('\n'); // Use newline for Excel multi-date
-        }
         
         if (Array.isArray(val)) return val.join(', ');
         return val || '-';
@@ -1645,7 +1680,6 @@ export async function exportBimToExcel(
 
     const kpiRows = [
       ['Total Reviews', analytics.total],
-      ['Approved (Modon)', analytics.approvedCount],
       ['Active Stakeholders', analytics.stakeholders.length],
       ['Period', dateRangeText || 'All Time'],
       ['Generated On', formatGeneratedOn()],
@@ -1663,8 +1697,40 @@ export async function exportBimToExcel(
     });
 
     sheet.addRow([]);
-    sheet.addRow(['ACC STATUS BREAKDOWN']).font = { bold: true, size: 11 };
-    analytics.modon.forEach(s => {
+    
+    // Filter Parameters Section
+    sheet.addRow(['ACTIVE FILTER PARAMETERS']).font = { bold: true, size: 12, color: { argb: 'FF1E293B' } };
+    sheet.addRow([]);
+
+    const getFilt = (list: string[] | undefined) => {
+      if (!list || list.length === 0) return 'ALL';
+      return list.join(', ').toUpperCase();
+    };
+
+    const filterData = [
+      ['Design Stages', getFilt((filters as any)?.stages)],
+      ['Review Statuses', getFilt((filters as any)?.statuses)],
+      ['Stakeholders', getFilt((filters as any)?.stakeholders)],
+      ['Reviewers', getFilt((filters as any)?.reviewers)],
+      ['Precincts', getFilt((filters as any)?.precincts)],
+      ['Submitters', getFilt((filters as any)?.submitters)],
+    ];
+
+    filterData.forEach(([label, val], idx) => {
+      const row = sheet.addRow([label, val]);
+      row.getCell(1).font = { bold: true, size: 10, color: { argb: 'FF64748B' } };
+      row.getCell(2).font = { size: 10, color: { argb: 'FF334155' } };
+      row.getCell(2).alignment = { horizontal: 'right' };
+      const fill = idx % 2 === 0 ? 'FFF1F5F9' : 'FFFFFFFF';
+      row.eachCell(cell => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fill } };
+        cell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+      });
+    });
+
+    sheet.addRow([]);
+    sheet.addRow(['DESIGN STAGE BREAKDOWN']).font = { bold: true, size: 11 };
+    analytics.stage.forEach(s => {
       const row = sheet.addRow([s.name, s.value]);
       row.getCell(2).alignment = { horizontal: 'right' };
     });
@@ -1738,6 +1804,14 @@ export async function exportBimToPDF(
   metadata: ProjectMetadata | undefined,
   dateRangeText: string | undefined,
   perspective: 'table' | 'dashboard' | 'both' = 'table',
+  filters?: {
+    stages?: string[],
+    statuses?: string[],
+    stakeholders?: string[],
+    reviewers?: string[],
+    precincts?: string[],
+    submitters?: string[]
+  },
   selectedColumns?: string[],
   chartImages?: CapturedChart[]
 ) {
@@ -1877,6 +1951,10 @@ export async function exportBimToPDF(
       currentY += 15;
     });
 
+    // ── Ultra Premium Filter Row on Cover ──
+    const filterBarY = pageHeight - 35;
+    drawPremiumFilterBar(doc, 20, filterBarY, pageWidth - 40, filters, accentColor);
+
     doc.setTextColor(30, 41, 59);
     doc.setFontSize(10);
     doc.text(metadata?.reportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM', 20, pageHeight - 15);
@@ -1905,14 +1983,16 @@ export async function exportBimToPDF(
 
     const headerH = drawHeaderStrip('BIM PERFORMANCE DASHBOARD');
 
+    // Premium Filter Bar in one row
+    drawPremiumFilterBar(doc, 15, 30, pageWidth - 30, filters, accentColor);
+
     // KPI Row
-    const kpiY = headerH + 12;
+    const kpiY = 42;
     const kpiW = (pageWidth - 45) / 4;
     const kpiH = 30;
     const bimStats = [
       { label: 'TOTAL REVIEWS', value: analytics.total.toString() },
       { label: 'STAKEHOLDERS', value: analytics.stakeholders.length.toString() },
-      { label: 'APPROVAL RATE', value: `${analytics.total > 0 ? Math.round((analytics.approvedCount / analytics.total) * 100) : 0}%` },
       { label: 'PENDING ACTION', value: (analytics.insite.find(s => s.name.toUpperCase().includes('PENDING'))?.value || 0).toString() },
     ];
 
@@ -1933,7 +2013,7 @@ export async function exportBimToPDF(
     autoTable(doc, {
       startY: kpiY + kpiH + 12,
       head: [['Design Stage Distribution', 'Count', 'Percentage']],
-      body: analytics.priority.map(s => [s.name, s.value.toString(), `${analytics.total > 0 ? Math.round((s.value / analytics.total) * 100) : 0}%`]),
+      body: analytics.stage.map(s => [s.name, s.value.toString(), `${analytics.total > 0 ? Math.round((s.value / analytics.total) * 100) : 0}%`]),
       margin: { left: 15, right: 15 },
       tableWidth: 140,
       styles: { fontSize: 8, cellPadding: 4, valign: 'middle' },
@@ -1965,7 +2045,6 @@ export async function exportBimToPDF(
       if (c.id === 'InSite Review Output ACC URL') return r["InSite Review Output ACC URL"] ? 'View Report' : '-';
       const val = (r as any)[c.id];
       if (c.id === 'InSite Review Due Date') return val ? formatDate(val) : '-';
-      if (c.id === 'Planned Submission Date' && Array.isArray(val)) return val.map(d => formatDate(d)).join(' | ');
       return Array.isArray(val) ? val.join(', ') : (val || '-');
     }));
 

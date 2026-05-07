@@ -46,20 +46,19 @@ type SortDir = 'asc' | 'desc';
 
 const INITIAL_COLUMNS: ColumnDef<SortField>[] = [
   { id: 'ID', field: 'ID' as any, label: 'ID', align: 'center', priority: 'high', defaultWidth: 120, alwaysVisible: true },
+  { id: 'Precinct', field: 'Precinct' as any, label: 'Precinct', align: 'center', priority: 'medium', defaultWidth: 150 },
   { id: 'Project', field: 'Project' as any, label: 'Project', align: 'center', priority: 'high', defaultWidth: 260, alwaysVisible: true },
-  { id: 'Precinct', field: 'Precinct' as any, label: 'Precinct', align: 'center', priority: 'medium', defaultWidth: 180 },
   { id: 'Stakeholder', field: 'Stakeholder' as any, label: 'Stakeholder', align: 'center', priority: 'medium', defaultWidth: 180 },
   { id: 'Milestone Submissions', field: 'Milestone Submissions' as any, label: 'Milestone Submissions', align: 'center', priority: 'high', defaultWidth: 280 },
   { id: 'Submission Category', field: 'Submission Category' as any, label: 'Submission Category', align: 'center', priority: 'low', defaultWidth: 180 },
-  { id: 'Planned Submission Date', field: 'Planned Submission Date' as any, label: 'Planned Submission Date', align: 'center', priority: 'low', defaultWidth: 200 },
-  { id: 'ACC Status', field: 'ACC Status' as any, label: 'ACC Status', align: 'center', priority: 'low', defaultWidth: 160 },
-  { id: 'Priority', field: 'Priority' as any, label: 'Design Stage', align: 'center', priority: 'medium', defaultWidth: 120 },
+  { id: 'Design Stage', field: 'Design Stage' as any, label: 'Design Stage', align: 'center', priority: 'medium', defaultWidth: 150 },
   { id: 'ACC Review ID', field: 'ACC Review ID' as any, label: 'ACC Review ID', align: 'center', priority: 'medium', defaultWidth: 120 },
   { id: 'InSite Review Status', field: 'InSite Review Status' as any, label: 'InSite Review Status', align: 'center', priority: 'high', defaultWidth: 240 },
   { id: 'InSite Review Due Date', field: 'InSite Review Due Date' as any, label: 'InSite Review Due Date', align: 'center', priority: 'medium', defaultWidth: 160 },
   { id: 'InSite Reviewer', field: 'InSite Reviewer' as any, label: 'InSite Reviewer', align: 'center', priority: 'medium', defaultWidth: 200 },
   { id: 'InSite Review Output ACC URL', field: 'InSite Review Output ACC URL' as any, label: 'InSite Review Output ACC URL', align: 'center', priority: 'high', defaultWidth: 160 },
-  { id: 'Comments', field: 'Comments' as any, label: 'Comments', align: 'center', priority: 'low', defaultWidth: 280 }
+  { id: 'Submitter', field: 'Submitter' as any, label: 'Submitter', align: 'center', priority: 'medium', defaultWidth: 180 },
+  { id: 'General Comments', field: 'General Comments' as any, label: 'General Comments', align: 'center', priority: 'low', defaultWidth: 280 }
 ];
 
 function ResizeHandle({ columnWidth, onWidthChange }: { columnWidth: number, onWidthChange: (w: number) => void }) {
@@ -320,42 +319,19 @@ function ReviewRow({
           </td>
         );
 
-        if (col.id === 'Priority') return (
+        if (col.id === 'Design Stage') return (
           <td key={col.id} style={{ ...cellStyle }}>
             <div style={{ display: 'inline-flex', padding: '4px 14px', borderRadius: 20, background: 'rgba(0, 63, 73, 0.95)', border: '1.5px solid rgba(0, 63, 73, 0.2)', fontSize: 10, fontWeight: 950, color: 'var(--aqua)', textTransform: 'uppercase', letterSpacing: '0.08em', boxShadow: '0 4px 12px rgba(0, 63, 73, 0.2)' }}>
-              {item.Priority}
+              {item["Design Stage"]}
             </div>
           </td>
         );
 
-        if (col.id === 'Planned Submission Date') return (
-          <td key={col.id} style={{ ...cellStyle, color: 'var(--text-dim)' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {(item["Planned Submission Date"] || []).map((date, i) => (
-                <div key={`date-${i}`} style={{ fontSize: 10, whiteSpace: 'nowrap' }}>{formatDate(date)}</div>
-              ))}
-            </div>
-          </td>
-        );
 
-        if (col.id === 'ACC Status') return (
-          <td key={col.id} style={{ ...cellStyle }}>
-             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {(item["ACC Status"] || []).map((status, i) => (
-                <span key={`${status}-${i}`} style={{
-                  fontSize: 10,
-                  fontWeight: 950,
-                  color: status?.toUpperCase() === 'SHARED' ? '#FF7908' : 'rgba(0, 63, 73, 0.4)',
-                  letterSpacing: '0.05em'
-                }}>{status.toUpperCase()}</span>
-              ))}
-            </div>
-          </td>
-        );
 
-        if (col.id === 'Comments') return (
+        if (col.id === 'General Comments') return (
           <td key={col.id} style={{ ...cellStyle, color: 'var(--text-dim)', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {item.Comments || '—'}
+            {item["General Comments"] || '—'}
           </td>
         );
 
@@ -369,6 +345,12 @@ function ReviewRow({
           </td>
         );
 
+        if (col.id === 'Submitter') return (
+          <td key={col.id} style={{ ...cellStyle, color: 'var(--text-dim)', fontWeight: 800 }}>
+            {(item as any).Submitter || (item as any).submitter || '—'}
+          </td>
+        );
+
         if (col.id === 'InSite Review Output ACC URL') return (
           <td key={col.id} style={{ ...cellStyle }}>
             {item["InSite Review Output ACC URL"] ? (
@@ -377,6 +359,7 @@ function ReviewRow({
                   href={item["InSite Review Output ACC URL"]}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
                   whileHover={{ scale: 1.15, backgroundColor: '#C5A059', color: '#000000' }}
                   style={{
                     width: 32, height: 32, borderRadius: 10,
@@ -411,16 +394,16 @@ const thStyle: React.CSSProperties = {
 const headerInputStyle: React.CSSProperties = {
   padding: '10px 16px', 
   borderRadius: 14,
-  background: 'rgba(0, 0, 0, 0.45)', 
-  border: '1.5px solid rgba(255, 255, 255, 0.2)',
+  background: 'rgba(0, 0, 0, 0.8)', 
+  border: '2px solid rgba(230, 194, 154, 0.4)',
   fontSize: 13, 
   color: '#FFFFFF', 
   outline: 'none',
   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
   paddingLeft: 46,
-  width: 320,
-  backdropFilter: 'blur(12px)',
-  boxShadow: 'inset 0 2px 10px rgba(0, 0, 0, 0.2)'
+  width: 400,
+  backdropFilter: 'blur(32px)',
+  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.05)'
 };
 
 export default function BIMReviewsTable({
@@ -443,6 +426,9 @@ export default function BIMReviewsTable({
   availableStakeholders = [],
   availableReviewers = [],
   availablePrecincts = [],
+  filterSubmitter = [],
+  setFilterSubmitter,
+  availableSubmitters = [],
   onEdit,
   onDelete,
   onNew,
@@ -468,6 +454,9 @@ export default function BIMReviewsTable({
   filterPrecinct: string[];
   setFilterPrecinct: (v: string[]) => void;
   availablePrecincts: string[];
+  filterSubmitter: string[];
+  setFilterSubmitter: (v: string[]) => void;
+  availableSubmitters: string[];
   onEdit?: (review: BIMReview) => void;
   onDelete?: (review: BIMReview) => void;
   onNew?: () => void;
@@ -514,7 +503,8 @@ export default function BIMReviewsTable({
     (filterStatus.length > 0 && !filterStatus.includes('All Statuses')) ||
     (filterStakeholder.length > 0 && !filterStakeholder.includes('All Stakeholders')) ||
     (filterReviewer.length > 0 && !filterReviewer.includes('All Reviewers')) ||
-    (filterPrecinct.length > 0 && !filterPrecinct.includes('All Precincts'));
+    (filterPrecinct.length > 0 && !filterPrecinct.includes('All Precincts')) ||
+    (filterSubmitter.length > 0 && !filterSubmitter.includes('All Submitters'));
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} style={{ marginTop: 0, height: '100%', minHeight: 0, overflow: 'hidden' }}>
@@ -535,7 +525,7 @@ export default function BIMReviewsTable({
           }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', width: '100%', gap: 16 }}>
           <div style={{ position: 'relative', flex: 1, maxWidth: 500 }}>
-            <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#FFFFFF', opacity: 0.9 }} />
+            <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#e6c29a', opacity: 1, filter: 'drop-shadow(0 0 10px rgba(230, 194, 154, 0.4))' }} />
             <input
               type="text"
               placeholder="Search Reviews..."
@@ -543,16 +533,16 @@ export default function BIMReviewsTable({
               onChange={(e) => setSearch(e.target.value)}
               style={{ 
                 ...headerInputStyle, 
-                background: 'rgba(0, 0, 0, 0.4)', 
+                background: 'rgba(0, 0, 0, 0.5)', 
                 color: '#ffffff', 
-                borderColor: 'rgba(255, 255, 255, 0.25)', 
-                fontWeight: 900,
+                borderColor: 'rgba(208, 171, 130, 0.3)', 
+                fontWeight: 800,
                 letterSpacing: '0.02em'
               }}
             />
             <style>{`
-              input::placeholder { color: rgba(255, 255, 255, 0.4) !important; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; font-size: 10px; }
-              input:focus { border-color: #d0ab82 !important; box-shadow: 0 0 15px rgba(208, 171, 130, 0.15), inset 0 2px 10px rgba(0, 0, 0, 0.3) !important; }
+              input::placeholder { color: rgba(208, 171, 130, 0.5) !important; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; font-size: 10px; }
+              input:focus { border-color: #d0ab82 !important; box-shadow: 0 0 20px rgba(208, 171, 130, 0.2), inset 0 2px 10px rgba(0, 0, 0, 0.5) !important; }
             `}</style>
           </div>
 
@@ -563,9 +553,9 @@ export default function BIMReviewsTable({
               value={filterStage}
               options={availableStages.map(s => ({ label: s, value: s }))}
               onChange={setFilterStage}
-              menuLabel="Priority"
+              menuLabel="Design Stage"
               isMulti={true}
-              allLabel="All Priorities"
+              allLabel="All Stages"
             />
 
             <EliteDropdown
@@ -603,6 +593,15 @@ export default function BIMReviewsTable({
               isMulti={true}
               allLabel="All Precincts"
             />
+            
+            <EliteDropdown
+              value={filterSubmitter}
+              options={availableSubmitters.map((s: string) => ({ label: s, value: s }))}
+              onChange={setFilterSubmitter}
+              menuLabel="Submitters"
+              isMulti={true}
+              allLabel="All Submitters"
+            />
 
             <ColumnSettingsDropdown
               columns={allColumns}
@@ -621,6 +620,7 @@ export default function BIMReviewsTable({
                   setFilterStakeholder([]);
                   setFilterReviewer([]);
                   setFilterPrecinct([]);
+                  setFilterSubmitter([]);
                 }}
                 title="Clear Filter Constraints"
                 style={{

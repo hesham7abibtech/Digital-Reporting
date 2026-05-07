@@ -131,6 +131,7 @@ export default function Dashboard() {
   const [bimFilterStakeholder, setBimFilterStakeholder] = useState<string[]>([]);
   const [bimFilterReviewer, setBimFilterReviewer] = useState<string[]>([]);
   const [bimFilterPrecinct, setBimFilterPrecinct] = useState<string[]>([]);
+  const [bimFilterSubmitter, setBimFilterSubmitter] = useState<string[]>(['All Submitters']);
 
 
 
@@ -153,7 +154,7 @@ export default function Dashboard() {
       });
     } else {
       syncedBimReviews.forEach(r => {
-        const d = parseBimDate(r["Planned Submission Date"]?.[0]);
+        const d = parseBimDate(r["InSite Review Due Date"]);
         if (d) yearsSet.add(d.getFullYear());
       });
     }
@@ -180,7 +181,7 @@ export default function Dashboard() {
       });
     } else {
       syncedBimReviews.forEach(r => {
-        const d = parseBimDate(r["Planned Submission Date"]?.[0]);
+        const d = parseBimDate(r["InSite Review Due Date"]);
         if (d && d.getFullYear() === selectedYear) {
           monthsSet.add(d.getMonth());
         }
@@ -354,6 +355,63 @@ export default function Dashboard() {
     else if (valid.length !== filterSubmitter.length) setFilterSubmitter(valid);
   }, [availableSubmitters, filterSubmitter]);
 
+  const dateFilteredBimReviews = useMemo(() => {
+    let result = syncedBimReviews;
+    if (filterMode === 'all') return result;
+
+    let rangeStart: Date;
+    let rangeEnd: Date;
+
+    if (filterMode === 'custom') {
+      rangeStart = startDate ? new Date(startDate) : new Date('1970-01-01');
+      rangeEnd = endDate ? new Date(endDate) : new Date('2099-12-31');
+    } else {
+      rangeStart = new Date(selectedYear, selectedMonth, 1);
+      rangeEnd = new Date(selectedYear, selectedMonth + 1, 0);
+    }
+    rangeStart.setHours(0, 0, 0, 0);
+    rangeEnd.setHours(23, 59, 59, 999);
+
+    return result.filter(review => {
+      const d = parseBimDate(review["InSite Review Due Date"]);
+      if (!d) return false;
+      return d >= rangeStart && d <= rangeEnd;
+    });
+  }, [syncedBimReviews, filterMode, startDate, endDate, selectedMonth, selectedYear]);
+
+  const availableBimSubmitters = useMemo(() => {
+    // Cascading filter: Only show submitters based on other active filters (except Submitter filter itself)
+    const baseData = dateFilteredBimReviews.filter(review => {
+      const matchesStage = bimFilterStage.length === 0 || bimFilterStage.includes('All Stages') || bimFilterStage.includes(review["Design Stage"] || 'UNKNOWN');
+      const matchesStatus = bimFilterStatus.length === 0 || bimFilterStatus.includes('All Statuses') || bimFilterStatus.includes(review["InSite Review Status"] || 'PENDING');
+      const matchesStakeholder = bimFilterStakeholder.length === 0 || bimFilterStakeholder.includes('All Stakeholders') || bimFilterStakeholder.includes(review.Stakeholder);
+      const matchesPrecinct = bimFilterPrecinct.length === 0 || bimFilterPrecinct.includes('All Precincts') || (review.Precinct || []).some((p: string) => bimFilterPrecinct.includes(p));
+      return matchesStage && matchesStatus && matchesStakeholder && matchesPrecinct;
+    });
+
+    let hasEmpty = false;
+    const rawSubmitters = new Set<string>();
+    baseData.forEach(r => {
+      const getV = (keys: string[]) => {
+         for (const k of keys) if ((r as any)[k]) return (r as any)[k];
+         return '';
+      };
+      const s = String(getV(['Submitter', 'author', 'originator', 'submitted by', 'created by', 'owner']));
+      if (s && s !== '—' && s !== 'undefined' && s.toLowerCase() !== 'null') rawSubmitters.add(s);
+      else hasEmpty = true;
+    });
+    const result = Array.from(rawSubmitters).filter(Boolean).sort() as string[];
+    if (hasEmpty) result.unshift('(Empty)');
+    return result;
+  }, [dateFilteredBimReviews, bimFilterStage, bimFilterStatus, bimFilterStakeholder, bimFilterPrecinct]);
+
+  useEffect(() => {
+    if (bimFilterSubmitter.includes('All Submitters')) return;
+    const valid = bimFilterSubmitter.filter(s => availableBimSubmitters.includes(s));
+    if (valid.length === 0) setBimFilterSubmitter(['All Submitters']);
+    else if (valid.length !== bimFilterSubmitter.length) setBimFilterSubmitter(valid);
+  }, [availableBimSubmitters, bimFilterSubmitter]);
+
   // Tasks from the previous equivalent period for KPI growth comparisons
   const previousPeriodTasks = useMemo(() => {
     if (filterMode === 'all') return [];
@@ -503,29 +561,7 @@ export default function Dashboard() {
 
 
 
-  const dateFilteredBimReviews = useMemo(() => {
-    let result = syncedBimReviews;
-    if (filterMode === 'all') return result;
 
-    let rangeStart: Date;
-    let rangeEnd: Date;
-
-    if (filterMode === 'custom') {
-      rangeStart = startDate ? new Date(startDate) : new Date('1970-01-01');
-      rangeEnd = endDate ? new Date(endDate) : new Date('2099-12-31');
-    } else {
-      rangeStart = new Date(selectedYear, selectedMonth, 1);
-      rangeEnd = new Date(selectedYear, selectedMonth + 1, 0);
-    }
-    rangeStart.setHours(0, 0, 0, 0);
-    rangeEnd.setHours(23, 59, 59, 999);
-
-    return result.filter(review => {
-      const d = parseBimDate(review["Planned Submission Date"]?.[0]);
-      if (!d) return false;
-      return d >= rangeStart && d <= rangeEnd;
-    });
-  }, [syncedBimReviews, filterMode, startDate, endDate, selectedMonth, selectedYear]);
 
   const filteredBimReviews = useMemo(() => {
     return dateFilteredBimReviews.filter(review => {
@@ -539,16 +575,16 @@ export default function Dashboard() {
         review.Project.toLowerCase().includes(searchStr) ||
         review.Stakeholder.toLowerCase().includes(searchStr) ||
         reviewers.some((r: string) => r.toLowerCase().includes(searchStr)) ||
-        (review.Comments || '').toLowerCase().includes(searchStr) ||
-        (review["Review Number"] || '').toString().toLowerCase().includes(searchStr) ||
+        (review["General Comments"] || '').toLowerCase().includes(searchStr) ||
+        (review["ACC Review ID"] || '').toString().toLowerCase().includes(searchStr) ||
         (review["InSite Review Status"] || '').toLowerCase().includes(searchStr) ||
-        (review.Priority || '').toLowerCase().includes(searchStr) ||
+        (review["Design Stage"] || '').toLowerCase().includes(searchStr) ||
         (review.Precinct || []).join(' ').toLowerCase().includes(searchStr);
 
       const matchesStage = bimFilterStage.length === 0 || 
                           bimFilterStage.includes('All Stages') || 
-                          (bimFilterStage.includes('(Empty)') && (!review.Priority || review.Priority === '')) ||
-                          bimFilterStage.includes(review.Priority);
+                          (bimFilterStage.includes('(Empty)') && (!review["Design Stage"] || review["Design Stage"] === '')) ||
+                          bimFilterStage.includes(review["Design Stage"]);
       
       const matchesStatus = bimFilterStatus.length === 0 || 
                            bimFilterStatus.includes('All Statuses') || 
@@ -570,9 +606,19 @@ export default function Dashboard() {
                              (bimFilterPrecinct.includes('(Empty)') && (!review.Precinct || review.Precinct.length === 0)) ||
                              (review.Precinct || []).some((p: string) => bimFilterPrecinct.includes(p));
 
-      return matchesSearch && matchesStage && matchesStatus && matchesStakeholder && matchesReviewer && matchesPrecinct;
+      const getV = (keys: string[]) => {
+         for (const k of keys) if ((review as any)[k]) return (review as any)[k];
+         return '';
+      };
+      const reviewSubmitter = String(getV(['Submitter', 'author', 'originator', 'submitted by', 'created by', 'owner']));
+      const matchesSubmitter = bimFilterSubmitter.length === 0 || 
+                              bimFilterSubmitter.includes('All Submitters') || 
+                              (bimFilterSubmitter.includes('(Empty)') && !reviewSubmitter) ||
+                              bimFilterSubmitter.includes(reviewSubmitter);
+
+      return matchesSearch && matchesStage && matchesStatus && matchesStakeholder && matchesReviewer && matchesPrecinct && matchesSubmitter;
     });
-  }, [syncedBimReviews, bimSearch, bimFilterStage, bimFilterStatus, bimFilterStakeholder, bimFilterReviewer, bimFilterPrecinct, filterMode, selectedMonth, selectedYear, startDate, endDate, syncedMembers]);
+  }, [syncedBimReviews, bimSearch, bimFilterStage, bimFilterStatus, bimFilterStakeholder, bimFilterReviewer, bimFilterPrecinct, bimFilterSubmitter, filterMode, selectedMonth, selectedYear, startDate, endDate, syncedMembers]);
 
   // Snapshot for previous period to calculate growth
   const previousPeriodBimReviews = useMemo(() => {
@@ -598,7 +644,7 @@ export default function Dashboard() {
     prevEnd.setHours(23, 59, 59, 999);
 
     return syncedBimReviews.filter(review => {
-      const d = parseBimDate(review["Planned Submission Date"]?.[0]);
+      const d = parseBimDate(review["InSite Review Due Date"]);
       if (!d) return false;
       return d >= prevStart && d <= prevEnd;
     });
@@ -606,8 +652,8 @@ export default function Dashboard() {
 
   // Available BIM Filter Options
   const availableBimStages = useMemo(() => {
-    const raw = Array.from(new Set(dateFilteredBimReviews.map(r => r.Priority))).filter(Boolean).sort();
-    const hasEmpty = dateFilteredBimReviews.some(r => !r.Priority);
+    const raw = Array.from(new Set(dateFilteredBimReviews.map(r => r["Design Stage"]))).filter(Boolean).sort();
+    const hasEmpty = dateFilteredBimReviews.some(r => !r["Design Stage"]);
     return hasEmpty ? ['(Empty)', ...raw] : raw;
   }, [dateFilteredBimReviews]);
 
@@ -1017,6 +1063,12 @@ export default function Dashboard() {
                             filterReviewer={bimFilterReviewer}
                             setFilterReviewer={setBimFilterReviewer}
                             availableReviewers={availableBimReviewers}
+                            filterPrecinct={bimFilterPrecinct}
+                            setFilterPrecinct={setBimFilterPrecinct}
+                            availablePrecincts={availableBimPrecincts}
+                            filterSubmitter={bimFilterSubmitter}
+                            setFilterSubmitter={setBimFilterSubmitter}
+                            availableSubmitters={availableBimSubmitters}
                             filterMode={filterMode}
                             setFilterMode={setFilterMode}
                             selectedYear={selectedYear}
@@ -1072,6 +1124,9 @@ export default function Dashboard() {
                           filterPrecinct={bimFilterPrecinct}
                           setFilterPrecinct={setBimFilterPrecinct}
                           availablePrecincts={availableBimPrecincts}
+                          filterSubmitter={bimFilterSubmitter}
+                          setFilterSubmitter={setBimFilterSubmitter}
+                          availableSubmitters={availableBimSubmitters}
                           onEdit={(review: any) => { setSelectedBimReview(review); setIsBimModalOpen(true); }}
                           onDelete={(review: any) => setBimToDelete(review)}
                           onNew={() => { setSelectedBimReview(null); setIsBimModalOpen(true); }}
@@ -1134,6 +1189,9 @@ export default function Dashboard() {
                           filterPrecinct={bimFilterPrecinct}
                           setFilterPrecinct={setBimFilterPrecinct}
                           availablePrecincts={availableBimPrecincts}
+                          filterSubmitter={bimFilterSubmitter}
+                          setFilterSubmitter={setBimFilterSubmitter}
+                          availableSubmitters={availableBimSubmitters}
                         />
                       ) : (
                         <PremiumAnalyticsDashboardView
@@ -1338,8 +1396,9 @@ export default function Dashboard() {
       {/* Hidden Export Wrappers — off-screen, landscape A4 ratio */}
       <div style={{ position: 'absolute', top: '-20000px', left: '-20000px', width: '1600px', opacity: 0.01, pointerEvents: 'none', zIndex: -1 }}>
         {/* Deliverables Capture Root */}
-        <div id="export-only-capture-root" style={{ width: '1600px', height: '900px', marginBottom: '100px' }}>
+        <div id="export-only-capture-root" style={{ width: '1400px', height: '1000px', marginBottom: '100px' }}>
           <PremiumAnalyticsDashboardView
+            id="analytics-dashboard-export-root-offscreen"
             tasks={filteredTasks}
             previousPeriodTasks={previousPeriodTasks}
             departments={syncedDepartments}
@@ -1349,9 +1408,9 @@ export default function Dashboard() {
         </div>
 
         {/* BIM Capture Root */}
-        <div id="bim-export-capture-root-container" style={{ width: '1600px', height: '900px' }}>
+        <div id="bim-export-capture-root-container" style={{ width: '1400px', height: '1000px' }}>
           <BIMAnalyticsView
-            id="bim-export-capture-root"
+            id="bim-analytics-export-root-offscreen"
             data={filteredBimReviews}
             previousPeriodData={previousPeriodBimReviews}
             search={bimSearch}

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Shield, Info, Link as LinkIcon, Calendar, Hash, User, Building2, Layers, Tag as TagIcon, MapPin, Database, Activity, Globe, FileText, ExternalLink, ChevronRight } from 'lucide-react';
+import { X, Save, Shield, Info, Link as LinkIcon, Calendar, Hash, User, Building2, Layers, Tag as TagIcon, MapPin, Database, Activity, Globe, FileText, ExternalLink, ChevronRight, Sparkles } from 'lucide-react';
 import GlassCard from '@/components/shared/GlassCard';
 import { BIMReview, TeamMember } from '@/lib/types';
 import { upsertBimReview } from '@/services/FirebaseService';
@@ -29,37 +29,35 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
   const [formData, setFormData] = useState<Partial<BIMReview>>({
     "ID": '',
     "Precinct": [],
-    "Stakeholder": '',
     "Project": '',
+    "Stakeholder": '',
+    "Submitter": '',
     "Milestone Submissions": [],
     "Submission Category": [],
-    "Planned Submission Date": [],
-    "ACC Status": [],
-    "Priority": 'MEDIUM',
+    "Design Stage": 'Detailed Design',
     "ACC Review ID": '',
     "InSite Review Status": '',
     "InSite Review Due Date": '',
     "InSite Reviewer": [],
     "InSite Review Output ACC URL": '',
-    "Comments": ''
+    "General Comments": ''
   });
 
   const defaultFormData: Partial<BIMReview> = {
     "ID": '',
     "Precinct": [],
-    "Stakeholder": '',
     "Project": '',
+    "Stakeholder": '',
+    "Submitter": '',
     "Milestone Submissions": [],
     "Submission Category": [],
-    "Planned Submission Date": [],
-    "ACC Status": [],
-    "Priority": 'MEDIUM',
+    "Design Stage": 'Detailed Design',
     "ACC Review ID": '',
     "InSite Review Status": '',
     "InSite Review Due Date": '',
     "InSite Reviewer": [],
     "InSite Review Output ACC URL": '',
-    "Comments": ''
+    "General Comments": ''
   };
 
   const personnel = React.useMemo<{ name: string; email: string; id: string; status?: string }[]>(() => {
@@ -144,9 +142,6 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
   if (!isOpen) return null;
 
   if (readOnly) {
-    const reviewerName = formData["InSite Reviewer"]?.[0] || 'Unassigned';
-    const reviewer = personnel.find(p => p.name === reviewerName);
-
     return (
       <div 
         onClick={onClose}
@@ -188,20 +183,14 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                 
-                {/* Planned Submission Date */}
-                <div style={{ padding: '18px 20px', background: '#ffffff', borderRadius: 20, border: '1px solid rgba(0, 63, 73, 0.05)', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 4px 15px rgba(0,0,0,0.01)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(0, 63, 73, 0.01)', border: '1px solid rgba(0, 63, 73, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Calendar size={16} color="var(--teal)" opacity={0.5} />
-                    </div>
-                    <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Planned Submission Date</div>
+                {/* Project */}
+                <div style={{ padding: '18px 20px', background: '#ffffff', borderRadius: 20, border: '1px solid rgba(0, 63, 73, 0.05)', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 4px 15px rgba(0,0,0,0.01)' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(0, 63, 73, 0.01)', border: '1px solid rgba(0, 63, 73, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Building2 size={20} color="var(--teal)" opacity={0.5} />
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                            {(formData["Planned Submission Date"] || []).map((date, i) => (
-                              <span key={`${date}-${i}`} style={{ padding: '6px 10px', background: 'rgba(0, 63, 73, 0.03)', border: '1px solid rgba(0, 63, 73, 0.1)', borderRadius: 8, fontSize: 10, fontWeight: 900, color: 'var(--teal)', textAlign: 'center', whiteSpace: 'nowrap', letterSpacing: '0.02em' }}>
-                                {formatDate(date)}
-                              </span>
-                            ))}
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 2 }}>Project</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--teal)' }}>{formData.Project || '---'}</div>
                   </div>
                 </div>
 
@@ -209,7 +198,7 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
                 <div style={{ padding: '18px 20px', background: '#ffffff', borderRadius: 20, border: '1px solid rgba(0, 63, 73, 0.05)', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 4px 15px rgba(0,0,0,0.01)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(0, 63, 73, 0.01)', border: '1px solid rgba(0, 63, 73, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Building2 size={16} color="var(--teal)" opacity={0.5} />
+                      <MapPin size={16} color="var(--teal)" opacity={0.5} />
                     </div>
                     <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Precinct</div>
                   </div>
@@ -219,6 +208,28 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
                           {p}
                         </span>
                       ))}
+                  </div>
+                </div>
+
+                {/* Stakeholder */}
+                <div style={{ padding: '18px 20px', background: '#ffffff', borderRadius: 20, border: '1px solid rgba(0, 63, 73, 0.05)', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 4px 15px rgba(0,0,0,0.01)' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(0, 63, 73, 0.01)', border: '1px solid rgba(0, 63, 73, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <User size={20} color="var(--teal)" opacity={0.5} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 2 }}>Stakeholder</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--teal)' }}>{formData.Stakeholder || '---'}</div>
+                  </div>
+                </div>
+
+                {/* Submitter */}
+                <div style={{ padding: '18px 20px', background: '#ffffff', borderRadius: 20, border: '1px solid rgba(0, 63, 73, 0.05)', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 4px 15px rgba(0,0,0,0.01)' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Sparkles size={20} color="#d0ab82" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 2 }}>Submitter</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#d0ab82' }}>{formData.Submitter || '---'}</div>
                   </div>
                 </div>
 
@@ -239,26 +250,15 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
                   </div>
                 </div>
 
-                {/* Stakeholder */}
-                <div style={{ padding: '18px 20px', background: '#ffffff', borderRadius: 20, border: '1px solid rgba(0, 63, 73, 0.05)', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 4px 15px rgba(0,0,0,0.01)' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(0, 63, 73, 0.01)', border: '1px solid rgba(0, 63, 73, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <User size={20} color="var(--teal)" opacity={0.5} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 2 }}>Stakeholder</div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--teal)' }}>{formData.Stakeholder || '---'}</div>
-                  </div>
-                </div>
-
-                {/* Priority */}
+                {/* Design Stage */}
                 <div style={{ padding: '18px 20px', background: '#ffffff', borderRadius: 20, border: '1px solid rgba(0, 63, 73, 0.05)', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 4px 15px rgba(0,0,0,0.01)' }}>
                   <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(0, 63, 73, 0.01)', border: '1px solid rgba(0, 63, 73, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Shield size={20} color="var(--teal)" opacity={0.5} />
                   </div>
                   <div>
-                    <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 2 }}>Priority</div>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 2 }}>Design Stage</div>
                     <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--teal)' }}>
-                      {formData.Priority ? (formData.Priority.charAt(0).toUpperCase() + formData.Priority.slice(1).toLowerCase()) : 'Medium'}
+                      {formData["Design Stage"] || 'Detailed Design'}
                     </div>
                   </div>
                 </div>
@@ -289,26 +289,18 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
                 <Layers size={18} color="var(--teal)" />
                 <h3 style={{ fontSize: 12, fontWeight: 950, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>Review & Status Matrix</h3>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-                <div style={{ padding: '20px', background: 'rgba(0, 63, 73, 0.015)', borderRadius: 20, border: '1px solid rgba(0, 63, 73, 0.05)' }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>InSite Review Status</div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--teal)' }}>{formData["InSite Review Status"] || '---'}</div>
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                 <div style={{ padding: '20px', background: 'rgba(0, 63, 73, 0.015)', borderRadius: 20, border: '1px solid rgba(0, 63, 73, 0.05)' }}>
                   <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>ACC Review ID</div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--teal)' }}>{formData["ACC Review ID"] || '---'}</div>
                 </div>
                 <div style={{ padding: '20px', background: 'rgba(0, 63, 73, 0.015)', borderRadius: 20, border: '1px solid rgba(0, 63, 73, 0.05)' }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>InSite Review Due Date</div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#ef4444', whiteSpace: 'nowrap' }}>{formData["InSite Review Due Date"] ? formatDate(formData["InSite Review Due Date"]) : '---'}</div>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>InSite Review Status</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--teal)' }}>{formData["InSite Review Status"] || '---'}</div>
                 </div>
                 <div style={{ padding: '20px', background: 'rgba(0, 63, 73, 0.015)', borderRadius: 20, border: '1px solid rgba(0, 63, 73, 0.05)' }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>ACC Status</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                    {(formData["ACC Status"] || []).map((st, i) => (
-                        <span key={`${st}-${i}`} style={{ padding: '2px 8px', borderRadius: 4, background: 'rgba(255, 121, 8, 0.1)', border: '1px solid rgba(255, 121, 8, 0.2)', fontSize: 10, fontWeight: 900, color: '#FF7908' }}>{st}</span>
-                      ))}
-                  </div>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>InSite Review Due Date</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#ef4444', whiteSpace: 'nowrap' }}>{formData["InSite Review Due Date"] ? formatDate(formData["InSite Review Due Date"]) : '---'}</div>
                 </div>
               </div>
             </div>
@@ -462,6 +454,32 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Stakeholder</label>
+                    <div style={{ position: 'relative' }}>
+                      <User size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                      <input
+                        value={formData.Stakeholder || ''}
+                        onChange={(e) => setFormData({ ...formData, Stakeholder: e.target.value })}
+                        placeholder="e.g. M1-DP01-AEDAS"
+                        style={{ width: '100%', padding: '10px 14px 10px 36px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 14, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Submitter (Originator)</label>
+                    <div style={{ position: 'relative' }}>
+                      <Sparkles size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#d0ab82' }} />
+                      <input
+                        value={formData.Submitter || ''}
+                        onChange={(e) => setFormData({ ...formData, Submitter: e.target.value })}
+                        placeholder="e.g. John Doe / AECOM"
+                        style={{ width: '100%', padding: '10px 14px 10px 36px', background: 'var(--section-bg)', border: '1.5px solid rgba(208, 171, 130, 0.2)', borderRadius: 14, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Precinct</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
                       {(formData.Precinct || []).map((p, i) => (
@@ -515,31 +533,17 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Stakeholder</label>
-                      <div style={{ position: 'relative' }}>
-                        <User size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                        <input
-                          value={formData.Stakeholder || ''}
-                          onChange={(e) => setFormData({ ...formData, Stakeholder: e.target.value })}
-                          placeholder="e.g. M1-DP01-AEDAS"
-                          style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
-                        />
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Design Stage</label>
-                      <select
-                        value={formData.Priority || 'Detailed Design'}
-                        onChange={(e) => setFormData({ ...formData, Priority: e.target.value })}
-                        style={{ width: '100%', padding: '10px 12px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
-                      >
-                        {BIM_STAGE_OPTIONS.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Design Stage</label>
+                    <select
+                      value={formData["Design Stage"] || 'Detailed Design'}
+                      onChange={(e) => setFormData({ ...formData, "Design Stage": e.target.value })}
+                      style={{ width: '100%', padding: '10px 14px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 14, color: 'var(--text-primary)', fontSize: 15, outline: 'none' }}
+                    >
+                      {BIM_STAGE_OPTIONS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -564,11 +568,11 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Comments</label>
+                    <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>General Comments</label>
                     <textarea
                       rows={2}
-                      value={formData.Comments || ''}
-                      onChange={(e) => setFormData({ ...formData, Comments: e.target.value })}
+                      value={formData["General Comments"] || ''}
+                      onChange={(e) => setFormData({ ...formData, "General Comments": e.target.value })}
                       placeholder="Technical audit notes..."
                       style={{ width: '100%', padding: 12, background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 14, color: 'var(--text-primary)', fontSize: 14, outline: 'none', resize: 'none' }}
                     />
@@ -601,22 +605,6 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Planned Submission Date</label>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 8 }}>
-                          {(formData["Planned Submission Date"] || []).map((date, i) => (
-                            <span key={`${date}-${i}`} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, padding: '4px 10px', borderRadius: 8, background: 'rgba(0, 63, 73, 0.05)', border: '1px solid var(--border)', fontSize: 10, color: 'var(--teal)', whiteSpace: 'nowrap', fontWeight: 800 }}>
-                              {formatDate(date)}
-                              {!readOnly && <X size={10} style={{ cursor: 'pointer', opacity: 0.5 }} onClick={() => removeMultiValue('Planned Submission Date', date)} />}
-                            </span>
-                          ))}
-                        </div>
-                        <EliteDatePicker
-                          value={''}
-                          onChange={val => addMultiValue('Planned Submission Date', val)}
-                          disabled={readOnly}
-                        />
-                      </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>InSite Review Due Date</label>
                         <EliteDatePicker
@@ -702,26 +690,7 @@ export default function BIMReviewEditorModal({ isOpen, onClose, review, onSucces
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>ACC Status</label>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
-                        {['SHARED', 'NOT SHARED', 'AWAITING', 'PENDING'].map((st, i) => (
-                          <button
-                            key={`${st}-${i}`}
-                            type="button"
-                            onClick={() => toggleMultiValue('ACC Status', st)}
-                            style={{
-                              padding: '4px 12px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all 200ms',
-                              background: (formData["ACC Status"] || []).includes(st) ? 'rgba(255, 121, 8, 0.15)' : 'rgba(255,255,255,0.03)',
-                              border: `1px solid ${(formData["ACC Status"] || []).includes(st) ? 'rgba(255, 121, 8, 0.4)' : 'rgba(255,255,255,0.08)'}`,
-                              color: (formData["ACC Status"] || []).includes(st) ? '#FF7908' : 'var(--text-muted)'
-                            }}
-                          >
-                            {st}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+
                   </div>
 
                   <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>

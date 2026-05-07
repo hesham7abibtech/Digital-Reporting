@@ -56,7 +56,8 @@ import {
   Mail,
   UserPlus,
   Tag,
-  UserCheck
+  UserCheck,
+  ExternalLink
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -72,7 +73,7 @@ import { db } from '@/lib/firebase';
 import GlassCard from '@/components/shared/GlassCard';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { Task, TaskStatus, TeamMember, DashboardNavItem, ProjectMetadata, Department, ReportSummaryField, HeaderBadge, BIMReview } from '@/lib/types';
-import { PRECINCTS } from '@/lib/constants';
+import { PRECINCTS, BIM_STAGE_OPTIONS } from '@/lib/constants';
 import TaskEditorModal from '@/components/admin/TaskEditorModal';
 import MemberEditorModal from '@/components/admin/MemberEditorModal';
 import RegistryEditorModal from '@/components/admin/RegistryEditorModal';
@@ -1004,20 +1005,18 @@ export default function AdminDashboardPage() {
         id: doc.id, 
         ...data,
         "ID": data["ID"] || data.id || doc.id,
-        "Precinct": Array.isArray(data["Precinct"]) ? data["Precinct"] : (data.precinct ? [data.precinct] : []),
-        "Stakeholder": data["Stakeholder"] || data.stakeholder || "",
+        "Precinct": Array.isArray(data["Precinct"]) ? data["Precinct"] : (Array.isArray(data.precinct) ? data.precinct : (data.precinct ? [data.precinct] : [])),
         "Project": data["Project"] || data.project || "",
-        "Milestone Submissions": Array.isArray(data["Milestone Submissions"]) ? data["Milestone Submissions"] : (data.milestoneSubmissions ? [data.milestoneSubmissions] : []),
-        "Submission Category": Array.isArray(data["Submission Category"]) ? data["Submission Category"] : (data.submissionCategory ? [data.submissionCategory] : []),
-        "Planned Submission Date": Array.isArray(data["Planned Submission Date"]) ? data["Planned Submission Date"] : (data.plannedSubmissionDate ? [data.plannedSubmissionDate] : []),
-        "ACC Status": Array.isArray(data["ACC Status"]) ? data["ACC Status"] : (data.accStatus ? [data.accStatus] : []),
-        "Priority": data["Priority"] || data.priority || "MEDIUM",
+        "Stakeholder": data["Stakeholder"] || data.stakeholder || "",
+        "Milestone Submissions": Array.isArray(data["Milestone Submissions"]) ? data["Milestone Submissions"] : (Array.isArray(data.milestoneSubmissions) ? data.milestoneSubmissions : []),
+        "Submission Category": Array.isArray(data["Submission Category"]) ? data["Submission Category"] : (Array.isArray(data.submissionCategory) ? data.submissionCategory : []),
+        "Design Stage": data["Design Stage"] || data.priority || data.designStage || "Detailed Design",
         "ACC Review ID": data["ACC Review ID"] || data.accReviewId || data.reviewNumber || "",
         "InSite Review Status": data["InSite Review Status"] || data.insiteReviewStatus || "",
         "InSite Review Due Date": data["InSite Review Due Date"] || data.insiteReviewDueDate || data.dueDate || null,
-        "InSite Reviewer": Array.isArray(data["InSite Reviewer"]) ? data["InSite Reviewer"] : (data.insiteReviewer ? [data.insiteReviewer] : []),
+        "InSite Reviewer": Array.isArray(data["InSite Reviewer"]) ? data["InSite Reviewer"] : (Array.isArray(data.insiteReviewer) ? data.insiteReviewer : []),
         "InSite Review Output ACC URL": data["InSite Review Output ACC URL"] || data.insiteReviewOutputUrl || "",
-        "Comments": data["Comments"] || data.comments || "",
+        "General Comments": data["General Comments"] || data.comments || "",
         createdAt: data.createdAt || new Date().toISOString(),
         updatedAt: data.updatedAt || new Date().toISOString()
       } as BIMReview;
@@ -1029,7 +1028,7 @@ export default function AdminDashboardPage() {
       r.Project.toLowerCase().includes(q) || 
       (r.ID || '').toLowerCase().includes(q) ||
       r.Stakeholder.toLowerCase().includes(q) ||
-      (r["ACC Status"] || []).some(s => s.toLowerCase().includes(q))
+      (r["General Comments"] || '').toLowerCase().includes(q)
     );
   }, [bimReviewsSnapshot, searchQuery]);
 
@@ -1269,6 +1268,85 @@ export default function AdminDashboardPage() {
     } catch (err) {
       console.error('Template Download Failure:', err);
       showToast('System Protocol Error: Template generation failed.', 'ERROR');
+    }
+  };
+
+  const handleDownloadBimTemplate = async () => {
+    try {
+      const ExcelJS = await import('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('BIM Strategic Review Matrix');
+      
+      const columns = [
+        { header: 'ID', key: 'id', width: 20 },
+        { header: 'Precinct', key: 'precinct', width: 25 },
+        { header: 'Project', key: 'project', width: 40 },
+        { header: 'Stakeholder', key: 'stakeholder', width: 30 },
+        { header: 'Milestone Submissions', key: 'milestones', width: 40 },
+        { header: 'Submission Category', key: 'category', width: 25 },
+        { header: 'Design Stage', key: 'designStage', width: 25 },
+        { header: 'ACC Review ID', key: 'accReviewId', width: 20 },
+        { header: 'InSite Review Status', key: 'insiteStatus', width: 25 },
+        { header: 'InSite Review Due Date', key: 'insiteDueDate', width: 25 },
+        { header: 'InSite Reviewer', key: 'reviewer', width: 25 },
+        { header: 'InSite Review Output ACC URL', key: 'accUrl', width: 40 },
+        { header: 'General Comments', key: 'comments', width: 40 }
+      ];
+      
+      sheet.columns = columns;
+      
+      const headerRow = sheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF003F49' } };
+      headerRow.alignment = { horizontal: 'center' };
+
+      // Add Data Validations
+      (sheet as any).dataValidations.add('B2:B500', {
+        type: 'list',
+        allowBlank: true,
+        formulae: [`"${PRECINCTS.join(',')}"`],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Precinct',
+        error: 'Please select a precinct from the list.'
+      });
+
+      (sheet as any).dataValidations.add('G2:G500', {
+        type: 'list',
+        allowBlank: true,
+        formulae: [`"${BIM_STAGE_OPTIONS.join(',')}"`],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Stage',
+        error: 'Please select a design stage from the list.'
+      });
+
+      // Sample Row
+      sheet.addRow({
+        id: 'BIM-REV-001 (Optional)',
+        precinct: PRECINCTS[0] || 'NORTH',
+        project: 'Project Title Alpha',
+        stakeholder: 'Lead Consultant Name',
+        milestones: 'Stage 1 | Milestone 2',
+        category: 'BIM Milestone',
+        designStage: 'Detailed Design',
+        accReviewId: 'REV-001',
+        insiteStatus: 'With EGIS',
+        insiteDueDate: '30-Apr-2026',
+        reviewer: 'Reviewer Name',
+        accUrl: 'https://acc.autodesk.com/...',
+        comments: 'Technical review in progress.'
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `BIM_Review_Matrix_Template_${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.click();
+      
+      showToast('BIM Strategic Template transmitted successfully.', 'SUCCESS');
+    } catch (err) {
+      console.error('BIM Template Download Failure:', err);
+      showToast('System Protocol Error: BIM template generation failed.', 'ERROR');
     }
   };
 
@@ -1919,6 +1997,18 @@ export default function AdminDashboardPage() {
                             accept=".xlsx, .xls, .csv" 
                             style={{ display: 'none' }} 
                           />
+                           <button 
+                            onClick={handleDownloadBimTemplate}
+                            style={{ 
+                              display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px', 
+                              borderRadius: 14, background: '#fffbeb', 
+                              color: '#d97706', border: '1px solid rgba(217, 119, 6, 0.2)', 
+                              cursor: 'pointer', fontSize: 13, fontWeight: 800 
+                            }}
+                          >
+                            <FileSpreadsheet size={18} />
+                            Template
+                          </button>
                           <button 
                             onClick={() => bimFileInputRef.current?.click()} 
                             style={{ 
@@ -2117,14 +2207,19 @@ export default function AdminDashboardPage() {
                             {activeTab === 'bim-reviews' ? (
                               <>
                                 <th style={{ textAlign: 'center', padding: '12px 10px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 60 }}>ID</th>
-                                <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 320 }}>Project & Milestones</th>
-                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 100 }}>Design Stage</th>
-                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 220 }}>Status & Stakeholder</th>
-                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 130 }}>ACC Status</th>
-                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 250 }}>InSite Reviewer</th>
-                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 140 }}>Review Due Date</th>
-                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 140 }}>Submission Log</th>
-                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 110 }}>Control</th>
+                                <th style={{ textAlign: 'center', padding: '12px 10px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 100 }}>Precinct</th>
+                                <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 220 }}>Project</th>
+                                <th style={{ textAlign: 'center', padding: '12px 10px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 120 }}>Stakeholder</th>
+                                <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 180 }}>Milestones</th>
+                                <th style={{ textAlign: 'center', padding: '12px 10px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 120 }}>Category</th>
+                                <th style={{ textAlign: 'center', padding: '12px 10px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 100 }}>Stage</th>
+                                <th style={{ textAlign: 'center', padding: '12px 10px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 100 }}>ACC ID</th>
+                                <th style={{ textAlign: 'center', padding: '12px 10px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 120 }}>Status</th>
+                                <th style={{ textAlign: 'center', padding: '12px 10px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 100 }}>Due Date</th>
+                                <th style={{ textAlign: 'center', padding: '12px 10px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 150 }}>Reviewer</th>
+                                <th style={{ textAlign: 'center', padding: '12px 10px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 80 }}>ACC</th>
+                                <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 150 }}>Comments</th>
+                                <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: 10, fontWeight: 900, color: '#003f49', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', width: 100 }}>Control</th>
                               </>
                             ) : activeTab === 'tickets' ? (
                               <>
@@ -2471,8 +2566,6 @@ export default function AdminDashboardPage() {
                           const isSelected = selectedIds.has(review.id);
                           const milestones = review["Milestone Submissions"] || [];
                           const reviewers = review["InSite Reviewer"] || [];
-                          const dates = review["Planned Submission Date"] || [];
-                          const accStatuses = review["ACC Status"] || [];
 
                           return (
                             <motion.tr 
@@ -2492,41 +2585,49 @@ export default function AdminDashboardPage() {
                               <td style={{ padding: '24px 10px', textAlign: 'center' }}>
                                 <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 800 }}>{review.ID || '—'}</div>
                               </td>
+                              <td style={{ padding: '24px 10px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 10, color: 'var(--text-primary)', fontWeight: 800 }}>{(review.Precinct || []).join(', ') || '—'}</div>
+                              </td>
                               <td style={{ padding: '24px 16px', textAlign: 'left' }}>
-                                <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-primary)', letterSpacing: '0.01em', fontFamily: 'var(--font-heading)', lineHeight: 1.4 }}>{review.Project}</div>
-                                <div style={{ fontSize: 9, color: 'var(--text-dim)', marginTop: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 280, fontWeight: 700, letterSpacing: '0.05em' }}>{milestones.join(', ') || '—'}</div>
+                                <div style={{ fontWeight: 800, fontSize: 13, color: 'var(--text-primary)', letterSpacing: '0.01em', fontFamily: 'var(--font-heading)', lineHeight: 1.4 }}>{review.Project || '—'}</div>
                               </td>
-                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
-                                <span style={{ fontSize: 10, background: 'var(--secondary)', color: 'var(--teal)', padding: '8px 16px', borderRadius: 10, fontWeight: 900, letterSpacing: '0.1em', border: '1px solid var(--border)', textTransform: 'uppercase' }}>{review.Priority}</span>
+                              <td style={{ padding: '24px 10px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 800 }}>{review.Stakeholder || '—'}</div>
                               </td>
-                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 800 }}>{review["InSite Review Status"] || '—'}</div>
-                                <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 6, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{review.Stakeholder}</div>
+                              <td style={{ padding: '24px 16px', textAlign: 'left' }}>
+                                <div style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 700, letterSpacing: '0.05em' }}>{milestones.join(', ') || '—'}</div>
                               </td>
-                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
-                                <div style={{ 
-                                  fontSize: 10, 
-                                  color: (accStatuses[0]?.toUpperCase() === 'SHARED' || accStatuses[0]?.toUpperCase() === 'COMPLETED') ? '#059669' : '#f59e0b', 
-                                  fontWeight: 900,
-                                  background: (accStatuses[0]?.toUpperCase() === 'SHARED' || accStatuses[0]?.toUpperCase() === 'COMPLETED') ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-                                  padding: '4px 8px',
-                                  borderRadius: 6,
-                                  border: `1px solid ${(accStatuses[0]?.toUpperCase() === 'SHARED' || accStatuses[0]?.toUpperCase() === 'COMPLETED') ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`,
-                                  display: 'inline-block'
-                                }}>
-                                  {accStatuses.join(', ') || 'NOT SHARED'}
+                              <td style={{ padding: '24px 10px', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 4 }}>
+                                  {(review["Submission Category"] || []).map((cat, idx) => (
+                                    <span key={idx} style={{ fontSize: 8, background: 'rgba(255, 121, 8, 0.08)', color: '#FF7908', padding: '2px 6px', borderRadius: 4, fontWeight: 900 }}>{cat}</span>
+                                  ))}
                                 </div>
                               </td>
-                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 700, lineHeight: 1.4, maxWidth: 220, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{reviewers.join(', ') || '—'}</div>
-                                </div>
+                              <td style={{ padding: '24px 10px', textAlign: 'center' }}>
+                                <span style={{ fontSize: 9, background: 'var(--secondary)', color: 'var(--teal)', padding: '6px 12px', borderRadius: 8, fontWeight: 900, border: '1px solid var(--border)' }}>{review["Design Stage"] || '—'}</span>
                               </td>
-                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 13, color: '#FF7908', fontWeight: 900, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{review["InSite Review Due Date"] || '—'}</div>
+                              <td style={{ padding: '24px 10px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 800 }}>{review["ACC Review ID"] || '—'}</div>
                               </td>
-                              <td style={{ padding: '24px 16px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 700, whiteSpace: 'nowrap' }}>{dates[0] || '—'}</div>
+                              <td style={{ padding: '24px 10px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 11, color: 'var(--text-primary)', fontWeight: 800 }}>{review["InSite Review Status"] || '—'}</div>
+                              </td>
+                              <td style={{ padding: '24px 10px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 11, color: '#FF7908', fontWeight: 900 }}>{review["InSite Review Due Date"] ? formatDate(review["InSite Review Due Date"]) : '—'}</div>
+                              </td>
+                              <td style={{ padding: '24px 10px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>{reviewers.join(', ') || '—'}</div>
+                              </td>
+                              <td style={{ padding: '24px 10px', textAlign: 'center' }}>
+                                {review["InSite Review Output ACC URL"] ? (
+                                  <a href={review["InSite Review Output ACC URL"]} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal)' }} onClick={(e) => e.stopPropagation()}>
+                                    <ExternalLink size={14} />
+                                  </a>
+                                ) : '—'}
+                              </td>
+                              <td style={{ padding: '24px 16px', textAlign: 'left' }}>
+                                <div style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 700, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{review["General Comments"] || '—'}</div>
                               </td>
                               <td style={{ padding: '24px 16px', textAlign: 'center' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>

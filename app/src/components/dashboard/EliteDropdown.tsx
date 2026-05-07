@@ -180,27 +180,40 @@ export default function EliteDropdown({
           <div style={{ position: 'sticky', top: -8, margin: '-8px -8px 8px -8px', background: variant === 'elite' ? 'rgba(10, 10, 10, 0.95)' : 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(12px)', zIndex: 10, padding: '16px 14px 12px', display: 'flex', flexDirection: 'column', gap: 8, borderBottom: variant === 'elite' ? '1.5px solid rgba(208, 171, 130, 0.15)' : '1px solid rgba(0, 63, 73, 0.08)' }}>
             <span style={{ fontSize: 10, fontWeight: 950, color: variant === 'elite' ? GOLD : TEAL, textTransform: 'uppercase', letterSpacing: '0.15em' }}>{menuLabel || 'Filter Selection'}</span>
             <div style={{ position: 'relative' }}>
-              <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: variant === 'elite' ? GOLD : TEAL, opacity: 0.6 }} />
+              <Search size={14} style={{ 
+                position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', 
+                color: variant === 'elite' ? GOLD : TEAL, 
+                opacity: 1,
+                filter: variant === 'elite' ? 'drop-shadow(0 0 5px rgba(208, 171, 130, 0.4))' : 'none'
+              }} />
               <input
                 type="text"
                 autoFocus
-                placeholder="Search..."
+                placeholder="Search Options..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
                   width: '100%',
                   padding: '10px 12px 10px 36px',
-                  borderRadius: 10,
-                  background: variant === 'elite' ? 'rgba(255, 255, 255, 0.05)' : '#f8fafc',
-                  border: variant === 'elite' ? '1.5px solid rgba(208, 171, 130, 0.2)' : '1px solid rgba(0, 63, 73, 0.1)',
-                  fontSize: 12,
-                  fontWeight: 700,
+                  borderRadius: 12,
+                  background: variant === 'elite' ? 'rgba(0, 0, 0, 0.8)' : '#f8fafc',
+                  border: variant === 'elite' ? `1.5px solid ${GOLD}40` : '1px solid rgba(0, 63, 73, 0.1)',
+                  fontSize: 11,
+                  fontWeight: 900,
                   color: variant === 'elite' ? '#ffffff' : TEAL,
                   outline: 'none',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  letterSpacing: '0.04em',
+                  boxShadow: variant === 'elite' ? 'inset 0 2px 8px rgba(0,0,0,0.5)' : 'none'
                 }}
-                onFocus={(e) => e.target.style.borderColor = variant === 'elite' ? GOLD : TEAL}
-                onBlur={(e) => e.target.style.borderColor = variant === 'elite' ? 'rgba(208, 171, 130, 0.2)' : 'rgba(0, 63, 73, 0.1)'}
+                onFocus={(e) => {
+                  e.target.style.borderColor = variant === 'elite' ? GOLD : TEAL;
+                  if (variant === 'elite') e.target.style.boxShadow = `inset 0 2px 8px rgba(0,0,0,0.5), 0 0 15px ${GOLD}20`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = variant === 'elite' ? `${GOLD}40` : 'rgba(0, 63, 73, 0.1)';
+                  if (variant === 'elite') e.target.style.boxShadow = 'inset 0 2px 8px rgba(0,0,0,0.5)';
+                }}
               />
             </div>
           </div>
