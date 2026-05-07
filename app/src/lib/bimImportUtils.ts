@@ -120,7 +120,7 @@ export async function parseBimReviewsExcel(buffer: ArrayBuffer): Promise<Partial
         "Precinct": parseMultiValue(getVal(['Precinct', 'site', 'location', 'area'], 1)),
         "Project": String(getVal(['Project', 'project name', 'project detail', 'development'], 2)),
         "Stakeholder": String(getVal(['Stakeholder', 'consultant', 'lead', 'party', 'company'], 3)),
-        "Submitter": String(getVal(['Submitter', 'author', 'originator', 'submitted by', 'created by', 'owner'], 13)), // Enhanced mapping
+        "Submitter": String(getVal(['Submitter', 'submitter', 'author', 'originator', 'submitted by', 'created by', 'owner'], 13)), // Enhanced mapping
         "Milestone Submissions": parseMultiValue(getVal(['Milestone Submissions', 'description', 'milestone', 'deliverable'], 4)),
         "Submission Category": parseMultiValue(getVal(['Submission Category', 'category', 'type', 'submission type'], 5)),
         "Design Stage": String(getVal(['Design Stage', 'stage', 'phase', 'priority'], 6) || 'Detailed Design'),

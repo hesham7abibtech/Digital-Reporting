@@ -396,7 +396,7 @@ export default function Dashboard() {
          for (const k of keys) if ((r as any)[k]) return (r as any)[k];
          return '';
       };
-      const s = String(getV(['Submitter', 'author', 'originator', 'submitted by', 'created by', 'owner']));
+      const s = String(getV(['Submitter', 'submitter', 'author', 'originator', 'submitted by', 'created by', 'owner']));
       if (s && s !== '—' && s !== 'undefined' && s.toLowerCase() !== 'null') rawSubmitters.add(s);
       else hasEmpty = true;
     });
@@ -610,7 +610,7 @@ export default function Dashboard() {
          for (const k of keys) if ((review as any)[k]) return (review as any)[k];
          return '';
       };
-      const reviewSubmitter = String(getV(['Submitter', 'author', 'originator', 'submitted by', 'created by', 'owner']));
+      const reviewSubmitter = String(getV(['Submitter', 'submitter', 'author', 'originator', 'submitted by', 'created by', 'owner']));
       const matchesSubmitter = bimFilterSubmitter.length === 0 || 
                               bimFilterSubmitter.includes('All Submitters') || 
                               (bimFilterSubmitter.includes('(Empty)') && !reviewSubmitter) ||
