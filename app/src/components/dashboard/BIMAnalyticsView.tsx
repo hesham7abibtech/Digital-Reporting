@@ -733,9 +733,7 @@ export default function BIMAnalyticsView({
               {setFilterPrecinct && (
                 <EliteDropdown value={filterPrecinct} options={availablePrecincts.map(p => ({ label: p, value: p }))} onChange={setFilterPrecinct} menuLabel="Precinct" isMulti allLabel="All Precincts" />
               )}
-              {setFilterSubmitter && (
-                <EliteDropdown value={filterSubmitter} options={availableSubmitters.map(s => ({ label: s, value: s }))} onChange={setFilterSubmitter} menuLabel="Submitter" isMulti allLabel="All Submitters" />
-              )}
+
               {(search ||
                 (filterStage.length > 0 && !filterStage.includes('All Stages')) ||
                 (filterStatus.length > 0 && !filterStatus.includes('All Statuses')) ||

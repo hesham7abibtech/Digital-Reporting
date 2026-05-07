@@ -567,7 +567,8 @@ export default function Dashboard() {
     return dateFilteredBimReviews.filter(review => {
       const searchStr = bimSearch.toLowerCase();
       
-      const reviewers = review["InSite Reviewer"] || [];
+      const reviewersRaw = review["InSite Reviewer"] || [];
+      const reviewers = reviewersRaw.flatMap((r: string) => r.split(',').map(s => s.trim()).filter(Boolean));
       const milestones = review["Milestone Submissions"] || [];
 
       const matchesSearch = !bimSearch ||
@@ -676,7 +677,10 @@ export default function Dashboard() {
   }, [dateFilteredBimReviews]);
 
   const availableBimReviewers = useMemo(() => {
-    const raw = Array.from(new Set(dateFilteredBimReviews.flatMap((r: BIMReview) => r["InSite Reviewer"] || []))).filter(Boolean).sort();
+    const raw = Array.from(new Set(dateFilteredBimReviews.flatMap((r: BIMReview) => {
+      const revs = r["InSite Reviewer"] || [];
+      return revs.flatMap(rev => rev.split(',').map(s => s.trim()).filter(Boolean));
+    }))).filter(Boolean).sort();
     const hasEmpty = dateFilteredBimReviews.some((r: BIMReview) => !r["InSite Reviewer"] || r["InSite Reviewer"].length === 0);
     return hasEmpty ? ['(Empty)', ...raw] : raw;
   }, [dateFilteredBimReviews]);

@@ -641,13 +641,7 @@ export default function UnifiedExportModal(props: UnifiedExportModalProps) {
                                   onChange={setFilterPrecinct} isMulti allLabel="All Precincts" menuLabel="Precincts" fullWidth
                                 />
                               )}
-                              {setFilterSubmitter && (
-                                <EliteDropdown
-                                  variant="export"
-                                  value={filterSubmitter} options={(availableSubmitters.length > 0 ? availableSubmitters : effectiveAvailableOptions?.submitters || []).map(s => ({ label: s, value: s }))}
-                                  onChange={setFilterSubmitter} isMulti allLabel="All Submitters" menuLabel="Submitters" fullWidth
-                                />
-                              )}
+
                           </>
                         )}
                       </div>

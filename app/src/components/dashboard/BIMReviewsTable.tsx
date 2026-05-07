@@ -301,7 +301,7 @@ function ReviewRow({
         if (col.id === 'InSite Reviewer') return (
           <td key={col.id} style={{ ...cellStyle }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
-              {(item["InSite Reviewer"] || []).map((rev, i) => (
+              {(item["InSite Reviewer"] || []).flatMap((r: string) => r.split(',').map(s => s.trim()).filter(Boolean)).map((rev, i) => (
                 <div key={`rev-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                    <div style={{ 
                     width: 20, height: 20, borderRadius: '4px', 
@@ -594,14 +594,7 @@ export default function BIMReviewsTable({
               allLabel="All Precincts"
             />
             
-            <EliteDropdown
-              value={filterSubmitter}
-              options={availableSubmitters.map((s: string) => ({ label: s, value: s }))}
-              onChange={setFilterSubmitter}
-              menuLabel="Submitters"
-              isMulti={true}
-              allLabel="All Submitters"
-            />
+
 
             <ColumnSettingsDropdown
               columns={allColumns}
