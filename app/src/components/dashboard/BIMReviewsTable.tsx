@@ -525,7 +525,7 @@ export default function BIMReviewsTable({
           }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', width: '100%', gap: 16 }}>
           <div style={{ position: 'relative', flex: 1, maxWidth: 500 }}>
-            <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#e6c29a', opacity: 1, filter: 'drop-shadow(0 0 10px rgba(230, 194, 154, 0.4))' }} />
+            <Search size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#ffffff', zIndex: 10, filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.4))' }} />
             <input
               type="text"
               placeholder="Search Reviews..."
@@ -533,16 +533,18 @@ export default function BIMReviewsTable({
               onChange={(e) => setSearch(e.target.value)}
               style={{ 
                 ...headerInputStyle, 
-                background: 'rgba(0, 0, 0, 0.5)', 
+                background: 'rgba(0, 20, 25, 0.6)', 
                 color: '#ffffff', 
-                borderColor: 'rgba(208, 171, 130, 0.3)', 
+                borderColor: 'rgba(255, 255, 255, 0.3)', 
                 fontWeight: 800,
-                letterSpacing: '0.02em'
+                letterSpacing: '0.04em',
+                boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.3)',
+                paddingLeft: 42
               }}
             />
             <style>{`
-              input::placeholder { color: rgba(208, 171, 130, 0.5) !important; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; font-size: 10px; }
-              input:focus { border-color: #d0ab82 !important; box-shadow: 0 0 20px rgba(208, 171, 130, 0.2), inset 0 2px 10px rgba(0, 0, 0, 0.5) !important; }
+              input::placeholder { color: rgba(255, 255, 255, 0.7) !important; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; font-size: 11px; }
+              input:focus { border-color: #ffffff !important; background: rgba(0, 30, 35, 0.8) !important; box-shadow: 0 0 15px rgba(255, 255, 255, 0.2), inset 0 2px 10px rgba(0, 0, 0, 0.4) !important; outline: none; }
             `}</style>
           </div>
 
