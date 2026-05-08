@@ -164,12 +164,14 @@ function DarkKPICard({ label, value, icon, color, delay, hoverData = [] }: { lab
               }}
             >
               <p style={{ fontSize: 10, color: color, fontWeight: 950, textTransform: 'uppercase', marginBottom: 12, letterSpacing: '0.12em' }}>Data Breakdown</p>
-              {hoverData.slice(0, 5).map((d, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, borderBottom: i < Math.min(hoverData.length, 5) - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none', paddingBottom: 6 }}>
-                  <span style={{ fontSize: 11, color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.02em' }}>{d.name}</span>
-                  <span style={{ fontSize: 12, color: '#ffffff', fontWeight: 950 }}>{d.value}</span>
-                </div>
-              ))}
+              <div style={{ maxHeight: '240px', overflowY: 'auto', paddingRight: '4px', scrollbarWidth: 'thin', scrollbarColor: `${color}40 transparent` }}>
+                {hoverData.map((d, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, borderBottom: i < hoverData.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none', paddingBottom: 6 }}>
+                    <span style={{ fontSize: 11, color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.02em', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '8px' }}>{d.name}</span>
+                    <span style={{ fontSize: 12, color: '#ffffff', fontWeight: 950 }}>{d.value}</span>
+                  </div>
+                ))}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -364,12 +366,37 @@ export default function PremiumAnalyticsDashboardView({
       return d ? d.name : (raw || 'General');
     };
 
-    const getResolvedSubmitter = (name: string, email?: string) => {
-      const m = (members || []).find(mem =>
-        (email && mem.email.toLowerCase() === email.toLowerCase()) ||
-        (name && mem.name.toLowerCase() === name.toLowerCase())
-      );
-      return m ? m.name : (name || 'Unassigned');
+    const getResolvedSubmittersForTask = (t: Task) => {
+      const names = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
+      const ids = Array.isArray(t.submitterId) ? t.submitterId : (t.submitterId ? [t.submitterId] : []);
+      const emails = Array.isArray(t.submitterEmail) ? t.submitterEmail : (t.submitterEmail ? [t.submitterEmail] : []);
+      
+      const resolvedNames = new Set<string>();
+      let foundAny = false;
+
+      names.forEach(n => { if (n) { resolvedNames.add(n); foundAny = true; } });
+      
+      ids.forEach(id => {
+        if (!id) return;
+        const m = (members || []).find(sm => sm.id === id);
+        if (m?.name) { resolvedNames.add(m.name); foundAny = true; }
+      });
+      
+      emails.forEach(email => {
+        if (!email) return;
+        const m = (members || []).find(sm => sm.email.toLowerCase() === email.toLowerCase());
+        if (m?.name) { resolvedNames.add(m.name); foundAny = true; }
+      });
+      
+      if (!foundAny) {
+        if (emails.length > 0 && emails[0]) {
+          resolvedNames.add(emails[0]);
+        } else {
+          resolvedNames.add('Unassigned');
+        }
+      }
+      
+      return Array.from(resolvedNames);
     };
 
     const categoriesSet = new Set<string>();
@@ -380,11 +407,7 @@ export default function PremiumAnalyticsDashboardView({
 
     const submittersSet = new Set<string>();
     tasks.forEach(t => {
-      const names = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
-      const emails = Array.isArray(t.submitterEmail) ? t.submitterEmail : (t.submitterEmail ? [t.submitterEmail] : []);
-      names.forEach((name, idx) => {
-        submittersSet.add(getResolvedSubmitter(name, emails[idx]));
-      });
+      getResolvedSubmittersForTask(t).forEach(name => submittersSet.add(name));
     });
 
     // Category Data
@@ -420,7 +443,7 @@ export default function PremiumAnalyticsDashboardView({
     // Precinct Data
     const precinctCounts: Record<string, number> = {};
     tasks.forEach(t => {
-      const p = t.precinct || 'N/A';
+      const p = t.precinct ? t.precinct.trim().toUpperCase() : 'N/A';
       precinctCounts[p] = (precinctCounts[p] || 0) + 1;
     });
     const precinctData = Object.entries(precinctCounts)
@@ -430,17 +453,13 @@ export default function PremiumAnalyticsDashboardView({
     // Submitter Data
     const subCounts: Record<string, number> = {};
     tasks.forEach(t => {
-      const names = Array.isArray(t.submitterName) ? t.submitterName : (t.submitterName ? [t.submitterName] : []);
-      const emails = Array.isArray(t.submitterEmail) ? t.submitterEmail : (t.submitterEmail ? [t.submitterEmail] : []);
-      names.forEach((name, idx) => {
-        const resolved = getResolvedSubmitter(name, emails[idx]);
-        subCounts[resolved] = (subCounts[resolved] || 0) + 1;
+      getResolvedSubmittersForTask(t).forEach(name => {
+        subCounts[name] = (subCounts[name] || 0) + 1;
       });
     });
     const submitterData = Object.entries(subCounts)
       .map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 7);
+      .sort((a, b) => b.value - a.value);
 
     // Type Data
     const typeCounts: Record<string, number> = {};
@@ -663,9 +682,9 @@ export default function PremiumAnalyticsDashboardView({
           zIndex: 50
         }}>
           <DarkKPICard label="Total Deliverables" value={kpiStats.totalDeliverables} icon={<Database size={isExportMode ? 15 : 20} />} color={THEME.primary} delay={0.1} hoverData={categoryData} />
-          <DarkKPICard label="Active Categories" value={kpiStats.activeCategories} icon={<FolderOpen size={isExportMode ? 15 : 20} />} color={THEME.secondary} delay={0.2} hoverData={categoryData.slice(0, 5)} />
-          <DarkKPICard label="Team Members" value={kpiStats.activeSubmitters} icon={<Users size={isExportMode ? 15 : 20} />} color={THEME.accent} delay={0.3} hoverData={submitterData.slice(0, 5)} />
-          <DarkKPICard label="Primary Type" value={kpiStats.primaryType} icon={<FileText size={isExportMode ? 15 : 20} />} color="#c084fc" delay={0.35} hoverData={typeData.slice(0, 5)} />
+          <DarkKPICard label="Active Categories" value={kpiStats.activeCategories} icon={<FolderOpen size={isExportMode ? 15 : 20} />} color={THEME.secondary} delay={0.2} hoverData={categoryData} />
+          <DarkKPICard label="Team Members" value={kpiStats.activeSubmitters} icon={<Users size={isExportMode ? 15 : 20} />} color={THEME.accent} delay={0.3} hoverData={submitterData} />
+          <DarkKPICard label="Primary Type" value={kpiStats.primaryType} icon={<FileText size={isExportMode ? 15 : 20} />} color="#c084fc" delay={0.35} hoverData={typeData} />
           <DarkKPICard label="Primary Environment" value={cdeData[0]?.name || '-'} icon={<CloudCog size={isExportMode ? 15 : 20} />} color={THEME.warning} delay={0.4} hoverData={cdeData} />
         </div>
 
@@ -706,7 +725,7 @@ export default function PremiumAnalyticsDashboardView({
                 <XAxis type="number" {...darkAxisProps} />
                 <YAxis dataKey="name" type="category" width={100} {...darkAxisProps} tick={{ ...darkAxisProps.tick, fontSize: 10 }} />
                 <Tooltip content={<DarkTooltip />} cursor={{ fill: THEME.cardBorder, opacity: 0.4 }} />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20} isAnimationActive={false}>
+                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20} isAnimationActive={false} label={{ position: 'right', fill: THEME.textPrimary, fontSize: 11, fontWeight: 900 }}>
                   {categoryData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
