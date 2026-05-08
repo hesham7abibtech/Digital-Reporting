@@ -3861,23 +3861,23 @@ export default function AdminDashboardPage() {
 
                                                 {/* Branding Line */}
                                                 {localReportBranding && (
-                                                  <div style={{ position: 'absolute', top: 119, left: 57 }}>
-                                                    <div style={{ fontSize: 14.6, fontWeight: 'bold', color: localReportHeaderTextColor, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                                                  <div style={{ position: 'absolute', top: 111, left: 57 }}>
+                                                    <div style={{ fontSize: 11, fontWeight: 'bold', color: localReportHeaderTextColor, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                                                       {localReportBranding}
                                                     </div>
                                                   </div>
                                                 )}
 
                                                 {/* Title & Subtitle */}
-                                                <div style={{ position: 'absolute', top: 176, left: 57 }}>
-                                                  <div style={{ fontSize: 64, fontWeight: 'bold', color: localReportHeaderTextColor, lineHeight: 1 }}>{reportConfigContext === 'bim' ? (localBimReportTitle || 'BIM REVIEW MATRIX') : (localReportTitle || 'Digital Team Report')}</div>
+                                                <div style={{ position: 'absolute', top: 140, left: 57 }}>
+                                                  <div style={{ fontSize: 48, fontWeight: 'bold', color: localReportHeaderTextColor, lineHeight: 1 }}>{reportConfigContext === 'bim' ? (localBimReportTitle || 'BIM REVIEW MATRIX') : (localReportTitle || 'Digital Team Report')}</div>
                                                 </div>
-                                                <div style={{ position: 'absolute', top: 210, left: 57 }}>
-                                                  <div style={{ fontSize: 24, fontWeight: 'bold', color: localReportPdfBodyTextColor || '#1e293b' }}>{reportConfigContext === 'bim' ? (localBimReportSubtitle || 'ANALYTICS & REGISTRY TRANSCRIPT') : (localReportSubtitle || 'OPERATIONAL PERFORMANCE & DELIVERABLES')}</div>
+                                                <div style={{ position: 'absolute', top: 196, left: 57 }}>
+                                                  <div style={{ fontSize: 18, fontWeight: 'bold', color: localReportPdfBodyTextColor || '#1e293b' }}>{reportConfigContext === 'bim' ? (localBimReportSubtitle || 'ANALYTICS & REGISTRY TRANSCRIPT') : (localReportSubtitle || 'OPERATIONAL PERFORMANCE & DELIVERABLES')}</div>
                                                 </div>
 
                                                 {/* Data Fields Registry */}
-                                                <div style={{ position: 'absolute', top: 278, left: 57, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                                <div style={{ position: 'absolute', top: 267, left: 57, display: 'flex', flexDirection: 'column', gap: 28.5 }}>
                                                   {(reportConfigContext === 'bim' ? localBimSummaryFields : localSummaryFields).map((field) => {
                                                     if (!field.isVisible || field.id === 'reportTitle' || field.id === 'periodReference') return null;
                                                     
@@ -3898,7 +3898,7 @@ export default function AdminDashboardPage() {
                                                     }
                                                     
                                                     return (
-                                                      <div key={field.id} style={{ display: 'flex', gap: 10, fontSize: 18.6, fontWeight: 'bold' }}>
+                                                      <div key={field.id} style={{ display: 'flex', gap: 8, fontSize: 14, fontWeight: 'bold', lineHeight: 1 }}>
                                                         <span style={{ color: localReportAccentColor }}>{field.label}:</span>
                                                         <span style={{ color: localReportPdfBodyTextColor || '#1e293b', fontWeight: 'normal' }}>{val}</span>
                                                       </div>
@@ -3914,7 +3914,7 @@ export default function AdminDashboardPage() {
                                                 </div>
 
                                                 {/* Security Footer Protocol */}
-                                                <div style={{ position: 'absolute', bottom: 42, left: 57, fontSize: 13.3, color: localReportPdfBodyTextColor || '#1e293b' }}>
+                                                <div style={{ position: 'absolute', bottom: 42, left: 57, fontSize: 10, color: localReportPdfBodyTextColor || '#1e293b' }}>
                                                   {localReportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM'}
                                                 </div>
                                               </div>
@@ -3925,55 +3925,80 @@ export default function AdminDashboardPage() {
                                             <div style={{ flex: '0 0 100%', display: 'flex', justifyContent: 'center', scrollSnapAlign: 'center' }}>
                                               {/* PDF Page 2: Table Data (LANDSCAPE) */}
                                               <div style={{
-                                                width: 842, height: 595, background: 'var(--text-primary)', borderRadius: 24, border: '1px solid var(--border)',
-                                                display: 'flex', flexDirection: 'column', padding: 48, flexShrink: 0, overflow: 'hidden',
-                                                boxShadow: '0 40px 80px rgba(0,0,0,0.6)'
+                                                width: 842, height: 595, background: '#ffffff', borderRadius: 24, border: '1px solid var(--border)',
+                                                display: 'flex', flexDirection: 'column', padding: 0, position: 'relative', flexShrink: 0, overflow: 'hidden',
+                                                boxShadow: '0 40px 80px rgba(0,0,0,0.6)', textAlign: 'left', fontFamily: 'helvetica, Arial, sans-serif'
                                               }}>
-                                                <div style={{ fontSize: 13, fontWeight: 900, color: '#0f172a', letterSpacing: '0.05em', marginBottom: 24, textTransform: 'uppercase' }}>
-                                                  {localReportBranding || 'KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT'}
+                                                {/* Dark Header Strip */}
+                                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 62.4, background: '#0d1117' }} />
+
+                                                {/* Full Height Left Accent Line (3mm -> 8.5px) */}
+                                                <div style={{ position: 'absolute', top: 0, left: 0, width: 8.5, bottom: 0, background: localReportAccentColor }} />
+
+                                                {/* Elite Premium Divider below header */}
+                                                <div style={{ position: 'absolute', top: 62.4, left: 0, right: 0, height: 1.5, background: localReportAccentColor }} />
+                                                <div style={{ position: 'absolute', top: 61.4, left: 0, right: 0, height: 3.5, background: localReportAccentColor, opacity: 0.3 }} />
+                                                <div style={{ position: 'absolute', top: 61.9, left: '50%', transform: 'translateX(-50%)', width: 10, height: 10, background: localReportAccentColor, transformOrigin: 'center', rotate: '45deg' }} />
+
+                                                {/* Header Title */}
+                                                <div style={{ position: 'absolute', top: 28.7, left: 28.3 }}>
+                                                  <div style={{ fontSize: 9, fontWeight: 'bold', color: '#ffffff', letterSpacing: '0.05em' }}>
+                                                    {reportConfigContext === 'bim' ? 'BIM REVIEW REGISTRY' : 'DELIVERABLES REGISTRY / OPERATIONS TRANSCRIPT'}
+                                                  </div>
                                                 </div>
 
-                                                <div style={{ flex: 1, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                                                  {/* Table Header: Black background, Gold text */}
-                                                  <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 100px 100px 100px 140px', background: 'var(--surface)', borderBottom: '1px solid #1e293b', padding: '12px' }}>
+                                                {/* Subtitle */}
+                                                <div style={{ position: 'absolute', top: 46.1, left: 28.3 }}>
+                                                  <div style={{ fontSize: 6.5, fontWeight: 'normal', color: 'rgb(160,180,180)', textTransform: 'uppercase' }}>
+                                                    {localProjectName || 'Project Master'}
+                                                  </div>
+                                                </div>
+
+                                                {/* Brand Logos (Right Aligned) */}
+                                                <div style={{ position: 'absolute', top: 18.4, right: 22.7, height: 25.5, display: 'flex', alignItems: 'center', gap: 11.3 }}>
+                                                  <img src="/logos/modon_logo.png" style={{ height: '100%', width: 'auto', filter: 'brightness(0) invert(1)' }} alt="Modon" />
+                                                  <div style={{ width: 1.7, height: 18, background: '#D0AB82' }} />
+                                                  <img src="/logos/insite_logo.png" style={{ height: '100%', width: 'auto', filter: 'brightness(0) invert(1)' }} alt="InSite" />
+                                                </div>
+
+                                                {/* Table Container */}
+                                                <div style={{ position: 'absolute', top: 85, left: 22.7, right: 22.7, display: 'flex', flexDirection: 'column' }}>
+                                                  {/* Table Header */}
+                                                  <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 90px 70px 70px 90px', background: '#0f172a', padding: '5.7px', border: '1px solid #e2e8f0', borderBottom: 'none' }}>
                                                     {[
-                                                      { label: 'UID', width: 100 },
-                                                      { label: 'ASSET TITLE', width: '1fr' },
-                                                      { label: 'DEPT', width: 100 },
-                                                      { label: 'START (ACTUAL)', width: 100 },
-                                                      { label: 'FINISH (ACTUAL)', width: 100 },
-                                                      { label: 'DELIVERABLES LINKS', width: 140 }
+                                                      { label: 'UID' },
+                                                      { label: 'ASSET TITLE' },
+                                                      { label: 'DEPT' },
+                                                      { label: 'START' },
+                                                      { label: 'FINISH' },
+                                                      { label: 'LINKS' }
                                                     ].map((h, i) => (
-                                                      <span key={i} style={{ fontSize: 8, fontWeight: 900, color: localReportAccentColor, letterSpacing: '0.05em', textAlign: 'center' }}>{h.label}</span>
+                                                      <span key={i} style={{ fontSize: 7, fontWeight: 'bold', color: '#ffffff', textAlign: 'center' }}>{h.label}</span>
                                                     ))}
                                                   </div>
 
-                                                  <div className="custom-scrollbar" style={{ overflowY: 'auto', maxHeight: 420 }}>
-                                                    {(memoizedTasks.length > 0 ? memoizedTasks.slice(0, 12) : [
-                                                      { id: 'BIM-100', title: 'BIM Task Test', department: 'BIM', actualStartDate: '10-APR-2026', actualEndDate: '10-APR-2026' },
-                                                      { id: 'DR-100', title: 'Monthly Task Test', department: 'Digital Reporting', actualStartDate: '18-MAR-2026', actualEndDate: '10-APR-2026' },
-                                                      { id: 'GIS-100', title: 'GIS Data Sync', department: 'GIS', actualStartDate: '10-APR-2026', actualEndDate: '10-APR-2026' }
-                                                    ]).map((task: any, idx) => (
-                                                      <div key={task.id} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 100px 100px 100px 140px', borderBottom: '1px solid #e2e8f0', padding: '10px 12px', background: 'var(--text-primary)', alignItems: 'center', minHeight: 44 }}>
-                                                        <span style={{ fontSize: 9, color: '#475569', textAlign: 'center', fontWeight: 500 }}>REH-{task.id?.split('-').pop()?.toUpperCase() || 'DH-100'}</span>
-                                                        <span style={{ fontSize: 9, color: '#1e293b', fontWeight: 600, paddingLeft: 12 }}>{task.title}</span>
-                                                        <span style={{ fontSize: 8, color: '#64748b', textAlign: 'center' }}>{task.department || 'N/A'}</span>
-                                                        <span style={{ fontSize: 8, color: '#475569', fontWeight: 700, textAlign: 'center' }}>{task.actualStartDate || 'N/A'}</span>
-                                                        <span style={{ fontSize: 8, color: '#475569', fontWeight: 700, textAlign: 'center' }}>{task.actualEndDate || 'N/A'}</span>
-                                                        <div style={{ fontSize: 8, textAlign: 'center' }}>
-                                                          {task.links && task.links.length > 0 ? (
-                                                            <a href={task.links[0].url} style={{ color: '#2563eb', textDecoration: 'underline', fontWeight: 600 }}>Preveiw Dashboard | Dash</a>
-                                                          ) : (
-                                                            <span style={{ color: '#2563eb', opacity: 0.6 }}>-</span>
-                                                          )}
+                                                  {/* Table Body */}
+                                                  <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid #e2e8f0' }}>
+                                                    {(memoizedTasks.length > 0 ? memoizedTasks.slice(0, 16) : Array(16).fill({ id: 'BIM-100', title: 'BIM Task Test', department: 'BIM', actualStartDate: '10-APR-2026', actualEndDate: '10-APR-2026' })).map((task: any, idx) => (
+                                                      <div key={idx} style={{ display: 'grid', gridTemplateColumns: '70px 1fr 90px 70px 70px 90px', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc', padding: '5.7px', borderBottom: idx === 15 ? 'none' : '1px solid #e2e8f0', alignItems: 'center' }}>
+                                                        <span style={{ fontSize: 7, color: '#334155', textAlign: 'center' }}>REH-{task.id?.split('-').pop()?.toUpperCase() || '100'}</span>
+                                                        <span style={{ fontSize: 7, color: '#334155', textAlign: 'left', paddingLeft: 4 }}>{task.title}</span>
+                                                        <span style={{ fontSize: 7, color: '#334155', textAlign: 'center' }}>{task.department || 'N/A'}</span>
+                                                        <span style={{ fontSize: 7, color: '#334155', textAlign: 'center' }}>{task.actualStartDate || 'N/A'}</span>
+                                                        <span style={{ fontSize: 7, color: '#334155', textAlign: 'center' }}>{task.actualEndDate || 'N/A'}</span>
+                                                        <div style={{ fontSize: 7, textAlign: 'center' }}>
+                                                          <span style={{ color: '#0563c1', textDecoration: 'underline' }}>View Report</span>
                                                         </div>
                                                       </div>
                                                     ))}
                                                   </div>
                                                 </div>
 
-                                                <div style={{ marginTop: 'auto', fontSize: 9, color: '#475569', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '12px 0' }}>
-                                                  {localReportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM'}
+                                                {/* Footer */}
+                                                <div style={{ position: 'absolute', bottom: 22.4, left: 0, right: 0, textAlign: 'center' }}>
+                                                  <span style={{ fontSize: 8, color: '#969696' }}>
+                                                    {localReportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM'}
+                                                  </span>
                                                 </div>
                                               </div>
                                             </div>
