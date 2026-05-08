@@ -1820,7 +1820,7 @@ export async function exportBimToPDF(
   const pageHeight = doc.internal.pageSize.getHeight();
   const bgColor = hexToRgb(metadata?.reportBgColor || '#f8fafc');
   const accentColor = hexToRgb(metadata?.reportAccentColor || '#D4AF37');
-  const headerTextColor = hexToRgb('#0f172a');
+  const headerTextColor = hexToRgb(metadata?.reportHeaderTextColor || '#0f172a');
   const projectName = metadata?.projectName || 'Project Master';
 
   // ── Load Logos ──
@@ -1925,31 +1925,59 @@ export async function exportBimToPDF(
     doc.text(metadata?.reportBranding || 'KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT', 20, cY + 12);
 
     doc.setFontSize(48);
-    doc.text('BIM REVIEW MATRIX', 20, cY + 32);
+    const title = perspective === 'dashboard' ? 'BIM ANALYTICS INSIGHTS' : (perspective === 'both' ? 'BIM MASTER REPORT' : (metadata?.bimReportTitle || 'BIM REVIEW MATRIX'));
+    doc.text(title, 20, cY + 32);
 
     doc.setFontSize(18);
     doc.setTextColor(30, 41, 59);
-    doc.text('ANALYTICS & REGISTRY TRANSCRIPT', 20, cY + 44);
+    doc.text(perspective === 'dashboard' ? 'VISUAL PERFORMANCE & METRIC SUMMARY' : (perspective === 'both' ? 'CONSOLIDATED ANALYTICS & REGISTRY TRANSCRIPT' : (metadata?.bimReportSubtitle || 'ANALYTICS & REGISTRY TRANSCRIPT')), 20, cY + 44);
 
     let currentY = cY + 68;
-    const stats = [
-      { label: 'Project Name', value: projectName },
-      { label: 'Active Period', value: dateRangeText || 'All Time' },
-      { label: 'Generated On', value: formatGeneratedOn() },
-      { label: 'Total Reviews', value: reviews.length.toString() }
-    ];
+    const summaryFields = metadata?.bimReportSummaryFields || [];
+    
+    if (summaryFields.length === 0) {
+      const stats = [
+        { label: 'Project Name', value: projectName },
+        { label: 'Active Period', value: dateRangeText || 'All Time' },
+        { label: 'Generated On', value: formatGeneratedOn() },
+        { label: 'Total Reviews', value: reviews.length.toString() }
+      ];
 
-    stats.forEach(s => {
-      doc.setTextColor(...accentColor);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${s.label}:`, 20, currentY);
-      const labelW = doc.getTextWidth(`${s.label}: `);
-      doc.setTextColor(30, 41, 59);
-      doc.setFont('helvetica', 'normal');
-      doc.text(s.value, 20 + labelW, currentY);
-      currentY += 15;
-    });
+      stats.forEach(s => {
+        doc.setTextColor(...accentColor);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${s.label}:`, 20, currentY);
+        const labelW = doc.getTextWidth(`${s.label}: `);
+        doc.setTextColor(30, 41, 59);
+        doc.setFont('helvetica', 'normal');
+        doc.text(s.value, 20 + labelW, currentY);
+        currentY += 15;
+      });
+    } else {
+      summaryFields.forEach(f => {
+        if (!f.isVisible) return;
+        if (f.id === 'reportTitle' || f.id === 'periodReference') return;
+
+        let val = f.value || '';
+        if (!val) {
+          if (f.id === 'projectName') val = metadata?.projectName || 'Project';
+          if (f.id === 'activeDate') val = dateRangeText || 'All Time';
+          if (f.id === 'generatedOn') val = formatGeneratedOn();
+          if (f.id === 'totalTasks') val = reviews.length.toString();
+        }
+
+        doc.setTextColor(...accentColor);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${f.label}:`, 20, currentY);
+        const labelW = doc.getTextWidth(`${f.label}: `);
+        doc.setTextColor(30, 41, 59);
+        doc.setFont('helvetica', 'normal');
+        doc.text(val, 20 + labelW, currentY);
+        currentY += 15;
+      });
+    }
 
     // ── Ultra Premium Filter Row on Cover ──
     const filterBarY = pageHeight - 35;

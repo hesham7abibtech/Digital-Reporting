@@ -689,6 +689,13 @@ export default function AdminDashboardPage() {
   const [localReportSummary, setLocalReportSummary] = useState('Official administrative project summary and executive disclaimer narrative for the KEO Digital Hub.');
   const [localSummaryFields, setLocalSummaryFields] = useState<ReportSummaryField[]>(DEFAULT_SUMMARY_FIELDS);
   
+  const [localBimReportTitle, setLocalBimReportTitle] = useState('BIM REVIEW MATRIX');
+  const [localBimReportSubtitle, setLocalBimReportSubtitle] = useState('ANALYTICS & REGISTRY TRANSCRIPT');
+  const [localBimReportSummary, setLocalBimReportSummary] = useState('');
+  const [localBimSummaryFields, setLocalBimSummaryFields] = useState<ReportSummaryField[]>(DEFAULT_SUMMARY_FIELDS);
+  
+  const [reportConfigContext, setReportConfigContext] = useState<'deliverables' | 'bim'>('deliverables');
+  
   // PDF Color Vectors
   const [localReportBgColor, setLocalReportBgColor] = useState('#f8fafc');
   const [localReportAccentColor, setLocalReportAccentColor] = useState('#003f49');
@@ -839,6 +846,9 @@ export default function AdminDashboardPage() {
     setLocalReportTitle(projectData.reportTitle || 'Executive Summary Report');
     setLocalReportSubtitle(projectData.reportSubtitle || 'Operational Performance & Deliverables');
     setLocalReportSummary(projectData.reportSummary || '');
+    setLocalBimReportTitle(projectData.bimReportTitle || 'BIM REVIEW MATRIX');
+    setLocalBimReportSubtitle(projectData.bimReportSubtitle || 'ANALYTICS & REGISTRY TRANSCRIPT');
+    setLocalBimReportSummary(projectData.bimReportSummary || '');
     setLocalReportBgColor(projectData.reportBgColor || '#f8fafc');
     setLocalReportAccentColor(projectData.reportAccentColor || '#003f49');
     setLocalReportHeaderTextColor(projectData.reportHeaderTextColor || '#003f49');
@@ -852,6 +862,7 @@ export default function AdminDashboardPage() {
     setLocalReportFooter(projectData.reportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM');
     setLocalExcludedFields(projectData.reportExcludedFields || []);
     setLocalSummaryFields(projectData.reportSummaryFields || DEFAULT_SUMMARY_FIELDS);
+    setLocalBimSummaryFields(projectData.bimReportSummaryFields || DEFAULT_SUMMARY_FIELDS);
     setInitializedLocalFields(true);
   }
 
@@ -1039,6 +1050,9 @@ export default function AdminDashboardPage() {
         reportTitle: localReportTitle,
         reportSubtitle: localReportSubtitle,
         reportSummary: localReportSummary,
+        bimReportTitle: localBimReportTitle,
+        bimReportSubtitle: localBimReportSubtitle,
+        bimReportSummary: localBimReportSummary,
         reportBgColor: localReportBgColor,
         reportAccentColor: localReportAccentColor,
         reportHeaderTextColor: localReportHeaderTextColor,
@@ -1053,6 +1067,7 @@ export default function AdminDashboardPage() {
         reportFooter: localReportFooter,
         reportExcludedFields: localExcludedFields,
         reportSummaryFields: localSummaryFields,
+        bimReportSummaryFields: localBimSummaryFields,
         projectName: localProjectName,
         statusLine: localStatusLine
       });
@@ -1107,6 +1122,9 @@ export default function AdminDashboardPage() {
       reportTitle: localReportTitle,
       reportSubtitle: localReportSubtitle,
       reportSummary: localReportSummary,
+      bimReportTitle: localBimReportTitle,
+      bimReportSubtitle: localBimReportSubtitle,
+      bimReportSummary: localBimReportSummary,
       reportBgColor: localReportBgColor,
       reportAccentColor: localReportAccentColor,
       reportHeaderTextColor: localReportHeaderTextColor,
@@ -1118,6 +1136,7 @@ export default function AdminDashboardPage() {
       reportBranding: localReportBranding,
       reportFooter: localReportFooter,
       reportSummaryFields: localSummaryFields,
+      bimReportSummaryFields: localBimSummaryFields,
       reportExcludedFields: localExcludedFields,
       reportPeriodReference: localPeriodReference,
       reportTemporalReference: localTemporalReference,
@@ -1126,16 +1145,22 @@ export default function AdminDashboardPage() {
 
     try {
       if (format === 'excel') {
-        const { exportToExcel } = await import('@/lib/exportUtils');
-        const { blob, filename } = await exportToExcel(memoizedTasks, localMetadata, undefined, 'table');
+        const { exportToExcel, exportBimToExcel } = await import('@/lib/exportUtils');
+        const { blob, filename } = reportConfigContext === 'bim' 
+          ? await exportBimToExcel(memoizedBimReviews, localMetadata, undefined, 'table')
+          : await exportToExcel(memoizedTasks, localMetadata, undefined, 'table');
+        
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
         link.download = filename;
         link.click();
       } else {
-        const { exportToPDF } = await import('@/lib/exportUtils');
-        const { blob, filename } = await exportToPDF(memoizedTasks, localMetadata, undefined, 'table');
+        const { exportToPDF, exportBimToPDF } = await import('@/lib/exportUtils');
+        const { blob, filename } = reportConfigContext === 'bim'
+          ? await exportBimToPDF(memoizedBimReviews, localMetadata, undefined, 'table')
+          : await exportToPDF(memoizedTasks, localMetadata, undefined, 'table');
+          
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -3531,17 +3556,35 @@ export default function AdminDashboardPage() {
                                     </div>
 
                                     <div style={{ padding: 24, background: 'var(--section-bg)', border: '1px solid var(--section-bg)', borderRadius: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--teal)' }} />
-                                        <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.1em' }}>GLOBAL REPORT TEMPLATE CONFIGURATION</span>
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--teal)' }} />
+                                          <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.1em' }}>GLOBAL REPORT TEMPLATE CONFIGURATION</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 8, background: '#eef2ff', padding: 4, borderRadius: 12 }}>
+                                          <button 
+                                            type="button"
+                                            onClick={() => setReportConfigContext('deliverables')}
+                                            style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: reportConfigContext === 'deliverables' ? '#ffffff' : 'transparent', color: reportConfigContext === 'deliverables' ? '#003f49' : 'var(--text-secondary)', fontSize: 10, fontWeight: 900, textTransform: 'uppercase', cursor: 'pointer', boxShadow: reportConfigContext === 'deliverables' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none', transition: 'all 200ms' }}
+                                          >
+                                            Deliverables Registry
+                                          </button>
+                                          <button 
+                                            type="button"
+                                            onClick={() => setReportConfigContext('bim')}
+                                            style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: reportConfigContext === 'bim' ? '#ffffff' : 'transparent', color: reportConfigContext === 'bim' ? '#003f49' : 'var(--text-secondary)', fontSize: 10, fontWeight: 900, textTransform: 'uppercase', cursor: 'pointer', boxShadow: reportConfigContext === 'bim' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none', transition: 'all 200ms' }}
+                                          >
+                                            BIM Reviews Matrix
+                                          </button>
+                                        </div>
                                       </div>
                                       
                                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                           <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Report Title</label>
                                           <input
-                                            value={localReportTitle}
-                                            onChange={(e) => setLocalReportTitle(e.target.value)}
+                                            value={reportConfigContext === 'bim' ? localBimReportTitle : localReportTitle}
+                                            onChange={(e) => reportConfigContext === 'bim' ? setLocalBimReportTitle(e.target.value) : setLocalReportTitle(e.target.value)}
                                             placeholder="e.g. Executive Status Report"
                                             style={{ padding: '12px 14px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
                                           />
@@ -3549,8 +3592,8 @@ export default function AdminDashboardPage() {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                           <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Subtitle / Reference</label>
                                           <input
-                                            value={localReportSubtitle}
-                                            onChange={(e) => setLocalReportSubtitle(e.target.value)}
+                                            value={reportConfigContext === 'bim' ? localBimReportSubtitle : localReportSubtitle}
+                                            onChange={(e) => reportConfigContext === 'bim' ? setLocalBimReportSubtitle(e.target.value) : setLocalReportSubtitle(e.target.value)}
                                             placeholder="e.g. Q2 Performance Overview"
                                             style={{ padding: '12px 14px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
                                           />
@@ -3558,8 +3601,8 @@ export default function AdminDashboardPage() {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, gridColumn: 'span 2' }}>
                                           <label style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cover Summary / Disclaimer</label>
                                           <textarea
-                                            value={localReportSummary}
-                                            onChange={(e) => setLocalReportSummary(e.target.value)}
+                                            value={reportConfigContext === 'bim' ? localBimReportSummary : localReportSummary}
+                                            onChange={(e) => reportConfigContext === 'bim' ? setLocalBimReportSummary(e.target.value) : setLocalReportSummary(e.target.value)}
                                             placeholder="Detailed project summary for the cover page..."
                                             rows={2}
                                             style={{ padding: '12px 14px', background: 'var(--section-bg)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 13, outline: 'none', resize: 'none' }}
@@ -3574,14 +3617,20 @@ export default function AdminDashboardPage() {
                                         <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.1em' }}>DOCUMENT HEADER REGISTRY</span>
                                       </div>
                                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                                        {localSummaryFields.map((field, idx) => (
+                                        {(reportConfigContext === 'bim' ? localBimSummaryFields : localSummaryFields).map((field, idx) => (
                                             <div key={field.id} style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1.5fr', gap: 14, alignItems: 'center', background: '#eef2ff', padding: '12px 14px', borderRadius: 14, border: '1px solid rgba(0, 63, 73, 0.1)', transition: 'all 200ms' }}>
                                               <button
                                                 type="button"
                                                 onClick={() => {
-                                                  const updated = [...localSummaryFields];
-                                                  updated[idx] = { ...updated[idx], isVisible: !updated[idx].isVisible };
-                                                  setLocalSummaryFields(updated);
+                                                  if (reportConfigContext === 'bim') {
+                                                    const updated = [...localBimSummaryFields];
+                                                    updated[idx] = { ...updated[idx], isVisible: !updated[idx].isVisible };
+                                                    setLocalBimSummaryFields(updated);
+                                                  } else {
+                                                    const updated = [...localSummaryFields];
+                                                    updated[idx] = { ...updated[idx], isVisible: !updated[idx].isVisible };
+                                                    setLocalSummaryFields(updated);
+                                                  }
                                                 }}
                                                 style={{ width: 26, height: 26, borderRadius: 6, border: 'none', background: field.isVisible ? 'rgba(16, 185, 129, 0.1)' : 'var(--section-bg)', color: field.isVisible ? '#10b981' : 'var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}
                                               >
@@ -3592,9 +3641,15 @@ export default function AdminDashboardPage() {
                                                 <input
                                                   value={field.label}
                                                   onChange={e => {
-                                                    const updated = [...localSummaryFields];
-                                                    updated[idx] = { ...updated[idx], label: e.target.value };
-                                                    setLocalSummaryFields(updated);
+                                                    if (reportConfigContext === 'bim') {
+                                                      const updated = [...localBimSummaryFields];
+                                                      updated[idx] = { ...updated[idx], label: e.target.value };
+                                                      setLocalBimSummaryFields(updated);
+                                                    } else {
+                                                      const updated = [...localSummaryFields];
+                                                      updated[idx] = { ...updated[idx], label: e.target.value };
+                                                      setLocalSummaryFields(updated);
+                                                    }
                                                   }}
                                                   style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', padding: '4px 0', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
                                                   placeholder="Label Text"
@@ -3603,15 +3658,22 @@ export default function AdminDashboardPage() {
                                               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                                 <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', minWidth: 40, letterSpacing: '0.05em' }}>Value</span>
                                                 <input
-                                                  value={field.value || (field.id === 'reportTitle' ? localReportTitle : field.id === 'projectName' ? localProjectName : field.id === 'periodReference' ? localReportSubtitle : field.id === 'temporalReference' ? localTemporalReference : '')}
+                                                  value={field.value || (field.id === 'reportTitle' ? (reportConfigContext === 'bim' ? localBimReportTitle : localReportTitle) : field.id === 'projectName' ? localProjectName : field.id === 'periodReference' ? (reportConfigContext === 'bim' ? localBimReportSubtitle : localReportSubtitle) : field.id === 'temporalReference' ? localTemporalReference : '')}
                                                   onChange={e => {
-                                                    const updated = [...localSummaryFields];
-                                                    updated[idx] = { ...updated[idx], value: e.target.value };
-                                                    setLocalSummaryFields(updated);
-
-                                                    if (field.id === 'reportTitle') setLocalReportTitle(e.target.value);
+                                                    if (reportConfigContext === 'bim') {
+                                                      const updated = [...localBimSummaryFields];
+                                                      updated[idx] = { ...updated[idx], value: e.target.value };
+                                                      setLocalBimSummaryFields(updated);
+                                                      if (field.id === 'reportTitle') setLocalBimReportTitle(e.target.value);
+                                                      if (field.id === 'periodReference') setLocalBimReportSubtitle(e.target.value);
+                                                    } else {
+                                                      const updated = [...localSummaryFields];
+                                                      updated[idx] = { ...updated[idx], value: e.target.value };
+                                                      setLocalSummaryFields(updated);
+                                                      if (field.id === 'reportTitle') setLocalReportTitle(e.target.value);
+                                                      if (field.id === 'periodReference') setLocalReportSubtitle(e.target.value);
+                                                    }
                                                     if (field.id === 'projectName') setLocalProjectName(e.target.value);
-                                                    if (field.id === 'periodReference') setLocalReportSubtitle(e.target.value);
                                                     if (field.id === 'temporalReference') setLocalTemporalReference(e.target.value);
                                                   }}
                                                   style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', padding: '4px 0', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
@@ -3776,35 +3838,47 @@ export default function AdminDashboardPage() {
                                               <div style={{
                                                 width: 842, height: 595, background: localReportBgColor, borderRadius: 24, border: '1px solid var(--border)',
                                                 display: 'flex', flexDirection: 'column', padding: 0, position: 'relative', flexShrink: 0, overflow: 'hidden',
-                                                boxShadow: '0 40px 80px rgba(0,0,0,0.6)', textAlign: 'left'
+                                                boxShadow: '0 40px 80px rgba(0,0,0,0.6)', textAlign: 'left',
+                                                fontFamily: 'helvetica, Arial, sans-serif'
                                               }}>
-                                                {/* Gold Vertical Accent Bar */}
-                                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 14, background: localReportAccentColor }} />
+                                                {/* Dark Header Strip */}
+                                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 62, background: '#0d1117' }} />
 
-                                                {/* Brand Logos (Symmetrical Placement - Swapped) */}
-                                                <div style={{ position: 'absolute', top: 35, left: 57, height: 55, display: 'flex', alignItems: 'center' }}>
+                                                {/* Full Height Left Accent Line (3mm -> 8.5px) */}
+                                                <div style={{ position: 'absolute', top: 0, left: 0, width: 8.5, bottom: 0, background: localReportAccentColor }} />
+
+                                                {/* Elite Premium Divider below header */}
+                                                <div style={{ position: 'absolute', top: 62, left: 0, right: 0, height: 1.5, background: localReportAccentColor }} />
+                                                <div style={{ position: 'absolute', top: 61, left: 0, right: 0, height: 3.5, background: localReportAccentColor, opacity: 0.3 }} />
+                                                <div style={{ position: 'absolute', top: 61.5, left: '50%', transform: 'translateX(-50%)', width: 10, height: 10, background: localReportAccentColor, transformOrigin: 'center', rotate: '45deg' }} />
+
+                                                {/* Brand Logos (Right Aligned: Modon | InSite) */}
+                                                <div style={{ position: 'absolute', top: 18, right: 40, height: 26, display: 'flex', alignItems: 'center', gap: 14 }}>
+                                                  <img src="/logos/modon_logo.png" style={{ height: '100%', width: 'auto', filter: 'brightness(0) invert(1)' }} alt="Modon" />
+                                                  <div style={{ width: 1.5, height: 20, background: '#D0AB82' }} />
                                                   <img src="/logos/insite_logo.png" style={{ height: '100%', width: 'auto', filter: 'brightness(0) invert(1)' }} alt="InSite" />
                                                 </div>
-                                                <div style={{ position: 'absolute', top: 40, right: 57, height: 32, display: 'flex', alignItems: 'center' }}>
-                                                  <img src="/logos/modon_logo.png" style={{ height: '100%', width: 'auto', filter: 'brightness(0) invert(1)' }} alt="Modon" />
-                                                </div>
 
-                                                {/* Branding Line (Exactly 35mm from top, 20mm from left) */}
-                                                <div style={{ position: 'absolute', top: 99, left: 57 }}>
-                                                  <div style={{ fontSize: 11, fontWeight: 900, color: localReportHeaderTextColor, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                                                    {localReportBranding || 'KEO DIGITAL INTELLIGENCE // MASTER TRANSCRIPT'}
+                                                {/* Branding Line */}
+                                                {localReportBranding && (
+                                                  <div style={{ position: 'absolute', top: 119, left: 57 }}>
+                                                    <div style={{ fontSize: 14.6, fontWeight: 'bold', color: localReportHeaderTextColor, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                                                      {localReportBranding}
+                                                    </div>
                                                   </div>
+                                                )}
+
+                                                {/* Title & Subtitle */}
+                                                <div style={{ position: 'absolute', top: 176, left: 57 }}>
+                                                  <div style={{ fontSize: 64, fontWeight: 'bold', color: localReportHeaderTextColor, lineHeight: 1 }}>{reportConfigContext === 'bim' ? (localBimReportTitle || 'BIM REVIEW MATRIX') : (localReportTitle || 'Digital Team Report')}</div>
+                                                </div>
+                                                <div style={{ position: 'absolute', top: 210, left: 57 }}>
+                                                  <div style={{ fontSize: 24, fontWeight: 'bold', color: localReportPdfBodyTextColor || '#1e293b' }}>{reportConfigContext === 'bim' ? (localBimReportSubtitle || 'ANALYTICS & REGISTRY TRANSCRIPT') : (localReportSubtitle || 'OPERATIONAL PERFORMANCE & DELIVERABLES')}</div>
                                                 </div>
 
-                                                {/* Title & Subtitle (Matched vertical offsets) */}
-                                                <div style={{ position: 'absolute', top: 156, left: 57, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                                  <div style={{ fontSize: 48, fontWeight: 900, color: localReportHeaderTextColor, lineHeight: 1 }}>{localReportTitle || 'Digital Team Report'}</div>
-                                                  <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '0.05em', textTransform: 'uppercase', opacity: 0.9 }}>{localReportSubtitle || 'OPERATIONAL PERFORMANCE & DELIVERABLES'}</div>
-                                                </div>
-
-                                                {/* Data Fields Registry (Scaled for full height utilization) */}
-                                                <div style={{ position: 'absolute', top: 269, left: 57, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                                                  {localSummaryFields.map((field) => {
+                                                {/* Data Fields Registry */}
+                                                <div style={{ position: 'absolute', top: 278, left: 57, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                                  {(reportConfigContext === 'bim' ? localBimSummaryFields : localSummaryFields).map((field) => {
                                                     if (!field.isVisible || field.id === 'reportTitle' || field.id === 'periodReference') return null;
                                                     
                                                     let val = field.value || '';
@@ -3820,23 +3894,31 @@ export default function AdminDashboardPage() {
                                                         const time = now.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).toUpperCase();
                                                         val = `${day}-${month}-${year} ${time}`;
                                                       }
-                                                      if (field.id === 'totalTasks') val = memoizedTasks.length.toString();
+                                                      if (field.id === 'totalTasks') val = (reportConfigContext === 'bim' ? memoizedBimReviews : memoizedTasks).length.toString();
                                                     }
                                                     
                                                     return (
-                                                      <div key={field.id} style={{ display: 'flex', gap: 10, fontSize: 15, fontWeight: 700 }}>
+                                                      <div key={field.id} style={{ display: 'flex', gap: 10, fontSize: 18.6, fontWeight: 'bold' }}>
                                                         <span style={{ color: localReportAccentColor }}>{field.label}:</span>
-                                                        <span style={{ color: 'var(--text-primary)', opacity: 0.95 }}>{val}</span>
+                                                        <span style={{ color: localReportPdfBodyTextColor || '#1e293b', fontWeight: 'normal' }}>{val}</span>
                                                       </div>
                                                     );
                                                   })}
                                                 </div>
 
-                                                {/* Security Footer Protocol (Narrow bottom margin) */}
-                                                <div style={{ position: 'absolute', bottom: 42, left: 57, fontSize: 12, color: 'var(--text-primary)', opacity: 0.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                                                {/* Dummy Filter Bar */}
+                                                <div style={{ position: 'absolute', top: 496, left: 57, width: 842 - 114, height: 34, background: '#0f172a', borderRadius: 4, display: 'flex', alignItems: 'center', padding: '0 16px' }}>
+                                                  <div style={{ width: 4, height: 18, background: localReportAccentColor, marginRight: 16 }} />
+                                                  <span style={{ fontSize: 14, color: '#f8fafc', fontWeight: 'bold', textTransform: 'uppercase' }}>Active Filters: </span>
+                                                  <span style={{ fontSize: 14, color: '#94a3b8', marginLeft: 8 }}>ALL DATA UNFILTERED</span>
+                                                </div>
+
+                                                {/* Security Footer Protocol */}
+                                                <div style={{ position: 'absolute', bottom: 42, left: 57, fontSize: 13.3, color: localReportPdfBodyTextColor || '#1e293b' }}>
                                                   {localReportFooter || 'PRIVATE & CONFIDENTIAL // INTEGRATED DATA STREAM'}
                                                 </div>
                                               </div>
+
                                             </div>
 
                                             {/* Slide 2 Container */}

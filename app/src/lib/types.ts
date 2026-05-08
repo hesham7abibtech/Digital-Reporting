@@ -293,6 +293,9 @@ export interface ProjectMetadata {
   reportTitle?: string;
   reportSubtitle?: string;
   reportSummary?: string;
+  bimReportTitle?: string;
+  bimReportSubtitle?: string;
+  bimReportSummary?: string;
   reportBgColor?: string;
   reportAccentColor?: string;
   reportHeaderTextColor?: string;
@@ -307,6 +310,7 @@ export interface ProjectMetadata {
   reportFooter?: string;
   reportExcludedFields?: string[];
   reportSummaryFields?: ReportSummaryField[];
+  bimReportSummaryFields?: ReportSummaryField[];
   updatedAt: string;
 }
 
