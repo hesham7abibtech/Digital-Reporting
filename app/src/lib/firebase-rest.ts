@@ -23,6 +23,9 @@ export class FirebaseRest {
     if (!saVar) throw new Error('FIREBASE_SERVICE_ACCOUNT missing');
 
     const sa: ServiceAccount = JSON.parse(saVar);
+    if (sa.project_id) {
+      this.projectId = sa.project_id;
+    }
     const privateKey = sa.private_key.replace(/\\n/g, '\n');
 
     // 1. Create JWT Header and Payload
@@ -183,7 +186,7 @@ export class FirebaseRest {
     for (let i = 0, strLen = str.length; i < strLen; i++) {
       bufView[i] = str.charCodeAt(i);
     }
-    return buf;
+    return bufView;
   }
 
   private ab2base64url(buf: ArrayBuffer) {

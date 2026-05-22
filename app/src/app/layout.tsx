@@ -12,6 +12,7 @@ import { TimeZoneProvider } from "@/context/TimeZoneContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/components/shared/EliteToast";
 import { ServiceWorkerRegistry } from "@/components/ServiceWorkerRegistry";
+import FloatingAIButton from "@/components/shared/FloatingAIButton";
 
 export default function RootLayout({
   children,
@@ -25,6 +26,7 @@ export default function RootLayout({
           <TimeZoneProvider>
             <ToastProvider>
               <ServiceWorkerRegistry />
+              <FloatingAIButton />
               {children}
             </ToastProvider>
           </TimeZoneProvider>

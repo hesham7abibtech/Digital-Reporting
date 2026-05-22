@@ -4035,89 +4035,94 @@ export default function AdminDashboardPage() {
                                           <span style={{ fontSize: 12, fontWeight: 800, color: localReportExcelHeaderTextColor, letterSpacing: '0.05em' }}>Excel Live Simulation - {excelActiveTab === 'summary' ? 'Master Summary' : 'Asset Matrix'}</span>
                                         </div>
 
-                                        {/* Excel Workspace */}
-                                        <div style={{ flex: 1, background: 'var(--text-primary)', overflowX: 'auto', position: 'relative', padding: 20 }} className="custom-scrollbar">
-                                          {excelActiveTab === 'summary' && (
-                                            <div style={{ display: 'flex', gap: 40, marginBottom: 20, paddingLeft: 10 }}>
-                                              <img src="/logos/modon_logo.png" style={{ height: 45, opacity: 0.9 }} alt="Modon" />
-                                              <img src="/logos/insite_logo.png" style={{ height: 45, opacity: 0.9 }} alt="InSite" />
-                                            </div>
-                                          )}
-                                          <style>{`
-                                            .custom-scrollbar::-webkit-scrollbar { height: 8px; }
-                                            .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
-                                            .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
-                                            .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
-                                            .excel-table { border-collapse: collapse; width: max-content; min-width: 100%; }
-                                            .excel-table th, .excel-table td { white-space: nowrap; padding: 5px 10px; }
-                                          `}</style>
-                                          {excelActiveTab === 'summary' ? (
-                                            <table className="excel-table">
-                                              <thead>
-                                                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
-                                                  <th style={{ width: 30, background: '#f1f5f9', borderRight: '1px solid #cbd5e1', padding: '4px' }}></th>
-                                                  <th style={{ fontSize: 9, fontWeight: 700, color: '#475569', textAlign: 'center', borderRight: '1px solid #cbd5e1', padding: '4px 10px' }}>A</th>
-                                                  <th style={{ fontSize: 9, fontWeight: 700, color: '#475569', textAlign: 'center', padding: '4px 10px' }}>B</th>
-                                                </tr>
-                                              </thead>
-                                              <tbody>
-                                                {/* Title Row */}
-                                                <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                                  <td style={{ background: '#f1f5f9', borderRight: '1px solid #cbd5e1', fontSize: 8, color: '#64748b', textAlign: 'center', padding: '4px' }}>1</td>
-                                                  <td style={{ fontSize: 9, fontWeight: 800, color: '#b45309', borderRight: '1px solid #e2e8f0' }}>PROJECT EXECUTIVE SUMMARY</td>
-                                                  <td></td>
-                                                </tr>
-                                                {/* Data Rows */}
-                                                {localSummaryFields.filter(f => f.isVisible).map((f, i) => (
-                                                  <tr key={f.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                                    <td style={{ background: '#f1f5f9', borderRight: '1px solid #cbd5e1', fontSize: 8, color: '#64748b', textAlign: 'center', padding: '4px' }}>{i + 3}</td>
-                                                    <td style={{ fontSize: 9, fontWeight: 800, color: '#0f172a', borderRight: '1px solid #e2e8f0' }}>{f.label}</td>
-                                                    <td style={{ fontSize: 9, color: localReportExcelBodyTextColor }}>
-                                                      {f.value || (f.id === 'reportTitle' ? localReportTitle : f.id === 'projectName' ? localProjectName : f.id === 'periodReference' ? localReportSubtitle : f.id === 'temporalReference' ? localTemporalReference :
-                                                        f.id === 'activeDate' ? 'May 01 - May 31, 2026' : f.id === 'generatedOn' ? (() => {
-                                                        const now = new Date();
-                                                        const day = String(now.getDate()).padStart(2, '0');
-                                                        const month = now.toLocaleString('en-GB', { month: 'short' }).toUpperCase();
-                                                        const year = now.getFullYear();
-                                                        const time = now.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).toUpperCase();
-                                                        return `${day}-${month}-${year} ${time}`;
-                                                      })() : f.id === 'totalTasks' ? memoizedTasks.length : '')}
-                                                    </td>
+                                          {/* Excel Workspace */}
+                                          <div style={{ flex: 1, background: 'var(--text-primary)', overflowX: 'auto', position: 'relative', padding: 20 }} className="custom-scrollbar">
+                                            {excelActiveTab === 'summary' && (
+                                              <div style={{ display: 'flex', gap: 40, marginBottom: 20, paddingLeft: 10 }}>
+                                                <img src="/logos/modon_logo.png" style={{ height: 45, opacity: 0.9 }} alt="Modon" />
+                                                <img src="/logos/insite_logo.png" style={{ height: 45, opacity: 0.9 }} alt="InSite" />
+                                              </div>
+                                            )}
+                                            <style>{`
+                                              .custom-scrollbar::-webkit-scrollbar { height: 8px; }
+                                              .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+                                              .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+                                              .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+                                              .excel-table { border-collapse: collapse; width: max-content; min-width: 100%; }
+                                              .excel-table th, .excel-table td { white-space: nowrap; padding: 5px 10px; }
+                                            `}</style>
+                                            {excelActiveTab === 'summary' ? (
+                                              <table className="excel-table">
+                                                <thead>
+                                                  <tr style={{ background: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
+                                                    <th style={{ width: 30, background: '#f1f5f9', borderRight: '1px solid #cbd5e1', padding: '4px' }}></th>
+                                                    <th style={{ fontSize: 9, fontWeight: 700, color: '#475569', textAlign: 'center', borderRight: '1px solid #cbd5e1', padding: '4px 10px' }}>A</th>
+                                                    <th style={{ fontSize: 9, fontWeight: 700, color: '#475569', textAlign: 'center', padding: '4px 10px' }}>B</th>
                                                   </tr>
-                                                ))}
-                                              </tbody>
-                                            </table>
-                                          ) : (
-                                            <table className="excel-table">
-                                              <thead>
-                                                {/* Column Letter Headers */}
-                                                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #cbd5e1' }}>
-                                                  <th style={{ width: 30, background: '#f1f5f9', borderRight: '1px solid #cbd5e1', padding: '4px' }}></th>
-                                                  <th style={{ fontSize: 9, fontWeight: 700, color: '#475569', textAlign: 'center', borderRight: '1px solid #cbd5e1' }}>A</th>
-                                                  <th style={{ fontSize: 9, fontWeight: 700, color: '#475569', textAlign: 'center', borderRight: '1px solid #cbd5e1' }}>B</th>
-                                                  <th style={{ fontSize: 9, fontWeight: 700, color: '#475569', textAlign: 'center', borderRight: '1px solid #cbd5e1' }}>C</th>
-                                                  <th style={{ fontSize: 9, fontWeight: 700, color: '#475569', textAlign: 'center' }}>D</th>
-                                                </tr>
-                                                {/* Data Column Headers */}
-                                                <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
-                                                  <th style={{ background: '#f1f5f9', borderRight: '1px solid #cbd5e1', fontSize: 8, color: '#64748b', textAlign: 'center', padding: '4px' }}>1</th>
-                                                  <th style={{ fontSize: 8, fontWeight: 900, color: '#475569', borderRight: '1px solid #cbd5e1', textAlign: 'center' }}>UID</th>
-                                                  <th style={{ fontSize: 8, fontWeight: 900, color: '#475569', borderRight: '1px solid #cbd5e1', textAlign: 'center' }}>DELIVERABLE NAME</th>
-                                                  <th style={{ fontSize: 8, fontWeight: 900, color: '#475569', borderRight: '1px solid #cbd5e1', textAlign: 'center' }}>DEPARTMENT</th>
-                                                  <th style={{ fontSize: 8, fontWeight: 900, color: '#475569', textAlign: 'center' }}>STATUS</th>
-                                                </tr>
-                                              </thead>
-                                              <tbody>
-                                                {memoizedTasks.slice(0, 10).map((task, i) => (
-                                                  <tr key={task.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                                    <td style={{ background: '#f1f5f9', borderRight: '1px solid #cbd5e1', fontSize: 8, color: '#64748b', textAlign: 'center', padding: '4px' }}>{i + 2}</td>
-                                                    <td style={{ fontSize: 8, color: localReportExcelBodyTextColor, borderRight: '1px solid #e2e8f0' }}>{task.id.slice(0, 6)}</td>
-                                                    <td style={{ fontSize: 8, color: localReportExcelBodyTextColor, borderRight: '1px solid #e2e8f0', fontWeight: 600 }}>{task.title}</td>
-                                                    <td style={{ fontSize: 8, color: localReportExcelHeaderColor, borderRight: '1px solid #e2e8f0' }}>{task.department}</td>
-                                                    <td style={{ fontSize: 8, color: localReportExcelBodyTextColor }}>{task.status}</td>
+                                                </thead>
+                                                <tbody>
+                                                  {/* Title Row */}
+                                                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                                    <td style={{ background: '#f1f5f9', borderRight: '1px solid #cbd5e1', fontSize: 8, color: '#64748b', textAlign: 'center', padding: '4px' }}>1</td>
+                                                    <td style={{ fontSize: 11, fontWeight: 'bold', color: localReportAccentColor, borderRight: '1px solid #e2e8f0' }}>{reportConfigContext === 'bim' ? 'BIM REVIEW EXECUTIVE SUMMARY' : 'PROJECT EXECUTIVE SUMMARY'}</td>
+                                                    <td></td>
                                                   </tr>
-                                                ))}
-                                              </tbody>
+                                                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                                    <td style={{ background: '#f1f5f9', borderRight: '1px solid #cbd5e1', fontSize: 8, color: '#64748b', textAlign: 'center', padding: '4px' }}>2</td>
+                                                    <td style={{ fontSize: 10, fontWeight: 'bold', color: '#1e293b', borderRight: '1px solid #e2e8f0' }}>CORE METRICS</td>
+                                                    <td></td>
+                                                  </tr>
+                                                  {/* Data Rows */}
+                                                  {(reportConfigContext === 'bim' ? localBimSummaryFields : localSummaryFields).filter(f => f.isVisible).map((f, i) => (
+                                                    <tr key={f.id} style={{ borderBottom: '1px solid #e2e8f0', background: i % 2 === 0 ? '#f1f5f9' : '#ffffff' }}>
+                                                      <td style={{ background: '#f1f5f9', borderRight: '1px solid #cbd5e1', fontSize: 8, color: '#64748b', textAlign: 'center', padding: '4px' }}>{i + 3}</td>
+                                                      <td style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b', borderRight: '1px solid #e2e8f0' }}>{f.label}</td>
+                                                      <td style={{ fontSize: 9, color: '#334155', textAlign: 'right' }}>
+                                                        {f.value || (f.id === 'reportTitle' ? localReportTitle : f.id === 'projectName' ? localProjectName : f.id === 'periodReference' ? localReportSubtitle : f.id === 'temporalReference' ? localTemporalReference :
+                                                          f.id === 'activeDate' ? 'May 01 - May 31, 2026' : f.id === 'generatedOn' ? (() => {
+                                                          const now = new Date();
+                                                          const day = String(now.getDate()).padStart(2, '0');
+                                                          const month = now.toLocaleString('en-GB', { month: 'short' }).toUpperCase();
+                                                          const year = now.getFullYear();
+                                                          const time = now.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).toUpperCase();
+                                                          return `${day}-${month}-${year} ${time}`;
+                                                        })() : f.id === 'totalTasks' ? memoizedTasks.length : '')}
+                                                      </td>
+                                                    </tr>
+                                                  ))}
+                                                </tbody>
+                                              </table>
+                                            ) : (
+                                              <table className="excel-table">
+                                                <thead>
+                                                  {/* Column Letter Headers */}
+                                                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #cbd5e1' }}>
+                                                    <th style={{ width: 30, background: '#f1f5f9', borderRight: '1px solid #cbd5e1', padding: '4px' }}></th>
+                                                    <th style={{ fontSize: 9, fontWeight: 700, color: '#475569', textAlign: 'center', borderRight: '1px solid #cbd5e1' }}>A</th>
+                                                    <th style={{ fontSize: 9, fontWeight: 700, color: '#475569', textAlign: 'center', borderRight: '1px solid #cbd5e1' }}>B</th>
+                                                    <th style={{ fontSize: 9, fontWeight: 700, color: '#475569', textAlign: 'center', borderRight: '1px solid #cbd5e1' }}>C</th>
+                                                    <th style={{ fontSize: 9, fontWeight: 700, color: '#475569', textAlign: 'center' }}>D</th>
+                                                  </tr>
+                                                  {/* Data Column Headers */}
+                                                  <tr style={{ background: localReportExcelHeaderColor, borderBottom: '2px solid #cbd5e1' }}>
+                                                    <th style={{ background: '#f1f5f9', borderRight: '1px solid #cbd5e1', fontSize: 8, color: '#64748b', textAlign: 'center', padding: '4px' }}>1</th>
+                                                    <th style={{ fontSize: 9, fontWeight: 'bold', color: localReportExcelHeaderTextColor, borderRight: '1px solid #e2e8f0', textAlign: 'center' }}>UID</th>
+                                                    <th style={{ fontSize: 9, fontWeight: 'bold', color: localReportExcelHeaderTextColor, borderRight: '1px solid #e2e8f0', textAlign: 'center' }}>DELIVERABLE NAME</th>
+                                                    <th style={{ fontSize: 9, fontWeight: 'bold', color: localReportExcelHeaderTextColor, borderRight: '1px solid #e2e8f0', textAlign: 'center' }}>DEPARTMENT</th>
+                                                    <th style={{ fontSize: 9, fontWeight: 'bold', color: localReportExcelHeaderTextColor, textAlign: 'center' }}>STATUS</th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                  {memoizedTasks.slice(0, 10).map((task, i) => (
+                                                    <tr key={task.id} style={{ borderBottom: '1px solid #e2e8f0', background: i % 2 === 0 ? '#f1f5f9' : '#ffffff' }}>
+                                                      <td style={{ background: '#f1f5f9', borderRight: '1px solid #cbd5e1', fontSize: 8, color: '#64748b', textAlign: 'center', padding: '4px' }}>{i + 2}</td>
+                                                      <td style={{ fontSize: 9, color: '#334155', borderRight: '1px solid #f1f5f9', textAlign: 'center' }}>REH-{task.id.slice(0, 6)}</td>
+                                                      <td style={{ fontSize: 9, color: '#334155', borderRight: '1px solid #f1f5f9', fontWeight: 600, textAlign: 'center' }}>{task.title}</td>
+                                                      <td style={{ fontSize: 9, color: '#334155', borderRight: '1px solid #f1f5f9', textAlign: 'center' }}>{task.department}</td>
+                                                      <td style={{ fontSize: 9, color: '#334155', textAlign: 'center' }}>{task.status}</td>
+                                                    </tr>
+                                                  ))}
+                                                </tbody>
                                             </table>
                                           )}
                                         </div>

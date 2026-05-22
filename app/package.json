@@ -11,10 +11,12 @@
     "pages:build": "npx @cloudflare/next-on-pages",
     "deploy": "npx wrangler pages deploy .vercel/output --project-name rehdigital",
     "pages:deploy": "npm run pages:build && npm run deploy",
-    "pages:watch": "npx @cloudflare/next-on-pages --watch"
+    "pages:watch": "npx @cloudflare/next-on-pages --watch",
+    "postinstall": "node scripts/patch-openai-agents.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1037.0",
+    "@openai/agents": "^0.11.4",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.1",
     "@types/nodemailer": "^8.0.0",
@@ -37,7 +39,8 @@
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0",
     "xlsx": "^0.18.5",
-    "yarn": "^1.22.22"
+    "yarn": "^1.22.22",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

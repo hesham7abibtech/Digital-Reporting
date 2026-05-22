@@ -108,6 +108,12 @@ service cloud.firestore {
       );
     }
 
+    // Chat Sessions Rules
+    match /chat_sessions/{sessionId} {
+      allow read, update, delete: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+    }
+
     // Global Fallback (Admin-only catch-all)
     match /{document=**} {
       allow read, write: if isAdmin();
