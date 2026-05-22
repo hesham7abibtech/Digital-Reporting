@@ -21,6 +21,7 @@ if (typeof globalThis.CustomEvent === 'undefined') {
 import { NextRequest, NextResponse } from 'next/server';
 import { firebaseRest } from '@/lib/firebase-rest';
 import { runAgent } from '@/services/ai-agent';
+import { getRequestContext } from '@cloudflare/next-on-pages';
 
 export const runtime = 'edge';
 
@@ -89,8 +90,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Bad Request: Missing messages array' }, { status: 400 });
     }
 
+    // Retrieve Cloudflare request context to read bindings/env variables
+    let cloudflareKey: string | undefined;
+    try {
+      const ctx = getRequestContext();
+      cloudflareKey = ctx.env?.OPENAI_API_KEY as string | undefined;
+    } catch (e) {
+      // Outside Cloudflare pages runtime (local development)
+    }
+
     // Execute the agent turn
-    const { outputText, updatedHistory } = await runAgent(messages);
+    const { outputText, updatedHistory } = await runAgent(messages, cloudflareKey);
 
     return NextResponse.json({
       outputText,

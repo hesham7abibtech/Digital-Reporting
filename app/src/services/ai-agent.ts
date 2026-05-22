@@ -1,4 +1,4 @@
-import { Agent, run, fileSearchTool } from '@openai/agents';
+import { Agent, run, fileSearchTool, setDefaultOpenAIKey } from '@openai/agents';
 import type { AgentInputItem } from '@openai/agents-core';
 
 // Target Vector Store ID containing reference and grounding documents
@@ -95,10 +95,12 @@ export interface AgentRunResponse {
  * @param history The conversation history including user and assistant message items.
  * @returns The final text output and the updated history list.
  */
-export async function runAgent(history: AgentInputItem[]): Promise<AgentRunResponse> {
-  if (!process.env.OPENAI_API_KEY) {
+export async function runAgent(history: AgentInputItem[], apiKey?: string): Promise<AgentRunResponse> {
+  const finalApiKey = apiKey || process.env.OPENAI_API_KEY;
+  if (!finalApiKey) {
     throw new Error('OPENAI_API_KEY is not configured in the environment.');
   }
+  setDefaultOpenAIKey(finalApiKey);
 
   try {
     // Run the agent. The run function executes the agent loop, automatically handles
