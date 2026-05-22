@@ -99,8 +99,19 @@ export async function POST(req: NextRequest) {
       // Outside Cloudflare pages runtime (local development)
     }
 
+    const globalKey = (globalThis as any).OPENAI_API_KEY as string | undefined;
+    const processKey = process.env.OPENAI_API_KEY;
+
+    console.log('[API AI Environment Debug]:', {
+      hasCloudflareKey: !!cloudflareKey,
+      hasGlobalKey: !!globalKey,
+      hasProcessKey: !!processKey
+    });
+
+    const activeKey = cloudflareKey || globalKey || processKey;
+
     // Execute the agent turn
-    const { outputText, updatedHistory } = await runAgent(messages, cloudflareKey);
+    const { outputText, updatedHistory } = await runAgent(messages, activeKey);
 
     return NextResponse.json({
       outputText,
