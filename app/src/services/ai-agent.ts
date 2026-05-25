@@ -1,5 +1,6 @@
-import { Agent, run, fileSearchTool, setDefaultOpenAIKey } from '@openai/agents';
+import { Agent, run, fileSearchTool, setDefaultOpenAIClient } from '@openai/agents';
 import type { AgentInputItem } from '@openai/agents-core';
+import { OpenAI } from 'openai';
 
 // Target Vector Store ID containing reference and grounding documents
 const VECTOR_STORE_ID = 'vs_6a108640112c81919974bbe641dbfe19';
@@ -93,14 +94,28 @@ export interface AgentRunResponse {
  * Passes the existing conversation history directly to the agent runner.
  * 
  * @param history The conversation history including user and assistant message items.
+ * @param apiKey Optional API key override.
+ * @param baseURL Optional custom OpenAI API base URL to bypass regional blocks.
  * @returns The final text output and the updated history list.
  */
-export async function runAgent(history: AgentInputItem[], apiKey?: string): Promise<AgentRunResponse> {
+export async function runAgent(
+  history: AgentInputItem[],
+  apiKey?: string,
+  baseURL?: string
+): Promise<AgentRunResponse> {
   const finalApiKey = apiKey || process.env.OPENAI_API_KEY;
   if (!finalApiKey) {
     throw new Error('OPENAI_API_KEY is not configured in the environment.');
   }
-  setDefaultOpenAIKey(finalApiKey);
+
+  const finalBaseURL = baseURL || process.env.OPENAI_BASE_URL;
+
+  // Initialize a custom OpenAI client configuration to handle custom base URLs
+  const client = new OpenAI({
+    apiKey: finalApiKey,
+    baseURL: finalBaseURL || undefined,
+  });
+  setDefaultOpenAIClient(client);
 
   try {
     // Run the agent. The run function executes the agent loop, automatically handles

@@ -171,7 +171,7 @@ export default function FloatingAIButton() {
       const token = await user.getIdToken();
 
       // 3. Post to AI endpoint
-      const response = await fetch('/api/ai', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
