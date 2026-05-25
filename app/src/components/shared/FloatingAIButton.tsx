@@ -33,9 +33,47 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
+// Color tokens: all textColors are solid hex values safe for light backgrounds
 const suggestedPrompts = [
-  "Search Deliverables Registry Report",
-  "Search BIM Reviews Report"
+  {
+    category: 'About Assistant',
+    icon: '🤖',
+    bg: '#f0f8fa',
+    border: '#5eaabb',
+    textColor: '#003f49',
+    labelBg: '#cce8ed',
+    prompts: [
+      { text: 'Who are you?',       full: 'Who are you?' },
+      { text: 'Who developed you?', full: 'Who developed you?' },
+      { text: 'انت مين؟',           full: 'انت مين' },
+    ]
+  },
+  {
+    category: 'Friendly Chat',
+    icon: '✨',
+    bg: '#fdf8f0',
+    border: '#d4a96a',
+    textColor: '#7a4f1d',
+    labelBg: '#fef3c7',
+    prompts: [
+      { text: 'Tell me a joke',     full: 'Tell me a joke' },
+      { text: 'Motivate me',        full: 'Motivate me' },
+      { text: 'قول نكتة',           full: 'قول نكتة' },
+    ]
+  },
+  {
+    category: 'Internal Knowledge',
+    icon: '🏢',
+    bg: '#edfcf4',
+    border: '#6ee7b7',
+    textColor: '#065f46',
+    labelBg: '#d1fae5',
+    prompts: [
+      { text: 'Search documents',     full: 'Search the internal company documents' },
+      { text: 'Summarize files',      full: 'Summarize the uploaded files' },
+      { text: 'Check policies',       full: 'Check internal company policies' },
+    ]
+  }
 ];
 
 export default function FloatingAIButton() {
@@ -53,8 +91,10 @@ export default function FloatingAIButton() {
   const [showSessionsList, setShowSessionsList] = useState(false);
   const [showConfirmReset, setShowConfirmReset] = useState(false);
   const [showConfirmDeleteId, setShowConfirmDeleteId] = useState<string | null>(null);
+  const [showConfirmDeleteAll, setShowConfirmDeleteAll] = useState(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [isDeletingSessionId, setIsDeletingSessionId] = useState<string | null>(null);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -253,6 +293,22 @@ export default function FloatingAIButton() {
     } finally {
       setIsDeletingSessionId(null);
       setShowConfirmDeleteId(null);
+    }
+  };
+
+  const handleDeleteAllSessions = async () => {
+    setIsDeletingAll(true);
+    try {
+      const deletePromises = sessions.map(sess => deleteDoc(doc(db, 'chat_sessions', sess.id)));
+      await Promise.all(deletePromises);
+      setSessions([]);
+      setCurrentSessionId(null);
+      setHistory([]);
+    } catch (err) {
+      console.error('[Delete All Sessions Error]:', err);
+    } finally {
+      setIsDeletingAll(false);
+      setShowConfirmDeleteAll(false);
     }
   };
 
@@ -652,227 +708,208 @@ export default function FloatingAIButton() {
               style={{
                 flex: 1,
                 overflowY: 'auto',
-                padding: '20px',
+                padding: '12px 14px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '16px',
+                gap: '12px',
               }}
             >
               {visibleMessages.length === 0 ? (
-                <div
-                  style={{
-                    flex: 1,
+                <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: 0 }}>
+
+                  {/* ── Hero Welcome Banner ── */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, #003f49 0%, #005360 100%)',
+                    borderRadius: '10px',
+                    padding: '11px 13px',
                     display: 'flex',
-                    flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    color: 'var(--text-secondary)',
-                    padding: '0 20px',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      background: 'rgba(0, 63, 73, 0.05)',
+                    gap: '10px',
+                    marginBottom: '12px',
+                    flexShrink: 0,
+                    boxShadow: '0 2px 8px rgba(0,63,73,0.18)',
+                  }}>
+                    <div style={{
+                      width: '34px',
+                      height: '34px',
+                      borderRadius: '8px',
+                      background: 'rgba(255,255,255,0.1)',
+                      border: '1px solid rgba(208,171,130,0.4)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      marginBottom: '16px',
-                      color: 'var(--teal)',
-                    }}
-                  >
-                    <Bot size={24} />
-                  </div>
-                  <h4
-                    style={{
-                      fontFamily: 'var(--font-primary)',
-                      fontSize: '15px',
-                      fontWeight: 700,
-                      color: 'var(--gold)',
-                      marginBottom: '8px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                    }}
-                  >
-                    Welcome, {userProfile?.name || 'Operative'}
-                  </h4>
-                  <p style={{ fontSize: '12px', lineHeight: '1.5', marginBottom: '8px' }}>
-                    I am the REH Digital Grounded Assistant. Ask me anything about reports, directories, platform guidelines, or system functionalities.
-                  </p>
-                  
-                  {/* Last 3 Chats History Section */}
-                  {sessions.length > 0 && (
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '8px',
-                        width: '100%',
-                        marginTop: '16px',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: 700,
-                          letterSpacing: '0.08em',
-                          color: 'var(--gold)',
-                          textTransform: 'uppercase',
-                          marginBottom: '4px',
-                          borderBottom: '1px solid rgba(208, 171, 130, 0.25)',
-                          paddingBottom: '4px',
-                        }}
-                      >
-                        Recent Conversations
+                      flexShrink: 0,
+                    }}>
+                      <Sparkles size={16} color="#d4a96a" />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        color: '#f5e6cc',
+                        letterSpacing: '0.04em',
+                        lineHeight: 1.2,
+                        textTransform: 'uppercase',
+                      }}>
+                        Welcome, {userProfile?.name?.split(' ')[0] || 'Operative'}
                       </div>
-                      {sessions.slice(0, 3).map((sess) => {
-                        const formattedDate = sess.updatedAt
-                          ? new Date(sess.updatedAt.toMillis ? sess.updatedAt.toMillis() : sess.updatedAt).toLocaleDateString(undefined, {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : 'Recent';
+                      <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>
+                        REH Grounded Assistant · Knowledge Base Active
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399', boxShadow: '0 0 5px #34d399' }} />
+                      <span style={{ fontSize: '9px', color: '#34d399', fontWeight: 600, letterSpacing: '0.06em' }}>ONLINE</span>
+                    </div>
+                  </div>
 
-                        return (
-                          <motion.div
-                            key={sess.id}
-                            onClick={() => {
-                              setCurrentSessionId(sess.id);
-                              setHistory(sess.messages || []);
-                            }}
-                            whileHover={{ scale: 1.02, borderColor: 'rgba(0, 242, 255, 0.45)', backgroundColor: 'rgba(0, 63, 73, 0.12)' }}
-                            whileTap={{ scale: 0.98 }}
-                            style={{
-                              padding: '10px 12px',
-                              borderRadius: 'var(--radius-md)',
-                              background: 'linear-gradient(135deg, rgba(0, 31, 36, 0.03) 0%, rgba(0, 63, 73, 0.05) 100%)',
-                              border: '1px solid rgba(208, 171, 130, 0.25)',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              transition: 'all 0.2s',
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
-                              <div
-                                style={{
-                                  width: '24px',
-                                  height: '24px',
-                                  borderRadius: '50%',
-                                  background: 'rgba(208, 171, 130, 0.1)',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  color: 'var(--gold)',
-                                  flexShrink: 0,
-                                }}
-                              >
-                                <MessageSquare size={12} />
-                              </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                                <span
-                                  style={{
-                                    fontSize: '11px',
-                                    fontWeight: 600,
-                                    color: 'var(--teal)',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                  }}
-                                >
-                                  {sess.title || 'Untitled Session'}
-                                </span>
-                                <span style={{ fontSize: '9px', color: 'var(--text-secondary)' }}>{formattedDate}</span>
-                              </div>
-                            </div>
-                            <button
-                              onClick={(e) => handleDeleteSession(e, sess.id)}
-                              disabled={isDeletingSessionId === sess.id}
+                  {/* ── Recent Conversations ── */}
+                  {sessions.length > 0 && (
+                    <div style={{ marginBottom: '12px', flexShrink: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '6px' }}>
+                        <History size={9} color="#7a4f1d" />
+                        <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.09em', color: '#7a4f1d', textTransform: 'uppercase' }}>
+                          Recent Conversations
+                        </span>
+                        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, #d4a96a55 0%, transparent 100%)' }} />
+                        <button
+                          onClick={() => setShowSessionsList(true)}
+                          style={{
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            fontSize: '9px', fontWeight: 700, color: '#003f49',
+                            padding: '2px 4px', borderRadius: '4px',
+                            textTransform: 'uppercase', letterSpacing: '0.05em'
+                          }}
+                        >
+                          View All
+                        </button>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {sessions.slice(0, 3).map((sess, idx) => {
+                          const formattedDate = sess.updatedAt
+                            ? new Date(sess.updatedAt.toMillis ? sess.updatedAt.toMillis() : sess.updatedAt).toLocaleDateString(undefined, {
+                                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                              })
+                            : 'Recent';
+                          return (
+                            <motion.div
+                              key={sess.id}
+                              initial={{ opacity: 0, x: -6 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: idx * 0.05 }}
+                              onClick={() => { setCurrentSessionId(sess.id); setHistory(sess.messages || []); }}
+                              whileHover={{ x: 2, backgroundColor: '#f0f8fa' }}
+                              whileTap={{ scale: 0.99 }}
                               style={{
-                                background: 'none',
-                                border: 'none',
-                                color: 'var(--text-secondary)',
+                                display: 'flex', alignItems: 'center', gap: '7px',
+                                padding: '6px 9px', borderRadius: '7px',
+                                background: '#f8fafb',
+                                border: '1px solid #d5e6ea',
                                 cursor: 'pointer',
-                                padding: '4px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                transition: 'color 0.2s',
                               }}
-                              onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
-                              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
                             >
-                              {isDeletingSessionId === sess.id ? (
-                                <Loader2 size={12} className="animate-spin" />
-                              ) : (
-                                <Trash2 size={12} />
-                              )}
-                            </button>
-                          </motion.div>
-                        );
-                      })}
+                              <div style={{
+                                width: '18px', height: '18px', borderRadius: '5px',
+                                background: '#fef3c7', border: '1px solid #d4a96a',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                              }}>
+                                <MessageSquare size={9} color="#7a4f1d" />
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{
+                                  fontSize: '11px', fontWeight: 600, color: '#003f49',
+                                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3,
+                                }}>{sess.title || 'Untitled Session'}</div>
+                                <div style={{ fontSize: '9px', color: '#6b7280', marginTop: '1px' }}>{formattedDate}</div>
+                              </div>
+                              <button
+                                onClick={(e) => handleDeleteSession(e, sess.id)}
+                                disabled={isDeletingSessionId === sess.id}
+                                style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+                                onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
+                                onMouseLeave={(e) => (e.currentTarget.style.color = '#9ca3af')}
+                              >
+                                {isDeletingSessionId === sess.id ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+                              </button>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 
-                  {/* Suggested Prompts Section */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                      width: '100%',
-                      marginTop: '16px',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: '10px',
-                        fontWeight: 700,
-                        letterSpacing: '0.08em',
-                        color: 'var(--gold)',
-                        textTransform: 'uppercase',
-                        marginBottom: '4px',
-                        borderBottom: '1px solid rgba(208, 171, 130, 0.25)',
-                        paddingBottom: '4px',
-                      }}
-                    >
-                      Suggested Topics
+                  {/* ── Suggested Topics ── */}
+                  <div style={{ flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px' }}>
+                      <Sparkles size={9} color="#003f49" />
+                      <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.09em', color: '#003f49', textTransform: 'uppercase' }}>
+                        Suggested Topics
+                      </span>
+                      <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, #5eaabb55 0%, transparent 100%)' }} />
                     </div>
-                    {suggestedPrompts.map((promptText, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setInput(promptText)}
-                        style={{
-                          background: 'rgba(0, 63, 73, 0.03)',
-                          border: '1px solid var(--border)',
-                          borderRadius: 'var(--radius-md)',
-                          padding: '10px 14px',
-                          color: 'var(--teal)',
-                          fontSize: '12px',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          fontFamily: 'var(--font-sans)',
-                          transition: 'all 0.2s',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'rgba(208, 171, 130, 0.08)';
-                          e.currentTarget.style.borderColor = 'rgba(208, 171, 130, 0.3)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'rgba(0, 63, 73, 0.03)';
-                          e.currentTarget.style.borderColor = 'var(--border)';
-                        }}
-                      >
-                        {promptText}
-                      </button>
+
+                    {/* Categories: each with a pill header + 3-column grid */}
+                    {suggestedPrompts.map((group, groupIdx) => (
+                      <div key={groupIdx} style={{ marginBottom: groupIdx < suggestedPrompts.length - 1 ? '10px' : 0 }}>
+                        {/* Category pill */}
+                        <div style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          padding: '2px 7px', borderRadius: '5px',
+                          background: group.labelBg, border: `1px solid ${group.border}`,
+                          marginBottom: '5px',
+                        }}>
+                          <span style={{ fontSize: '10px', lineHeight: 1 }}>{group.icon}</span>
+                          <span style={{ fontSize: '9px', fontWeight: 700, color: group.textColor, letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+                            {group.category}
+                          </span>
+                        </div>
+
+                        {/* 3-column grid of prompt cards */}
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(3, 1fr)',
+                          gap: '5px',
+                        }}>
+                          {group.prompts.map((prompt, promptIdx) => (
+                            <motion.button
+                              key={promptIdx}
+                              initial={{ opacity: 0, y: 3 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: groupIdx * 0.06 + promptIdx * 0.03 }}
+                              onClick={() => setInput(prompt.full)}
+                              whileHover={{ y: -2, boxShadow: `0 4px 10px ${group.border}55` }}
+                              whileTap={{ scale: 0.97 }}
+                              style={{
+                                background: group.bg,
+                                border: `1px solid ${group.border}`,
+                                borderRadius: '8px',
+                                padding: '6px 8px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                textAlign: 'left',
+                                gap: '6px',
+                                minHeight: '44px',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <span style={{ fontSize: '13px', lineHeight: 1, flexShrink: 0 }}>{group.icon}</span>
+                              <span style={{
+                                fontSize: '10.5px',
+                                fontWeight: 700,
+                                color: group.textColor,
+                                lineHeight: 1.2,
+                                wordBreak: 'break-word',
+                                hyphens: 'auto',
+                              }}>
+                                {prompt.text}
+                              </span>
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -1126,22 +1163,44 @@ export default function FloatingAIButton() {
                         Saved Conversations
                       </span>
                     </div>
-                    <button
-                      onClick={() => setShowSessionsList(false)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '4px',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--gold)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)')}
-                    >
-                      <ArrowLeft size={18} />
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      {sessions.length > 0 && (
+                        <button
+                          onClick={() => setShowConfirmDeleteAll(true)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'rgba(239, 68, 68, 0.8)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '4px',
+                            transition: 'color 0.2s',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(239, 68, 68, 0.8)')}
+                          title="Delete All Sessions"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setShowSessionsList(false)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'rgba(255, 255, 255, 0.7)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '4px',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--gold)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)')}
+                      >
+                        <ArrowLeft size={18} />
+                      </button>
+                    </div>
                   </div>
 
                   {/* New Session Button */}
@@ -1605,6 +1664,257 @@ export default function FloatingAIButton() {
               )}
             </AnimatePresence>
 
+            {/* Fancy Confirm Delete Session Modal */}
+            <AnimatePresence>
+              {showConfirmDeleteId && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    background: 'rgba(0, 63, 73, 0.75)',
+                    backdropFilter: 'blur(4px)',
+                    zIndex: 200,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '20px',
+                  }}
+                >
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    style={{
+                      background: 'rgba(249, 248, 242, 0.98)',
+                      borderRadius: 'var(--radius-lg)',
+                      border: '1px solid #ef4444',
+                      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+                      padding: '24px',
+                      width: '100%',
+                      maxWidth: '300px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: '16px',
+                        color: '#ef4444',
+                      }}
+                    >
+                      <Trash2 size={20} />
+                    </div>
+                    <h4
+                      style={{
+                        fontFamily: 'var(--font-primary)',
+                        fontSize: '16px',
+                        fontWeight: 700,
+                        color: '#ef4444',
+                        margin: '0 0 8px 0',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      Delete Conversation?
+                    </h4>
+                    <p
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--text-secondary)',
+                        lineHeight: '1.5',
+                        margin: '0 0 20px 0',
+                      }}
+                    >
+                      This action cannot be undone. Are you sure you want to delete this session?
+                    </p>
+                    <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+                      <button
+                        onClick={() => setShowConfirmDeleteId(null)}
+                        disabled={isDeletingSessionId !== null}
+                        style={{
+                          flex: 1,
+                          padding: '10px',
+                          background: 'rgba(0, 63, 73, 0.05)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-md)',
+                          color: 'var(--teal)',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          fontFamily: 'var(--font-sans)',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleConfirmDelete}
+                        disabled={isDeletingSessionId !== null}
+                        style={{
+                          flex: 1,
+                          padding: '10px',
+                          background: '#ef4444',
+                          border: 'none',
+                          borderRadius: 'var(--radius-md)',
+                          color: '#ffffff',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          fontFamily: 'var(--font-sans)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        {isDeletingSessionId !== null ? <Loader2 size={16} className="animate-spin" /> : 'Delete'}
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Fancy Confirm Delete All Modal */}
+            <AnimatePresence>
+              {showConfirmDeleteAll && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    background: 'rgba(0, 63, 73, 0.75)',
+                    backdropFilter: 'blur(4px)',
+                    zIndex: 200,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '20px',
+                  }}
+                >
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    style={{
+                      background: 'rgba(249, 248, 242, 0.98)',
+                      borderRadius: 'var(--radius-lg)',
+                      border: '1px solid #ef4444',
+                      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+                      padding: '24px',
+                      width: '100%',
+                      maxWidth: '300px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: '16px',
+                        color: '#ef4444',
+                      }}
+                    >
+                      <Trash2 size={20} />
+                    </div>
+                    <h4
+                      style={{
+                        fontFamily: 'var(--font-primary)',
+                        fontSize: '16px',
+                        fontWeight: 700,
+                        color: '#ef4444',
+                        margin: '0 0 8px 0',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      Delete All History?
+                    </h4>
+                    <p
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--text-secondary)',
+                        lineHeight: '1.5',
+                        margin: '0 0 20px 0',
+                      }}
+                    >
+                      This action will permanently delete all your saved conversations. Are you sure you want to proceed?
+                    </p>
+                    <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+                      <button
+                        onClick={() => setShowConfirmDeleteAll(false)}
+                        disabled={isDeletingAll}
+                        style={{
+                          flex: 1,
+                          padding: '10px',
+                          background: 'rgba(0, 63, 73, 0.05)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-md)',
+                          color: 'var(--teal)',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          fontFamily: 'var(--font-sans)',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleDeleteAllSessions}
+                        disabled={isDeletingAll}
+                        style={{
+                          flex: 1,
+                          padding: '10px',
+                          background: '#ef4444',
+                          border: 'none',
+                          borderRadius: 'var(--radius-md)',
+                          color: '#ffffff',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          fontFamily: 'var(--font-sans)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        {isDeletingAll ? <Loader2 size={16} className="animate-spin" /> : 'Delete All'}
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
