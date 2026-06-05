@@ -258,6 +258,14 @@ export async function runAgent(
 
   const finalBaseURL = baseURL || process.env.OPENAI_BASE_URL;
 
+  // Log proxy status for debugging regional access issues
+  if (finalBaseURL) {
+    const maskedURL = finalBaseURL.replace(/\/v1\/[^/]+\//, '/v1/***/');
+    console.log(`[AI Agent]: Using proxy base URL: ${maskedURL}`);
+  } else {
+    console.warn('[AI Agent]: No OPENAI_BASE_URL configured — calling api.openai.com directly. This may fail in restricted regions.');
+  }
+
   // Initialize a custom OpenAI client configuration to handle custom base URLs
   const client = new OpenAI({
     apiKey: finalApiKey,

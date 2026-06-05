@@ -134,6 +134,10 @@ export async function POST(req: NextRequest) {
     const processBaseURL = process.env.OPENAI_BASE_URL;
     const activeBaseURL = cloudflareBaseURL || globalBaseURL || processBaseURL;
 
+    if (!activeBaseURL) {
+      console.warn('[API Chat WARNING]: OPENAI_BASE_URL is NOT configured. Requests will go directly to api.openai.com and may be blocked in certain regions. Set up a Cloudflare AI Gateway and add OPENAI_BASE_URL to your Pages environment variables for worldwide access.');
+    }
+
     console.log('[API Chat Environment Debug]:', {
       hasCloudflareKey: !!cloudflareKey,
       hasGlobalKey: !!globalKey,
@@ -141,7 +145,8 @@ export async function POST(req: NextRequest) {
       hasCloudflareBaseURL: !!cloudflareBaseURL,
       hasGlobalBaseURL: !!globalBaseURL,
       hasProcessBaseURL: !!processBaseURL,
-      resolvedBaseURL: activeBaseURL || 'default'
+      resolvedBaseURL: activeBaseURL ? '(configured)' : 'NONE - direct to OpenAI',
+      colo: cfColo
     });
 
     if (!activeKey) {
@@ -176,7 +181,9 @@ export async function POST(req: NextRequest) {
       status = 504; // Gateway Timeout
     } else if (err.status === 403 || err.message?.includes('403') || err.message?.includes('Country, region, or territory not supported')) {
       status = 403;
-      errorMessage = 'Error: The AI provider has blocked access from this region. Please configure an outbound proxy (OPENAI_BASE_URL) in Cloudflare Pages.';
+      // Log detailed info for admins, but show clean message to end users
+      console.error(`[API Chat 403 Detail]: Region block detected. Colo: ${cfColo}. Base URL configured: ${!!activeBaseURL}. Raw error: ${err.message}`);
+      errorMessage = 'The AI assistant is temporarily unavailable in your region. Our team has been notified and is working on it. Please try again shortly.';
     } else if (err.status === 429 || err.message?.includes('429') || err.message?.includes('Too Many Requests')) {
       status = 429;
       errorMessage = 'Error: Rate limit exceeded. Please try again in a few moments.';
