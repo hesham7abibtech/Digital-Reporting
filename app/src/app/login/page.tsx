@@ -10,6 +10,7 @@ import {
   ShieldAlert, ChevronRight, CheckCircle2, Circle, Briefcase, Home, LifeBuoy, MailCheck, KeyRound,
 } from 'lucide-react';
 import TicketRequestModal from '@/components/shared/TicketRequestModal';
+import TwoFactorModal from '@/components/shared/TwoFactorModal';
 
 type AuthMode = 'login' | 'register' | 'forgot-password';
 const DEFAULT_ALLOWED_DOMAINS = ['modon.com', 'insiteinternational.com'];
@@ -48,17 +49,19 @@ function LoginContent() {
   const [emailSent, setEmailSent] = useState<null | 'migration' | 'reset' | 'register'>(null);
   const [pendingState, setPendingState] = useState<null | 'unverified' | 'unapproved'>(null);
   const [isTicketOpen, setIsTicketOpen] = useState(false);
+  const [mfaChallenge, setMfaChallenge] = useState(false);
 
   // Route on auth state (verification → approval → dashboard).
   useEffect(() => {
     if (!user) return;
+    if (mfaChallenge) return; // hold routing until 2FA code is verified
     if (authError?.includes('ACCESS REVOKED')) { setError(authError); setIsSubmitting(false); return; }
     if (!userProfile) return; // still loading profile
     if (!user.emailVerified && !userProfile.isVerified) { setPendingState('unverified'); setIsSubmitting(false); return; }
     if (!userProfile.isApproved) { setPendingState('unapproved'); setIsSubmitting(false); return; }
     sessionStorage.setItem('dashboard_session', 'active');
     router.push('/dashboard');
-  }, [user, userProfile, authError, router]);
+  }, [user, userProfile, authError, router, mfaChallenge]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +77,9 @@ function LoginContent() {
         setIsSubmitting(false);
         return;
       }
+      // If 2FA is enabled, require the code before routing to the dashboard.
+      const { data: aal } = await supabaseBrowser.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.nextLevel === 'aal2' && aal.currentLevel === 'aal1') { setMfaChallenge(true); setIsSubmitting(false); return; }
       // success → routing effect handles redirect once profile loads
     } catch (err: any) {
       setError(err.message || 'Sign-in failed.'); setIsSubmitting(false);
@@ -299,6 +305,13 @@ function LoginContent() {
           </Overlay>
         )}
       </AnimatePresence>
+
+      <TwoFactorModal
+        isOpen={mfaChallenge}
+        mode="challenge"
+        onClose={async () => { await supabaseBrowser.auth.signOut(); setMfaChallenge(false); }}
+        onVerified={() => setMfaChallenge(false)}
+      />
 
       <TicketRequestModal isOpen={isTicketOpen} onClose={() => setIsTicketOpen(false)} defaultReason="Login Portal Support" defaultMessage="I am experiencing issues accessing my account. Please assist." />
     </div>

@@ -26,6 +26,7 @@ import EliteDropdown from '@/components/dashboard/EliteDropdown';
 import type { Task } from '@/lib/types';
 import { useTimeZone } from '@/context/TimeZoneContext';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
+import Enable2FAAnnouncement from '@/components/shared/Enable2FAAnnouncement';
 import { useAuth } from '@/context/AuthContext';
 import { useRegistryView } from '@/hooks/useRegistryView';
 import { PRECINCTS } from '@/lib/constants';
@@ -750,6 +751,7 @@ export default function Dashboard() {
 
   return (
     <div style={{ height: '100vh', position: 'relative', overflow: 'hidden' }}>
+      <Enable2FAAnnouncement />
       <BrandedLoader isLoading={!minLoadingComplete || isLoading || hasError} />
 
       <ParticleBackground />

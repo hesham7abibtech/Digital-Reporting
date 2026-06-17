@@ -14,6 +14,7 @@ import {
   RefreshCw, ShieldCheck as ShieldCheckIcon, ShieldAlert as ShieldAlertIcon, Trash2, X
 } from 'lucide-react';
 import TicketRequestModal from '@/components/shared/TicketRequestModal';
+import TwoFactorModal from '@/components/shared/TwoFactorModal';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'unauthorized';
 
@@ -53,6 +54,7 @@ function AdminLoginContent() {
   const [reviewNotes, setReviewNotes] = useState('');
   const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
   const [hasPendingAppeal, setHasPendingAppeal] = useState(false);
+  const [mfaChallenge, setMfaChallenge] = useState(false);
   const [latestAppeal, setLatestAppeal] = useState<{ status: string; message?: string | null; adminResponse: string | null; createdAt?: string | null; updatedAt: string | Date | null } | null>(null);
 
   const router = useRouter();
@@ -91,6 +93,7 @@ function AdminLoginContent() {
 
   useEffect(() => {
     if (loading) return;
+    if (mfaChallenge) return; // hold routing until 2FA code is verified
 
     // ISOLATION PROTOCOL: Only react to auth state if admin_session is active.
     // This prevents cross-contamination from the regular /login portal.
@@ -134,7 +137,7 @@ function AdminLoginContent() {
         setIsSubmitting(false);
       }
     }
-  }, [user, userProfile, loading, authError, router]);
+  }, [user, userProfile, loading, authError, router, mfaChallenge]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,6 +165,8 @@ function AdminLoginContent() {
         setIsSubmitting(false);
         return;
       }
+      const { data: aal } = await supabaseBrowser.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.nextLevel === 'aal2' && aal.currentLevel === 'aal1') { setMfaChallenge(true); setIsSubmitting(false); return; }
       // AuthContext + the clearance effect above handle the redirect / suspension.
     } catch (err: any) {
       setError(err.message || 'Sign-in failed.');
@@ -941,6 +946,13 @@ function AdminLoginContent() {
           </div>
         )}
       </AnimatePresence>
+
+      <TwoFactorModal
+        isOpen={mfaChallenge}
+        mode="challenge"
+        onClose={async () => { await supabaseBrowser.auth.signOut(); setMfaChallenge(false); }}
+        onVerified={() => setMfaChallenge(false)}
+      />
     </div>
   );
 }

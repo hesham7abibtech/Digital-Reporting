@@ -94,6 +94,7 @@ import HomePageEditor from '@/components/admin/HomePageEditor';
 import BimDataSourcePanel from '@/components/admin/BimDataSourcePanel';
 import ApiConnectionsPanel from '@/components/admin/ApiConnectionsPanel';
 import TabLoader from '@/components/admin/TabLoader';
+import Enable2FAAnnouncement from '@/components/shared/Enable2FAAnnouncement';
 import { getApiEndpoint } from '@/lib/apiConfig';
 import { parseBimReviewsExcel, generateBimReviewId } from '@/lib/bimImportUtils';
 
@@ -1788,6 +1789,7 @@ export default function AdminDashboardPage() {
         )}
       </AnimatePresence>
       <div style={{ display: 'flex', height: '100vh' }}>
+        <Enable2FAAnnouncement />
         {/* Elite Navigation Sidebar */}
         <aside style={{ 
           width: 300, 
