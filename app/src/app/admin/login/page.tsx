@@ -2,22 +2,9 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-  updateProfile,
-  setPersistence,
-  browserSessionPersistence,
-  sendEmailVerification
-} from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { supabaseBrowser } from '@/lib/supabase';
 import { formatDate } from '@/lib/utils';
-import { doc, updateDoc } from 'firebase/firestore';
-import { createUserProfile, getProjectMetadata } from '@/services/FirebaseService';
 import { useAuth } from '@/context/AuthContext';
-import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
-import { ProjectMetadata } from '@/lib/types';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import {
   Lock, Mail, Loader2, Globe, ShieldCheck,
@@ -31,6 +18,14 @@ import TicketRequestModal from '@/components/shared/TicketRequestModal';
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'unauthorized';
 
 const DEFAULT_ALLOWED_DOMAINS = ['modon.com', 'insiteinternational.com'];
+
+async function getAllowedDomains(): Promise<string[]> {
+  try {
+    const { data } = await supabaseBrowser.from('settings').select('data').eq('id', 'project').maybeSingle();
+    const list = (data?.data as any)?.allowedDomains;
+    return Array.isArray(list) && list.length ? list : DEFAULT_ALLOWED_DOMAINS;
+  } catch { return DEFAULT_ALLOWED_DOMAINS; }
+}
 
 function validatePassword(password: string): string | null {
   if (password.length < 8) return 'SECURITY REQUIREMENT: Password must be at least 8 characters long.';
@@ -52,7 +47,6 @@ function AdminLoginContent() {
   const [isScanned, setIsScanned] = useState(false);
   const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
   const [showResetSuccess, setShowResetSuccess] = useState(false);
-  const [projectMetadata, setProjectMetadata] = useState<ProjectMetadata | null>(null);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [revocationData, setRevocationData] = useState<{ reason: string; duration: string; blockedAt?: string; expiresAt?: string | null } | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -71,12 +65,6 @@ function AdminLoginContent() {
       setError('ACCESS DENIED: Insufficient administrative clearance. Please authenticate with an Admin profile.');
     }
   }, [searchParams]);
-
-  useEffect(() => {
-    getProjectMetadata().then(meta => {
-      if (meta) setProjectMetadata(meta as ProjectMetadata);
-    }).catch(console.error);
-  }, []);
 
   // Polling Watchdog for Real-time Synchronization
   useEffect(() => {
@@ -113,9 +101,16 @@ function AdminLoginContent() {
       return;
     }
 
-    // Handle Profile Fetch Errors (usually from Firestore rules)
+    // Handle suspension / profile errors
     if (user && authError) {
-      setError(`IDENTITY SYNC FAILURE: ${authError}`);
+      if (authError.includes('ACCESS REVOKED')) {
+        setError('ACCESS_REVOKED');
+        fetch(`/api/auth/blocking-details?email=${encodeURIComponent(email)}`).then(r => r.ok ? r.json() : null).then(d => {
+          if (d?.suspended && d.blockingDetails) { setRevocationData(d.blockingDetails); setLatestAppeal(d.latestAppeal); setHasPendingAppeal(d.latestAppeal?.status === 'OPEN'); }
+        }).catch(() => {});
+      } else {
+        setError(`IDENTITY SYNC FAILURE: ${authError}`);
+      }
       setIsSubmitting(false);
       return;
     }
@@ -125,7 +120,7 @@ function AdminLoginContent() {
       const isVerified = user.emailVerified || userProfile.isVerified === true;
       if (!isVerified) {
         setError('CLEARANCE BLOCKED: Email not verified. Please verify your identity protocol.');
-        auth.signOut();
+        supabaseBrowser.auth.signOut();
         sessionStorage.removeItem('admin_session');
         setIsSubmitting(false);
         return;
@@ -148,61 +143,28 @@ function AdminLoginContent() {
     setIsSubmitting(true);
 
     try {
-      // 1. Domain Clearance Check (Pre-flight)
-      const projectMetadata = await getProjectMetadata() as ProjectMetadata | null;
-      const allowed = projectMetadata?.allowedDomains?.length ? projectMetadata.allowedDomains : DEFAULT_ALLOWED_DOMAINS;
-
+      const allowed = await getAllowedDomains();
       const userDomain = email.split('@')[1]?.toLowerCase();
       if (!userDomain || !allowed.includes(userDomain)) {
         setError(`ACCESS DENIED: Your identity domain (@${userDomain}) is not authorized for this project. Authorized domains: @${allowed.join(', @')}.`);
         setIsSubmitting(false);
         return;
       }
-
-      // 2. Sign out any existing session to prevent cross-portal contamination
-      if (auth.currentUser) {
-        await auth.signOut();
-      }
-
-      // 3. Ensure strict session persistence is initialized
-      // (Global persistence is already initialized in AuthContext, these are fast sync checks)
-      await setPersistence(auth, browserSessionPersistence);
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
-      // 4. Fire-and-forget telemetry (Non-blocking)
-      updateDoc(doc(db, 'users', userCredential.user.uid), {
-        lastLoginAt: new Date().toISOString()
-      }).catch(e => console.error('Failed to sync admin login timestamp:', e));
-      // Mark this as an admin session (separate from dashboard)
-      // Clear dashboard session flag to prevent bleed-through
       sessionStorage.removeItem('dashboard_session');
       sessionStorage.setItem('admin_session', 'active');
-      // Wait for AuthContext redirect logic above
-    } catch (err: any) {
-      // Don't flood console with expected disabled errors in dev
-      if (err.code !== 'auth/user-disabled') {
-        console.error('Login error:', err);
-      }
-
-      if (err.code === 'auth/user-disabled' || err.message?.includes('disabled') || err.message?.includes('user-disabled')) {
-        try {
-          const response = await fetch(`/api/auth/blocking-details?email=${encodeURIComponent(email)}`);
-          if (response.ok) {
-            const data = await response.json();
-            if (data.suspended && data.blockingDetails) {
-              setRevocationData(data.blockingDetails);
-              setLatestAppeal(data.latestAppeal);
-              setHasPendingAppeal(data.latestAppeal?.status === 'OPEN');
-              setError('ACCESS_REVOKED');
-              setIsSubmitting(false);
-              return;
-            }
-          }
-        } catch (e) {
-          console.error('Suspension retrieval failure:', e);
+      const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
+      if (error) {
+        if (/invalid login credentials/i.test(error.message)) {
+          setError('Incorrect email or password. First sign-in since our upgrade? Use "Forgotten Credentials?" to set your password (reuse your old one).');
+        } else {
+          setError(error.message);
         }
+        setIsSubmitting(false);
+        return;
       }
-      setError(getFirebaseErrorMessage(err));
+      // AuthContext + the clearance effect above handle the redirect / suspension.
+    } catch (err: any) {
+      setError(err.message || 'Sign-in failed.');
       setIsSubmitting(false);
     }
   };
@@ -214,45 +176,32 @@ function AdminLoginContent() {
     setIsSubmitting(true);
 
     try {
-      // 1. Domain Clearance Check
-      const projectMetadata = await getProjectMetadata() as ProjectMetadata | null;
-      const allowed = projectMetadata?.allowedDomains?.length ? projectMetadata.allowedDomains : DEFAULT_ALLOWED_DOMAINS;
-
+      const allowed = await getAllowedDomains();
       const userDomain = email.split('@')[1]?.toLowerCase();
       if (!userDomain || !allowed.includes(userDomain)) {
-        setError(`SECURITY ALERT: Unauthorized Domain Signature. Registration is strictly restricted to authorized project domains (@${allowed.join(', @')}).`);
+        setError(`SECURITY ALERT: Unauthorized Domain Signature. Registration is restricted to authorized project domains (@${allowed.join(', @')}).`);
         setIsSubmitting(false);
         return;
       }
-
-      // 2. Password Strength Check
       const pwdError = validatePassword(password);
-      if (pwdError) {
-        setError(pwdError);
-        setIsSubmitting(false);
-        return;
-      }
+      if (pwdError) { setError(pwdError); setIsSubmitting(false); return; }
 
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(userCredential.user, { displayName: name });
-
-      // 1. Send Email Verification
-      await sendEmailVerification(userCredential.user);
-
-      // 2. Initialize Firestore Profile
-      await createUserProfile(userCredential.user.uid, {
-        name,
-        email,
-        department
+      const { data, error } = await supabaseBrowser.auth.signUp({
+        email, password,
+        options: { data: { name, department }, emailRedirectTo: `${window.location.origin}/admin/login` },
       });
-
-      // Sign out user immediately (they need an admin approval first)
-      await auth.signOut();
+      if (error) throw error;
+      if (data.user) {
+        await fetch('/api/auth/register-profile', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: data.user.id, email, name, department }),
+        }).catch(() => {});
+      }
+      await supabaseBrowser.auth.signOut();
       setIsSubmitting(false);
       setShowRegistrationSuccess(true);
     } catch (err: any) {
-      console.error('Registration error:', err);
-      setError(getFirebaseErrorMessage(err));
+      setError(err.message || 'Registration failed.');
       setIsSubmitting(false);
     }
   };
@@ -262,18 +211,13 @@ function AdminLoginContent() {
     setError('');
     setMessage('');
     setIsSubmitting(true);
-
     try {
-      const actionCodeSettings = {
-        url: window.location.origin + '/auth/reset',
-        handleCodeInApp: true,
-      };
-      await sendPasswordResetEmail(auth, email, actionCodeSettings);
+      const { error } = await supabaseBrowser.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/auth/reset` });
+      if (error) throw error;
       setShowResetSuccess(true);
       setIsSubmitting(false);
     } catch (err: any) {
-      console.error('Reset error:', err);
-      setError(getFirebaseErrorMessage(err));
+      setError(err.message || 'Service unavailable. Please try again later.');
       setIsSubmitting(false);
     }
   };
