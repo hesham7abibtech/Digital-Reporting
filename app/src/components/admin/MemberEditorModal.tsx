@@ -8,10 +8,7 @@ import { updateUserProfile, deleteUserProfile, uploadFile } from '@/services/Fir
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import { useToast } from '@/components/shared/EliteToast';
-import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, query, orderBy, doc, setDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { collections } from '@/services/FirebaseService';
+import { saveDoc, removeDoc, useCollectionCompat } from '@/lib/supabaseData';
 
 interface MemberEditorProps {
   member: TeamMember | null;
@@ -52,7 +49,7 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
     }
   };
   
-  const [deptsSnapshot] = useCollection(query(collection(db, 'departments'), orderBy('name', 'asc')));
+  const [deptsSnapshot] = useCollectionCompat('departments', { sortBy: 'name', dir: 'asc' });
   const departments = deptsSnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as any)) || [];
 
   useEffect(() => {
@@ -79,9 +76,8 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
     try {
       if (!formData.id && !(formData as any).uid) throw new Error('No Identity Component Provided');
       const uid = (formData as any).uid || formData.id;
-      
-      const memberRef = doc(collections.members, uid);
-      await setDoc(memberRef, {
+      await saveDoc('members', {
+        id: uid,
         name: formData.name || '',
         email: formData.email || '',
         department: formData.department || '',
@@ -89,8 +85,8 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
         status: formData.status || 'ACTIVE',
         avatar: formData.avatar || '',
         isOnline: formData.isOnline ?? true,
-        lastActive: formData.lastActive ?? new Date().toISOString()
-      }, { merge: true });
+        lastActive: formData.lastActive ?? new Date().toISOString(),
+      });
 
       showToast('Member saved successfully.', 'SUCCESS');
       onClose();
@@ -107,7 +103,7 @@ export default function MemberEditorModal({ member, isOpen, onClose, readOnly, c
     if (!member) return;
     try {
       const uid = (member as any).uid || member.id;
-      await deleteDoc(doc(collections.members, uid));
+      await removeDoc('members', uid);
       showToast('Member removed successfully.', 'SUCCESS');
       onClose();
     } catch (error) {

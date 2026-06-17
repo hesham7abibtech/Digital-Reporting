@@ -1,11 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useCollection, useDocument } from 'react-firebase-hooks/firestore';
-import { collections } from '@/services/FirebaseService';
+import { useCollectionCompat, useDocCompat } from '@/lib/supabaseData';
 import type { Task, TeamMember, DashboardNavItem, ProjectMetadata, Department } from '@/lib/types';
-import { doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 
 export function useRealtimeData() {
@@ -17,14 +14,14 @@ export function useRealtimeData() {
   const hasDR = userProfile?.access?.deliverablesRegistry === true || userProfile?.isAdmin === true;
   const hasBIM = userProfile?.access?.bimReviews === true || userProfile?.isAdmin === true;
 
-  const [tasksSnapshot, tasksLoading, tasksError] = useCollection(isApproved && hasDR ? collections.tasks : null);
-  const [membersSnapshot, membersLoading, membersError] = useCollection(isApproved ? collections.members : null);
-  const [registrySnapshot, registryLoading, registryError] = useCollection(isApproved ? collections.registry : null);
-  const [departmentsSnapshot, departmentsLoading, departmentsError] = useCollection(isApproved ? collections.departments : null);
-  const [bimReviewsSnapshot, bimReviewsLoading, bimReviewsError] = useCollection(isApproved && hasBIM ? collections.bimReviews : null);
-  
+  const [tasksSnapshot, tasksLoading, tasksError] = useCollectionCompat(isApproved && hasDR ? 'tasks' : null);
+  const [membersSnapshot, membersLoading, membersError] = useCollectionCompat(isApproved ? 'members' : null);
+  const [registrySnapshot, registryLoading, registryError] = useCollectionCompat(isApproved ? 'registry' : null);
+  const [departmentsSnapshot, departmentsLoading, departmentsError] = useCollectionCompat(isApproved ? 'departments' : null);
+  const [bimReviewsSnapshot, bimReviewsLoading, bimReviewsError] = useCollectionCompat(isApproved && hasBIM ? 'bimReviews' : null);
+
   // Also sync global project settings
-  const [projectSnapshot, projectLoading, projectError] = useDocument(doc(db, 'settings', 'project'));
+  const [projectSnapshot, projectLoading, projectError] = useDocCompat('settings', 'project');
 
   const tasks = tasksSnapshot ? tasksSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Task)) : [];
   const members = membersSnapshot 

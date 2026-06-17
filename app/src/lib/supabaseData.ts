@@ -95,10 +95,10 @@ export function useCollectionCompat<T = any>(
 export function useDocCompat<T = any>(
   collection: string,
   id: string,
-): [{ data: () => T | undefined; exists: boolean; id: string } | null, boolean] {
+): [{ data: () => T | undefined; exists: () => boolean; id: string } | null, boolean, string | undefined] {
   const { doc, loading } = useSupabaseDoc<any>(collection, id);
-  const snap = { id, exists: !!doc, data: () => (doc || undefined) as T | undefined };
-  return [snap, loading];
+  const snap = { id, exists: () => !!doc, data: () => (doc || undefined) as T | undefined };
+  return [snap, loading, undefined];
 }
 
 /** Live single document (e.g. settings/project). */
@@ -130,6 +130,7 @@ export function useSupabaseDoc<T = any>(collection: string, id: string) {
 // Promoted columns that several tables filter/sort on, derived from the doc.
 function promotedColumns(table: string, doc: any): Record<string, unknown> {
   switch (table) {
+    case 'users': return { email: doc.email ?? null, name: doc.name ?? null, role: doc.role ?? null, is_admin: !!doc.isAdmin, is_approved: !!doc.isApproved, is_verified: !!doc.isVerified, status: doc.status ?? 'PENDING', access: doc.access ?? {}, firebase_uid: doc.firebase_uid ?? null };
     case 'tasks': return { title: doc.title ?? null, status: doc.status ?? null, completion: doc.completion ?? null, precinct: doc.precinct ?? null, department: doc.department ?? null, submitter_id: doc.submitterId ?? null };
     case 'bim_reviews': return { project: doc.Project ?? null, status: doc['InSite Review Status'] ?? null };
     case 'members': return { name: doc.name ?? null, email: doc.email ?? null, role: doc.role ?? null, department: doc.department ?? null, status: doc.status ?? null };
