@@ -73,6 +73,7 @@ import { doc, collection, query, orderBy, deleteDoc, getDocs, where } from 'fire
 import { db } from '@/lib/firebase';
 import GlassCard from '@/components/shared/GlassCard';
 import { useCollection } from 'react-firebase-hooks/firestore';
+import { useCollectionCompat, useDocCompat } from '@/lib/supabaseData';
 import { Task, TaskStatus, TeamMember, DashboardNavItem, ProjectMetadata, Department, ReportSummaryField, HeaderBadge, BIMReview } from '@/lib/types';
 import { PRECINCTS, BIM_STAGE_OPTIONS } from '@/lib/constants';
 import TaskEditorModal from '@/components/admin/TaskEditorModal';
@@ -748,7 +749,7 @@ export default function AdminDashboardPage() {
 
 
   // Real-time metadata for Main Data tab
-  const [projectSnapshot, projectLoading] = useDocument(doc(db, 'settings', 'project'));
+  const [projectSnapshot, projectLoading] = useDocCompat('settings', 'project');
   const projectData = projectSnapshot?.data() as ProjectMetadata | undefined;
 
   const { showToast } = useToast();
@@ -758,12 +759,12 @@ export default function AdminDashboardPage() {
   const isAuthorized = userProfile?.isAdmin && isAdminSession;
 
   // Firestore Listeners (Gated for Security)
-  const [tasksSnapshot, tasksLoading, tasksError] = useCollection(isAuthorized ? collections.tasks : null);
-  const [registrySnapshot, registryLoading, registryError] = useCollection(isAuthorized ? collections.registry : null);
-  const [usersSnapshot, usersLoading, usersError] = useCollection(isAuthorized ? collections.users : null);
-  const [bimReviewsSnapshot, bimReviewsLoading, bimReviewsError] = useCollection(isAuthorized ? collections.bimReviews : null);
-  const [ticketsSnapshot, ticketsLoading] = useCollection(isAuthorized ? query(collection(db, 'tickets'), orderBy('createdAt', 'desc')) : null);
-  const [membersSnapshot, membersLoading, membersError] = useCollection(isAuthorized ? collections.members : null);
+  const [tasksSnapshot, tasksLoading, tasksError] = useCollectionCompat(isAuthorized ? 'tasks' : null);
+  const [registrySnapshot, registryLoading, registryError] = useCollectionCompat(isAuthorized ? 'registry' : null);
+  const [usersSnapshot, usersLoading, usersError] = useCollectionCompat(isAuthorized ? 'users' : null);
+  const [bimReviewsSnapshot, bimReviewsLoading, bimReviewsError] = useCollectionCompat(isAuthorized ? 'bimReviews' : null);
+  const [ticketsSnapshot, ticketsLoading] = useCollectionCompat(isAuthorized ? 'tickets' : null, { sortBy: 'createdAt', dir: 'desc' });
+  const [membersSnapshot, membersLoading, membersError] = useCollectionCompat(isAuthorized ? 'members' : null);
   
   // High-performance avatar lookups from BOTH collections
   const userAvatarByUid = useMemo(() => {
@@ -813,8 +814,8 @@ export default function AdminDashboardPage() {
   }, [usersSnapshot, membersSnapshot]);
 
 
-  const [broadcastsSnapshot, broadcastsLoading] = useCollection(isAuthorized ? query(collection(db, 'broadcasts'), orderBy('timestamp', 'desc')) : null);
-  const [departmentsSnapshot, departmentsLoading] = useCollection(isAuthorized ? query(collections.departments, orderBy('name', 'asc')) : null);
+  const [broadcastsSnapshot, broadcastsLoading] = useCollectionCompat(isAuthorized ? 'broadcasts' : null, { sortBy: 'timestamp', dir: 'desc' });
+  const [departmentsSnapshot, departmentsLoading] = useCollectionCompat(isAuthorized ? 'departments' : null, { sortBy: 'name', dir: 'asc' });
 
   // Selector state
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -2453,7 +2454,7 @@ export default function AdminDashboardPage() {
                         {activeTab === 'tasks' && tasksError && (
                           <tr>
                             <td colSpan={5} style={{ padding: '60px 40px', textAlign: 'center', color: 'var(--status-error)' }}>
-                              <p>Error querying tasks: {tasksError.message}</p>
+                              <p>Error querying tasks: {tasksError}</p>
                             </td>
                           </tr>
                         )}

@@ -42,13 +42,14 @@ export function rowToDoc<T = any>(row: any): T {
  * `docs` in sync via a Supabase Realtime subscription (refetches on any change).
  * RLS scopes what each authenticated user can see — identical to firestore.rules.
  */
-export function useSupabaseCollection<T = any>(collection: string) {
-  const table = TABLE[collection] || collection;
+export function useSupabaseCollection<T = any>(collection: string | null) {
+  const table = collection ? (TABLE[collection] || collection) : null;
   const [docs, setDocs] = useState<T[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!table);
   const [error, setError] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
+    if (!table) { setDocs([]); setLoading(false); return; }
     const { data, error } = await supabaseBrowser.from(table).select('*');
     if (error) { setError(error.message); setLoading(false); return; }
     setError(null);
@@ -57,6 +58,7 @@ export function useSupabaseCollection<T = any>(collection: string) {
   }, [table]);
 
   useEffect(() => {
+    if (!table) { setDocs([]); setLoading(false); return; }
     let active = true;
     fetchAll();
     const channel = supabaseBrowser
@@ -67,6 +69,36 @@ export function useSupabaseCollection<T = any>(collection: string) {
   }, [table, fetchAll]);
 
   return { docs, loading, error, refresh: fetchAll };
+}
+
+// ─── Firestore-snapshot-compatible hooks (drop-in for react-firebase-hooks) ──
+// Lets the existing UI keep using `snapshot.docs.map(d => ({ id: d.id, ...d.data() }))`.
+type SnapDoc<T> = { id: string; data: () => T };
+export interface CompatSnapshot<T = any> { docs: SnapDoc<T>[]; size: number; empty: boolean; }
+
+export function useCollectionCompat<T = any>(
+  collection: string | null,
+  opts?: { sortBy?: string; dir?: 'asc' | 'desc' },
+): [CompatSnapshot<T> | null, boolean, string | undefined] {
+  const { docs, loading, error } = useSupabaseCollection<any>(collection);
+  let rows = docs;
+  if (opts?.sortBy) {
+    const key = opts.sortBy; const dir = opts.dir === 'desc' ? -1 : 1;
+    rows = [...docs].sort((a, b) => (a?.[key] > b?.[key] ? dir : a?.[key] < b?.[key] ? -dir : 0));
+  }
+  const snapshot: CompatSnapshot<T> | null = collection
+    ? { docs: rows.map((d) => ({ id: d.id, data: () => d as T })), size: rows.length, empty: rows.length === 0 }
+    : null;
+  return [snapshot, loading, error || undefined];
+}
+
+export function useDocCompat<T = any>(
+  collection: string,
+  id: string,
+): [{ data: () => T | undefined; exists: boolean; id: string } | null, boolean] {
+  const { doc, loading } = useSupabaseDoc<any>(collection, id);
+  const snap = { id, exists: !!doc, data: () => (doc || undefined) as T | undefined };
+  return [snap, loading];
 }
 
 /** Live single document (e.g. settings/project). */
