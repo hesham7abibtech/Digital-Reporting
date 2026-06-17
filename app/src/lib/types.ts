@@ -129,6 +129,7 @@ export interface GroupPolicy {
     bimReviews: PolicyActions;
     homePage: PolicyActions;
     tickets: PolicyActions;
+    apiConnections?: PolicyActions;
   };
   createdAt: string;
   updatedAt: string;

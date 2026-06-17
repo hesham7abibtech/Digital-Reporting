@@ -8,3 +8,16 @@ pages_build_output_dir = ".vercel/output/static"
 NODE_VERSION = "20"
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "DigitalReporting"
 NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET = "DigitalReporting"
+OPENAI_BASE_URL = "https://gateway.ai.cloudflare.com/v1/491ec73c1ab258bd5678c1410e3e7fa1/open-ai/openai"
+
+# ── BIM Reviews Report · Notion integration (non-secret vars) ──
+# Notion API version (safe to commit). The BIM database id may also live here,
+# but is set as a secret below to keep this file free of project-specific ids.
+NOTION_VERSION = "2022-06-28"
+
+# SECRETS — never put these in this file. Set them out-of-band:
+#   Local dev   : add to app/.env.local (gitignored)
+#   Cloudflare  : npx wrangler pages secret put NOTION_TOKEN --project-name rehdigital
+#                 npx wrangler pages secret put NOTION_BIM_DATABASE_ID --project-name rehdigital
+#   Required    : NOTION_TOKEN, NOTION_BIM_DATABASE_ID
+#   Optional    : NOTION_BIM_PROPERTY_MAP  (JSON map of field -> Notion column name)

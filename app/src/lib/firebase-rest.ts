@@ -10,6 +10,61 @@ interface ServiceAccount {
   client_email: string;
 }
 
+// ─── Firestore <-> JSON value mapping ─────────────────────────────
+// Handles the full set of types we persist (incl. arrays like BIMReview.Precinct,
+// nested objects, and Date/timestamps) which the previous inline mapper did not.
+
+export function toFirestoreValue(val: unknown): any {
+  if (val === null || val === undefined) return { nullValue: null };
+  if (typeof val === 'boolean') return { booleanValue: val };
+  if (typeof val === 'number') {
+    return Number.isInteger(val)
+      ? { integerValue: String(val) }
+      : { doubleValue: val };
+  }
+  if (typeof val === 'string') return { stringValue: val };
+  if (val instanceof Date) return { timestampValue: val.toISOString() };
+  if (Array.isArray(val)) {
+    return { arrayValue: { values: val.map(toFirestoreValue) } };
+  }
+  if (typeof val === 'object') {
+    return { mapValue: { fields: toFirestoreFields(val as Record<string, unknown>) } };
+  }
+  // Fallback: stringify anything exotic
+  return { stringValue: String(val) };
+}
+
+export function toFirestoreFields(data: Record<string, unknown>): Record<string, any> {
+  const fields: Record<string, any> = {};
+  for (const [key, val] of Object.entries(data)) {
+    if (val === undefined) continue; // skip undefined so we never write garbage
+    fields[key] = toFirestoreValue(val);
+  }
+  return fields;
+}
+
+export function fromFirestoreValue(val: any): unknown {
+  if (val == null) return null;
+  if ('nullValue' in val) return null;
+  if ('booleanValue' in val) return val.booleanValue;
+  if ('integerValue' in val) return Number(val.integerValue);
+  if ('doubleValue' in val) return val.doubleValue;
+  if ('stringValue' in val) return val.stringValue;
+  if ('timestampValue' in val) return val.timestampValue; // keep ISO string
+  if ('referenceValue' in val) return val.referenceValue;
+  if ('arrayValue' in val) return (val.arrayValue?.values ?? []).map(fromFirestoreValue);
+  if ('mapValue' in val) return fromFirestoreFields(val.mapValue?.fields ?? {});
+  return null;
+}
+
+export function fromFirestoreFields(fields: Record<string, any> = {}): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(fields)) {
+    out[key] = fromFirestoreValue(val);
+  }
+  return out;
+}
+
 export class FirebaseRest {
   private projectId = "keodigitalreporting";
   private accessToken: string | null = null;
@@ -118,26 +173,66 @@ export class FirebaseRest {
   async firestoreAdd(collection: string, data: any) {
     const token = await this.getAccessToken();
     const url = `https://firestore.googleapis.com/v1/projects/${this.projectId}/databases/(default)/documents/${collection}`;
-    
-    // Map JSON to Firestore REST format
-    const fields: any = {};
-    for (const [key, val] of Object.entries(data)) {
-      if (val === null) fields[key] = { nullValue: null };
-      else if (typeof val === 'string') fields[key] = { stringValue: val };
-      else if (typeof val === 'number') fields[key] = { doubleValue: val };
-      else if (typeof val === 'boolean') fields[key] = { booleanValue: val };
-      // Note: serverTimestamp is handled differently in REST, usually by leaving it out or using a specific string if the receiver supports it.
-      // For simplicity, we'll use ISO string here unless we implement full mapping.
-    }
 
     const res = await fetch(url, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields })
+      body: JSON.stringify({ fields: toFirestoreFields(data) })
     });
 
     if (!res.ok) throw new Error(`Add failed: ${await res.text()}`);
     return await res.json();
+  }
+
+  /**
+   * Create or update a document at a fixed path.
+   * merge=true (default) only writes the supplied fields (via updateMask), leaving
+   * other fields intact. merge=false overwrites the whole document.
+   */
+  async firestoreSet(path: string, data: Record<string, unknown>, merge = true) {
+    const token = await this.getAccessToken();
+    let url = `https://firestore.googleapis.com/v1/projects/${this.projectId}/databases/(default)/documents/${path}`;
+
+    if (merge) {
+      // updateMask ensures unspecified fields are preserved (true merge semantics).
+      const mask = Object.keys(data)
+        .map((k) => `updateMask.fieldPaths=${encodeURIComponent(k)}`)
+        .join('&');
+      if (mask) url += `?${mask}`;
+    }
+
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: toFirestoreFields(data) })
+    });
+
+    if (!res.ok) throw new Error(`Set failed: ${await res.text()}`);
+    return await res.json();
+  }
+
+  /**
+   * List every document in a collection (paginated), returning parsed `{ id, ...data }`.
+   */
+  async firestoreList(collection: string): Promise<Array<Record<string, unknown> & { id: string }>> {
+    const token = await this.getAccessToken();
+    const base = `https://firestore.googleapis.com/v1/projects/${this.projectId}/databases/(default)/documents/${collection}`;
+    const out: Array<Record<string, unknown> & { id: string }> = [];
+    let pageToken: string | undefined;
+
+    do {
+      const url = `${base}?pageSize=300${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error(`List failed: ${await res.text()}`);
+      const data = await res.json();
+      for (const doc of data.documents ?? []) {
+        const id = String(doc.name || '').split('/').pop() || '';
+        out.push({ id, ...fromFirestoreFields(doc.fields ?? {}) });
+      }
+      pageToken = data.nextPageToken;
+    } while (pageToken);
+
+    return out;
   }
 
   async firestoreDelete(path: string) {

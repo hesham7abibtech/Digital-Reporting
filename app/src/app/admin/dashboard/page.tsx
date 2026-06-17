@@ -57,7 +57,8 @@ import {
   UserPlus,
   Tag,
   UserCheck,
-  ExternalLink
+  ExternalLink,
+  Plug
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -90,6 +91,9 @@ import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import BlockUserModal from '@/components/admin/BlockUserModal';
 import HeaderBgCropper from '@/components/admin/HeaderBgCropper';
 import HomePageEditor from '@/components/admin/HomePageEditor';
+import BimDataSourcePanel from '@/components/admin/BimDataSourcePanel';
+import ApiConnectionsPanel from '@/components/admin/ApiConnectionsPanel';
+import TabLoader from '@/components/admin/TabLoader';
 import { getApiEndpoint } from '@/lib/apiConfig';
 import { parseBimReviewsExcel, generateBimReviewId } from '@/lib/bimImportUtils';
 
@@ -638,7 +642,17 @@ export default function AdminDashboardPage() {
     }
   }, [userProfile, router]);
 
-  const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'branding' | 'registry' | 'users' | 'policies' | 'communications' | 'reports' | 'bim-reviews' | 'homepage' | 'tickets'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'branding' | 'registry' | 'users' | 'policies' | 'communications' | 'reports' | 'bim-reviews' | 'homepage' | 'tickets' | 'api-connections'>('tasks');
+  const [tabLoading, setTabLoading] = useState(false);
+  const tabLoadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Premium transition: briefly show the REH Digital loader over the content area on tab switch.
+  const switchTab = (id: string) => {
+    if (id === activeTab) return;
+    if (tabLoadTimer.current) clearTimeout(tabLoadTimer.current);
+    setTabLoading(true);
+    setActiveTab(id as any);
+    tabLoadTimer.current = setTimeout(() => setTabLoading(false), 650);
+  };
   const [taskImportConfirm, setTaskImportConfirm] = useState<{ isOpen: boolean; records: Task[] }>({ isOpen: false, records: [] });
   const [isTaskImportLoading, setIsTaskImportLoading] = useState(false);
   const taskFileInputRef = useRef<HTMLInputElement>(null);
@@ -1813,14 +1827,15 @@ export default function AdminDashboardPage() {
               { id: 'homepage', label: 'Home Page CMS', icon: LayoutDashboard, permission: 'homePage' },
               { id: 'communications', label: 'Communications', icon: Megaphone, permission: 'broadcast' },
               { id: 'tickets', label: 'Access Tickets', icon: Inbox, permission: 'tickets' },
-              { id: 'users', label: 'Access Control', icon: Shield, permission: 'users' }
+              { id: 'users', label: 'Access Control', icon: Shield, permission: 'users' },
+              { id: 'api-connections', label: 'API Connections', icon: Plug, permission: 'users' }
             ].map((tab) => {
               if (tab.permission && !can(tab.permission as any, 'view')) return null;
               const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => switchTab(tab.id)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 16,
                     background: isActive ? 'rgba(208, 171, 130, 0.1)' : 'transparent',
@@ -1907,14 +1922,16 @@ export default function AdminDashboardPage() {
             </div>
           </header>
 
-          <main style={{ 
-            padding: '24px 32px', 
-            flex: 1, 
-            overflowY: 'auto', 
-            overflowX: 'hidden', 
+          <main style={{
+            padding: '24px 32px',
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
             height: 'calc(100vh - 72px)',
-            background: 'transparent' 
+            background: 'transparent',
+            position: 'relative'
           }}>
+            {tabLoading && <TabLoader />}
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -1938,7 +1955,7 @@ export default function AdminDashboardPage() {
                   }}>
                     <div>
                       <h2 style={{ fontSize: 13, fontWeight: 900, color: 'var(--teal)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                        {activeTab === 'users' ? 'Security & Identity Management' : activeTab === 'team' ? 'Project Resource Management' : activeTab === 'tasks' ? 'Deliverable Submission Pipeline' : activeTab === 'bim-reviews' ? 'BIM Strategic Review Matrix' : activeTab === 'branding' ? 'Identity & Visual Asset CMS' : activeTab === 'reports' ? 'Global Reporting Protocols' : activeTab === 'communications' ? 'Network Communications & Broadcasts' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1) + ' Intelligence'}
+                        {activeTab === 'users' ? 'Security & Identity Management' : activeTab === 'team' ? 'Project Resource Management' : activeTab === 'tasks' ? 'Deliverable Submission Pipeline' : activeTab === 'bim-reviews' ? 'BIM Strategic Review Matrix' : activeTab === 'branding' ? 'Identity & Visual Asset CMS' : activeTab === 'reports' ? 'Global Reporting Protocols' : activeTab === 'communications' ? 'Network Communications & Broadcasts' : activeTab === 'api-connections' ? 'API Connections & Integrations' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1) + ' Intelligence'}
                       </h2>
                       <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: '4px 0 0 0', fontWeight: 600, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
                         {activeTab === 'bim-reviews' ? 'Strategic oversight of cross-project BIM submission reviews and status tracking' : activeTab === 'users' ? 'Management of security clearances and administrative roles' : activeTab === 'branding' ? 'Configuration of project branding and site-wide metadata' : activeTab === 'communications' ? 'Dispatch real-time broadcasts and premium SMTP mail notifications' : 'Real-time synchronization with Digital Workflow Systems'}
@@ -1948,7 +1965,7 @@ export default function AdminDashboardPage() {
                   <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, position: 'relative' }}>
                     {/* Left: Search Box */}
                     <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-                      {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'communications' && (
+                      {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'communications' && activeTab !== 'api-connections' && (
                         <div style={{ position: 'relative' }}>
                           <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(0, 63, 73, 0.4)' }} />
                           <input
@@ -2216,9 +2233,12 @@ export default function AdminDashboardPage() {
                       )}
                     </div>
                   )}
-                  <div style={{ overflowX: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'communications' || activeTab === 'homepage') ? 'hidden' : 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'communications' || activeTab === 'homepage') ? 'fixed' : 'auto' }}>
-                      {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'communications' && activeTab !== 'homepage' && !(activeTab === 'users' && activeSubTab === 'policies') && (
+                  {activeTab === 'bim-reviews' && (
+                    <BimDataSourcePanel showToast={showToast} />
+                  )}
+                  <div style={{ overflowX: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'communications' || activeTab === 'homepage' || activeTab === 'api-connections') ? 'hidden' : 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'communications' || activeTab === 'homepage' || activeTab === 'api-connections') ? 'fixed' : 'auto' }}>
+                      {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'communications' && activeTab !== 'homepage' && activeTab !== 'api-connections' && !(activeTab === 'users' && activeSubTab === 'policies') && (
                         <thead style={{ background: 'transparent', borderBottom: '2px solid var(--border)' }}>
                           <tr>
                             <th style={{ width: 80, padding: '16px 0', textAlign: 'center' }}>
@@ -4177,6 +4197,13 @@ export default function AdminDashboardPage() {
                           <tr style={{ background: 'transparent' }}>
                             <td colSpan={5} style={{ padding: '40px' }}>
                               <HomePageEditor showToast={showToast} />
+                            </td>
+                          </tr>
+                        )}
+                        {activeTab === 'api-connections' && (
+                          <tr style={{ background: 'transparent' }}>
+                            <td colSpan={5} style={{ padding: '0 24px 28px' }}>
+                              <ApiConnectionsPanel showToast={showToast} />
                             </td>
                           </tr>
                         )}

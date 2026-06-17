@@ -55,6 +55,8 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: NextRequest) {
+  let cfColo = 'UNKNOWN';
+  let activeBaseURL: string | undefined;
   try {
     // 1. Authentication Check
     const authHeader = req.headers.get('Authorization');
@@ -104,24 +106,29 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Parse and validate the payload
-    const { messages } = await req.json();
+    const { messages, userName } = await req.json();
     if (!messages || !Array.isArray(messages)) {
       const res = NextResponse.json({ error: 'Bad Request: Missing messages array' }, { status: 400 });
       return handleCors(res);
     }
 
+    const dbUserName = userData?.fields?.name?.stringValue;
+    const finalUserName = userName || dbUserName || 'User';
+
     // 4. Retrieve Cloudflare request context to read bindings/env variables
     let cloudflareKey: string | undefined;
     let cloudflareBaseURL: string | undefined;
+    let cloudflareAigToken: string | undefined;
     
     // Log Edge Colo location to help debug routing
-    const cfColo = req.headers.get('cf-ray')?.split('-')?.[1] || 'UNKNOWN';
+    cfColo = req.headers.get('cf-ray')?.split('-')?.[1] || 'UNKNOWN';
     console.log(`[API Chat Info]: Executing in Cloudflare Colo: ${cfColo}`);
 
     try {
       const ctx = getRequestContext();
       cloudflareKey = ctx.env?.OPENAI_API_KEY as string | undefined;
       cloudflareBaseURL = ctx.env?.OPENAI_BASE_URL as string | undefined;
+      cloudflareAigToken = ctx.env?.CLOUDFLARE_AIG_TOKEN as string | undefined;
     } catch (e) {
       // Outside Cloudflare pages runtime (local development)
     }
@@ -132,7 +139,11 @@ export async function POST(req: NextRequest) {
 
     const globalBaseURL = (globalThis as any).OPENAI_BASE_URL as string | undefined;
     const processBaseURL = process.env.OPENAI_BASE_URL;
-    const activeBaseURL = cloudflareBaseURL || globalBaseURL || processBaseURL;
+    activeBaseURL = cloudflareBaseURL || globalBaseURL || processBaseURL;
+
+    const globalAigToken = (globalThis as any).CLOUDFLARE_AIG_TOKEN as string | undefined;
+    const processAigToken = process.env.CLOUDFLARE_AIG_TOKEN;
+    const activeAigToken = cloudflareAigToken || globalAigToken || processAigToken;
 
     if (!activeBaseURL) {
       console.warn('[API Chat WARNING]: OPENAI_BASE_URL is NOT configured. Requests will go directly to api.openai.com and may be blocked in certain regions. Set up a Cloudflare AI Gateway and add OPENAI_BASE_URL to your Pages environment variables for worldwide access.');
@@ -145,6 +156,7 @@ export async function POST(req: NextRequest) {
       hasCloudflareBaseURL: !!cloudflareBaseURL,
       hasGlobalBaseURL: !!globalBaseURL,
       hasProcessBaseURL: !!processBaseURL,
+      hasAigToken: !!activeAigToken,
       resolvedBaseURL: activeBaseURL ? '(configured)' : 'NONE - direct to OpenAI',
       colo: cfColo
     });
@@ -161,7 +173,7 @@ export async function POST(req: NextRequest) {
       setTimeout(() => reject(new Error('AI assistant response timed out. Please try again.')), timeoutDuration)
     );
 
-    const executionPromise = runAgent(messages, activeKey, activeBaseURL);
+    const executionPromise = runAgent(messages, activeKey, activeBaseURL, finalUserName, activeAigToken);
     const { outputText, updatedHistory } = await Promise.race([executionPromise, timeoutPromise]);
 
     const res = NextResponse.json({

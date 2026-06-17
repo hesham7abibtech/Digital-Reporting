@@ -114,6 +114,13 @@ service cloud.firestore {
       allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
     }
 
+    // Integration Secrets (e.g. Notion token) — NO client access at all.
+    // The server reads/writes these via the service-account REST API, which
+    // bypasses these rules. This keeps secrets out of every browser.
+    match /secrets/{docId} {
+      allow read, write: if false;
+    }
+
     // Global Fallback (Admin-only catch-all)
     match /{document=**} {
       allow read, write: if isAdmin();

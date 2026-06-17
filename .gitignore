@@ -34,3 +34,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# migration staging (contains exported PII + service-account keys — never commit)
+scratch/
+**/scratch/
+supabase/.temp/
