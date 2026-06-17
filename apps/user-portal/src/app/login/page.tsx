@@ -74,7 +74,8 @@ function LoginContent() {
     if (!email) { setCooldownUntil(0); return; }
     try {
       const v = parseInt(localStorage.getItem(cooldownKey(email)) || '0', 10);
-      setCooldownUntil(v > Date.now() ? v : 0);
+      // Cap any stale stored value to the current throttle window.
+      setCooldownUntil(v > Date.now() ? Math.min(v, Date.now() + SEND_INTERVAL_MS) : 0);
     } catch { /* ignore */ }
   }, [email]);
 
@@ -136,7 +137,8 @@ function LoginContent() {
   };
 
   const sendSetPasswordEmail = async (kind: 'migration' | 'reset') => {
-    if (cooldownLeft > 0) { setError(`Please wait ${fmtRemaining(cooldownLeft)} before requesting another one-time password.`); return; }
+    // Cooldown only applies to the dedicated reset-password form.
+    if (kind === 'reset' && cooldownLeft > 0) { setError(`Please wait ${fmtRemaining(cooldownLeft)} before requesting another one-time password.`); return; }
     setError(''); setIsSubmitting(true);
     try {
       const domain = email.split('@')[1]?.toLowerCase();
@@ -150,7 +152,7 @@ function LoginContent() {
         throw new Error(out.error || 'Could not send the one-time password.');
       }
       setEmailSent(kind);
-      startCooldown(SEND_INTERVAL_MS); // light throttle to prevent spamming the relay
+      if (kind === 'reset') startCooldown(SEND_INTERVAL_MS); // throttle the reset form only
     } catch (err: any) {
       setError(err?.message || 'Could not send the one-time password. Try again.');
     } finally {
@@ -275,19 +277,19 @@ function LoginContent() {
               </motion.div>
             )}
 
-            {/* Live email rate-limit countdown */}
-            {cooldownLeft > 0 && (
+            {/* Live cooldown countdown — RESET PASSWORD form only */}
+            {mode === 'forgot-password' && cooldownLeft > 0 && (
               <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(0,63,73,0.05)', border: '1px solid rgba(0,63,73,0.18)', color: TEAL, fontSize: 12, fontWeight: 700, display: 'flex', gap: 10, alignItems: 'center' }}>
                 <Loader2 size={14} className="animate-spin" style={{ flexShrink: 0 }} />
-                <span style={{ lineHeight: 1.4 }}>Email limit reached. You can request another link in <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtRemaining(cooldownLeft)}</strong>.</span>
+                <span style={{ lineHeight: 1.4 }}>Email limit reached. You can request another one-time password in <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtRemaining(cooldownLeft)}</strong>.</span>
               </motion.div>
             )}
 
             {/* Migration hint after a failed login */}
             {migrationHint && mode === 'login' && (
-              <button type="button" onClick={() => sendSetPasswordEmail('migration')} disabled={cooldownLeft > 0}
-                style={{ padding: '11px 14px', borderRadius: 12, background: 'rgba(0,63,73,0.05)', border: '1px dashed rgba(0,63,73,0.25)', color: TEAL, fontSize: 12, fontWeight: 800, cursor: cooldownLeft > 0 ? 'not-allowed' : 'pointer', opacity: cooldownLeft > 0 ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                <KeyRound size={14} /> {cooldownLeft > 0 ? `Try again in ${fmtRemaining(cooldownLeft)}` : 'First sign-in since our security upgrade? Set your password'}
+              <button type="button" onClick={() => sendSetPasswordEmail('migration')}
+                style={{ padding: '11px 14px', borderRadius: 12, background: 'rgba(0,63,73,0.05)', border: '1px dashed rgba(0,63,73,0.25)', color: TEAL, fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <KeyRound size={14} /> First sign-in since our security upgrade? Set your password
               </button>
             )}
 
@@ -298,7 +300,7 @@ function LoginContent() {
             )}
 
             <button type="submit" disabled={isSubmitting || (mode === 'forgot-password' && cooldownLeft > 0)} style={{ width: 'fit-content', padding: '12px 40px', borderRadius: 12, marginTop: 4, background: TEAL, color: '#fff', fontSize: 13, fontWeight: 900, border: 'none', cursor: (isSubmitting || (mode === 'forgot-password' && cooldownLeft > 0)) ? 'not-allowed' : 'pointer', opacity: (mode === 'forgot-password' && cooldownLeft > 0) ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 8px 24px rgba(0,63,73,0.15)', textTransform: 'uppercase', letterSpacing: '0.1em', alignSelf: 'center' }}>
-              {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : mode === 'login' ? <>Sign In <ChevronRight size={18} /></> : mode === 'register' ? <>Create Account <UserPlus size={18} /></> : (cooldownLeft > 0 ? <>Try again in {fmtRemaining(cooldownLeft)}</> : <>Email Secure Link <ChevronRight size={18} /></>)}
+              {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : mode === 'login' ? <>Sign In <ChevronRight size={18} /></> : mode === 'register' ? <>Create Account <UserPlus size={18} /></> : (cooldownLeft > 0 ? <>Try again in {fmtRemaining(cooldownLeft)}</> : <>Email One-Time Password <ChevronRight size={18} /></>)}
             </button>
           </form>
 
