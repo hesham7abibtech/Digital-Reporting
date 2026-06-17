@@ -19,7 +19,7 @@ if (typeof globalThis.CustomEvent === 'undefined') {
 }
 
 import { NextRequest, NextResponse } from 'next/server';
-import { firebaseRest } from '@/lib/firebase-rest';
+import { verifyUser, AuthError } from '@/lib/adminAuth';
 import { runAgent } from '@/services/ai-agent';
 import { getRequestContext } from '@cloudflare/next-on-pages';
 
@@ -58,44 +58,20 @@ export async function POST(req: NextRequest) {
   let cfColo = 'UNKNOWN';
   let activeBaseURL: string | undefined;
   try {
-    // 1. Authentication Check
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      const res = NextResponse.json({ error: 'Unauthorized: Missing token' }, { status: 401 });
+    // 1. Authentication + profile (Supabase)
+    let profile: Record<string, any>;
+    try {
+      const vu = await verifyUser(req);
+      profile = vu.profile;
+    } catch (e: any) {
+      const res = NextResponse.json({ error: e instanceof AuthError ? e.message : 'Unauthorized' }, { status: e?.status || 401 });
       return handleCors(res);
     }
 
-    const token = authHeader.split('Bearer ')[1];
-    const uid = await verifyTokenLocally(token);
-
-    if (!uid) {
-      const res = NextResponse.json({ error: 'Unauthorized: Invalid credentials' }, { status: 401 });
-      return handleCors(res);
-    }
-
-    // 2. Fetch user status from Firestore REST to verify approval, verification, and active status
-    let userData = await firebaseRest.firestoreGet(`users/${uid}`);
-    if (!userData || !userData.fields) {
-      const isLocalhost = req.nextUrl.hostname === 'localhost' || req.nextUrl.hostname === '127.0.0.1';
-      if (process.env.NODE_ENV === 'development' || isLocalhost) {
-        console.log(`[API Chat Debug]: User profile not found in Firestore for UID ${uid}. Falling back to default approved user in development.`);
-        userData = {
-          fields: {
-            isApproved: { booleanValue: true },
-            isVerified: { booleanValue: true },
-            status: { stringValue: 'ACTIVE' }
-          }
-        };
-      } else {
-        const res = NextResponse.json({ error: 'Unauthorized: User profile not found' }, { status: 401 });
-        return handleCors(res);
-      }
-    }
-
-    const fields = userData.fields;
-    const isApproved = fields.isApproved?.booleanValue === true || fields.isAdmin?.booleanValue === true;
-    const isVerified = fields.isVerified?.booleanValue === true;
-    const isSuspended = fields.status?.stringValue === 'SUSPENDED';
+    // 2. Verify approval, verification, and active status
+    const isApproved = profile.is_approved === true || profile.is_admin === true;
+    const isVerified = profile.is_verified === true;
+    const isSuspended = profile.status === 'SUSPENDED';
 
     if (!isApproved || !isVerified || isSuspended) {
       const res = NextResponse.json(
@@ -112,8 +88,7 @@ export async function POST(req: NextRequest) {
       return handleCors(res);
     }
 
-    const dbUserName = userData?.fields?.name?.stringValue;
-    const finalUserName = userName || dbUserName || 'User';
+    const finalUserName = userName || profile?.name || 'User';
 
     // 4. Retrieve Cloudflare request context to read bindings/env variables
     let cloudflareKey: string | undefined;

@@ -1,61 +1,43 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { firebaseRest } from '@/lib/firebase-rest';
+import { NextRequest } from 'next/server';
+import { verifyAdmin, authErrorResponse } from '@/lib/adminAuth';
+import { getSupabaseAdmin } from '@/lib/supabase';
 
 export const runtime = 'edge';
 
+/**
+ * Admin user actions — Supabase only. Block/unblock via GoTrue ban_duration;
+ * delete removes the auth user + profile row. Admin-gated.
+ */
 export async function POST(req: NextRequest) {
   try {
+    await verifyAdmin(req);
     const { action, uid } = await req.json();
-    const authHeader = req.headers.get('Authorization');
+    if (!uid) return Response.json({ error: 'uid required' }, { status: 400 });
+    const sb = getSupabaseAdmin();
 
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized: Missing token' }, { status: 401 });
-    }
+    // Read current profile data so we can merge the status into the jsonb doc.
+    const { data: row } = await sb.from('users').select('data').eq('id', uid).maybeSingle();
+    const data = ((row?.data as any) || {});
+    const now = new Date().toISOString();
 
-    const token = authHeader.split('Bearer ')[1];
-    
-    // 1. Verify the requester is an Admin/Owner via Firestore REST
-    // Note: We use the token to verify the user indirectly or use the Admin REST to check the user record
-    const requesterUid = await verifyTokenLocally(token); // Simplified verification or use Admin REST
-    
-    const requesterData = await firebaseRest.firestoreGet(`users/${requesterUid}`);
-    const userData = requesterData?.fields;
-
-    if (!userData?.isAdmin?.booleanValue && userData?.role?.stringValue !== 'OWNER') {
-      return NextResponse.json({ error: 'Forbidden: Insufficient permissions' }, { status: 403 });
-    }
-
-    // 2. Perform Action
     switch (action) {
       case 'block':
-        await firebaseRest.authUpdateUser(uid, { disabled: true });
+        await sb.auth.admin.updateUserById(uid, { ban_duration: '876000h' });
+        await sb.from('users').update({ status: 'SUSPENDED', data: { ...data, status: 'SUSPENDED', updatedAt: now } }).eq('id', uid);
         break;
       case 'unblock':
-        await firebaseRest.authUpdateUser(uid, { disabled: false });
+        await sb.auth.admin.updateUserById(uid, { ban_duration: 'none' });
+        await sb.from('users').update({ status: 'ACTIVE', data: { ...data, status: 'ACTIVE', updatedAt: now } }).eq('id', uid);
         break;
       case 'delete':
-        await firebaseRest.authDeleteUser(uid);
-        await firebaseRest.firestoreDelete(`users/${uid}`);
+        await sb.from('users').delete().eq('id', uid);
+        try { await sb.auth.admin.deleteUser(uid); } catch (e) { console.error('[admin/users] auth delete:', e); }
         break;
       default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+        return Response.json({ error: 'Invalid action' }, { status: 400 });
     }
-
-    return NextResponse.json({ success: true });
-  } catch (err: any) {
-    console.error('[API] Admin User Action Error:', err);
-    return NextResponse.json({ error: err.message || 'Action failed' }, { status: 500 });
+    return Response.json({ success: true });
+  } catch (err) {
+    return authErrorResponse(err);
   }
 }
-
-async function verifyTokenLocally(token: string) {
-  // In a real Edge environment, you'd verify the JWT signature. 
-  // For now, we'll extract the UID from the payload (unsafe if not verified, but we assume the token is valid from the client)
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.user_id || payload.sub;
-  } catch (e) {
-    throw new Error('Invalid token format');
-  }
-}
-

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { firebaseRest } from '@/lib/firebase-rest';
+import { getSupabaseAdmin } from '@/lib/supabase';
 import { mailService } from '@/services/MailService';
 
 export const runtime = 'edge';
@@ -12,21 +12,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email and notes are required' }, { status: 400 });
     }
 
-    // 1. Create Ticket in Firestore via REST (Bypassing Rules via Admin Auth)
-    const ticketRef = await firebaseRest.firestoreAdd('tickets', {
-      email: email,
-      type: 'REVOCATION_APPEAL',
-      reason: 'Revision Request for Blocked Account',
-      message: notes,
-      status: 'OPEN',
-      priority: 'HIGH',
-      createdAt: new Date().toISOString(), // REST doesn't support FieldValue.serverTimestamp easily
-      metadata: {
-        originalReason,
-        originalDuration,
-        source: 'LOGIN_PORTAL_APPEAL'
-      }
-    });
+    // 1. Create the appeal ticket in Supabase (service_role bypasses RLS)
+    const now = new Date().toISOString();
+    const ticketId = `DR-${Date.now().toString(36).toUpperCase()}`;
+    const ticket = {
+      id: ticketId, email, type: 'REVOCATION_APPEAL',
+      reason: 'Revision Request for Blocked Account', message: notes,
+      status: 'OPEN', priority: 'HIGH', createdAt: now, updatedAt: now,
+      metadata: { originalReason, originalDuration, source: 'LOGIN_PORTAL_APPEAL' },
+    };
+    const sb = getSupabaseAdmin();
+    await sb.from('tickets').insert({ id: ticketId, email, status: 'OPEN', data: ticket, created_at: now, updated_at: now });
 
     // 2. Notify User
     try {
@@ -60,7 +56,7 @@ export async function POST(req: NextRequest) {
       console.error('Admin notification failed:', e);
     }
 
-    return NextResponse.json({ success: true, ticketId: ticketRef.name.split('/').pop() });
+    return NextResponse.json({ success: true, ticketId });
   } catch (error: any) {
     console.error('Appeal submission API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
