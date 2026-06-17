@@ -65,9 +65,12 @@ function ResetPasswordContent() {
       // Replace the recovery session with a clean, full session using the new
       // credentials — the recovery JWT still carries the stale `must_set_password`
       // claim, so without this the user can be re-prompted to set a password.
-      await supabaseBrowser.auth.signInWithPassword({ email, password: newPassword }).catch(() => {});
+      // Then mark the dashboard session so the user CONTINUES straight in
+      // (the dashboard guard requires this flag) instead of bouncing to /login.
+      const { error: signInErr } = await supabaseBrowser.auth.signInWithPassword({ email, password: newPassword });
+      if (!signInErr && typeof window !== 'undefined') sessionStorage.setItem('dashboard_session', 'active');
       setStatus('success');
-      setTimeout(() => router.push('/dashboard'), 3200);
+      setTimeout(() => router.push(signInErr ? '/login' : '/dashboard'), 3200);
     } catch (err: any) {
       setStatus('error');
       setError(err.message || 'Failed to set password. Please try again.');
