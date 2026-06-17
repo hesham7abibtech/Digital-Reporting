@@ -20,6 +20,14 @@ build/
 *.pem
 setup_git.bat
 
+# local IDE / agent state (never commit)
+.claude/
+.continue/
+.windsurf/
+.firebase/
+.idea/
+.vscode/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
