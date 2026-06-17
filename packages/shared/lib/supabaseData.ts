@@ -1,7 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabaseBrowser } from './supabase';
+
+// Monotonic id so every hook instance gets its OWN realtime channel topic.
+// supabase-js dedupes channels by topic — a shared topic returns an already
+// `subscribe()`d channel, and adding `.on('postgres_changes')` to it throws.
+let __channelSeq = 0;
 
 /**
  * Supabase data layer — realtime reads + writes for the app, replacing the
@@ -48,6 +53,9 @@ export function useSupabaseCollection<T = any>(collection: string | null) {
   const [loading, setLoading] = useState(!!table);
   const [error, setError] = useState<string | null>(null);
 
+  const seqRef = useRef<number>(0);
+  if (seqRef.current === 0) seqRef.current = ++__channelSeq;
+
   const fetchAll = useCallback(async () => {
     if (!table) { setDocs([]); setLoading(false); return; }
     const { data, error } = await supabaseBrowser.from(table).select('*');
@@ -62,7 +70,7 @@ export function useSupabaseCollection<T = any>(collection: string | null) {
     let active = true;
     fetchAll();
     const channel = supabaseBrowser
-      .channel(`rt:${table}`)
+      .channel(`rt:${table}:${seqRef.current}`)
       .on('postgres_changes', { event: '*', schema: 'public', table }, () => { if (active) fetchAll(); })
       .subscribe();
     return () => { active = false; supabaseBrowser.removeChannel(channel); };
@@ -107,6 +115,9 @@ export function useSupabaseDoc<T = any>(collection: string, id: string) {
   const [doc, setDoc] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const seqRef = useRef<number>(0);
+  if (seqRef.current === 0) seqRef.current = ++__channelSeq;
+
   const fetchOne = useCallback(async () => {
     const { data } = await supabaseBrowser.from(table).select('*').eq('id', id).maybeSingle();
     setDoc(data ? rowToDoc<T>(data) : null);
@@ -117,7 +128,7 @@ export function useSupabaseDoc<T = any>(collection: string, id: string) {
     let active = true;
     fetchOne();
     const channel = supabaseBrowser
-      .channel(`rt:${table}:${id}`)
+      .channel(`rt:${table}:${id}:${seqRef.current}`)
       .on('postgres_changes', { event: '*', schema: 'public', table, filter: `id=eq.${id}` }, () => { if (active) fetchOne(); })
       .subscribe();
     return () => { active = false; supabaseBrowser.removeChannel(channel); };
