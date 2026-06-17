@@ -28,12 +28,20 @@ class MailService {
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Relay communication failed');
-      }
+      // The relay should always return JSON. If it returns HTML (nginx 502,
+      // Cloudflare error page, wrong URL…) surface a clear status instead of a
+      // confusing "Unexpected token '<'" JSON parse error.
+      const raw = await response.text();
+      let parsed: any = null;
+      try { parsed = raw ? JSON.parse(raw) : null; } catch { /* non-JSON */ }
 
-      return await response.json();
+      if (!response.ok) {
+        throw new Error(parsed?.error || `Mail relay error ${response.status} ${response.statusText}`.trim());
+      }
+      if (parsed == null) {
+        throw new Error(`Mail relay returned a non-JSON response (status ${response.status}) — check NEXT_PUBLIC_SMTP_RELAY_URL/SMTP_RELAY_URL and that the relay is reachable.`);
+      }
+      return parsed;
     } catch (error) {
       console.error(`[MAIL_SERVICE] [${endpoint}] Error:`, error);
       throw error;

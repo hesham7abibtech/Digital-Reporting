@@ -26,8 +26,11 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'This account does not exist.', code: 'NOT_FOUND' }, { status: 404 });
     }
 
-    const r = await issueOtp(sb, { id: acct.id, email, name: acct.name }, true);
-    if (!r.ok) return Response.json({ error: r.error || 'Could not issue one-time password.' }, { status: 500 });
+    // requireEmail: don't change the password unless the OTP email actually sent.
+    const r = await issueOtp(sb, { id: acct.id, email, name: acct.name }, true, { requireEmail: true });
+    if (!r.ok) {
+      return Response.json({ error: r.error || 'Could not send the one-time password.', emailError: r.emailError }, { status: 502 });
+    }
     return Response.json({ success: true, emailed: r.emailed, emailError: r.emailError });
   } catch (e: any) {
     return Response.json({ error: e?.message || 'Request failed' }, { status: 500 });
