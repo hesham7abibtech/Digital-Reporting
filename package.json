@@ -7,8 +7,10 @@
     "apps/*"
   ],
   "scripts": {
+    "dev": "concurrently -k -n user,console -c cyan,magenta \"npm run dev:user\" \"npm run dev:console\"",
     "dev:user": "npm run dev -w @reh/user-portal",
     "dev:console": "npm run dev -w @reh/console-portal",
+    "build": "npm run build:user && npm run build:console",
     "build:user": "npm run build -w @reh/user-portal",
     "build:console": "npm run build -w @reh/console-portal",
     "lint": "npm run lint --workspaces --if-present",
@@ -17,6 +19,7 @@
     "postinstall": "node scripts/patch-openai-agents.mjs"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "typescript": "^5"
   }
 }
