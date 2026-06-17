@@ -124,9 +124,9 @@ function ResetPasswordContent() {
                 </h1>
                 {isMigration ? (
                   <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6, margin: 0 }}>
-                    We&apos;ve upgraded our platform to a faster, more secure system — sorry for the one-time step.
-                    Please set your password for <strong style={{ color: TEAL }}>{email}</strong>.
-                    <br /><span style={{ color: GOLD, fontWeight: 700 }}>You can reuse your previous password.</span>
+                    We&apos;ve moved REH Digital to a new, <strong style={{ color: TEAL }}>ultra-secure, enterprise-grade platform</strong> with a more advanced database.
+                    For your protection, a one-time password reset is required on your first sign-in — please set your password for <strong style={{ color: TEAL }}>{email}</strong>.
+                    <br /><span style={{ color: GOLD, fontWeight: 700 }}>You&apos;re welcome to reuse your previous password.</span> We sincerely apologize for the one-time inconvenience.
                   </p>
                 ) : (
                   <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>

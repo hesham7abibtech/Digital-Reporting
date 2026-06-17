@@ -217,7 +217,7 @@ function LoginContent() {
             {migrationHint && mode === 'login' && (
               <button type="button" onClick={() => sendSetPasswordEmail('migration')}
                 style={{ padding: '11px 14px', borderRadius: 12, background: 'rgba(0,63,73,0.05)', border: '1px dashed rgba(0,63,73,0.25)', color: TEAL, fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                <KeyRound size={14} /> First sign-in since our upgrade? Set your password
+                <KeyRound size={14} /> First sign-in since our security upgrade? Set your password
               </button>
             )}
 
@@ -262,7 +262,7 @@ function LoginContent() {
               </h2>
               <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.6, margin: '0 0 24px' }}>
                 {emailSent === 'migration'
-                  ? <>We&apos;ve upgraded to a faster, more secure platform — sorry for the one-time step. We emailed <strong style={{ color: TEAL }}>{email}</strong> a secure link to set your password. <span style={{ color: '#b58a3c', fontWeight: 700 }}>You can reuse your previous password.</span></>
+                  ? <>We&apos;ve moved REH Digital to a new, <strong style={{ color: TEAL }}>ultra-secure, enterprise-grade platform</strong> with a more advanced database. To protect your account during this one-time migration, we&apos;ve emailed <strong style={{ color: TEAL }}>{email}</strong> a secure link to set your password — <span style={{ color: '#b58a3c', fontWeight: 700 }}>you&apos;re welcome to reuse your previous password</span>. We sincerely apologize for the brief, one-time inconvenience.</>
                   : emailSent === 'reset'
                   ? <>A secure password-reset link is on its way to <strong style={{ color: TEAL }}>{email}</strong>. Check your inbox and spam folder.</>
                   : <>Your account was created and is awaiting administrator approval. Verify your email at <strong style={{ color: TEAL }}>{email}</strong> to continue.</>}

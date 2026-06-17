@@ -155,7 +155,7 @@ function AdminLoginContent() {
       const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
       if (error) {
         if (/invalid login credentials/i.test(error.message)) {
-          setError('Incorrect email or password. First sign-in since our upgrade? Use "Forgotten Credentials?" to set your password (reuse your old one).');
+          setError('Incorrect email or password. We’ve moved to a new, ultra-secure platform with a more advanced database — if this is your first sign-in since the upgrade, use “Forgotten Credentials?” to set your password (you may reuse your previous one). We apologize for the one-time step.');
         } else {
           setError(error.message);
         }
