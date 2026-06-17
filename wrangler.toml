@@ -1,0 +1,10 @@
+# Cloudflare Pages config for the `digital-reporting-console` project.
+#
+# The Pages build runs from the repo root (project Root directory is empty), and
+# Cloudflare scans for wrangler.toml *here* — not in apps/console-portal/. This
+# file applies the nodejs_compat flag (required by @cloudflare/next-on-pages) to
+# BOTH production and preview, and points at the console build output.
+name = "digital-reporting-console"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "apps/console-portal/.vercel/output/static"
