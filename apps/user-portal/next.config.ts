@@ -11,15 +11,22 @@ const SECURITY_HEADERS = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
 ];
 
-// Monorepo root — so the shared package (packages/shared) and hoisted
-// node_modules are included in build output tracing.
+// Monorepo root — used as Turbopack's resolution root so the shared package
+// (packages/shared) and hoisted node_modules resolve during build.
 const MONOREPO_ROOT = path.resolve(__dirname, '../../');
 
 const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  outputFileTracingRoot: MONOREPO_ROOT,
+  // Anchor file-tracing to THIS app dir (not the monorepo root). On Cloudflare
+  // Pages, @cloudflare/next-on-pages runs `vercel build` from this app dir; a
+  // monorepo-root tracing root makes Vercel record the output as
+  // `apps/user-portal/.next`, joined onto the app-dir cwd →
+  // `apps/user-portal/apps/user-portal/.next` (ENOENT). Keeping it local avoids
+  // the doubling. Build runs with --webpack (see package.json) so Turbopack's
+  // "outputFileTracingRoot must equal turbopack.root" constraint doesn't apply.
+  outputFileTracingRoot: __dirname,
   allowedDevOrigins: ['localhost', '127.0.0.1', '192.168.0.101', '192.168.0.193', '192.168.1.3', '192.168.8.113'],
   turbopack: {
     root: MONOREPO_ROOT,
