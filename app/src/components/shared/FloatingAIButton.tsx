@@ -39,18 +39,8 @@ import {
   CartesianGrid
 } from 'recharts';
 import type { AgentInputItem } from '@openai/agents-core';
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  updateDoc,
-  doc,
-  deleteDoc,
-  serverTimestamp
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabaseBrowser } from '@/lib/supabase';
+import { saveDoc, removeDoc, rowToDoc } from '@/lib/supabaseData';
 
 // Typewriter Component for smooth typing animation of new assistant messages
 function TypewriterText({ text, onComplete }: { text: string; onComplete?: () => void }) {
@@ -866,20 +856,13 @@ export default function FloatingAIButton() {
   const loadSessions = async () => {
     if (!user) return;
     try {
-      const q = query(
-        collection(db, 'chat_sessions'),
-        where('userId', '==', user.uid)
-      );
-      const querySnapshot = await getDocs(q);
-      const loadedSessions = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as any[];
-      
-      // Sort on client side to avoid composite index requirement
+      const { data } = await supabaseBrowser.from('chat_sessions').select('*').eq('user_id', user.uid);
+      const loadedSessions = (data || []).map((r: any) => rowToDoc(r)) as any[];
+
+      // Sort on client side (most recently updated first)
       loadedSessions.sort((a, b) => {
-        const aTime = a.updatedAt?.toMillis ? a.updatedAt.toMillis() : (a.updatedAt ? new Date(a.updatedAt).getTime() : 0);
-        const bTime = b.updatedAt?.toMillis ? b.updatedAt.toMillis() : (b.updatedAt ? new Date(b.updatedAt).getTime() : 0);
+        const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+        const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
         return bTime - aTime;
       });
 
@@ -1051,24 +1034,25 @@ export default function FloatingAIButton() {
 
         // 5. Persist to Firestore
         try {
+          const now = new Date().toISOString();
           if (!currentSessionId) {
-            // Create a new session document
-            const newSessionDoc = {
-              userId: user.uid,
+            // Create a new session
+            const id = `chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+            await saveDoc('chat_sessions', {
+              id, userId: user.uid,
               title: userText.slice(0, 40) + (userText.length > 40 ? '...' : ''),
-              messages: historyWithTimestamps,
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp()
-            };
-            const docRef = await addDoc(collection(db, 'chat_sessions'), newSessionDoc);
-            setCurrentSessionId(docRef.id);
+              messages: historyWithTimestamps, createdAt: now, updatedAt: now,
+            });
+            setCurrentSessionId(id);
             await loadSessions();
           } else {
-            // Update existing session document
-            const sessionRef = doc(db, 'chat_sessions', currentSessionId);
-            await updateDoc(sessionRef, {
+            // Update existing session (preserve title/createdAt)
+            const existing = sessions.find((s: any) => s.id === currentSessionId) || {};
+            await saveDoc('chat_sessions', {
+              id: currentSessionId, userId: user.uid,
+              title: (existing as any).title || (userText.slice(0, 40) + (userText.length > 40 ? '...' : '')),
               messages: historyWithTimestamps,
-              updatedAt: serverTimestamp()
+              createdAt: (existing as any).createdAt || now, updatedAt: now,
             });
             await loadSessions();
           }
@@ -1120,7 +1104,7 @@ export default function FloatingAIButton() {
     const sessionId = showConfirmDeleteId;
     setIsDeletingSessionId(sessionId);
     try {
-      await deleteDoc(doc(db, 'chat_sessions', sessionId));
+      await removeDoc('chat_sessions', sessionId);
       if (sessionId === currentSessionId) {
         setCurrentSessionId(null);
         setHistory([]);
@@ -1137,7 +1121,7 @@ export default function FloatingAIButton() {
   const handleDeleteAllSessions = async () => {
     setIsDeletingAll(true);
     try {
-      const deletePromises = sessions.map(sess => deleteDoc(doc(db, 'chat_sessions', sess.id)));
+      const deletePromises = sessions.map(sess => removeDoc('chat_sessions', sess.id));
       await Promise.all(deletePromises);
       setSessions([]);
       setCurrentSessionId(null);

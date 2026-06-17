@@ -69,8 +69,7 @@ import { useToast } from '@/components/shared/EliteToast';
 import { mailService } from '@/services/MailService';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import { useDocument } from 'react-firebase-hooks/firestore';
-import { doc, collection, query, orderBy, deleteDoc, getDocs, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { saveDoc, removeDoc, patchDoc } from '@/lib/supabaseData';
 import GlassCard from '@/components/shared/GlassCard';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useCollectionCompat, useDocCompat } from '@/lib/supabaseData';
@@ -233,16 +232,14 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
 
     setLoading(true);
     try {
-      const { collection, addDoc } = await import('firebase/firestore');
-      const { db } = await import('@/lib/firebase');
-
-      await addDoc(collection(db, 'broadcasts'), {
+      await saveDoc('broadcasts', {
+        id: `bc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         title: broadcastTitle,
         description: broadcastDescription,
         type: broadcastType,
         severity: broadcastSeverity,
         timestamp: new Date().toISOString(),
-        readBy: []
+        readBy: [],
       });
 
       showToast(`Communications dispatched: ${broadcastType} packet synchronized.`, 'SUCCESS');
@@ -1617,7 +1614,7 @@ export default function AdminDashboardPage() {
       if (col === 'users') {
         await deleteUserProfile(id);
       } else {
-        await deleteDoc(doc(db, col, id));
+        await removeDoc(col, id);
       }
       showToast('Record successfully purged from production.', 'SUCCESS');
       setDeleteConfirm({ isOpen: false, id: '', col: '', name: '', email: '' });
@@ -4376,7 +4373,7 @@ export default function AdminDashboardPage() {
                 onClose={() => setBroadcastToDelete(null)}
                 onConfirm={async () => {
                   if (!broadcastToDelete) return;
-                  await deleteDoc(doc(db, 'broadcasts', broadcastToDelete.id));
+                  await removeDoc('broadcasts', broadcastToDelete.id);
                   showToast('Transmission purged securely.', 'SUCCESS');
                   setBroadcastToDelete(null);
                 }}
@@ -4392,8 +4389,7 @@ export default function AdminDashboardPage() {
                 isOpen={!!ticketToResolve}
                 onClose={() => setTicketToResolve(null)}
                 onConfirm={async () => {
-                  const { updateDoc, doc: fsDoc } = await import('firebase/firestore');
-                  await updateDoc(fsDoc(db, 'tickets', ticketToResolve.id), { status: 'RESOLVED', updatedAt: new Date().toISOString() });
+                  await patchDoc('tickets', ticketToResolve.id, { status: 'RESOLVED' });
                   showToast(`Ticket ${ticketToResolve.ticketId} resolved.`, 'SUCCESS');
                   setTicketToResolve(null);
                 }}
@@ -4447,12 +4443,7 @@ export default function AdminDashboardPage() {
                       onClick={async () => {
                         setIsRejecting(true);
                         try {
-                          const { updateDoc, doc: fsDoc } = await import('firebase/firestore');
-                          await updateDoc(fsDoc(db, 'tickets', ticketToReject.id), { 
-                            status: 'REJECTED', 
-                            adminResponse: rejectionResponse,
-                            updatedAt: new Date().toISOString() 
-                          });
+                          await patchDoc('tickets', ticketToReject.id, { status: 'REJECTED', adminResponse: rejectionResponse });
                           showToast(`Ticket ${ticketToReject.ticketId} rejected with justification.`, 'INFO');
                           setTicketToReject(null);
                           setRejectionResponse('');

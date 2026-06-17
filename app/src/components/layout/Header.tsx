@@ -8,8 +8,7 @@ import { useTimeZone } from '@/context/TimeZoneContext';
 import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/shared/EliteToast';
-import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase';
+import { useSupabaseCollection } from '@/lib/supabaseData';
 import type { ProjectMetadata } from '@/lib/types';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import ProfileInfoModal from '@/components/shared/ProfileInfoModal';
@@ -37,52 +36,26 @@ export default function Header({ onNotificationClick, isNotificationOpen = false
   const [isReceiving, setIsReceiving] = useState(false);
   const { showToast } = useToast();
 
+  const { docs: broadcastDocs } = useSupabaseCollection<any>('broadcasts');
   useEffect(() => {
-    // Only subscribe to broadcasts if the user is explicitly approved or an admin
-    if (!userProfile?.isApproved && !userProfile?.isAdmin) return;
-
-    const q = query(collection(db, 'broadcasts'), orderBy('timestamp', 'desc'));
-    
-    const unsubscribe = onSnapshot(q, (snapshot: any) => {
-      const docs = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() }));
-      const currentUserId = userProfile?.uid;
-      
-      // Surgical filter: Only count if user ID is definitively resolved and matches
-      const unreadBroadcasts = docs.filter((b: any) => {
-        if (!currentUserId) return false; // Prevent logic forcing during auth hydration
-        return !b.readBy?.includes(currentUserId);
-      });
-      
-      const newCount = unreadBroadcasts.length;
-      
-      // Trigger Receiving Effect if new notification arrives
-      if (docs.length > 0) {
-        const latestId = docs[0].id;
-        // Compare with ref to avoid dependency cycle
-        if (lastBroadcastIdRef.current && latestId !== lastBroadcastIdRef.current && !isNotificationOpen) {
-          // Only pulse if it's genuinely new and unread
-          const isActuallyNew = !docs[0].readBy?.includes(currentUserId);
-          if (isActuallyNew) {
-            setIsReceiving(true);
-            setTimeout(() => setIsReceiving(false), 2000);
-            
-            if (docs[0].type === 'NOTIF') {
-              showToast(`Notification: ${docs[0].title}`, docs[0].severity === 'CRITICAL' ? 'ERROR' : 'INFO');
-            }
-          }
+    if (!userProfile?.isApproved && !userProfile?.isAdmin) { setUnreadCount(0); return; }
+    const currentUserId = userProfile?.uid;
+    const docs = [...broadcastDocs].sort((a: any, b: any) => ((b.timestamp || '') > (a.timestamp || '') ? 1 : -1));
+    const newCount = docs.filter((b: any) => currentUserId && !b.readBy?.includes(currentUserId)).length;
+    if (docs.length > 0) {
+      const latestId = docs[0].id;
+      if (lastBroadcastIdRef.current && latestId !== lastBroadcastIdRef.current && !isNotificationOpen) {
+        const isActuallyNew = currentUserId && !docs[0].readBy?.includes(currentUserId);
+        if (isActuallyNew) {
+          setIsReceiving(true);
+          setTimeout(() => setIsReceiving(false), 2000);
+          if (docs[0].type === 'NOTIF') showToast(`Notification: ${docs[0].title}`, docs[0].severity === 'CRITICAL' ? 'ERROR' : 'INFO');
         }
-        lastBroadcastIdRef.current = latestId;
       }
-      
-      setUnreadCount(newCount);
-    }, (error: any) => {
-      if (error?.code !== 'permission-denied') {
-        console.error("Firebase Snapshot Error (Broadcasts):", error);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [showToast, userProfile?.uid, userProfile?.isApproved, userProfile?.isAdmin]);
+      lastBroadcastIdRef.current = latestId;
+    }
+    setUnreadCount(newCount);
+  }, [broadcastDocs, showToast, userProfile?.uid, userProfile?.isApproved, userProfile?.isAdmin, isNotificationOpen]);
 
   // Optimistic UI: Hide badge/glow if the panel is currently open
   const effectiveUnreadCount = isNotificationOpen ? 0 : unreadCount;

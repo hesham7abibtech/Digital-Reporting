@@ -8,9 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import { useToast } from '@/components/shared/EliteToast';
-import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useCollectionCompat } from '@/lib/supabaseData';
 import { formatDate } from '@/lib/utils';
 
 interface UserEditorProps {
@@ -39,9 +37,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const { showToast } = useToast();
   
-  const [policiesSnapshot] = useCollection(
-    query(collection(db, 'policies'), orderBy('name', 'asc'))
-  );
+  const [policiesSnapshot] = useCollectionCompat('policies', { sortBy: 'name', dir: 'asc' });
   const policies = policiesSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() })) || [];
 
   useEffect(() => {

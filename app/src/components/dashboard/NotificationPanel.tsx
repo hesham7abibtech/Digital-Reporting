@@ -15,9 +15,9 @@ import {
   TrendingUp,
   Clock
 } from 'lucide-react';
-import { collection, query, orderBy, onSnapshot, updateDoc, doc, arrayUnion } from 'firebase/firestore';
-import { onAuthStateChanged } from 'firebase/auth';
-import { db, auth } from '@/lib/firebase';
+import { useSupabaseCollection } from '@/lib/supabaseData';
+import { markBroadcastAsRead } from '@/services/FirebaseService';
+import { useAuth } from '@/context/AuthContext';
 import { Broadcast, BroadcastSeverity } from '@/lib/types';
 import { getRelativeTime } from '@/lib/utils';
 
@@ -59,39 +59,10 @@ interface NotificationPanelProps {
 
 export default function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
   const [activeTab, setActiveTab] = useState<'ALERTS' | 'NEWS'>('ALERTS');
-  const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const q = query(collection(db, 'broadcasts'), orderBy('timestamp', 'desc'));
-    const unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
-      const data = snapshot.docs.map(doc => {
-        const rawData = doc.data({ serverTimestamps: 'estimate' });
-        // Handle Firestore Timestamp vs ISO String gracefully for real-time injections
-        const timestamp = rawData.timestamp?.toDate ? rawData.timestamp.toDate().toISOString() : rawData.timestamp;
-        return { 
-          id: doc.id, 
-          ...rawData,
-          timestamp 
-        } as Broadcast;
-      });
-      setBroadcasts(data);
-      setLoading(false);
-    }, (error) => {
-      console.warn("Secure Feed Hydration Delayed:", error.message);
-      if (error.code === 'permission-denied') {
-        setLoading(false);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, user => setUserId(user?.uid || null));
-    return () => unsubAuth();
-  }, []);
+  const { user } = useAuth();
+  const userId = user?.uid || null;
+  const { docs: rawBroadcasts, loading } = useSupabaseCollection<Broadcast>('broadcasts');
+  const broadcasts = [...rawBroadcasts].sort((a, b) => (((b as any).timestamp || '') > ((a as any).timestamp || '') ? 1 : -1));
 
   const filtered = broadcasts.filter(b => {
     if (activeTab === 'ALERTS') return b.type === 'NOTIF';
@@ -105,10 +76,7 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
   async function handleConfirmReceipt(id: string) {
     if (!userId) return;
     try {
-      const ref = doc(db, 'broadcasts', id);
-      await updateDoc(ref, {
-        readBy: arrayUnion(userId)
-      });
+      await markBroadcastAsRead(id, userId);
     } catch (error) {
       console.error('Error confirming receipt:', error);
     }

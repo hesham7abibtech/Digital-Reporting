@@ -14,8 +14,7 @@ import {
   ClipboardCheck,
   ChevronRight
 } from 'lucide-react';
-import { db } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { saveDoc } from '@/lib/supabaseData';
 import { generateTicketId } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/shared/EliteToast';
@@ -67,7 +66,7 @@ export default function TicketRequestModal({
     const ticketId = generateTicketId();
 
     try {
-      await addDoc(collection(db, 'tickets'), {
+      await saveDoc('tickets', {
         id: ticketId,
         uid: user?.uid || 'GUEST',
         firstName: firstName.trim(),

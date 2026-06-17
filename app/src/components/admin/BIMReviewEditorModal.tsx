@@ -7,9 +7,7 @@ import GlassCard from '@/components/shared/GlassCard';
 import { BIMReview, TeamMember } from '@/lib/types';
 import { upsertBimReview } from '@/services/FirebaseService';
 import EliteDatePicker from '@/components/shared/EliteDatePicker';
-import { collection, query, orderBy } from 'firebase/firestore';
-import { useCollection } from 'react-firebase-hooks/firestore';
-import { db } from '@/lib/firebase';
+import { useCollectionCompat } from '@/lib/supabaseData';
 import { PRECINCTS, BIM_STAGE_OPTIONS } from '@/lib/constants';
 import { formatDate } from '@/lib/utils';
 
@@ -24,7 +22,7 @@ interface BIMReviewEditorModalProps {
 
 export default function BIMReviewEditorModal({ isOpen, onClose, review, onSuccess, onError, readOnly }: BIMReviewEditorModalProps) {
   const [loading, setLoading] = useState(false);
-  const [membersSnapshot] = useCollection(query(collection(db, 'members'), orderBy('name', 'asc')));
+  const [membersSnapshot] = useCollectionCompat('members', { sortBy: 'name', dir: 'asc' });
   
   const [formData, setFormData] = useState<Partial<BIMReview>>({
     "ID": '',

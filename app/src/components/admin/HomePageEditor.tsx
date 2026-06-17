@@ -7,9 +7,7 @@ import {
   Plus, Trash2, GripVertical, Save, Loader2, ChevronDown, Upload,
   FileText, Box, Database, Globe, Shield, Activity, Layers, Cpu, Zap, ArrowUp, ArrowDown
 } from 'lucide-react';
-import { useDocument } from 'react-firebase-hooks/firestore';
-import { doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useDocCompat } from '@/lib/supabaseData';
 import { updateHomePageConfig, uploadFile } from '@/services/FirebaseService';
 import type { HomePageConfig, HomeMetricItem, HomeModuleItem, HomeGalleryImage } from '@/lib/types';
 import { DEFAULT_CONFIG } from '@/hooks/useHomePageData';
@@ -45,7 +43,7 @@ interface Props {
 }
 
 export default function HomePageEditor({ showToast }: Props) {
-  const [snapshot, loading] = useDocument(doc(db, 'settings', 'homePage'));
+  const [snapshot, loading] = useDocCompat('settings', 'homePage');
   const [config, setConfig] = useState<HomePageConfig>(DEFAULT_CONFIG);
   const [initialized, setInitialized] = useState(false);
   const [saving, setSaving] = useState(false);

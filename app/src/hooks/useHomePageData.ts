@@ -1,9 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useDocument } from 'react-firebase-hooks/firestore';
-import { doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useDocCompat } from '@/lib/supabaseData';
 import type { HomePageConfig } from '@/lib/types';
 
 const DEFAULT_CONFIG: HomePageConfig = {
@@ -88,7 +86,7 @@ const DEFAULT_CONFIG: HomePageConfig = {
 };
 
 export function useHomePageData() {
-  const [snapshot, loading, error] = useDocument(doc(db, 'settings', 'homePage'));
+  const [snapshot, loading, error] = useDocCompat('settings', 'homePage');
 
   const config: HomePageConfig = useMemo(() => {
     if (!snapshot?.exists()) return DEFAULT_CONFIG;

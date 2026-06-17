@@ -3,8 +3,8 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Task, ProjectMetadata, BIMReview } from './types';
 import { PRECINCTS, TASK_DELIVERABLE_TYPES, TASK_CDE_OPTIONS } from './constants';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from './firebase';
+import { supabaseBrowser } from './supabase';
+import { rowToDoc } from './supabaseData';
 import { formatDate } from './utils';
 
 // ─── Constants ──────────────────────────────────────────────────────────
@@ -726,9 +726,10 @@ export async function exportToExcel(
   // Fetch departments for resolution
   let departmentsMap: Record<string, string> = {};
   try {
-    const deptsSnap = await getDocs(collection(db, 'departments'));
-    deptsSnap.forEach(doc => {
-      departmentsMap[doc.id] = doc.data().name;
+    const { data: deptRows } = await supabaseBrowser.from('departments').select('*');
+    (deptRows || []).forEach((row: any) => {
+      const d = rowToDoc(row) as any;
+      departmentsMap[d.id] = d.name;
     });
   } catch (err) {
     console.warn('Could not fetch departments for export resolution:', err);
@@ -1174,9 +1175,10 @@ export async function exportToPDF(
   // Fetch departments for resolution
   let departmentsMap: Record<string, string> = {};
   try {
-    const deptsSnap = await getDocs(collection(db, 'departments'));
-    deptsSnap.forEach(doc => {
-      departmentsMap[doc.id] = doc.data().name;
+    const { data: deptRows } = await supabaseBrowser.from('departments').select('*');
+    (deptRows || []).forEach((row: any) => {
+      const d = rowToDoc(row) as any;
+      departmentsMap[d.id] = d.name;
     });
   } catch (err) {
     console.warn('Could not fetch departments for export resolution:', err);

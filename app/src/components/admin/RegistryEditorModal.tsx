@@ -8,9 +8,7 @@ import { upsertRegistryItem, deleteRegistryItem } from '@/services/FirebaseServi
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import { useToast } from '@/components/shared/EliteToast';
-import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useCollectionCompat } from '@/lib/supabaseData';
 import { Department } from '@/lib/types';
 
 interface RegistryEditorProps {
@@ -23,7 +21,7 @@ interface RegistryEditorProps {
 }
 
 export default function RegistryEditorModal({ item, isOpen, onClose, readOnly, canDelete, departments: propsDepts }: RegistryEditorProps) {
-  const [deptsSnapshot] = useCollection(query(collection(db, 'departments'), orderBy('name', 'asc')));
+  const [deptsSnapshot] = useCollectionCompat('departments', { sortBy: 'name', dir: 'asc' });
   const availableDepartments = useMemo(() => 
     propsDepts || deptsSnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as Department)) || [], 
   [propsDepts, deptsSnapshot]);

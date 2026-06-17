@@ -139,6 +139,8 @@ function promotedColumns(table: string, doc: any): Record<string, unknown> {
     case 'broadcasts': return { title: doc.title ?? null, type: doc.type ?? null, severity: doc.severity ?? null, read_by: doc.readBy ?? [] };
     case 'tickets': return { uid: doc.uid ?? null, email: doc.email ?? null, status: doc.status ?? null };
     case 'group_policies': return { name: doc.name ?? null, description: doc.description ?? null, modules: doc.modules ?? null };
+    case 'chat_sessions': return { user_id: doc.userId ?? doc.user_id ?? null, title: doc.title ?? null };
+    case 'diagnostics': return { user_id: doc.uid ?? doc.user_id ?? null };
     default: return {};
   }
 }
@@ -158,4 +160,12 @@ export async function removeDoc(collection: string, id: string): Promise<void> {
   const table = TABLE[collection] || collection;
   const { error } = await supabaseBrowser.from(table).delete().eq('id', id);
   if (error) throw new Error(error.message);
+}
+
+/** Partial update: read existing doc, shallow-merge the patch, write the full doc. */
+export async function patchDoc(collection: string, id: string, patch: any): Promise<void> {
+  const table = TABLE[collection] || collection;
+  const { data } = await supabaseBrowser.from(table).select('*').eq('id', id).maybeSingle();
+  const existing = data ? rowToDoc(data) : {};
+  await saveDoc(collection, { ...existing, ...patch, id, updatedAt: new Date().toISOString() });
 }

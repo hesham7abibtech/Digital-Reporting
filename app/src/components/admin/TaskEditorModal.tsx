@@ -8,9 +8,7 @@ import { upsertTask, deleteTask, updateMetadataSuggestions, atomicRenumberTask }
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
 import EliteConfirmModal from '@/components/shared/EliteConfirmModal';
 import { useToast } from '@/components/shared/EliteToast';
-import { useCollection, useDocument } from 'react-firebase-hooks/firestore';
-import { collection, query, orderBy, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useCollectionCompat, useDocCompat } from '@/lib/supabaseData';
 import EliteDatePicker from '@/components/shared/EliteDatePicker';
 import EliteDropdown from '@/components/dashboard/EliteDropdown';
 import { PRECINCTS } from '@/lib/constants';
@@ -56,12 +54,12 @@ const fromLocalISO = (localString: string, timeZone: string) => {
 };
 
 export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDelete, canApprove, tasks }: TaskEditorProps) {
-  const [deptsSnapshot] = useCollection(query(collection(db, 'departments'), orderBy('name', 'asc')));
+  const [deptsSnapshot] = useCollectionCompat('departments', { sortBy: 'name', dir: 'asc' });
   const departments = useMemo(() =>
     deptsSnapshot?.docs.map(d => ({ id: d.id, ...d.data() } as Department)) || [],
     [deptsSnapshot]);
 
-  const [membersSnapshot] = useCollection(query(collection(db, 'members'), orderBy('name', 'asc')));
+  const [membersSnapshot] = useCollectionCompat('members', { sortBy: 'name', dir: 'asc' });
   const [formData, setFormData] = useState<Partial<Task>>({
     title: '',
     description: '',
@@ -109,7 +107,7 @@ export default function TaskEditorModal({ task, isOpen, onClose, readOnly, canDe
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const originalIdRef = useRef<string | null>(null);
 
-  const [metadataSnapshot] = useDocument(doc(db, 'settings', 'taskMetadata'));
+  const [metadataSnapshot] = useDocCompat('settings', 'taskMetadata');
   const suggestions = useMemo(() => {
     const data = metadataSnapshot?.data();
     return {

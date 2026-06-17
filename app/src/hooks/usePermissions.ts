@@ -1,10 +1,8 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase';
 import { GroupPolicy, PolicyActions } from '@/lib/types';
-import { doc } from 'firebase/firestore';
-import { useDocument } from 'react-firebase-hooks/firestore';
+import { useDocCompat } from '@/lib/supabaseData';
 import { useMemo } from 'react';
 
 /**
@@ -14,11 +12,8 @@ import { useMemo } from 'react';
 export function usePermissions() {
   const { userProfile } = useAuth();
   
-  // Fetch the user's assigned policy in real-time
-  const [policySnapshot] = useDocument(
-    userProfile?.policyId ? doc(db, 'policies', userProfile.policyId) : null
-  );
-  
+  // Fetch the user's assigned policy in real-time (Supabase group_policies)
+  const [policySnapshot] = useDocCompat('policies', userProfile?.policyId || '');
   const policy = policySnapshot?.data() as GroupPolicy | undefined;
 
   return useMemo(() => {
