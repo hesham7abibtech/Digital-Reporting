@@ -122,6 +122,7 @@ function formatDate(d: any) {
 
 function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, usersSnapshot: any }) {
   const router = useRouter();
+  const { userProfile: currentUser } = useAuth();
   const [activeHubTab, setActiveHubTab] = useState<'BROADCAST' | 'MAIL'>('BROADCAST');
   const [loading, setLoading] = useState(false);
   
@@ -234,10 +235,14 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
     try {
       await saveDoc('broadcasts', {
         id: `bc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        channel: 'BROADCAST',
         title: broadcastTitle,
         description: broadcastDescription,
         type: broadcastType,
         severity: broadcastSeverity,
+        status: 'SENT',
+        recipients: { scope: 'ALL_USERS' },
+        sentBy: currentUser?.email || currentUser?.name || 'Admin',
         timestamp: new Date().toISOString(),
         readBy: [],
       });
@@ -261,28 +266,47 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
     }
 
     setLoading(true);
+    let toList: string[] = [];
+    let ccList = ccEmails.split(',').map(e => e.trim()).filter(Boolean);
+    let bccList = bccEmails.split(',').map(e => e.trim()).filter(Boolean);
+
+    if (mailTarget === 'ALL') {
+      bccList = [...new Set([...bccList, ...(usersSnapshot?.docs.map((d: any) => d.data().email).filter(Boolean) || [])])];
+    } else if (mailTarget === 'ROLE') {
+      bccList = [...new Set([...bccList, ...(usersSnapshot?.docs
+        .filter((d: any) => d.data().role === targetRole)
+        .map((d: any) => d.data().email)
+        .filter(Boolean) || [])])];
+    } else {
+      toList = toEmails.split(',').map(e => e.trim()).filter(Boolean);
+    }
+
+    if (toList.length === 0 && ccList.length === 0 && bccList.length === 0) {
+      showToast('Dispatch aborted: No recipients defined in TO, CC, or BCC.', 'WARNING');
+      setLoading(false);
+      return;
+    }
+
+    const recipientCount = toList.length + ccList.length + bccList.length;
+    const logTransmission = (status: 'SENT' | 'FAILED', errMsg?: string) =>
+      saveDoc('broadcasts', {
+        id: `mail-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        channel: 'MAIL',
+        type: mailCategory === 'NEWS' ? 'NEWS' : 'ANNOUNCEMENT',
+        severity: status === 'FAILED' ? 'CRITICAL' : 'INFO',
+        status,
+        title: mailSubject,
+        description: mailBody,
+        recipients: { to: toList, cc: ccList, bcc: bccList },
+        recipientCount,
+        target: mailTarget,
+        sentBy: currentUser?.email || currentUser?.name || 'Admin',
+        error: errMsg,
+        timestamp: new Date().toISOString(),
+        readBy: [],
+      }).catch(() => { /* logging is best-effort */ });
+
     try {
-      let toList: string[] = [];
-      let ccList = ccEmails.split(',').map(e => e.trim()).filter(Boolean);
-      let bccList = bccEmails.split(',').map(e => e.trim()).filter(Boolean);
-
-      if (mailTarget === 'ALL') {
-        bccList = [...new Set([...bccList, ...(usersSnapshot?.docs.map((d: any) => d.data().email).filter(Boolean) || [])])];
-      } else if (mailTarget === 'ROLE') {
-        bccList = [...new Set([...bccList, ...(usersSnapshot?.docs
-          .filter((d: any) => d.data().role === targetRole)
-          .map((d: any) => d.data().email)
-          .filter(Boolean) || [])])];
-      } else {
-        toList = toEmails.split(',').map(e => e.trim()).filter(Boolean);
-      }
-
-      if (toList.length === 0 && ccList.length === 0 && bccList.length === 0) {
-        showToast('Dispatch aborted: No recipients defined in TO, CC, or BCC.', 'WARNING');
-        setLoading(false);
-        return;
-      }
-
       const primaryTo = toList.length > 0 ? toList.join(', ') : 'Undisclosed Recipients <info@rehdigital.com>';
 
       await mailService.dispatch({
@@ -291,22 +315,20 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
         bcc: bccList.length > 0 ? bccList.join(', ') : undefined,
         subject: mailSubject,
         type: mailCategory === 'NEWS' ? 'NEWS' : 'ANNOUNCEMENT',
-        payload: {
-          title: mailSubject,
-          content: mailBody,
-          category: mailCategory
-        }
+        payload: { title: mailSubject, content: mailBody, category: mailCategory },
       });
 
-      showToast(`SMTP Dispatch successful: Transmission synchronized via Elite Gateway.`, 'SUCCESS');
+      await logTransmission('SENT');
+      showToast(`SMTP Dispatch successful: delivered to ${recipientCount} recipient${recipientCount === 1 ? '' : 's'}.`, 'SUCCESS');
       setMailSubject('');
       setMailBody('');
       setToEmails('');
       setCcEmails('');
       setBccEmails('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Mail dispatch failure:', error);
-      showToast('SMTP uplink interrupted.', 'ERROR');
+      await logTransmission('FAILED', error?.message || String(error));
+      showToast(`SMTP uplink interrupted: ${error?.message || 'delivery failed'}.`, 'ERROR');
     } finally {
       setLoading(false);
     }
@@ -4263,32 +4285,50 @@ export default function AdminDashboardPage() {
                                     const timeStr = b.timestamp?.toDate
                                       ? b.timestamp.toDate().toLocaleString()
                                       : (b.timestamp ? new Date(b.timestamp).toLocaleString() : 'Pending...');
+                                    const isMail = b.channel === 'MAIL';
+                                    const failed = b.status === 'FAILED';
+                                    const rc = b.recipients || {};
+                                    const recParts: string[] = [];
+                                    if (rc.to?.length) recParts.push(`To ${rc.to.length}`);
+                                    if (rc.cc?.length) recParts.push(`Cc ${rc.cc.length}`);
+                                    if (rc.bcc?.length) recParts.push(`Bcc ${rc.bcc.length}`);
+                                    const recSummary = isMail ? (recParts.join(' · ') || `${b.recipientCount || 0} recipient(s)`) : 'All in-app users';
+                                    const chipBadge = (text: string, color: string, bg: string) => (
+                                      <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 7px', borderRadius: 5, background: bg, color, letterSpacing: '0.04em' }}>{text}</span>
+                                    );
 
                                     return (
-                                      <div key={docSnap.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', background: 'var(--section-bg)', borderRadius: 16, border: '1px solid var(--section-bg)' }}>
-                                        <div style={{ display: 'flex', gap: 16 }}>
-                                          <div style={{ width: 40, height: 40, borderRadius: 12, background: b.severity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            {b.type === 'NOTIF' ? <Bell size={18} color={b.severity === 'CRITICAL' ? '#ef4444' : '#60a5fa'} /> : <Newspaper size={18} color="#a78bfa" />}
+                                      <div key={docSnap.id} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, padding: '18px 22px', background: 'var(--section-bg)', borderRadius: 16, border: `1px solid ${failed ? 'rgba(239,68,68,0.25)' : 'var(--section-bg)'}` }}>
+                                        <div style={{ display: 'flex', gap: 14, minWidth: 0, flex: 1 }}>
+                                          <div style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 12, background: failed ? 'rgba(239,68,68,0.1)' : isMail ? 'rgba(16,185,129,0.1)' : b.severity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            {isMail ? <Mail size={18} color={failed ? '#ef4444' : '#10b981'} /> : b.type === 'NOTIF' ? <Bell size={18} color={b.severity === 'CRITICAL' ? '#ef4444' : '#60a5fa'} /> : <Newspaper size={18} color="#a78bfa" />}
                                           </div>
-                                          <div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                              <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 6px', borderRadius: 4, background: 'var(--border)', color: 'var(--text-primary)' }}>{b.type}</span>
-                                              <span style={{ fontSize: 9, fontWeight: 900, color: b.severity === 'CRITICAL' ? '#ef4444' : 'var(--teal)' }}>{b.severity}</span>
+                                          <div style={{ minWidth: 0 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5, flexWrap: 'wrap' }}>
+                                              {chipBadge(isMail ? 'MAIL' : 'BROADCAST', isMail ? '#047857' : 'var(--teal)', isMail ? 'rgba(16,185,129,0.12)' : 'var(--border)')}
+                                              {chipBadge(b.type || '—', 'var(--text-primary)', 'var(--border)')}
+                                              {b.severity && chipBadge(b.severity, b.severity === 'CRITICAL' ? '#ef4444' : 'var(--teal)', 'transparent')}
+                                              {chipBadge(failed ? 'FAILED' : 'SENT', failed ? '#ef4444' : '#047857', failed ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)')}
                                             </div>
-                                            <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)' }}>{b.title}</div>
-                                            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, maxWidth: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.description}</div>
+                                            <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)' }}>{b.title || 'Untitled'}</div>
+                                            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{b.description}</div>
+                                            {failed && b.error && (
+                                              <div style={{ fontSize: 11, color: '#ef4444', marginTop: 6, fontWeight: 700 }}>⚠ {b.error}</div>
+                                            )}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8, fontSize: 11, color: 'var(--text-dim)', fontWeight: 600, flexWrap: 'wrap' }}>
+                                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Users size={12} /> {recSummary}</span>
+                                              {b.sentBy && <span>· by {b.sentBy}</span>}
+                                              <span>· {timeStr}</span>
+                                            </div>
                                           </div>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                          <span style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 600 }}>{timeStr}</span>
-                                          <button
-                                            onClick={() => setBroadcastToDelete({ id: docSnap.id, title: b.title || 'Untitled Broadcast' })}
-                                            title="Purge Transmission"
-                                            style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 200ms' }}
-                                          >
-                                            <Trash2 size={16} />
-                                          </button>
-                                        </div>
+                                        <button
+                                          onClick={() => setBroadcastToDelete({ id: docSnap.id, title: b.title || 'Untitled Broadcast' })}
+                                          title="Purge Transmission"
+                                          style={{ width: 36, height: 36, flexShrink: 0, borderRadius: 10, background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 200ms' }}
+                                        >
+                                          <Trash2 size={16} />
+                                        </button>
                                       </div>
                                     );
                                   })}

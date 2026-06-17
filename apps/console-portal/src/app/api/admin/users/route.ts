@@ -11,7 +11,8 @@ export const runtime = 'edge';
 export async function POST(req: NextRequest) {
   try {
     await verifyAdmin(req);
-    const { action, uid } = await req.json();
+    const body = await req.json();
+    const { action, uid } = body;
     if (!uid) return Response.json({ error: 'uid required' }, { status: 400 });
     const sb = getSupabaseAdmin();
 
@@ -29,6 +30,16 @@ export async function POST(req: NextRequest) {
         await sb.auth.admin.updateUserById(uid, { ban_duration: 'none' });
         await sb.from('users').update({ status: 'ACTIVE', data: { ...data, status: 'ACTIVE', updatedAt: now } }).eq('id', uid);
         break;
+      case 'set-email': {
+        const email = String(body.email || '').trim().toLowerCase();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return Response.json({ error: 'A valid email is required.' }, { status: 400 });
+        // Update the auth identity (confirmed so the user can sign in immediately)…
+        const { error: aErr } = await sb.auth.admin.updateUserById(uid, { email, email_confirm: true });
+        if (aErr) return Response.json({ error: aErr.message }, { status: 400 });
+        // …and mirror it onto the profile row (promoted column + jsonb doc).
+        await sb.from('users').update({ email, data: { ...data, email, updatedAt: now } }).eq('id', uid);
+        break;
+      }
       case 'delete':
         await sb.from('users').delete().eq('id', uid);
         try { await sb.auth.admin.deleteUser(uid); } catch (e) { console.error('[admin/users] auth delete:', e); }

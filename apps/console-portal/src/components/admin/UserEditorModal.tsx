@@ -74,6 +74,20 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
     const shouldNotify = !wasApproved && isNowApproved;
 
     try {
+      // Email change → update the auth sign-in identity first (admin-gated).
+      const newEmail = String(formData.email || '').trim().toLowerCase();
+      const oldEmail = String(userRecord.email || '').trim().toLowerCase();
+      if (newEmail && newEmail !== oldEmail) {
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmail)) { setErrorMsg('Enter a valid email address.'); setIsSaving(false); return; }
+        const token = await getToken();
+        const res = await fetch('/api/admin/users', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ action: 'set-email', uid: userRecord.uid, email: newEmail }),
+        });
+        const out = await res.json().catch(() => ({}));
+        if (!res.ok) { setErrorMsg(out.error || 'Could not update the email address.'); setIsSaving(false); return; }
+      }
+
       // If status changed to SUSPENDED, block in Auth. If changed from SUSPENDED to ACTIVE/PENDING, unblock in Auth.
       const wasSuspended = userRecord.status === 'SUSPENDED';
       const isNowSuspended = formData.status === 'SUSPENDED';
@@ -90,7 +104,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
         role: userRecord.role === 'OWNER' ? 'OWNER' : (formData.isAdmin ? 'ADMIN' : 'TEAM_MATE'),
         status: formData.status,
         name: formData.name,
-        email: userRecord.email, // Ensure email is passed for the notification helper
+        email: formData.email, // keep profile email in sync (auth identity updated above)
         department: formData.department,
         isVerified: formData.isVerified,
         isApproved: formData.isApproved,
@@ -283,14 +297,16 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
             <div>
               <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#003f49', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Authenticated Email</label>
               <div style={{ position: 'relative' }}>
-                <Mail size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#003f49', opacity: 0.4 }} />
-                <input 
-                  type="text" 
-                  value={userRecord.email} 
-                  disabled
-                  style={{ width: '100%', padding: '12px 16px 12px 44px', borderRadius: 12, background: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0, 63, 73, 0.1)', color: '#64748b', fontSize: 14, cursor: 'not-allowed', fontWeight: 600 }}
+                <Mail size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#003f49', opacity: 0.6 }} />
+                <input
+                  type="email"
+                  value={formData.email ?? ''}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  autoComplete="off"
+                  style={{ width: '100%', padding: '12px 16px 12px 44px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(0, 63, 73, 0.15)', color: '#003f49', fontSize: 14, outline: 'none', fontWeight: 600 }}
                 />
               </div>
+              <p style={{ fontSize: 10, color: '#94a3b8', margin: '6px 0 0', fontWeight: 600 }}>Changing this updates the user&apos;s sign-in identity.</p>
             </div>
 
             <div>
