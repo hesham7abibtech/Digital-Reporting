@@ -4,11 +4,15 @@ Target: **`console.rehdigital.com`** (separate Cloudflare Pages project, e.g. `r
 The console and the user portal **share the same Supabase project** (`rrjpxgjxlpktifeoydrz`), so
 edits are Realtime-synced automatically — both apps subscribe to the same Postgres changes.
 
+> Monorepo layout: build the console from `apps/console-portal` (`npm run pages:build:console`
+> from the repo root, or `npm run pages:build` inside that app). The user portal is
+> `apps/user-portal` → project `rehdigital`. Shared code lives in `packages/shared`.
+
 > ⚠️ No live deployment yet. Test locally first, then confirm. Nothing here is deployed automatically.
 
 ## Branded links (rehdigital.com) — REQUIRED Supabase Auth config
 All password/recovery/confirmation/redirect links are generated from the canonical
-origin (`src/lib/siteConfig.ts` → `NEXT_PUBLIC_SITE_URL`), never from the raw browser
+origin (`packages/shared/lib/siteConfig.ts` → `NEXT_PUBLIC_SITE_URL`), never from the raw browser
 origin or the supabase.co URL — so every emailed link carries the **rehdigital.com**
 identity and can't be redirected elsewhere (open-redirect safe).
 
