@@ -159,14 +159,15 @@ function AdminLoginContent() {
       // Existing accounts may sign in regardless of the domain allow-list — the
       // gate only restricts brand-new / unprovisioned access. Check existence
       // first and only enforce the domain rule for unknown accounts.
-      let exists = false;
-      let domainAllowed = true;
+      // Only enforce the existence/domain gate when the pre-flight check actually
+      // SUCCEEDS. A failed check (e.g. 500 when the admin client can't init) must
+      // NOT masquerade as "account does not exist" — fall through to sign-in.
+      let exists = false, domainAllowed = true, checkOk = false;
       try {
-        const chk = await fetch('/api/auth/check-account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }).then(r => r.json());
-        exists = chk?.exists === true;
-        domainAllowed = chk?.allowed !== false;
-      } catch { exists = true; /* check unavailable → let sign-in decide */ }
-      if (!exists) {
+        const res = await fetch('/api/auth/check-account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+        if (res.ok) { const chk = await res.json(); exists = chk?.exists === true; domainAllowed = chk?.allowed !== false; checkOk = true; }
+      } catch { /* network error → skip gate, let sign-in decide */ }
+      if (checkOk && !exists) {
         if (!userDomain || !domainAllowed) {
           setError(`ACCESS DENIED: Your identity domain (@${userDomain}) is not authorized for this project. Authorized domains: @${allowed.join(', @')}.`);
           setIsSubmitting(false);
