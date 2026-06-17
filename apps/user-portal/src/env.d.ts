@@ -3,11 +3,8 @@ interface CloudflareEnv {
   NEXT_PUBLIC_SITE_URL?: string;
   /** Canonical admin-console origin (default https://console.rehdigital.com). */
   NEXT_PUBLIC_CONSOLE_URL?: string;
-  OPENAI_API_KEY?: string;
-  OPENAI_BASE_URL?: string;
   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?: string;
   NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET?: string;
-  CLOUDFLARE_AIG_TOKEN?: string;
   /** AWS mail relay base URL (default https://api.rehdigital.com). */
   NEXT_PUBLIC_SMTP_RELAY_URL?: string;
   /** Shared secret the mail relay requires to accept dispatch requests. */

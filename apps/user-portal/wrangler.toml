@@ -15,11 +15,10 @@ NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "DigitalReporting"
 NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET = "DigitalReporting"
 NEXT_PUBLIC_SMTP_RELAY_URL = "https://api.rehdigital.com"
 SMTP_RELAY_URL = "https://api.rehdigital.com"
-OPENAI_BASE_URL = "https://gateway.ai.cloudflare.com/v1/491ec73c1ab258bd5678c1410e3e7fa1/open-ai/openai"
 NOTION_VERSION = "2022-06-28"
 
 # SECRETS — never put these in this file. Set out-of-band:
 #   Local dev  : apps/user-portal/.env.local (gitignored)
 #   Cloudflare : npx wrangler pages secret put <NAME> --project-name rehdigital
-#   Required   : SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY, DIFY_API_KEY
+#   Required   : SUPABASE_SERVICE_ROLE_KEY, DIFY_API_KEY
 #   Optional   : NEXT_PUBLIC_SMTP_RELAY_SECRET

@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1037.0",
-    "@openai/agents": "^0.11.4",
     "@reh/shared": "*",
     "@supabase/supabase-js": "^2.108.2",
     "@tsparticles/react": "^3.0.0",

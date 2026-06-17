@@ -15,8 +15,7 @@
     "build:console": "npm run build -w @reh/console-portal",
     "lint": "npm run lint --workspaces --if-present",
     "pages:build:user": "npm run pages:build -w @reh/user-portal",
-    "pages:build:console": "npm run pages:build -w @reh/console-portal",
-    "postinstall": "node scripts/patch-openai-agents.mjs"
+    "pages:build:console": "npm run pages:build -w @reh/console-portal"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

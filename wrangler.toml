@@ -22,8 +22,7 @@ NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "DigitalReporting"
 NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET = "DigitalReporting"
 NEXT_PUBLIC_SMTP_RELAY_URL = "https://api.rehdigital.com"
 SMTP_RELAY_URL = "https://api.rehdigital.com"
-OPENAI_BASE_URL = "https://gateway.ai.cloudflare.com/v1/491ec73c1ab258bd5678c1410e3e7fa1/open-ai/openai"
 NOTION_VERSION = "2022-06-28"
 
 # SECRETS are NOT here — set them in the Pages dashboard (runtime, encrypted):
-#   SUPABASE_SERVICE_ROLE_KEY (required), OPENAI_API_KEY, SMTP_RELAY_SECRET, DIFY_API_KEY
+#   SUPABASE_SERVICE_ROLE_KEY (required), SMTP_RELAY_SECRET, DIFY_API_KEY
