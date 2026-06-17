@@ -60,7 +60,7 @@ function AdminLoginContent() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, userProfile, loading, authError } = useAuth();
+  const { user, userProfile, loading, authError, needsPasswordSetup } = useAuth();
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
@@ -119,6 +119,13 @@ function AdminLoginContent() {
       return;
     }
 
+    // Signed in with a one-time / migration password → force a new password first
+    // (handled on the branded user-portal reset page).
+    if (user && needsPasswordSetup) {
+      window.location.href = authUrl('/auth/reset');
+      return;
+    }
+
     // Handle Success and Clearance Check (only for admin sessions)
     if (user && userProfile) {
       const isVerified = user.emailVerified || userProfile.isVerified === true;
@@ -138,7 +145,7 @@ function AdminLoginContent() {
         setIsSubmitting(false);
       }
     }
-  }, [user, userProfile, loading, authError, router, mfaChallenge]);
+  }, [user, userProfile, loading, authError, router, mfaChallenge, needsPasswordSetup]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,6 +161,11 @@ function AdminLoginContent() {
         setIsSubmitting(false);
         return;
       }
+      // Verify the account exists in the auth database before attempting sign-in.
+      try {
+        const chk = await fetch('/api/auth/check-account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }).then(r => r.json());
+        if (chk?.exists === false) { setError('This account does not exist. Please check your email or register for access.'); setIsSubmitting(false); return; }
+      } catch { /* if the check is unavailable, fall through to the normal sign-in */ }
       sessionStorage.removeItem('dashboard_session');
       sessionStorage.setItem('admin_session', 'active');
       const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
@@ -218,8 +230,14 @@ function AdminLoginContent() {
     setMessage('');
     setIsSubmitting(true);
     try {
-      const { error } = await supabaseBrowser.auth.resetPasswordForEmail(email, { redirectTo: authUrl('/auth/reset') });
-      if (error) throw error;
+      // Email a one-time password via the relay (not Supabase → no rate limit).
+      const res = await fetch('/api/auth/request-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+      const out = await res.json().catch(() => ({} as any));
+      if (!res.ok) {
+        if (out.code === 'NOT_FOUND' || res.status === 404) { setError('This account does not exist. Please check your email or register for access.'); setIsSubmitting(false); return; }
+        if (res.status === 403) { setError(out.error || 'This email domain is not authorized.'); setIsSubmitting(false); return; }
+        throw new Error(out.error || 'Could not send the one-time password.');
+      }
       setShowResetSuccess(true);
       setIsSubmitting(false);
     } catch (err: any) {

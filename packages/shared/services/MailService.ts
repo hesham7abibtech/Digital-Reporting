@@ -4,13 +4,20 @@
  * Bypasses Cloudflare API routes to eliminate 500 errors.
  */
 class MailService {
-  private RELAY_URL = process.env.NEXT_PUBLIC_SMTP_RELAY_URL || 'https://api.rehdigital.com';
-  private RELAY_SECRET = process.env.NEXT_PUBLIC_SMTP_RELAY_SECRET;
+  // Prefer server-only vars (not shipped to the browser); fall back to the
+  // NEXT_PUBLIC variants for client-side senders. Read at call-time so edge
+  // runtimes that populate env per-request still resolve them.
+  private get RELAY_URL() {
+    return process.env.SMTP_RELAY_URL || process.env.NEXT_PUBLIC_SMTP_RELAY_URL || 'https://api.rehdigital.com';
+  }
+  private get RELAY_SECRET() {
+    return process.env.SMTP_RELAY_SECRET || process.env.NEXT_PUBLIC_SMTP_RELAY_SECRET;
+  }
 
   private async call(endpoint: string, data: any) {
     const url = `${this.RELAY_URL}${endpoint}`;
     console.log(`[MAIL_SERVICE] Calling Consolidated AWS Endpoint: ${endpoint}...`);
-    
+
     try {
       const response = await fetch(url, {
         method: 'POST',

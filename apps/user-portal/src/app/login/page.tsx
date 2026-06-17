@@ -33,21 +33,13 @@ async function allowedDomains(): Promise<string[]> {
   } catch { return DEFAULT_ALLOWED_DOMAINS; }
 }
 
-// ── Email rate-limit cooldown ───────────────────────────────────────
-// GoTrue's per-request limit embeds the seconds ("...after 47 seconds");
-// the hourly project cap is generic ("email rate limit exceeded") — fall back
-// to a 1-hour window. Cooldown is persisted per-email so it survives a refresh.
-const RATE_WINDOW_MS = 60 * 60 * 1000;
+// ── One-time-password send cooldown ─────────────────────────────────
+// Light per-email throttle (persisted, survives refresh) so the relay isn't
+// spammed with OTP requests. The OTP email itself goes via the AWS relay, not
+// Supabase, so there is no GoTrue email rate limit involved.
 const SEND_INTERVAL_MS = 60 * 1000;
 const cooldownKey = (email: string) => `reh-reset-cooldown:${email.trim().toLowerCase()}`;
 
-function parseRetrySeconds(msg: string): number | null {
-  const sec = /(\d+)\s*second/i.exec(msg || '');
-  if (sec) return parseInt(sec[1], 10);
-  const min = /(\d+)\s*minute/i.exec(msg || '');
-  if (min) return parseInt(min[1], 10) * 60;
-  return null;
-}
 function fmtRemaining(ms: number): string {
   const total = Math.max(0, Math.ceil(ms / 1000));
   const m = Math.floor(total / 60);
@@ -121,9 +113,15 @@ function LoginContent() {
       const domains = await allowedDomains();
       const domain = email.split('@')[1]?.toLowerCase();
       if (!domain || !domains.includes(domain)) { setError(`Access denied: @${domain || '?'} is not an authorized domain.`); setIsSubmitting(false); return; }
+      // Verify the account exists in the auth database before attempting sign-in.
+      try {
+        const chk = await fetch('/api/auth/check-account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }).then(r => r.json());
+        if (chk?.allowed === false) { setError(`Access denied: @${domain} is not an authorized domain.`); setIsSubmitting(false); return; }
+        if (chk?.exists === false) { setError('This account does not exist. Please check your email or register for access.'); setIsSubmitting(false); return; }
+      } catch { /* if the check is unavailable, fall through to the normal sign-in */ }
       const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
       if (error) {
-        if (/invalid login credentials/i.test(error.message)) { setMigrationHint(true); setError('Incorrect email or password.'); }
+        if (/invalid login credentials/i.test(error.message)) { setMigrationHint(true); setError('Incorrect password. If this is your first sign-in since our security upgrade, request a one-time password below.'); }
         else setError(error.message);
         setIsSubmitting(false);
         return;
@@ -138,25 +136,23 @@ function LoginContent() {
   };
 
   const sendSetPasswordEmail = async (kind: 'migration' | 'reset') => {
-    if (cooldownLeft > 0) { setError(`Please wait ${fmtRemaining(cooldownLeft)} before requesting another email.`); return; }
+    if (cooldownLeft > 0) { setError(`Please wait ${fmtRemaining(cooldownLeft)} before requesting another one-time password.`); return; }
     setError(''); setIsSubmitting(true);
     try {
       const domain = email.split('@')[1]?.toLowerCase();
       const domains = await allowedDomains();
       if (!domain || !domains.includes(domain)) { setError('Enter your authorized work email first.'); setIsSubmitting(false); return; }
-      const { error } = await supabaseBrowser.auth.resetPasswordForEmail(email, { redirectTo: authUrl('/auth/reset') });
-      if (error) throw error;
-      setEmailSent(kind);
-      startCooldown(SEND_INTERVAL_MS); // respect GoTrue's per-request interval
-    } catch (err: any) {
-      const msg = err?.message || '';
-      if (/rate limit|too many|exceeded|\d+\s*second|\d+\s*minute/i.test(msg)) {
-        const secs = parseRetrySeconds(msg);
-        startCooldown(secs != null ? secs * 1000 : RATE_WINDOW_MS);
-        setError(''); // the live countdown banner communicates the remaining wait
-      } else {
-        setError(msg || 'Could not send the email. Try again.');
+      // Email a one-time password via the relay (not Supabase → no email rate limit).
+      const res = await fetch('/api/auth/request-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+      const out = await res.json().catch(() => ({} as any));
+      if (!res.ok) {
+        if (out.code === 'NOT_FOUND' || res.status === 404) { setError('This account does not exist. Please check your email or register for access.'); setIsSubmitting(false); return; }
+        throw new Error(out.error || 'Could not send the one-time password.');
       }
+      setEmailSent(kind);
+      startCooldown(SEND_INTERVAL_MS); // light throttle to prevent spamming the relay
+    } catch (err: any) {
+      setError(err?.message || 'Could not send the one-time password. Try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -332,13 +328,13 @@ function LoginContent() {
                 <MailCheck size={34} color="#fff" />
               </div>
               <h2 style={{ fontSize: 22, fontWeight: 900, color: TEAL, margin: '0 0 10px' }}>
-                {emailSent === 'register' ? 'Check Your Inbox' : 'Secure Link Sent'}
+                {emailSent === 'register' ? 'Check Your Inbox' : 'One-Time Password Sent'}
               </h2>
               <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.6, margin: '0 0 24px' }}>
                 {emailSent === 'migration'
-                  ? <>We&apos;ve moved REH Digital to a new, <strong style={{ color: TEAL }}>ultra-secure, enterprise-grade platform</strong> with a more advanced database. To protect your account during this one-time migration, we&apos;ve emailed <strong style={{ color: TEAL }}>{email}</strong> a secure link to set your password — <span style={{ color: '#b58a3c', fontWeight: 700 }}>you&apos;re welcome to reuse your previous password</span>. We sincerely apologize for the brief, one-time inconvenience.</>
+                  ? <>We&apos;ve moved REH Digital to a new, <strong style={{ color: TEAL }}>ultra-secure, enterprise-grade platform</strong>. We&apos;ve emailed <strong style={{ color: TEAL }}>{email}</strong> a <strong style={{ color: TEAL }}>one-time password</strong>. Sign in with it and you&apos;ll be asked to set your own new password right away. Check your inbox and spam folder.</>
                   : emailSent === 'reset'
-                  ? <>A secure password-reset link is on its way to <strong style={{ color: TEAL }}>{email}</strong>. Check your inbox and spam folder.</>
+                  ? <>A <strong style={{ color: TEAL }}>one-time password</strong> is on its way to <strong style={{ color: TEAL }}>{email}</strong>. Sign in with it, then set your new password. Check your inbox and spam folder.</>
                   : <>Your account was created and is awaiting administrator approval. Verify your email at <strong style={{ color: TEAL }}>{email}</strong> to continue.</>}
               </p>
               <button onClick={() => { setEmailSent(null); if (emailSent === 'register') logoutAndReset(); else setMode('login'); }}

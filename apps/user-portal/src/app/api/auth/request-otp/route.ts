@@ -1,0 +1,35 @@
+import { NextRequest } from 'next/server';
+import { getSupabaseAdmin } from '@/lib/supabase';
+import { isDomainAllowed, accountExists } from '@/lib/authPolicy';
+import { issueOtp } from '@/lib/otp';
+
+export const runtime = 'edge';
+
+/**
+ * Self-service one-time password (the "First sign-in since our security upgrade"
+ * / forgot-password path). Validates the domain (admin-controlled) and that the
+ * account exists, then emails the user a one-time password via the AWS relay
+ * (NOT Supabase email → no rate limit). The OTP is never returned to the browser;
+ * signing in with it forces a new password (`must_set_password`).
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const { email } = await req.json().catch(() => ({} as any));
+    if (!email) return Response.json({ error: 'Email required' }, { status: 400 });
+    const sb = getSupabaseAdmin();
+
+    if (!(await isDomainAllowed(sb, email))) {
+      return Response.json({ error: 'This email domain is not authorized.' }, { status: 403 });
+    }
+    const acct = await accountExists(sb, email);
+    if (!acct.exists || !acct.id) {
+      return Response.json({ error: 'This account does not exist.', code: 'NOT_FOUND' }, { status: 404 });
+    }
+
+    const r = await issueOtp(sb, { id: acct.id, email, name: acct.name }, true);
+    if (!r.ok) return Response.json({ error: r.error || 'Could not issue one-time password.' }, { status: 500 });
+    return Response.json({ success: true, emailed: r.emailed, emailError: r.emailError });
+  } catch (e: any) {
+    return Response.json({ error: e?.message || 'Request failed' }, { status: 500 });
+  }
+}
