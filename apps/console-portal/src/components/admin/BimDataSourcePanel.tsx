@@ -3,9 +3,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
+import { supabaseBrowser } from '@/lib/supabase';
 import {
   Database, Cloud, HardDrive, Layers, RefreshCw, Plus,
-  CheckCircle2, AlertTriangle, Plug, ArrowRight,
+  CheckCircle2, AlertTriangle, Plug, ArrowRight, Lock,
 } from 'lucide-react';
 
 type ToastFn = (message: string, type?: 'SUCCESS' | 'ERROR' | 'INFO', progress?: number) => void;
@@ -35,10 +36,18 @@ const MODES: { id: Mode; label: string; desc: string; icon: React.ReactNode }[] 
   { id: 'hybrid', label: 'Hybrid', desc: 'Merge Notion (primary) + manual', icon: <Layers size={16} /> },
 ];
 
-export default function BimDataSourcePanel({ showToast, onOpenApiConnections }: { showToast?: ToastFn; onOpenApiConnections?: () => void }) {
+interface ReportPreview {
+  count: number;
+  sources: { notion: number; manual: number };
+  warnings: string[];
+  mode: string;
+}
+
+export default function BimDataSourcePanel({ showToast, onOpenApiConnections, canAccessApiConnections }: { showToast?: ToastFn; onOpenApiConnections?: () => void; canAccessApiConnections?: boolean }) {
   const { user } = useAuth();
   const [config, setConfig] = useState<SourceConfig | null>(null);
   const [notion, setNotion] = useState<NotionStatus | null>(null);
+  const [report, setReport] = useState<ReportPreview | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -53,6 +62,17 @@ export default function BimDataSourcePanel({ showToast, onOpenApiConnections }: 
     return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
   }, [user]);
 
+  // Live report dataset for the *currently active* source phase — so the panel
+  // reflects exactly what the report will serve, and updates when the phase changes.
+  const loadReport = useCallback(async () => {
+    try {
+      const res = await fetch('/api/bim-reviews-report', { headers: await authHeaders() });
+      if (!res.ok) { setReport(null); return; }
+      const d = await res.json();
+      setReport({ count: d.count ?? 0, sources: d.sources || { notion: 0, manual: 0 }, warnings: d.warnings || [], mode: d.mode });
+    } catch { setReport(null); }
+  }, [authHeaders]);
+
   const load = useCallback(async () => {
     try {
       setLoading(true);
@@ -61,16 +81,27 @@ export default function BimDataSourcePanel({ showToast, onOpenApiConnections }: 
       const data = await res.json();
       setConfig(data.config);
       setNotion(data.notion);
+      loadReport();
     } catch (e: any) {
       toast(e.message || 'Failed to load BIM data source config', 'ERROR');
     } finally {
       setLoading(false);
     }
-  }, [authHeaders, toast]);
+  }, [authHeaders, toast, loadReport]);
 
   useEffect(() => {
     if (user) load();
   }, [user, load]);
+
+  // Keep the live preview in sync as BIM reviews change in the database (no refresh).
+  useEffect(() => {
+    if (!user) return;
+    const ch = supabaseBrowser
+      .channel('rt:bim-source-preview')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bim_reviews' }, () => loadReport())
+      .subscribe();
+    return () => { supabaseBrowser.removeChannel(ch); };
+  }, [user, loadReport]);
 
   const patch = useCallback(
     async (body: Partial<SourceConfig>) => {
@@ -87,6 +118,7 @@ export default function BimDataSourcePanel({ showToast, onOpenApiConnections }: 
         if (!res.ok) throw new Error((await res.json()).error || 'Update failed');
         const data = await res.json();
         setConfig(data.config);
+        loadReport(); // reflect the report dataset for the newly selected phase
         toast('Data source configuration updated', 'SUCCESS');
       } catch (e: any) {
         setConfig(prev); // rollback
@@ -95,7 +127,7 @@ export default function BimDataSourcePanel({ showToast, onOpenApiConnections }: 
         setSaving(false);
       }
     },
-    [authHeaders, config, toast],
+    [authHeaders, config, toast, loadReport],
   );
 
   if (loading || !config) {
@@ -126,7 +158,12 @@ export default function BimDataSourcePanel({ showToast, onOpenApiConnections }: 
     : !config.notionSyncEnabled ? 'Notion sync OFF'
     : notion?.configured ? (notion?.ok ? `Notion · ${notion.title || 'connected'}` : 'Notion error')
     : 'Notion not configured';
-  const showNotionError = !!notion?.error && config.notionSyncEnabled && !manual;
+  // Notion needs attention when this phase relies on it but it isn't fully working
+  // (missing token, unshared DB, or a live error).
+  const notionNeedsSetup = !manual && config.notionSyncEnabled && !(notion?.configured && notion?.ok);
+  const notionIssueText = !notion?.configured
+    ? 'Notion is not configured yet — no integration token is connected for this workspace.'
+    : (notion?.error || 'Notion is configured but is not responding right now.');
 
   return (
     <div style={{ marginBottom: 14 }}>
@@ -183,6 +220,20 @@ export default function BimDataSourcePanel({ showToast, onOpenApiConnections }: 
             : 'Notion is not configured yet.'}</span>
         </div>
 
+        {/* Live report dataset for the selected phase */}
+        {report && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap', marginTop: 9, padding: '8px 12px', borderRadius: 10, background: 'rgba(0,63,73,0.04)', border: '1px solid rgba(0,63,73,0.1)' }}>
+            <Database size={13} color={TEAL} />
+            <span style={{ fontSize: 11.5, fontWeight: 800, color: TEAL }}>{report.count} reviews served live</span>
+            <span style={{ fontSize: 10.5, fontWeight: 600, color: '#64748b' }}>· Notion {report.sources.notion} · Manual {report.sources.manual}</span>
+            {report.warnings.length > 0 && (
+              <span style={{ fontSize: 10.5, fontWeight: 700, color: '#b45309', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <AlertTriangle size={11} /> {report.warnings.length} notice{report.warnings.length > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Hybrid merge strategy (inline, compact) */}
         {config.mode === 'hybrid' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
@@ -196,22 +247,31 @@ export default function BimDataSourcePanel({ showToast, onOpenApiConnections }: 
         )}
       </div>
 
-      {/* Notion error → route admin to API Connections to fix it */}
-      {showNotionError && (
+      {/* Notion needs attention → route the admin to API Connections, or ask them to escalate */}
+      {notionNeedsSetup && (
         <div style={{ ...card, borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.04)' }}>
           <div style={{ display: 'flex', gap: 11 }}>
             <AlertTriangle size={18} color="#dc2626" style={{ flexShrink: 0, marginTop: 1 }} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 800, color: '#b91c1c' }}>Notion connection issue</div>
-              <div style={{ fontSize: 11.5, color: '#7f1d1d', marginTop: 3, lineHeight: 1.5, fontWeight: 600 }}>{notion?.error}</div>
-              <div style={{ fontSize: 11.5, color: '#7f1d1d', marginTop: 6, lineHeight: 1.5 }}>
-                Fix it under <strong>API Connections</strong>: confirm the Notion integration token is valid and the BIM database is shared with the integration, then return here and press <strong>Refresh</strong>.
-              </div>
-              {onOpenApiConnections && (
-                <button onClick={onOpenApiConnections}
-                  style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 10, border: 'none', background: '#dc2626', color: '#fff', fontSize: 11.5, fontWeight: 800, cursor: 'pointer' }}>
-                  <Plug size={13} /> Open API Connections <ArrowRight size={13} />
-                </button>
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: '#b91c1c' }}>Notion integration needs attention</div>
+              <div style={{ fontSize: 11.5, color: '#7f1d1d', marginTop: 3, lineHeight: 1.5, fontWeight: 600 }}>{notionIssueText}</div>
+              {canAccessApiConnections ? (
+                <>
+                  <div style={{ fontSize: 11.5, color: '#7f1d1d', marginTop: 6, lineHeight: 1.5 }}>
+                    Open <strong>API Connections</strong> to add or fix the Notion token and share the BIM database with the integration, then return here and press <strong>Refresh</strong>.
+                  </div>
+                  {onOpenApiConnections && (
+                    <button onClick={onOpenApiConnections}
+                      style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 10, border: 'none', background: '#dc2626', color: '#fff', fontSize: 11.5, fontWeight: 800, cursor: 'pointer' }}>
+                      <Plug size={13} /> Open API Connections <ArrowRight size={13} />
+                    </button>
+                  )}
+                </>
+              ) : (
+                <div style={{ fontSize: 11.5, color: '#7f1d1d', marginTop: 8, lineHeight: 1.5, display: 'flex', alignItems: 'center', gap: 7, fontWeight: 700 }}>
+                  <Lock size={13} style={{ flexShrink: 0 }} />
+                  Please ask your system administrator to enable the Notion integration under API Connections.
+                </div>
               )}
             </div>
           </div>

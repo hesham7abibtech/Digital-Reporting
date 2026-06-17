@@ -2294,7 +2294,7 @@ export default function AdminDashboardPage() {
                     </div>
                   )}
                   {activeTab === 'bim-reviews' && (
-                    <BimDataSourcePanel showToast={showToast} onOpenApiConnections={() => switchTab('api-connections')} />
+                    <BimDataSourcePanel showToast={showToast} canAccessApiConnections={can('users', 'view')} onOpenApiConnections={() => switchTab('api-connections')} />
                   )}
                   <div style={{ overflowX: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'communications' || activeTab === 'homepage' || activeTab === 'api-connections') ? 'hidden' : 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'communications' || activeTab === 'homepage' || activeTab === 'api-connections') ? 'fixed' : 'auto' }}>
