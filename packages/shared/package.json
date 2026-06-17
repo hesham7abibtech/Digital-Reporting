@@ -1,0 +1,12 @@
+{
+  "name": "@reh/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared data layer, auth context, services and cross-portal UI for the REH Digital platform (user portal + admin console). Both apps import these via the @/* path alias and share one Supabase backend with realtime sync.",
+  "peerDependencies": {
+    "next": "^16",
+    "react": "^19",
+    "react-dom": "^19"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "digital-reporting",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:user": "npm run dev -w @reh/user-portal",
+    "dev:console": "npm run dev -w @reh/console-portal",
+    "build:user": "npm run build -w @reh/user-portal",
+    "build:console": "npm run build -w @reh/console-portal",
+    "lint": "npm run lint --workspaces --if-present",
+    "pages:build:user": "npm run pages:build -w @reh/user-portal",
+    "pages:build:console": "npm run pages:build -w @reh/console-portal",
+    "postinstall": "node scripts/patch-openai-agents.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

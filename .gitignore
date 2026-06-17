@@ -10,6 +10,11 @@ out/
 # production
 build/
 
+# cloudflare / wrangler
+.wrangler/
+.turbo/
+**/public/version.json
+
 # misc
 .DS_Store
 *.pem
