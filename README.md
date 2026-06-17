@@ -13,8 +13,11 @@ of truth for the data layer, auth, services and cross-portal UI.
 ├─ packages/
 │  └─ shared/  (@reh/shared)  →  lib/ · services/ · hooks/ · context/ · components/shared/
 ├─ supabase/migrations/        →  database schema (shared by both apps)
-├─ scripts/                    →  patch-openai-agents · smtp-relay · clean-env
-└─ docs/                       →  deployment & setup guides
+├─ scripts/                    →  repo tooling (patch-openai-agents · smtp-relay · clean-env)
+├─ docs/                       →  deployment, domain, Notion & brand guides
+├─ package.json                →  npm workspaces root
+├─ .nvmrc · .editorconfig · .gitattributes   →  toolchain & formatting consistency
+└─ AGENTS.md · CLAUDE.md       →  agent/contributor guidance
 ```
 
 ### How sharing works (no import rewrites)
