@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import type { Session } from '@supabase/supabase-js';
 import { supabaseBrowser } from '@/lib/supabase';
 import { rowToDoc } from '@/lib/supabaseData';
+import { isSuperAdmin } from '@/lib/siteConfig';
 import { UserProfile } from '@/lib/types';
 
 /**
@@ -102,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!active) return;
       if (error) { setAuthError(error.message); setLoading(false); return; }
       if (data) {
-        if (data.status === 'SUSPENDED') {
+        if (data.status === 'SUSPENDED' && !isSuperAdmin(session?.user?.email)) {
           setAuthError('ACCESS REVOKED: This account has been suspended by an administrator.');
           await logout();
           setLoading(false);

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Trash2, Mail, Shield, User, Info, Check, AlertCircle, ShieldCheck, CheckCircle2, UserCheck, Layout, BarChart2, Briefcase, Calendar, Clock, Camera, Loader2 } from 'lucide-react';
+import { X, Save, Trash2, Mail, Shield, User, Info, Check, AlertCircle, ShieldCheck, CheckCircle2, UserCheck, Layout, BarChart2, Briefcase, Calendar, Clock, Camera, Loader2, KeyRound, Copy } from 'lucide-react';
 import { updateUserProfile, deleteUserProfile, uploadFile } from '@/services/FirebaseService';
 import { useAuth } from '@/context/AuthContext';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
@@ -18,7 +18,7 @@ interface UserEditorProps {
 }
 
 export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEditorProps) {
-  const { userProfile: currentUser } = useAuth();
+  const { userProfile: currentUser, getToken } = useAuth();
   const [formData, setFormData] = useState<any>({
     name: '',
     role: 'TEAM_MATE',
@@ -35,6 +35,8 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isIssuingOtp, setIsIssuingOtp] = useState(false);
+  const [otpResult, setOtpResult] = useState<{ otp?: string; emailed?: boolean; emailError?: string } | null>(null);
   const { showToast } = useToast();
   
   const [policiesSnapshot] = useCollectionCompat('policies', { sortBy: 'name', dir: 'asc' });
@@ -120,6 +122,32 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
       setErrorMsg(getFirebaseErrorMessage(error));
       showToast('Could not delete user.', 'ERROR');
       throw error;
+    }
+  };
+
+  const handleIssueOtp = async () => {
+    if (!userRecord) return;
+    setIsIssuingOtp(true);
+    setErrorMsg(null);
+    setOtpResult(null);
+    try {
+      const token = await getToken();
+      const res = await fetch('/api/admin/issue-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ uid: userRecord.uid, sendEmail: true }),
+      });
+      const out = await res.json();
+      if (!res.ok) throw new Error(out.error || 'Failed to issue one-time password.');
+      const r = out.results?.[0] || {};
+      if (!r.ok) throw new Error(r.error || 'Failed to issue one-time password.');
+      setOtpResult({ otp: r.otp, emailed: r.emailed, emailError: r.emailError });
+      showToast(r.emailed ? `One-time password emailed to ${userRecord.email}` : 'One-time password generated (email not sent).', r.emailed ? 'SUCCESS' : 'INFO');
+    } catch (error: any) {
+      setErrorMsg(error.message || 'Failed to issue one-time password.');
+      showToast('Could not issue one-time password.', 'ERROR');
+    } finally {
+      setIsIssuingOtp(false);
     }
   };
 
@@ -458,21 +486,57 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
           )}
         </AnimatePresence>
 
+        {/* ONE-TIME PASSWORD RESULT */}
+        <AnimatePresence>
+          {otpResult?.otp && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ padding: '0 32px 24px', overflow: 'hidden' }}>
+              <div style={{ padding: 16, background: 'rgba(12,169,155,0.06)', border: '1px solid var(--teal)', borderRadius: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <KeyRound size={16} color="var(--teal)" />
+                  <span style={{ fontSize: 12, fontWeight: 900, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>One-Time Password Issued</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <code style={{ flex: 1, fontSize: 18, fontWeight: 800, letterSpacing: 2, color: '#003f49', background: '#f1f5f9', padding: '10px 14px', borderRadius: 10 }}>{otpResult.otp}</code>
+                  <button onClick={() => { navigator.clipboard?.writeText(otpResult.otp!); showToast('Copied to clipboard', 'SUCCESS'); }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', borderRadius: 10, background: 'var(--teal)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}><Copy size={14} /> Copy</button>
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '10px 0 0', fontWeight: 600, lineHeight: 1.5 }}>
+                  {otpResult.emailed ? `Emailed to ${userRecord.email}. ` : (otpResult.emailError ? `Email failed (${otpResult.emailError}) — share this manually. ` : 'Email not sent — share this manually. ')}
+                  The user will be required to set a new password on first sign-in.
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* FOOTER ACTIONS */}
         <div style={{ padding: '24px 32px', background: 'var(--section-bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <button 
-            onClick={() => setIsConfirmOpen(true)} 
-            disabled={isEditingSelf || (targetIsOwner && !isOwner)}
-            style={{ 
-              display: 'flex', alignItems: 'center', gap: 8, color: 'var(--status-error)', background: 'none', border: 'none', 
-              fontSize: 13, fontWeight: 600, cursor: (isEditingSelf || (targetIsOwner && !isOwner)) ? 'not-allowed' : 'pointer',
-              opacity: (isEditingSelf || (targetIsOwner && !isOwner)) ? 0.3 : 1
-            }}
-          >
-            <Trash2 size={16} />
-            Revoke Access
-          </button>
-          
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button
+              onClick={() => setIsConfirmOpen(true)}
+              disabled={isEditingSelf || (targetIsOwner && !isOwner)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, color: 'var(--status-error)', background: 'none', border: 'none',
+                fontSize: 13, fontWeight: 600, cursor: (isEditingSelf || (targetIsOwner && !isOwner)) ? 'not-allowed' : 'pointer',
+                opacity: (isEditingSelf || (targetIsOwner && !isOwner)) ? 0.3 : 1
+              }}
+            >
+              <Trash2 size={16} />
+              Revoke Access
+            </button>
+            <button
+              onClick={handleIssueOtp}
+              disabled={isIssuingOtp}
+              title="Generate a one-time password, email it to the user, and require them to set a new password on first sign-in."
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, color: 'var(--teal)', background: 'rgba(0,63,73,0.06)', border: '1px solid rgba(0,63,73,0.2)',
+                padding: '9px 14px', borderRadius: 10, fontSize: 13, fontWeight: 800, cursor: isIssuingOtp ? 'not-allowed' : 'pointer', opacity: isIssuingOtp ? 0.6 : 1
+              }}
+            >
+              {isIssuingOtp ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
+              {isIssuingOtp ? 'Issuing…' : 'Issue One-Time Password'}
+            </button>
+          </div>
+
           <div style={{ display: 'flex', gap: 12 }}>
             <button onClick={onClose} style={{ padding: '12px 24px', borderRadius: 12, background: 'var(--cotton)', color: 'var(--teal)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>Cancel</button>
             <button 

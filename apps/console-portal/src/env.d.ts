@@ -8,6 +8,10 @@ interface CloudflareEnv {
   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?: string;
   NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET?: string;
   CLOUDFLARE_AIG_TOKEN?: string;
+  /** AWS mail relay base URL (default https://api.rehdigital.com). */
+  NEXT_PUBLIC_SMTP_RELAY_URL?: string;
+  /** Shared secret the mail relay requires to accept dispatch requests. */
+  NEXT_PUBLIC_SMTP_RELAY_SECRET?: string;
 
   // ─── BIM Reviews Report · Notion integration ────────────────────
   /** Notion Internal Integration Token (SECRET — never commit). */

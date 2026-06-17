@@ -6,6 +6,7 @@
  * no Firebase. Edge-compatible.
  */
 import { getSupabaseAdmin } from './supabase';
+import { isSuperAdmin } from './siteConfig';
 
 export class AuthError extends Error {
   status: number;
@@ -35,21 +36,23 @@ export async function verifyUser(req: Request): Promise<VerifiedUser> {
   const { data, error } = await sb.auth.getUser(token);
   if (error || !data?.user) throw new AuthError('Invalid or expired session', 401);
 
+  const email = data.user.email ?? undefined;
   const { data: profile } = await sb.from('users').select('*').eq('id', data.user.id).maybeSingle();
-  if (!profile) throw new AuthError('User profile not found', 403);
-  if (profile.status === 'SUSPENDED') throw new AuthError('Account suspended', 403);
+  // Break-glass: super admins are always allowed even if the profile is missing/suspended.
+  if (!profile && !isSuperAdmin(email)) throw new AuthError('User profile not found', 403);
+  if (profile?.status === 'SUSPENDED' && !isSuperAdmin(email)) throw new AuthError('Account suspended', 403);
 
-  return { uid: data.user.id, email: data.user.email ?? undefined, profile };
+  return { uid: data.user.id, email, profile: profile || { email, is_admin: true, role: 'OWNER' } };
 }
 
-function isAdminProfile(p: Record<string, any>): boolean {
-  return p?.is_admin === true || p?.role === 'OWNER' || p?.role === 'ADMIN';
+function isAdminProfile(p: Record<string, any>, email?: string): boolean {
+  return isSuperAdmin(email) || p?.is_admin === true || p?.role === 'OWNER' || p?.role === 'ADMIN';
 }
 
 /** Require an authenticated admin/owner. */
 export async function verifyAdmin(req: Request): Promise<VerifiedUser> {
   const user = await verifyUser(req);
-  if (!isAdminProfile(user.profile)) throw new AuthError('Insufficient permissions', 403);
+  if (!isAdminProfile(user.profile, user.email)) throw new AuthError('Insufficient permissions', 403);
   return user;
 }
 
@@ -57,7 +60,7 @@ export async function verifyAdmin(req: Request): Promise<VerifiedUser> {
 export async function verifyBimAccess(req: Request): Promise<VerifiedUser> {
   const user = await verifyUser(req);
   const p = user.profile;
-  const hasAccess = isAdminProfile(p) || p?.access?.bimReviews === true;
+  const hasAccess = isAdminProfile(p, user.email) || p?.access?.bimReviews === true;
   if (!hasAccess) throw new AuthError('No access to BIM Reviews', 403);
   return user;
 }

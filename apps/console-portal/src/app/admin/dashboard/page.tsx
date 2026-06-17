@@ -26,6 +26,7 @@ import {
   FileText,
   Pencil,
   Loader2,
+  KeyRound,
   Inbox,
   X,
   Check,
@@ -622,7 +623,7 @@ function CommunicationsHub({ showToast, usersSnapshot }: { showToast: any, users
 }
 
 export default function AdminDashboardPage() {
-  const { logout, userProfile } = useAuth();
+  const { logout, userProfile, getToken } = useAuth();
   const { isVisible, can, isAdmin, policy } = usePermissions();
   const router = useRouter();
 
@@ -1668,6 +1669,29 @@ export default function AdminDashboardPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [blockModal, setBlockModal] = useState({ isOpen: false, uid: '', name: '', email: '' });
+  const [otpAllOpen, setOtpAllOpen] = useState(false);
+  const [otpAllRunning, setOtpAllRunning] = useState(false);
+
+  const handleIssueOtpAll = async () => {
+    setOtpAllRunning(true);
+    try {
+      const token = await getToken();
+      const res = await fetch('/api/admin/issue-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ all: true, sendEmail: true }),
+      });
+      const out = await res.json();
+      if (!res.ok) throw new Error(out.error || 'Bulk one-time password failed.');
+      const emailed = (out.results || []).filter((r: any) => r.emailed).length;
+      showToast(`One-time passwords issued for ${out.count} user(s); ${emailed} emailed.`, 'SUCCESS');
+    } catch (e: any) {
+      showToast(e.message || 'Bulk one-time password failed.', 'ERROR');
+    } finally {
+      setOtpAllRunning(false);
+      setOtpAllOpen(false);
+    }
+  };
 
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
@@ -2028,6 +2052,22 @@ export default function AdminDashboardPage() {
 
                     {/* Right: Action Buttons */}
                     <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 12, alignItems: 'center' }}>
+                      {activeTab === 'users' && activeSubTab === 'users' && userProfile?.role === 'OWNER' && (
+                        <button
+                          onClick={() => setOtpAllOpen(true)}
+                          disabled={otpAllRunning}
+                          title="Generate a one-time password for every user, email it to them, and require each to set a new password on first sign-in."
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px',
+                            borderRadius: 14, background: '#eef2ff', color: '#003f49',
+                            border: '1px solid rgba(0, 63, 73, 0.15)', cursor: otpAllRunning ? 'not-allowed' : 'pointer',
+                            fontSize: 13, fontWeight: 800, opacity: otpAllRunning ? 0.6 : 1
+                          }}
+                        >
+                          {otpAllRunning ? <Loader2 size={18} className="animate-spin" /> : <KeyRound size={18} />}
+                          {otpAllRunning ? 'Issuing…' : 'Issue OTP to All'}
+                        </button>
+                      )}
                       {activeTab === 'bim-reviews' && can('bimReviews', 'edit') && (
                         <>
                           <input 
@@ -4364,6 +4404,18 @@ export default function AdminDashboardPage() {
                 message="Authorize the immediate termination of this administrative session? All secure connections will be severed."
                 confirmLabel="Authorize Exit"
                 severity="WARNING"
+              />
+            )}
+            {otpAllOpen && (
+              <EliteConfirmModal
+                key="otp-all-confirm"
+                isOpen={otpAllOpen}
+                onClose={() => setOtpAllOpen(false)}
+                onConfirm={handleIssueOtpAll}
+                title="Issue One-Time Passwords"
+                message="Generate a fresh one-time password for EVERY user, email it to them, and require each to set a new password on next sign-in. Existing passwords stop working immediately. Continue?"
+                confirmLabel="Issue to All Users"
+                severity="DANGER"
               />
             )}
             {broadcastToDelete && (

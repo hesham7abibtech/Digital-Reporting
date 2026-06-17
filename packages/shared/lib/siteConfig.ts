@@ -13,6 +13,16 @@ const stripTrailing = (u: string) => u.replace(/\/+$/, '');
 export const SITE_URL = stripTrailing(process.env.NEXT_PUBLIC_SITE_URL || 'https://rehdigital.com');
 export const CONSOLE_URL = stripTrailing(process.env.NEXT_PUBLIC_CONSOLE_URL || 'https://console.rehdigital.com');
 
+/**
+ * Break-glass accounts that ALWAYS retain admin access and can never be
+ * suspended / locked out. Enforced server-side (adminAuth) and client-side
+ * (AuthContext). Add emails in lowercase.
+ */
+export const SUPER_ADMIN_EMAILS = ['hesham.habib@insiteinternational.com'];
+export function isSuperAdmin(email?: string | null): boolean {
+  return !!email && SUPER_ADMIN_EMAILS.includes(email.trim().toLowerCase());
+}
+
 /** Absolute, branded URL on the user portal, e.g. authUrl('/auth/reset'). */
 export function authUrl(path: string = '/auth/reset'): string {
   return `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;

@@ -57,7 +57,7 @@ function fmtRemaining(ms: number): string {
 
 function LoginContent() {
   const router = useRouter();
-  const { user, userProfile, loading, authError } = useAuth();
+  const { user, userProfile, loading, authError, needsPasswordSetup } = useAuth();
 
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
@@ -105,12 +105,14 @@ function LoginContent() {
     if (!user) return;
     if (mfaChallenge) return; // hold routing until 2FA code is verified
     if (authError?.includes('ACCESS REVOKED')) { setError(authError); setIsSubmitting(false); return; }
+    // Signed in with a one-time / migration password → force a new password first.
+    if (needsPasswordSetup) { router.push('/auth/reset'); return; }
     if (!userProfile) return; // still loading profile
     if (!user.emailVerified && !userProfile.isVerified) { setPendingState('unverified'); setIsSubmitting(false); return; }
     if (!userProfile.isApproved) { setPendingState('unapproved'); setIsSubmitting(false); return; }
     sessionStorage.setItem('dashboard_session', 'active');
     router.push('/dashboard');
-  }, [user, userProfile, authError, router, mfaChallenge]);
+  }, [user, userProfile, authError, router, mfaChallenge, needsPasswordSetup]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
