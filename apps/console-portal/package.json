@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" next dev --port 3001",
-    "build": "node scripts/generate-version.mjs && cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" next build",
+    "build": "node scripts/generate-version.mjs && cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" next build --webpack",
     "start": "next start --port 3001",
     "lint": "eslint",
     "pages:build": "npx @cloudflare/next-on-pages",
