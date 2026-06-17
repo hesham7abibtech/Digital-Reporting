@@ -3,8 +3,27 @@
 # The Pages build runs from the repo root (project Root directory is empty), and
 # Cloudflare scans for wrangler.toml *here* — not in apps/console-portal/. This
 # file applies the nodejs_compat flag (required by @cloudflare/next-on-pages) to
-# BOTH production and preview, and points at the console build output.
+# BOTH production and preview, points at the console build output, and supplies
+# the PUBLIC build-time vars (NEXT_PUBLIC_* are inlined during `next build`, so
+# they MUST be present at build time — otherwise createClient() throws
+# "supabaseUrl is required" while Next collects edge-route page data).
 name = "digital-reporting-console"
 compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "apps/console-portal/.vercel/output/static"
+
+# Public (non-secret) — safe to commit; needed at build + runtime.
+[vars]
+NEXT_PUBLIC_SITE_URL = "https://rehdigital.com"
+NEXT_PUBLIC_CONSOLE_URL = "https://console.rehdigital.com"
+NEXT_PUBLIC_SUPABASE_URL = "https://rrjpxgjxlpktifeoydrz.supabase.co"
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_CQ1FPl4_AHFfXwSOH_GPFw_xbgMFjuO"
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "DigitalReporting"
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET = "DigitalReporting"
+NEXT_PUBLIC_SMTP_RELAY_URL = "https://api.rehdigital.com"
+SMTP_RELAY_URL = "https://api.rehdigital.com"
+OPENAI_BASE_URL = "https://gateway.ai.cloudflare.com/v1/491ec73c1ab258bd5678c1410e3e7fa1/open-ai/openai"
+NOTION_VERSION = "2022-06-28"
+
+# SECRETS are NOT here — set them in the Pages dashboard (runtime, encrypted):
+#   SUPABASE_SERVICE_ROLE_KEY (required), OPENAI_API_KEY, SMTP_RELAY_SECRET, DIFY_API_KEY
