@@ -33,6 +33,28 @@ async function allowedDomains(): Promise<string[]> {
   } catch { return DEFAULT_ALLOWED_DOMAINS; }
 }
 
+// ── Email rate-limit cooldown ───────────────────────────────────────
+// GoTrue's per-request limit embeds the seconds ("...after 47 seconds");
+// the hourly project cap is generic ("email rate limit exceeded") — fall back
+// to a 1-hour window. Cooldown is persisted per-email so it survives a refresh.
+const RATE_WINDOW_MS = 60 * 60 * 1000;
+const SEND_INTERVAL_MS = 60 * 1000;
+const cooldownKey = (email: string) => `reh-reset-cooldown:${email.trim().toLowerCase()}`;
+
+function parseRetrySeconds(msg: string): number | null {
+  const sec = /(\d+)\s*second/i.exec(msg || '');
+  if (sec) return parseInt(sec[1], 10);
+  const min = /(\d+)\s*minute/i.exec(msg || '');
+  if (min) return parseInt(min[1], 10) * 60;
+  return null;
+}
+function fmtRemaining(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
 function LoginContent() {
   const router = useRouter();
   const { user, userProfile, loading, authError } = useAuth();
@@ -51,6 +73,32 @@ function LoginContent() {
   const [pendingState, setPendingState] = useState<null | 'unverified' | 'unapproved'>(null);
   const [isTicketOpen, setIsTicketOpen] = useState(false);
   const [mfaChallenge, setMfaChallenge] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [nowTs, setNowTs] = useState(() => Date.now());
+  const cooldownLeft = Math.max(0, cooldownUntil - nowTs);
+
+  // Restore any active cooldown for the entered email (survives refresh).
+  useEffect(() => {
+    if (!email) { setCooldownUntil(0); return; }
+    try {
+      const v = parseInt(localStorage.getItem(cooldownKey(email)) || '0', 10);
+      setCooldownUntil(v > Date.now() ? v : 0);
+    } catch { /* ignore */ }
+  }, [email]);
+
+  // Tick once a second while a cooldown is counting down.
+  useEffect(() => {
+    if (cooldownUntil <= Date.now()) return;
+    const id = setInterval(() => setNowTs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
+
+  const startCooldown = (ms: number) => {
+    const until = Date.now() + ms;
+    setCooldownUntil(until);
+    setNowTs(Date.now());
+    try { localStorage.setItem(cooldownKey(email), String(until)); } catch { /* ignore */ }
+  };
 
   // Route on auth state (verification → approval → dashboard).
   useEffect(() => {
@@ -88,6 +136,7 @@ function LoginContent() {
   };
 
   const sendSetPasswordEmail = async (kind: 'migration' | 'reset') => {
+    if (cooldownLeft > 0) { setError(`Please wait ${fmtRemaining(cooldownLeft)} before requesting another email.`); return; }
     setError(''); setIsSubmitting(true);
     try {
       const domain = email.split('@')[1]?.toLowerCase();
@@ -96,10 +145,13 @@ function LoginContent() {
       const { error } = await supabaseBrowser.auth.resetPasswordForEmail(email, { redirectTo: authUrl('/auth/reset') });
       if (error) throw error;
       setEmailSent(kind);
+      startCooldown(SEND_INTERVAL_MS); // respect GoTrue's per-request interval
     } catch (err: any) {
       const msg = err?.message || '';
-      if (/rate limit|too many|exceeded/i.test(msg)) {
-        setError('Too many email requests right now. Please wait about an hour and try again, or ask an administrator to set your password directly.');
+      if (/rate limit|too many|exceeded|\d+\s*second|\d+\s*minute/i.test(msg)) {
+        const secs = parseRetrySeconds(msg);
+        startCooldown(secs != null ? secs * 1000 : RATE_WINDOW_MS);
+        setError(''); // the live countdown banner communicates the remaining wait
       } else {
         setError(msg || 'Could not send the email. Try again.');
       }
@@ -225,11 +277,19 @@ function LoginContent() {
               </motion.div>
             )}
 
+            {/* Live email rate-limit countdown */}
+            {cooldownLeft > 0 && (
+              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(0,63,73,0.05)', border: '1px solid rgba(0,63,73,0.18)', color: TEAL, fontSize: 12, fontWeight: 700, display: 'flex', gap: 10, alignItems: 'center' }}>
+                <Loader2 size={14} className="animate-spin" style={{ flexShrink: 0 }} />
+                <span style={{ lineHeight: 1.4 }}>Email limit reached. You can request another link in <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtRemaining(cooldownLeft)}</strong>.</span>
+              </motion.div>
+            )}
+
             {/* Migration hint after a failed login */}
             {migrationHint && mode === 'login' && (
-              <button type="button" onClick={() => sendSetPasswordEmail('migration')}
-                style={{ padding: '11px 14px', borderRadius: 12, background: 'rgba(0,63,73,0.05)', border: '1px dashed rgba(0,63,73,0.25)', color: TEAL, fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                <KeyRound size={14} /> First sign-in since our security upgrade? Set your password
+              <button type="button" onClick={() => sendSetPasswordEmail('migration')} disabled={cooldownLeft > 0}
+                style={{ padding: '11px 14px', borderRadius: 12, background: 'rgba(0,63,73,0.05)', border: '1px dashed rgba(0,63,73,0.25)', color: TEAL, fontSize: 12, fontWeight: 800, cursor: cooldownLeft > 0 ? 'not-allowed' : 'pointer', opacity: cooldownLeft > 0 ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <KeyRound size={14} /> {cooldownLeft > 0 ? `Try again in ${fmtRemaining(cooldownLeft)}` : 'First sign-in since our security upgrade? Set your password'}
               </button>
             )}
 
@@ -239,8 +299,8 @@ function LoginContent() {
               </div>
             )}
 
-            <button type="submit" disabled={isSubmitting} style={{ width: 'fit-content', padding: '12px 40px', borderRadius: 12, marginTop: 4, background: TEAL, color: '#fff', fontSize: 13, fontWeight: 900, border: 'none', cursor: isSubmitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 8px 24px rgba(0,63,73,0.15)', textTransform: 'uppercase', letterSpacing: '0.1em', alignSelf: 'center' }}>
-              {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : mode === 'login' ? <>Sign In <ChevronRight size={18} /></> : mode === 'register' ? <>Create Account <UserPlus size={18} /></> : <>Email Secure Link <ChevronRight size={18} /></>}
+            <button type="submit" disabled={isSubmitting || (mode === 'forgot-password' && cooldownLeft > 0)} style={{ width: 'fit-content', padding: '12px 40px', borderRadius: 12, marginTop: 4, background: TEAL, color: '#fff', fontSize: 13, fontWeight: 900, border: 'none', cursor: (isSubmitting || (mode === 'forgot-password' && cooldownLeft > 0)) ? 'not-allowed' : 'pointer', opacity: (mode === 'forgot-password' && cooldownLeft > 0) ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 8px 24px rgba(0,63,73,0.15)', textTransform: 'uppercase', letterSpacing: '0.1em', alignSelf: 'center' }}>
+              {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : mode === 'login' ? <>Sign In <ChevronRight size={18} /></> : mode === 'register' ? <>Create Account <UserPlus size={18} /></> : (cooldownLeft > 0 ? <>Try again in {fmtRemaining(cooldownLeft)}</> : <>Email Secure Link <ChevronRight size={18} /></>)}
             </button>
           </form>
 
