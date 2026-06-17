@@ -1,4 +1,8 @@
 interface CloudflareEnv {
+  /** Canonical user-portal origin for branded auth/redirect links (default https://rehdigital.com). */
+  NEXT_PUBLIC_SITE_URL?: string;
+  /** Canonical admin-console origin (default https://console.rehdigital.com). */
+  NEXT_PUBLIC_CONSOLE_URL?: string;
   OPENAI_API_KEY?: string;
   OPENAI_BASE_URL?: string;
   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?: string;

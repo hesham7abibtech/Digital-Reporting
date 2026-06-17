@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import TicketRequestModal from '@/components/shared/TicketRequestModal';
 import TwoFactorModal from '@/components/shared/TwoFactorModal';
+import { authUrl, consoleUrl } from '@/lib/siteConfig';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'unauthorized';
 
@@ -193,7 +194,7 @@ function AdminLoginContent() {
 
       const { data, error } = await supabaseBrowser.auth.signUp({
         email, password,
-        options: { data: { name, department }, emailRedirectTo: `${window.location.origin}/admin/login` },
+        options: { data: { name, department }, emailRedirectTo: consoleUrl('/admin/login') },
       });
       if (error) throw error;
       if (data.user) {
@@ -217,7 +218,7 @@ function AdminLoginContent() {
     setMessage('');
     setIsSubmitting(true);
     try {
-      const { error } = await supabaseBrowser.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/auth/reset` });
+      const { error } = await supabaseBrowser.auth.resetPasswordForEmail(email, { redirectTo: authUrl('/auth/reset') });
       if (error) throw error;
       setShowResetSuccess(true);
       setIsSubmitting(false);

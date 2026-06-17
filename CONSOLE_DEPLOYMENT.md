@@ -6,6 +6,23 @@ edits are Realtime-synced automatically — both apps subscribe to the same Post
 
 > ⚠️ No live deployment yet. Test locally first, then confirm. Nothing here is deployed automatically.
 
+## Branded links (rehdigital.com) — REQUIRED Supabase Auth config
+All password/recovery/confirmation/redirect links are generated from the canonical
+origin (`src/lib/siteConfig.ts` → `NEXT_PUBLIC_SITE_URL`), never from the raw browser
+origin or the supabase.co URL — so every emailed link carries the **rehdigital.com**
+identity and can't be redirected elsewhere (open-redirect safe).
+
+In the Supabase dashboard → **Authentication → URL Configuration**:
+- **Site URL**: `https://rehdigital.com`
+- **Redirect URLs (allow-list)** — add all:
+  - `https://rehdigital.com/auth/reset`, `https://rehdigital.com/login`
+  - `https://console.rehdigital.com/auth/reset`, `https://console.rehdigital.com/admin/login`
+  - `http://localhost:3000/auth/reset`, `http://localhost:3000/login`, `http://localhost:3000/admin/login` (local testing)
+- **Authentication → Email**: customize templates (sender name "REH Digital", from `no-reply@rehdigital.com`) and configure SMTP so links send.
+
+Env: `NEXT_PUBLIC_SITE_URL` = `https://rehdigital.com`, `NEXT_PUBLIC_CONSOLE_URL` =
+`https://console.rehdigital.com` (prod). Local `.env.local` uses `http://localhost:3000`.
+
 ## Non-secret vars (safe in `wrangler.toml [vars]` / Pages “Environment variables”)
 ```
 NODE_VERSION                          = "20"

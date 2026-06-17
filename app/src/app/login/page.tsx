@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import TicketRequestModal from '@/components/shared/TicketRequestModal';
 import TwoFactorModal from '@/components/shared/TwoFactorModal';
+import { authUrl } from '@/lib/siteConfig';
 
 type AuthMode = 'login' | 'register' | 'forgot-password';
 const DEFAULT_ALLOWED_DOMAINS = ['modon.com', 'insiteinternational.com'];
@@ -92,7 +93,7 @@ function LoginContent() {
       const domain = email.split('@')[1]?.toLowerCase();
       const domains = await allowedDomains();
       if (!domain || !domains.includes(domain)) { setError('Enter your authorized work email first.'); setIsSubmitting(false); return; }
-      const { error } = await supabaseBrowser.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/auth/reset` });
+      const { error } = await supabaseBrowser.auth.resetPasswordForEmail(email, { redirectTo: authUrl('/auth/reset') });
       if (error) throw error;
       setEmailSent(kind);
     } catch (err: any) {
@@ -114,7 +115,7 @@ function LoginContent() {
       const name = `${firstName} ${lastName}`.trim();
       const { data, error } = await supabaseBrowser.auth.signUp({
         email, password,
-        options: { data: { name, department }, emailRedirectTo: `${window.location.origin}/login` },
+        options: { data: { name, department }, emailRedirectTo: authUrl('/login') },
       });
       if (error) throw error;
       if (data.user) {

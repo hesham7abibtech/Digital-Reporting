@@ -6,6 +6,9 @@ pages_build_output_dir = ".vercel/output/static"
 [vars]
 # Ensure environment variables are bound to the functions
 NODE_VERSION = "20"
+# Branded canonical origins for all auth/recovery/redirect links (production).
+NEXT_PUBLIC_SITE_URL = "https://rehdigital.com"
+NEXT_PUBLIC_CONSOLE_URL = "https://console.rehdigital.com"
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "DigitalReporting"
 NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET = "DigitalReporting"
 OPENAI_BASE_URL = "https://gateway.ai.cloudflare.com/v1/491ec73c1ab258bd5678c1410e3e7fa1/open-ai/openai"
