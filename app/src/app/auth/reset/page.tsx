@@ -1,278 +1,174 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
+import { supabaseBrowser } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, CheckCircle2, Loader2, ShieldAlert, Eye, EyeOff, ChevronRight, Home } from 'lucide-react';
+import { Lock, Loader2, ShieldAlert, Eye, EyeOff, ChevronRight, Home, Sparkles } from 'lucide-react';
+
+const TEAL = '#003f49';
+const GOLD = '#d0ab82';
 
 function ResetPasswordContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const oobCode = searchParams.get('oobCode');
-
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<'verifying' | 'input' | 'submitting' | 'success' | 'error'>('verifying');
   const [error, setError] = useState('');
   const [email, setEmail] = useState('');
+  const [isMigration, setIsMigration] = useState(false);
 
+  // Wait for the Supabase recovery session that the email link establishes.
   useEffect(() => {
-    if (!oobCode) {
-      setStatus('error');
-      setError('Invalid or expired reset link. Please request a new one.');
-      return;
-    }
+    let settled = false;
+    const adopt = (session: any) => {
+      if (!session?.user || settled) return;
+      settled = true;
+      setEmail(session.user.email || '');
+      setIsMigration(!!(session.user.app_metadata?.must_set_password || session.user.user_metadata?.must_set_password));
+      setStatus('input');
+    };
+    supabaseBrowser.auth.getSession().then(({ data }) => adopt(data.session));
+    const { data: sub } = supabaseBrowser.auth.onAuthStateChange((_e, session) => adopt(session));
+    const timeout = setTimeout(() => {
+      if (!settled) { setStatus('error'); setError('This link is invalid or has expired. Please request a new one.'); }
+    }, 4000);
+    return () => { sub.subscription.unsubscribe(); clearTimeout(timeout); };
+  }, []);
 
-    // Verify the reset code and get the email associated with it
-    verifyPasswordResetCode(auth, oobCode)
-      .then((email) => {
-        setEmail(email);
-        setStatus('input');
-      })
-      .catch((err) => {
-        console.error('Code verification failed:', err);
-        setStatus('error');
-        setError('The password reset link is invalid or has already been used.');
-      });
-  }, [oobCode]);
+  const requirements = [
+    { label: 'Lower Case', met: /[a-z]/.test(newPassword) },
+    { label: 'Upper Case', met: /[A-Z]/.test(newPassword) },
+    { label: 'Special Char', met: /[^a-zA-Z0-9]/.test(newPassword) },
+    { label: 'Numeric', met: /\d/.test(newPassword) },
+    { label: '8 Characters', met: newPassword.length >= 8 },
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters long.');
-      return;
-    }
-
+    if (newPassword !== confirmPassword) { setError('Passwords do not match.'); return; }
+    if (!requirements.every((r) => r.met)) { setError('Password does not meet all requirements.'); return; }
     setStatus('submitting');
     setError('');
-
     try {
-      await confirmPasswordReset(auth, oobCode!, newPassword);
-      
-      // Dispatch Elite Security Confirmation
-      try {
-        const { mailService } = await import('@/services/MailService');
-        await mailService.sendPasswordChangedConfirmation(email, 'Operative');
-      } catch (mailErr) {
-        console.warn('[SECURITY] Post-reset confirmation dispatch failed:', mailErr);
-      }
-
+      const { data } = await supabaseBrowser.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error('Recovery session expired. Please request a new link.');
+      const res = await fetch('/api/auth/set-password', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword }),
+      });
+      const out = await res.json();
+      if (!res.ok) throw new Error(out.error || 'Failed to set password.');
       setStatus('success');
-      setTimeout(() => {
-        router.push('/login');
-      }, 3000);
+      setTimeout(() => router.push('/dashboard'), 3200);
     } catch (err: any) {
-      console.error('Password reset failed:', err);
       setStatus('error');
-      setError(err.message || 'Failed to reset password. Please try again.');
+      setError(err.message || 'Failed to set password. Please try again.');
     }
   };
 
   const containerStyle: React.CSSProperties = {
     minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: 'linear-gradient(160deg, var(--aqua) 0%, var(--haze) 50%, var(--cotton) 100%)',
-    padding: 20, position: 'relative', overflow: 'hidden'
+    background: 'radial-gradient(circle at 50% 0%, #eaf2f3 0%, #f8fafc 60%)', padding: 20, position: 'relative', overflow: 'hidden',
   };
-
-  const cardStyle: React.CSSProperties = {
-    width: '100%', maxWidth: 460, background: 'rgba(255, 255, 255, 0.7)',
-    backdropFilter: 'blur(40px)', border: '1px solid rgba(0, 63, 73, 0.1)',
-    borderRadius: 28, overflow: 'hidden', padding: '48px 40px',
-    boxShadow: '0 25px 60px rgba(0, 63, 73, 0.08)', position: 'relative', zIndex: 10
-  };
-
   const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '16px 16px 16px 44px', borderRadius: 16,
-    background: 'rgba(255, 255, 255, 0.6)', border: '1px solid rgba(0, 63, 73, 0.15)',
-    color: 'var(--teal)', fontSize: 15, outline: 'none', transition: 'all 300ms',
-    fontWeight: 600,
+    width: '100%', padding: '15px 44px 15px 44px', borderRadius: 14, boxSizing: 'border-box',
+    background: '#fbfcfe', border: '1px solid rgba(0,63,73,0.15)', color: TEAL, fontSize: 15, outline: 'none', fontWeight: 600,
   };
 
   if (status === 'verifying') {
     return (
       <div style={containerStyle}>
-        <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 16,
-            background: 'rgba(255, 255, 255, 0.6)',
-            padding: '16px 28px',
-            borderRadius: 20,
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(0, 63, 73, 0.1)',
-            boxShadow: '0 10px 30px rgba(0, 42, 48, 0.05)'
-          }}
-        >
-          <Loader2 className="animate-spin" size={24} color="var(--teal)" />
-          <p style={{ color: 'var(--teal)', fontWeight: 700, letterSpacing: '0.05em', fontSize: 14 }}>
-            Verifying security credentials...
-          </p>
-        </motion.div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: '#fff', padding: '16px 28px', borderRadius: 18, boxShadow: '0 10px 30px rgba(0,42,48,0.06)' }}>
+          <Loader2 className="animate-spin" size={22} color={TEAL} />
+          <p style={{ color: TEAL, fontWeight: 700, fontSize: 14 }}>Verifying your secure link…</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div style={containerStyle}>
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }} 
-        animate={{ opacity: 1, y: 0 }}
-        style={cardStyle}
-      >
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-           <div style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 16,
-              padding: '10px 24px', background: 'var(--teal)', borderRadius: 16,
-              boxShadow: '0 10px 30px rgba(0, 63, 73, 0.15)', 
-              border: '1px solid var(--sunlit-rock)', 
-              margin: '0 auto 24px',
-            }}>
-              <img src="/logos/modon_logo.png" alt="MODON" style={{ height: 22, filter: 'brightness(0) invert(1)' }} />
-              <div style={{ width: 1, height: 16, background: 'rgba(255, 255, 255, 0.2)' }} />
-              <img src="/logos/insite_logo.png" alt="INSITE" style={{ height: 18, filter: 'brightness(0) invert(1)' }} />
-            </div>
-            <h1 style={{ fontSize: 24, fontWeight: 900, color: 'var(--teal)', margin: '0 0 8px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-              Set New Password
-            </h1>
-            <p style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 600 }}>
-              Resetting access for <span style={{ color: 'var(--teal)' }}>{email}</span>
-            </p>
-        </div>
+      <style>{SUCCESS_KEYFRAMES}</style>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        style={{ width: '100%', maxWidth: 480, background: '#fff', border: '1px solid rgba(0,63,73,0.06)', borderRadius: 28,
+          overflow: 'hidden', padding: '44px 40px', boxShadow: '0 25px 60px rgba(0,63,73,0.08)', position: 'relative', zIndex: 10 }}>
 
         <AnimatePresence mode="wait">
           {status === 'success' ? (
-            <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: 'center' }}>
-              <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--status-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                <CheckCircle2 size={32} color="white" />
-              </div>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--teal)', marginBottom: 12 }}>Security Updated</h2>
-              <p style={{ color: 'var(--text-dim)', fontSize: 14, lineHeight: 1.6 }}>
-                Your password has been successfully reset. Redirecting you to the portal...
-              </p>
-            </motion.div>
+            <SuccessView key="success" migration={isMigration} />
           ) : status === 'error' ? (
             <motion.div key="error" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ textAlign: 'center' }}>
-              <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(255, 76, 79, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                <ShieldAlert size={32} color="var(--status-error)" />
+              <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 22px' }}>
+                <ShieldAlert size={32} color="#dc2626" />
               </div>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--status-error)', marginBottom: 12 }}>Link Invalid</h2>
-              <p style={{ color: 'var(--text-dim)', fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
-                {error}
-              </p>
-              <button 
-                onClick={() => router.push('/login')}
-                style={{ width: '100%', padding: '14px', borderRadius: 14, background: 'var(--teal)', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-              >
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#dc2626', marginBottom: 12 }}>Link Invalid</h2>
+              <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>{error}</p>
+              <button onClick={() => router.push('/login')}
+                style={{ width: '100%', padding: '14px', borderRadius: 14, background: TEAL, color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <Home size={18} /> Back to Login
               </button>
             </motion.div>
           ) : (
-            <motion.form key="form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ position: 'relative' }}>
-                <Lock size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-                <input 
-                  type={showPassword ? 'text' : 'password'} 
-                  placeholder="New Password" 
-                  value={newPassword} 
-                  onChange={(e) => setNewPassword(e.target.value)} 
-                  required 
-                  style={{ ...inputStyle, paddingRight: 44 }} 
-                />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-
-              <div style={{ position: 'relative' }}>
-                <Lock size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-                <input 
-                  type={showPassword ? 'text' : 'password'} 
-                  placeholder="Confirm New Password" 
-                  value={confirmPassword} 
-                  onChange={(e) => setConfirmPassword(e.target.value)} 
-                  required 
-                  style={inputStyle} 
-                />
-              </div>
-
-              {/* Ultra Elite 5-Point Security Matrix */}
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(3, 1fr)', 
-                gap: '12px 8px', 
-                padding: '16px',
-                background: 'rgba(0, 63, 73, 0.03)',
-                borderRadius: 20,
-                border: '1px solid rgba(0, 63, 73, 0.05)'
-              }}>
-                {[
-                  { label: 'Lower Case', met: /[a-z]/.test(newPassword) },
-                  { label: 'Upper Case', met: /[A-Z]/.test(newPassword) },
-                  { label: 'Special Char', met: /[^a-zA-Z0-9]/.test(newPassword) },
-                  { label: 'Numeric', met: /\d/.test(newPassword) },
-                  { label: '8 Characters', met: newPassword.length >= 8 }
-                ].map((req, i) => (
-                  <div key={i} style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center', 
-                    gap: 6,
-                    opacity: req.met ? 1 : 0.85,
-                    transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-                    transform: req.met ? 'scale(1)' : 'scale(0.95)',
-                    gridColumn: i >= 3 ? 'span 1.5' : 'span 1'
-                  }}>
-                    <div style={{
-                      width: 22, height: 22, borderRadius: 7,
-                      background: req.met ? 'var(--teal)' : 'rgba(0, 0, 0, 0.12)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      boxShadow: req.met ? '0 4px 12px rgba(0, 63, 73, 0.25)' : 'none'
-                    }}>
-                      <CheckCircle2 size={13} color={req.met ? 'white' : '#64748b'} />
-                    </div>
-                    <span style={{ 
-                      fontSize: 8, 
-                      fontWeight: 800, 
-                      textTransform: 'uppercase', 
-                      letterSpacing: '0.08em',
-                      color: req.met ? 'var(--teal)' : '#475569',
-                      textAlign: 'center',
-                      lineHeight: 1.2
-                    }}>
-                      {req.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {error && (
-                <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(255, 76, 79, 0.06)', border: '1px solid rgba(255, 76, 79, 0.15)', color: 'var(--status-error)', fontSize: 12, fontWeight: 700 }}>
-                  {error}
+            <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              {/* Header / migration apology */}
+              <div style={{ textAlign: 'center', marginBottom: 26 }}>
+                <div style={{ width: 60, height: 60, borderRadius: 18, margin: '0 auto 18px', background: `linear-gradient(135deg, ${TEAL}, #015a68)`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 26px rgba(0,63,73,0.25)' }}>
+                  <Lock size={26} color="#fff" />
                 </div>
-              )}
+                <h1 style={{ fontSize: 22, fontWeight: 900, color: TEAL, margin: '0 0 8px', letterSpacing: '0.02em' }}>
+                  {isMigration ? 'Set Your New Password' : 'Reset Password'}
+                </h1>
+                {isMigration ? (
+                  <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6, margin: 0 }}>
+                    We&apos;ve upgraded our platform to a faster, more secure system — sorry for the one-time step.
+                    Please set your password for <strong style={{ color: TEAL }}>{email}</strong>.
+                    <br /><span style={{ color: GOLD, fontWeight: 700 }}>You can reuse your previous password.</span>
+                  </p>
+                ) : (
+                  <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
+                    Setting a new password for <strong style={{ color: TEAL }}>{email}</strong>
+                  </p>
+                )}
+              </div>
 
-              <button 
-                type="submit" 
-                disabled={status === 'submitting'}
-                style={{
-                  width: '100%', padding: '16px', borderRadius: 16, background: 'var(--teal)', color: 'white',
-                  fontSize: 14, fontWeight: 800, border: 'none', cursor: status === 'submitting' ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: '0.1em'
-                }}
-              >
-                {status === 'submitting' ? <Loader2 className="animate-spin" size={18} /> : <>Reset Password <ChevronRight size={18} /></>}
-              </button>
-            </motion.form>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ position: 'relative' }}>
+                  <Lock size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                  <input type={showPassword ? 'text' : 'password'} placeholder="New Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required style={inputStyle} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <Lock size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                  <input type={showPassword ? 'text' : 'password'} placeholder="Confirm New Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required style={inputStyle} />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, padding: 14, background: 'rgba(0,63,73,0.03)', borderRadius: 16 }}>
+                  {requirements.map((req, i) => (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, transition: 'all 250ms' }}>
+                      <div style={{ width: 22, height: 22, borderRadius: 7, background: req.met ? TEAL : 'rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 250ms' }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={req.met ? '#fff' : '#94a3b8'} strokeWidth="3"><path d="M5 13l4 4L19 7" /></svg>
+                      </div>
+                      <span style={{ fontSize: 7.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: req.met ? TEAL : '#64748b', textAlign: 'center', lineHeight: 1.2 }}>{req.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {error && (
+                  <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', color: '#dc2626', fontSize: 12, fontWeight: 700 }}>{error}</div>
+                )}
+
+                <button type="submit" disabled={status === 'submitting'}
+                  style={{ width: '100%', padding: '15px', borderRadius: 14, background: `linear-gradient(135deg, ${TEAL}, #015a68)`, color: '#fff', fontSize: 14, fontWeight: 800, border: 'none', cursor: status === 'submitting' ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: '0.08em', boxShadow: '0 8px 22px rgba(0,63,73,0.25)' }}>
+                  {status === 'submitting' ? <Loader2 className="animate-spin" size={18} /> : <>Secure My Account <ChevronRight size={18} /></>}
+                </button>
+              </form>
+            </motion.div>
           )}
         </AnimatePresence>
       </motion.div>
@@ -280,9 +176,47 @@ function ResetPasswordContent() {
   );
 }
 
+function SuccessView({ migration }: { migration: boolean }) {
+  return (
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: 'center', padding: '12px 0' }}>
+      <div style={{ position: 'relative', width: 120, height: 120, margin: '0 auto 26px' }}>
+        {/* radiating rings */}
+        {[0, 1, 2].map((i) => (
+          <span key={i} style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `2px solid ${GOLD}`, animation: `apc-ring 2s ${i * 0.4}s ease-out infinite`, opacity: 0 }} />
+        ))}
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', damping: 12, stiffness: 200 }}
+          style={{ position: 'absolute', inset: 18, borderRadius: '50%', background: `linear-gradient(135deg, ${TEAL}, #015a68)`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 12px 30px rgba(0,63,73,0.35)' }}>
+          <svg width="46" height="46" viewBox="0 0 52 52">
+            <motion.path d="M14 27 l8 8 l16 -18" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"
+              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ delay: 0.25, duration: 0.5, ease: 'easeOut' }} />
+          </svg>
+        </motion.div>
+        <Sparkles size={18} color={GOLD} style={{ position: 'absolute', top: -2, right: 6, animation: 'apc-twinkle 1.6s ease-in-out infinite' }} />
+        <Sparkles size={12} color={GOLD} style={{ position: 'absolute', bottom: 8, left: 0, animation: 'apc-twinkle 1.6s 0.5s ease-in-out infinite' }} />
+      </div>
+      <motion.h2 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+        style={{ fontSize: 24, fontWeight: 900, margin: '0 0 10px', letterSpacing: '0.01em',
+          background: `linear-gradient(90deg, ${GOLD}, ${TEAL}, ${GOLD})`, backgroundSize: '200% auto',
+          WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', animation: 'apc-grad 2.4s linear infinite' }}>
+        {migration ? 'Welcome Back' : 'All Set'}
+      </motion.h2>
+      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}
+        style={{ color: '#64748b', fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+        Your account is secured on the new platform.<br />Taking you to your dashboard…
+      </motion.p>
+    </motion.div>
+  );
+}
+
+const SUCCESS_KEYFRAMES = `
+@keyframes apc-ring { 0% { transform: scale(0.6); opacity: 0.5; } 100% { transform: scale(1.25); opacity: 0; } }
+@keyframes apc-twinkle { 0%,100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.15); } }
+@keyframes apc-grad { to { background-position: 200% center; } }
+`;
+
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--aqua)' }}><Loader2 className="animate-spin" size={32} color="var(--teal)" /></div>}>
+    <Suspense fallback={<div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}><Loader2 className="animate-spin" size={32} color={TEAL} /></div>}>
       <ResetPasswordContent />
     </Suspense>
   );
