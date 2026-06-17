@@ -13,6 +13,8 @@ NEXT_PUBLIC_SUPABASE_URL = "https://rrjpxgjxlpktifeoydrz.supabase.co"
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_CQ1FPl4_AHFfXwSOH_GPFw_xbgMFjuO"
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "DigitalReporting"
 NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET = "DigitalReporting"
+NEXT_PUBLIC_SMTP_RELAY_URL = "https://api.rehdigital.com"
+SMTP_RELAY_URL = "https://api.rehdigital.com"
 OPENAI_BASE_URL = "https://gateway.ai.cloudflare.com/v1/491ec73c1ab258bd5678c1410e3e7fa1/open-ai/openai"
 NOTION_VERSION = "2022-06-28"
 
