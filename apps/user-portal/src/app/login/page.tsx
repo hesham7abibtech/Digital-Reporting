@@ -97,7 +97,12 @@ function LoginContent() {
       if (error) throw error;
       setEmailSent(kind);
     } catch (err: any) {
-      setError(err.message || 'Could not send the email. Try again.');
+      const msg = err?.message || '';
+      if (/rate limit|too many|exceeded/i.test(msg)) {
+        setError('Too many email requests right now. Please wait about an hour and try again, or ask an administrator to set your password directly.');
+      } else {
+        setError(msg || 'Could not send the email. Try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }

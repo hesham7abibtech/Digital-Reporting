@@ -62,6 +62,10 @@ function ResetPasswordContent() {
       });
       const out = await res.json();
       if (!res.ok) throw new Error(out.error || 'Failed to set password.');
+      // Replace the recovery session with a clean, full session using the new
+      // credentials — the recovery JWT still carries the stale `must_set_password`
+      // claim, so without this the user can be re-prompted to set a password.
+      await supabaseBrowser.auth.signInWithPassword({ email, password: newPassword }).catch(() => {});
       setStatus('success');
       setTimeout(() => router.push('/dashboard'), 3200);
     } catch (err: any) {
