@@ -771,7 +771,7 @@ const suggestedPrompts = [
 ];
 
 export default function FloatingAIButton() {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -991,6 +991,13 @@ export default function FloatingAIButton() {
       }
 
       if (!response.ok) {
+        // A revoked/expired session can't be retried — the only recovery is to
+        // re-authenticate. Sign the user out so the route guards send them to login.
+        if (response.status === 401) {
+          setErrorMsg('Your session has expired. Please sign in again.');
+          await logout();
+          return;
+        }
         if (data && data.error) {
           throw new Error(data.error);
         }

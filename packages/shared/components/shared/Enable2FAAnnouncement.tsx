@@ -16,23 +16,29 @@ const GOLD = '#d0ab82';
  * only (sessionStorage) — so it reappears on the next sign-in until 2FA is enabled.
  */
 export default function Enable2FAAnnouncement() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [show, setShow] = useState(false);
   const [enrollOpen, setEnrollOpen] = useState(false);
+
+  // Admin-controlled: 'required' makes 2FA a non-dismissible hard gate.
+  const mandatory = userProfile?.twoFactorPolicy === 'required';
 
   useEffect(() => {
     if (!user) return;
     const key = `reh-2fa-snooze-${user.uid}`;
-    if (typeof window !== 'undefined' && sessionStorage.getItem(key)) return; // snoozed this session
+    // A "remind me later" snooze applies to optional enforcement only — a
+    // required policy always re-prompts until 2FA is actually enabled.
+    if (!mandatory && typeof window !== 'undefined' && sessionStorage.getItem(key)) return;
     let active = true;
     supabaseBrowser.auth.mfa.listFactors().then(({ data }) => {
       const hasVerified = data?.totp?.some((f) => f.status === 'verified');
       if (active && !hasVerified) setShow(true);
     }).catch(() => {});
     return () => { active = false; };
-  }, [user]);
+  }, [user, mandatory]);
 
   const remindLater = () => {
+    if (mandatory) return; // cannot dismiss a required enrollment
     if (user && typeof window !== 'undefined') sessionStorage.setItem(`reh-2fa-snooze-${user.uid}`, '1');
     setShow(false);
   };
@@ -43,7 +49,7 @@ export default function Enable2FAAnnouncement() {
         {show && !enrollOpen && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={remindLater}
+            onClick={mandatory ? undefined : remindLater}
             style={{ position: 'fixed', inset: 0, zIndex: 1500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, background: 'rgba(0,63,73,0.35)', backdropFilter: 'blur(8px)' }}
           >
             <motion.div
@@ -57,19 +63,28 @@ export default function Enable2FAAnnouncement() {
                 <div style={{ width: 64, height: 64, borderRadius: 18, margin: '0 auto 18px', background: 'rgba(0,63,73,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <ShieldCheck size={32} color={TEAL} />
                 </div>
-                <h2 style={{ fontSize: 20, fontWeight: 900, color: TEAL, margin: '0 0 10px' }}>Secure your account</h2>
+                {mandatory && (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 999, background: 'rgba(0,63,73,0.08)', color: TEAL, fontSize: 10, fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>
+                    <ShieldCheck size={12} /> Required by your administrator
+                  </div>
+                )}
+                <h2 style={{ fontSize: 20, fontWeight: 900, color: TEAL, margin: '0 0 10px' }}>{mandatory ? 'Two-factor required' : 'Secure your account'}</h2>
                 <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6, margin: '0 0 24px' }}>
-                  Add two-factor authentication for an extra layer of protection. It only takes a minute and keeps your account safe even if your password is ever compromised.
+                  {mandatory
+                    ? 'Your administrator requires two-factor authentication on this account. Enable it now to continue to your dashboard — this step cannot be skipped.'
+                    : 'Add two-factor authentication for an extra layer of protection. It only takes a minute and keeps your account safe even if your password is ever compromised.'}
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <button onClick={() => setEnrollOpen(true)}
                     style={{ width: '100%', padding: '13px', borderRadius: 12, border: 'none', background: `linear-gradient(135deg, ${TEAL}, #015a68)`, color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 10px 24px rgba(0,63,73,0.2)' }}>
                     Enable now <ChevronRight size={16} />
                   </button>
-                  <button onClick={remindLater}
-                    style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                    <Clock size={14} /> Remind me later
-                  </button>
+                  {!mandatory && (
+                    <button onClick={remindLater}
+                      style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                      <Clock size={14} /> Remind me later
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>

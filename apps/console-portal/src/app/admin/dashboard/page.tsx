@@ -1847,8 +1847,8 @@ export default function AdminDashboardPage() {
           boxShadow: '1px 0 20px rgba(0,0,0,0.2)',
           flexShrink: 0
         }}>
-          <div style={{ padding: '32px 24px', textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }}>
+          <div style={{ padding: '24px 20px', textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                   <h1 style={{ fontSize: 13, fontWeight: 900, color: '#ffffff', margin: 0, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: 'var(--font-heading)' }}>Admin Portal</h1>
                   <span style={{ fontSize: 9, color: '#d0ab82', fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Digital Architecture</span>
@@ -1861,7 +1861,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          <nav className="custom-scrollbar" style={{ flex: 1, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <nav className="custom-scrollbar" style={{ flex: 1, padding: '0 12px', display: 'flex', flexDirection: 'column', gap: 3 }}>
             {[
               { id: 'tasks', label: 'Deliverable Matrix', icon: BarChart3, permission: 'tasks' },
               { id: 'bim-reviews', label: 'BIM Review Matrix', icon: Layers, permission: 'bimReviews' },
@@ -1881,17 +1881,17 @@ export default function AdminDashboardPage() {
                   key={tab.id}
                   onClick={() => switchTab(tab.id)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 16,
+                    display: 'flex', alignItems: 'center', gap: 13, padding: '12px 16px', borderRadius: 12,
                     background: isActive ? 'rgba(208, 171, 130, 0.1)' : 'transparent',
-                    color: isActive ? '#d0ab82' : 'rgba(255, 255, 255, 0.5)',
+                    color: isActive ? '#d0ab82' : 'rgba(255, 255, 255, 0.72)',
                     border: isActive ? '1px solid rgba(208, 171, 130, 0.2)' : '1px solid transparent', 
                     cursor: 'pointer', transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                     width: '100%', textAlign: 'left', position: 'relative', overflow: 'hidden'
                   }}
                 >
                   <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <tab.icon size={18} style={{ opacity: isActive ? 1 : 0.6, color: isActive ? '#d0ab82' : 'inherit' }} />
-                    <span style={{ fontSize: 13, fontWeight: isActive ? 800 : 500, letterSpacing: isActive ? '0.05em' : 'normal', whiteSpace: 'nowrap' }}>{tab.label}</span>
+                    <tab.icon size={19} style={{ opacity: isActive ? 1 : 0.8, color: isActive ? '#d0ab82' : 'inherit' }} />
+                    <span style={{ fontSize: 15, fontWeight: isActive ? 800 : 600, letterSpacing: isActive ? '0.03em' : '0.01em', whiteSpace: 'nowrap' }}>{tab.label}</span>
                   </div>
                   {isActive && (
                     <motion.div
@@ -1967,7 +1967,7 @@ export default function AdminDashboardPage() {
           </header>
 
           <main style={{
-            padding: '24px 32px',
+            padding: '16px 20px',
             flex: 1,
             overflowY: 'auto',
             overflowX: 'hidden',
@@ -1985,9 +1985,9 @@ export default function AdminDashboardPage() {
                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               >
                 <GlassCard padding="none">
-                  <div style={{ 
-                    padding: '16px 24px', 
-                    borderBottom: '1px solid var(--border)', 
+                  <div style={{
+                    padding: '14px 20px',
+                    borderBottom: '1px solid var(--border)',
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'space-between', 
@@ -1998,17 +1998,17 @@ export default function AdminDashboardPage() {
                     boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
                   }}>
                     <div>
-                      <h2 style={{ fontSize: 13, fontWeight: 900, color: 'var(--teal)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--teal)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1.2 }}>
                         {activeTab === 'users' ? 'Security & Identity Management' : activeTab === 'team' ? 'Project Resource Management' : activeTab === 'tasks' ? 'Deliverable Submission Pipeline' : activeTab === 'bim-reviews' ? 'BIM Strategic Review Matrix' : activeTab === 'branding' ? 'Identity & Visual Asset CMS' : activeTab === 'reports' ? 'Global Reporting Protocols' : activeTab === 'communications' ? 'Network Communications & Broadcasts' : activeTab === 'api-connections' ? 'API Connections & Integrations' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1) + ' Intelligence'}
                       </h2>
-                      <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: '4px 0 0 0', fontWeight: 600, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+                      <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '5px 0 0 0', fontWeight: 500, letterSpacing: '0.01em', lineHeight: 1.5 }}>
                         {activeTab === 'bim-reviews' ? 'Strategic oversight of cross-project BIM submission reviews and status tracking' : activeTab === 'users' ? 'Management of security clearances and administrative roles' : activeTab === 'branding' ? 'Configuration of project branding and site-wide metadata' : activeTab === 'communications' ? 'Dispatch real-time broadcasts and premium SMTP mail notifications' : 'Real-time synchronization with Digital Workflow Systems'}
                       </p>
                     </div>
                   </div>
-                  <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, position: 'relative' }}>
-                    {/* Left: Search Box */}
-                    <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+                  <div style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
+                    {/* Left: Search Box (flex:1 balances the right actions so the sub-tabs center) */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-start', flex: 1, minWidth: 0 }}>
                       {activeTab !== 'branding' && activeTab !== 'reports' && activeTab !== 'communications' && activeTab !== 'api-connections' && (
                         <div style={{ position: 'relative' }}>
                           <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(0, 63, 73, 0.4)' }} />
@@ -2034,8 +2034,8 @@ export default function AdminDashboardPage() {
                       )}
                     </div>
 
-                    {/* Center: Sub-tabs */}
-                    <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center' }}>
+                    {/* Sub-tabs — horizontally centered between the flexible search and actions */}
+                    <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                       {activeTab === 'users' && userProfile?.isAdmin && (
                         <div style={{ display: 'flex', background: '#eef2ff', padding: 4, borderRadius: 10, border: '1px solid rgba(0, 63, 73, 0.1)', minWidth: 240 }}>
                           <button
@@ -2294,7 +2294,7 @@ export default function AdminDashboardPage() {
                     </div>
                   )}
                   {activeTab === 'bim-reviews' && (
-                    <BimDataSourcePanel showToast={showToast} />
+                    <BimDataSourcePanel showToast={showToast} onOpenApiConnections={() => switchTab('api-connections')} />
                   )}
                   <div style={{ overflowX: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'communications' || activeTab === 'homepage' || activeTab === 'api-connections') ? 'hidden' : 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: (activeTab === 'reports' || activeTab === 'branding' || activeTab === 'communications' || activeTab === 'homepage' || activeTab === 'api-connections') ? 'fixed' : 'auto' }}>

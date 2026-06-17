@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldOff, X, Clock, AlertTriangle, Loader2 } from 'lucide-react';
+import { ShieldOff, X, Clock, Ban, Loader2 } from 'lucide-react';
 
 interface BlockUserModalProps {
   isOpen: boolean;
@@ -107,12 +107,21 @@ export default function BlockUserModal({ isOpen, onClose, onConfirm, userName, u
                 </div>
               </div>
 
-              <div style={{ background: '#fff7ed', border: '1px solid #ffedd5', padding: '16px', borderRadius: 16, marginBottom: 32, display: 'flex', gap: 12 }}>
-                <AlertTriangle size={20} color="#f59e0b" style={{ flexShrink: 0 }} />
-                <p style={{ fontSize: 12, color: '#92400e', margin: 0, lineHeight: 1.5 }}>
-                  <strong>Security Impact:</strong> This user will be immediately logged out and blocked from the identity terminal. A real-time notification of this action will be displayed upon their next handshake attempt.
-                </p>
-              </div>
+              {duration === 'PERMANENT' ? (
+                <div style={{ background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.25)', padding: '16px', borderRadius: 16, marginBottom: 32, display: 'flex', gap: 12 }}>
+                  <Ban size={20} color="#dc2626" style={{ flexShrink: 0 }} />
+                  <p style={{ fontSize: 12, color: '#991b1b', margin: 0, lineHeight: 1.5 }}>
+                    <strong>Permanent revocation:</strong> the account is disabled indefinitely. The user is logged out immediately and <strong>cannot regain access on their own</strong> — only an administrator can reinstate it.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ background: '#fff7ed', border: '1px solid #ffedd5', padding: '16px', borderRadius: 16, marginBottom: 32, display: 'flex', gap: 12 }}>
+                  <Clock size={20} color="#f59e0b" style={{ flexShrink: 0 }} />
+                  <p style={{ fontSize: 12, color: '#92400e', margin: 0, lineHeight: 1.5 }}>
+                    <strong>Timed suspension ({duration === 'CUSTOM' ? `${customDays} days` : duration}):</strong> the user is logged out now and sees a live countdown. Access is <strong>restored automatically</strong> when the window elapses.
+                  </p>
+                </div>
+              )}
 
               <div style={{ display: 'flex', gap: 12 }}>
                 <button
@@ -125,9 +134,9 @@ export default function BlockUserModal({ isOpen, onClose, onConfirm, userName, u
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  style={{ flex: 2, padding: '14px', borderRadius: 12, background: '#ef4444', color: '#ffffff', border: 'none', fontWeight: 800, fontSize: 13, cursor: isSubmitting ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  style={{ flex: 2, padding: '14px', borderRadius: 12, background: duration === 'PERMANENT' ? '#b91c1c' : '#ef4444', color: '#ffffff', border: 'none', fontWeight: 800, fontSize: 13, cursor: isSubmitting ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 >
-                  {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : 'AUTHORIZE SUSPENSION'}
+                  {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : (duration === 'PERMANENT' ? 'AUTHORIZE PERMANENT BAN' : 'AUTHORIZE SUSPENSION')}
                 </button>
               </div>
             </form>

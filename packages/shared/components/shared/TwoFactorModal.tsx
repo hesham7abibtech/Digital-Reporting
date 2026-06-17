@@ -174,13 +174,15 @@ export default function TwoFactorModal({ isOpen, mode, onClose, onVerified }: Pr
         )}
 
         <div style={{ textAlign: 'center', marginBottom: 22 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, margin: '0 auto 14px', background: `linear-gradient(135deg, ${TEAL}, #015a68)`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 22px rgba(0,63,73,0.3)' }}>
-            <ShieldCheck size={28} color="#fff" />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 13, flexShrink: 0, background: `linear-gradient(135deg, ${TEAL}, #015a68)`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(0,63,73,0.3)' }}>
+              <ShieldCheck size={24} color="#fff" />
+            </div>
+            <h2 style={{ fontSize: 19, fontWeight: 900, color: TEAL, margin: 0, letterSpacing: '0.04em' }}>
+              {mode === 'challenge' ? 'Two-Factor Verification' : enrolled ? 'Two-Factor Authentication' : 'Enable Two-Factor'}
+            </h2>
           </div>
-          <h2 style={{ fontSize: 19, fontWeight: 900, color: TEAL, margin: 0, letterSpacing: '0.04em' }}>
-            {mode === 'challenge' ? 'Two-Factor Verification' : enrolled ? 'Two-Factor Authentication' : 'Enable Two-Factor'}
-          </h2>
-          <p style={{ fontSize: 12.5, color: '#64748b', margin: '6px 0 0' }}>
+          <p style={{ fontSize: 12.5, color: '#64748b', margin: '10px 0 0' }}>
             {mode === 'challenge' ? 'Enter the 6-digit code from your authenticator app.'
               : enrolled ? '2FA is active on your account.' : 'Add an authenticator app for an extra layer of security.'}
           </p>

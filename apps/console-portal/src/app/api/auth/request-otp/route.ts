@@ -18,11 +18,14 @@ export async function POST(req: NextRequest) {
     if (!email) return Response.json({ error: 'Email required' }, { status: 400 });
     const sb = getSupabaseAdmin();
 
-    if (!(await isDomainAllowed(sb, email))) {
-      return Response.json({ error: 'This email domain is not authorized.' }, { status: 403 });
-    }
+    // Existing accounts may request an OTP regardless of the domain allow-list —
+    // the gate only restricts unknown/unprovisioned emails. So check existence
+    // first; only enforce the domain rule when no account exists.
     const acct = await accountExists(sb, email);
     if (!acct.exists || !acct.id) {
+      if (!(await isDomainAllowed(sb, email))) {
+        return Response.json({ error: 'This email domain is not authorized.' }, { status: 403 });
+      }
       return Response.json({ error: 'This account does not exist.', code: 'NOT_FOUND' }, { status: 404 });
     }
 

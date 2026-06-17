@@ -156,16 +156,24 @@ function AdminLoginContent() {
     try {
       const allowed = await getAllowedDomains();
       const userDomain = email.split('@')[1]?.toLowerCase();
-      if (!userDomain || !allowed.includes(userDomain)) {
-        setError(`ACCESS DENIED: Your identity domain (@${userDomain}) is not authorized for this project. Authorized domains: @${allowed.join(', @')}.`);
-        setIsSubmitting(false);
-        return;
-      }
-      // Verify the account exists in the auth database before attempting sign-in.
+      // Existing accounts may sign in regardless of the domain allow-list — the
+      // gate only restricts brand-new / unprovisioned access. Check existence
+      // first and only enforce the domain rule for unknown accounts.
+      let exists = false;
+      let domainAllowed = true;
       try {
         const chk = await fetch('/api/auth/check-account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }).then(r => r.json());
-        if (chk?.exists === false) { setError('This account does not exist. Please check your email or register for access.'); setIsSubmitting(false); return; }
-      } catch { /* if the check is unavailable, fall through to the normal sign-in */ }
+        exists = chk?.exists === true;
+        domainAllowed = chk?.allowed !== false;
+      } catch { exists = true; /* check unavailable → let sign-in decide */ }
+      if (!exists) {
+        if (!userDomain || !domainAllowed) {
+          setError(`ACCESS DENIED: Your identity domain (@${userDomain}) is not authorized for this project. Authorized domains: @${allowed.join(', @')}.`);
+          setIsSubmitting(false);
+          return;
+        }
+        setError('This account does not exist. Please check your email or register for access.'); setIsSubmitting(false); return;
+      }
       sessionStorage.removeItem('dashboard_session');
       sessionStorage.setItem('admin_session', 'active');
       const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });

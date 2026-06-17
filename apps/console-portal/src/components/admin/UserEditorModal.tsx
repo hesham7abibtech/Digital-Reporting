@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Trash2, Mail, Shield, User, Info, Check, AlertCircle, ShieldCheck, CheckCircle2, UserCheck, Layout, BarChart2, Briefcase, Calendar, Clock, Camera, Loader2, KeyRound, Copy } from 'lucide-react';
+import { X, Save, Trash2, Mail, Shield, User, Info, Check, AlertCircle, ShieldCheck, ShieldQuestion, CheckCircle2, UserCheck, Layout, BarChart2, Briefcase, Calendar, Clock, Camera, Loader2, KeyRound, Copy } from 'lucide-react';
 import { updateUserProfile, deleteUserProfile, uploadFile } from '@/services/FirebaseService';
 import { useAuth } from '@/context/AuthContext';
 import { getFirebaseErrorMessage } from '@/lib/firebaseErrors';
@@ -26,6 +26,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
     isVerified: false,
     isApproved: false,
     isAdmin: false,
+    twoFactorPolicy: 'optional',
     access: {
       deliverablesRegistry: false,
       bimReviews: false
@@ -50,6 +51,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
         isVerified: userRecord.isVerified || false,
         isApproved: userRecord.isApproved || false,
         isAdmin: userRecord.isAdmin || userRecord.role === 'ADMIN' || userRecord.role === 'OWNER',
+        twoFactorPolicy: userRecord.twoFactorPolicy || 'optional',
         access: {
           deliverablesRegistry: userRecord.access?.deliverablesRegistry || false,
           bimReviews: userRecord.access?.bimReviews || false,
@@ -109,6 +111,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
         isVerified: formData.isVerified,
         isApproved: formData.isApproved,
         isAdmin: formData.isAdmin,
+        twoFactorPolicy: formData.twoFactorPolicy || 'optional',
         access: formData.access,
         avatar: formData.avatar,
         policyId: formData.isAdmin ? formData.policyId : null,
@@ -229,7 +232,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         style={{
-          width: '100%', maxWidth: 840, background: '#ffffff', border: '1px solid rgba(0, 63, 73, 0.1)', borderRadius: 28, position: 'relative', zIndex: 1, overflow: 'hidden', boxShadow: '0 30px 100px rgba(0, 63, 73, 0.15)'
+          width: '94vw', maxWidth: 1120, background: '#ffffff', border: '1px solid rgba(0, 63, 73, 0.1)', borderRadius: 28, position: 'relative', zIndex: 1, overflow: 'hidden', boxShadow: '0 30px 100px rgba(0, 63, 73, 0.15)'
         }}
       >
         <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(0, 63, 73, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc' }}>
@@ -241,7 +244,7 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
         </div>
 
         {/* 2-COLUMN GRID FORM */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 32, padding: 32, maxHeight: '70vh', overflowY: 'auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 28, padding: 28, maxHeight: '80vh', overflowY: 'auto' }}>
           
           {/* LEFT COLUMN: IDENTITY & SECURITY */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -435,6 +438,35 @@ export default function UserEditorModal({ userRecord, isOpen, onClose }: UserEdi
                   </div>
                   {formData.access.bimReviews && <Check size={14} color="var(--teal)" />}
                 </button>
+              </div>
+            </div>
+
+            {/* TWO-FACTOR ENFORCEMENT — admin sets whether 2FA is mandatory or optional */}
+            <div>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: 'var(--teal)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Two-Factor Enforcement</label>
+              <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '0 0 12px', lineHeight: 1.5, fontWeight: 500 }}>
+                Controls whether this user must enable an authenticator app. <strong>Required</strong> hard-gates the dashboard until 2FA is active.
+              </p>
+              <div style={{ display: 'flex', background: 'var(--section-bg, #f1f5f9)', border: '1px solid var(--border)', borderRadius: 14, padding: 4, gap: 4 }}>
+                {([
+                  { id: 'optional', label: 'Optional', icon: <ShieldQuestion size={15} />, desc: 'User may enable 2FA' },
+                  { id: 'required', label: 'Required', icon: <ShieldCheck size={15} />, desc: 'Must enable to proceed' },
+                ] as const).map((opt) => {
+                  const active = (formData.twoFactorPolicy || 'optional') === opt.id;
+                  const accent = opt.id === 'required' ? 'var(--teal)' : '#64748b';
+                  return (
+                    <button key={opt.id} type="button" aria-pressed={active}
+                      onClick={() => setFormData((prev: any) => ({ ...prev, twoFactorPolicy: opt.id }))}
+                      style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '12px 8px', borderRadius: 11, border: 'none', background: 'transparent', cursor: active ? 'default' : 'pointer' }}>
+                      {active && (
+                        <motion.div layoutId="tfa-policy" transition={{ type: 'spring', damping: 26, stiffness: 330 }}
+                          style={{ position: 'absolute', inset: 0, background: '#fff', borderRadius: 11, border: `1.5px solid ${accent}`, boxShadow: '0 4px 12px rgba(0,63,73,0.12)' }} />
+                      )}
+                      <span style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 800, color: active ? accent : '#94a3b8' }}>{opt.icon}{opt.label}</span>
+                      <span style={{ position: 'relative', fontSize: 9.5, fontWeight: 500, color: active ? 'var(--text-secondary)' : '#aab4c0' }}>{opt.desc}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

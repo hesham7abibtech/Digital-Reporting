@@ -151,6 +151,8 @@ export interface UserProfile {
   isApproved: boolean;
   isAdmin: boolean;
   policyId?: string;
+  /** Admin-controlled 2FA enforcement. 'required' hard-gates the dashboard until 2FA is active. */
+  twoFactorPolicy?: 'optional' | 'required';
   access: UserProfileAccess;
   status: 'ACTIVE' | 'SUSPENDED' | 'PENDING';
   blockingDetails?: {

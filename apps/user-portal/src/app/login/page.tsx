@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import TicketRequestModal from '@/components/shared/TicketRequestModal';
 import TwoFactorModal from '@/components/shared/TwoFactorModal';
+import SuspensionNotice from '@/components/shared/SuspensionNotice';
 import { authUrl } from '@/lib/siteConfig';
 
 type AuthMode = 'login' | 'register' | 'forgot-password';
@@ -49,7 +50,7 @@ function fmtRemaining(ms: number): string {
 
 function LoginContent() {
   const router = useRouter();
-  const { user, userProfile, loading, authError, needsPasswordSetup } = useAuth();
+  const { user, userProfile, loading, authError, suspension, needsPasswordSetup } = useAuth();
 
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
@@ -111,15 +112,21 @@ function LoginContent() {
     e.preventDefault();
     setError(''); setMigrationHint(false); setIsSubmitting(true);
     try {
-      const domains = await allowedDomains();
       const domain = email.split('@')[1]?.toLowerCase();
-      if (!domain || !domains.includes(domain)) { setError(`Access denied: @${domain || '?'} is not an authorized domain.`); setIsSubmitting(false); return; }
-      // Verify the account exists in the auth database before attempting sign-in.
+      // Existing accounts may sign in regardless of the domain allow-list — the
+      // domain gate only restricts brand-new / unprovisioned access. So check
+      // existence first and only enforce the domain rule for unknown accounts.
+      let exists = false;
+      let domainAllowed = true;
       try {
         const chk = await fetch('/api/auth/check-account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }).then(r => r.json());
-        if (chk?.allowed === false) { setError(`Access denied: @${domain} is not an authorized domain.`); setIsSubmitting(false); return; }
-        if (chk?.exists === false) { setError('This account does not exist. Please check your email or register for access.'); setIsSubmitting(false); return; }
-      } catch { /* if the check is unavailable, fall through to the normal sign-in */ }
+        exists = chk?.exists === true;
+        domainAllowed = chk?.allowed !== false;
+      } catch { exists = true; /* check unavailable → let sign-in decide */ }
+      if (!exists) {
+        if (!domain || !domainAllowed) { setError(`Access denied: @${domain || '?'} is not an authorized domain.`); setIsSubmitting(false); return; }
+        setError('This account does not exist. Please check your email or register for access.'); setIsSubmitting(false); return;
+      }
       const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
       if (error) {
         if (/invalid login credentials/i.test(error.message)) { setMigrationHint(true); setError('Incorrect password. If this is your first sign-in since our security upgrade, request a one-time password below.'); }
@@ -142,8 +149,14 @@ function LoginContent() {
     setError(''); setIsSubmitting(true);
     try {
       const domain = email.split('@')[1]?.toLowerCase();
-      const domains = await allowedDomains();
-      if (!domain || !domains.includes(domain)) { setError('Enter your authorized work email first.'); setIsSubmitting(false); return; }
+      if (!domain) { setError('Enter your authorized work email first.'); setIsSubmitting(false); return; }
+      // Existing accounts may request a one-time password regardless of the domain
+      // allow-list — the gate only blocks unknown emails. request-otp itself
+      // reports NOT_FOUND for accounts that don't exist.
+      try {
+        const chk = await fetch('/api/auth/check-account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }).then(r => r.json());
+        if (chk?.exists !== true && chk?.allowed === false) { setError('Enter your authorized work email first.'); setIsSubmitting(false); return; }
+      } catch { /* check unavailable → let request-otp decide */ }
       // Email a one-time password via the relay (not Supabase → no email rate limit).
       const res = await fetch('/api/auth/request-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
       const out = await res.json().catch(() => ({} as any));
@@ -271,7 +284,9 @@ function LoginContent() {
               </div>
             )}
 
-            {error && (
+            {suspension && <SuspensionNotice suspension={suspension} />}
+
+            {error && !suspension && (
               <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', color: '#dc2626', fontSize: 12, fontWeight: 700, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <ShieldAlert size={14} style={{ flexShrink: 0, marginTop: 2 }} /> <span style={{ lineHeight: 1.4 }}>{error}</span>
               </motion.div>
