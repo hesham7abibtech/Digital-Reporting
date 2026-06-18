@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import TicketRequestModal from '@/components/shared/TicketRequestModal';
 import TwoFactorModal from '@/components/shared/TwoFactorModal';
-import { authUrl, consoleUrl } from '@/lib/siteConfig';
+import { consoleUrl } from '@/lib/siteConfig';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'unauthorized';
 
@@ -138,10 +138,12 @@ function AdminLoginContent() {
       return;
     }
 
-    // Signed in with a one-time / migration password → force a new password first
-    // (handled on the branded user-portal reset page).
+    // Signed in with a one-time / migration password → force a new password first.
+    // MUST stay same-origin: the Supabase session lives in this origin's storage,
+    // so a cross-origin bounce to the user portal would land with no session and
+    // fail with "This link is invalid or has expired". Use the console's own page.
     if (user && needsPasswordSetup) {
-      window.location.href = authUrl('/auth/reset');
+      router.push('/auth/reset');
       return;
     }
 
