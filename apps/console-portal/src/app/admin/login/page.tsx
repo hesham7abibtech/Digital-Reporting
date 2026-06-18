@@ -7,7 +7,7 @@ import { formatDate } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import {
-  Lock, Mail, Loader2, Globe, ShieldCheck,
+  Lock, Mail, Loader2, Globe, ShieldCheck, KeyRound,
   UserPlus, ArrowLeft, User, ShieldAlert,
   ChevronRight, Fingerprint, Database, Cpu,
   CheckCircle2, Eye, EyeOff, Circle, Briefcase, Home, LifeBuoy,
@@ -45,6 +45,7 @@ function AdminLoginContent() {
   const [department, setDepartment] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [migrationHint, setMigrationHint] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isScanned, setIsScanned] = useState(false);
   const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
@@ -151,6 +152,7 @@ function AdminLoginContent() {
     e.preventDefault();
     setError('');
     setMessage('');
+    setMigrationHint(false);
     setIsSubmitting(true);
 
     try {
@@ -180,7 +182,8 @@ function AdminLoginContent() {
       const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
       if (error) {
         if (/invalid login credentials/i.test(error.message)) {
-          setError('Incorrect email or password. We’ve moved to a new, ultra-secure platform with a more advanced database — if this is your first sign-in since the upgrade, use “Forgotten Credentials?” to set your password (you may reuse your previous one). We apologize for the one-time step.');
+          setMigrationHint(true);
+          setError('Incorrect password. If this is your first sign-in since our security upgrade, request a one-time password below.');
         } else {
           setError(error.message);
         }
@@ -233,10 +236,11 @@ function AdminLoginContent() {
     }
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleResetPassword = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setError('');
     setMessage('');
+    setMigrationHint(false);
     setIsSubmitting(true);
     try {
       // Email a one-time password via the relay (not Supabase → no rate limit).
@@ -607,6 +611,13 @@ function AdminLoginContent() {
                             <ShieldAlertIcon size={18} style={{ flexShrink: 0 }} />
                             {error}
                           </motion.div>
+                        )}
+
+                        {migrationHint && mode === 'login' && (
+                          <button type="button" onClick={() => handleResetPassword()} disabled={isSubmitting}
+                            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(0,63,73,0.2)', background: 'rgba(0,63,73,0.04)', color: '#003f49', fontSize: 13, fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
+                            <KeyRound size={14} /> First sign-in since our security upgrade? Set your password
+                          </button>
                         )}
 
                         {message && (
