@@ -7,7 +7,7 @@ import { formatDate } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import {
-  Lock, Mail, Loader2, Globe, ShieldCheck, KeyRound,
+  Lock, Mail, MailCheck, Loader2, Globe, ShieldCheck, KeyRound,
   UserPlus, ArrowLeft, User, ShieldAlert,
   ChevronRight, Fingerprint, Database, Cpu,
   CheckCircle2, Eye, EyeOff, Circle, Briefcase, Home, LifeBuoy,
@@ -20,6 +20,21 @@ import { authUrl, consoleUrl } from '@/lib/siteConfig';
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'unauthorized';
 
 const DEFAULT_ALLOWED_DOMAINS = ['modon.com', 'insiteinternational.com'];
+
+// Brand teal — matches the user portal premium aesthetic.
+const TEAL = '#003f49';
+
+// Self-hosted relay sends OTP/recovery mail (no Supabase rate limit), so we
+// throttle resends client-side to avoid double-sends when the mail lags.
+const SEND_INTERVAL_MS = 60 * 1000;
+const cooldownKey = (email: string) => `reh-reset-cooldown:${email.trim().toLowerCase()}`;
+
+function fmtRemaining(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
 async function getAllowedDomains(): Promise<string[]> {
   try {
@@ -58,6 +73,9 @@ function AdminLoginContent() {
   const [hasPendingAppeal, setHasPendingAppeal] = useState(false);
   const [mfaChallenge, setMfaChallenge] = useState(false);
   const [latestAppeal, setLatestAppeal] = useState<{ status: string; message?: string | null; adminResponse: string | null; createdAt?: string | null; updatedAt: string | Date | null } | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [nowTs, setNowTs] = useState(() => Date.now());
+  const cooldownLeft = Math.max(0, cooldownUntil - nowTs);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -236,11 +254,38 @@ function AdminLoginContent() {
     }
   };
 
+  // Restore any active cooldown for the entered email (survives refresh).
+  useEffect(() => {
+    if (!email) { setCooldownUntil(0); return; }
+    try {
+      const v = parseInt(localStorage.getItem(cooldownKey(email)) || '0', 10);
+      setCooldownUntil(v > Date.now() ? Math.min(v, Date.now() + SEND_INTERVAL_MS) : 0);
+    } catch { /* ignore */ }
+  }, [email]);
+
+  // Tick once a second while a cooldown is counting down.
+  useEffect(() => {
+    if (cooldownUntil <= Date.now()) return;
+    const id = setInterval(() => setNowTs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
+
+  const startCooldown = (ms: number) => {
+    const until = Date.now() + ms;
+    setCooldownUntil(until);
+    setNowTs(Date.now());
+    try { localStorage.setItem(cooldownKey(email), String(until)); } catch { /* ignore */ }
+  };
+
   const handleResetPassword = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setError('');
     setMessage('');
     setMigrationHint(false);
+    // Throttle resends: if a one-time password was just requested for this email,
+    // show the success modal again instead of dispatching a duplicate (handles the
+    // "requested twice and the mail lagged" case without spamming the relay).
+    if (cooldownLeft > 0) { setShowResetSuccess(true); return; }
     setIsSubmitting(true);
     try {
       // Email a one-time password via the relay (not Supabase → no rate limit).
@@ -251,6 +296,7 @@ function AdminLoginContent() {
         if (res.status === 403) { setError(out.error || 'This email domain is not authorized.'); setIsSubmitting(false); return; }
         throw new Error(out.error || 'Could not send the one-time password.');
       }
+      startCooldown(SEND_INTERVAL_MS);
       setShowResetSuccess(true);
       setIsSubmitting(false);
     } catch (err: any) {
@@ -610,9 +656,9 @@ function AdminLoginContent() {
                         )}
 
                         {migrationHint && mode === 'login' && (
-                          <button type="button" onClick={() => handleResetPassword()} disabled={isSubmitting}
-                            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(0,63,73,0.2)', background: 'rgba(0,63,73,0.04)', color: '#003f49', fontSize: 13, fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
-                            <KeyRound size={14} /> First sign-in since our security upgrade? Set your password
+                          <button type="button" onClick={() => handleResetPassword()} disabled={isSubmitting || cooldownLeft > 0}
+                            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(0,63,73,0.2)', background: 'rgba(0,63,73,0.04)', color: '#003f49', fontSize: 13, fontWeight: 700, cursor: (isSubmitting || cooldownLeft > 0) ? 'not-allowed' : 'pointer', opacity: cooldownLeft > 0 ? 0.6 : 1 }}>
+                            <KeyRound size={14} /> {cooldownLeft > 0 ? <>One-time password sent — try again in <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtRemaining(cooldownLeft)}</strong></> : <>First sign-in since our security upgrade? Set your password</>}
                           </button>
                         )}
 
@@ -631,30 +677,39 @@ function AdminLoginContent() {
                           </div>
                         )}
 
+                        {mode === 'forgot-password' && cooldownLeft > 0 && (
+                          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '14px 16px', borderRadius: 14, background: 'rgba(0,63,73,0.05)', border: '1px solid rgba(0,63,73,0.15)', color: '#003f49', fontSize: 13, fontWeight: 600, display: 'flex', gap: 10, lineHeight: 1.5 }}>
+                            <Mail size={18} style={{ flexShrink: 0 }} />
+                            <span>Email limit reached. You can request another one-time password in <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtRemaining(cooldownLeft)}</strong>.</span>
+                          </motion.div>
+                        )}
+
                         <button
                           type="submit"
-                          disabled={isSubmitting || (mode === 'register' && !!validatePassword(password))}
+                          disabled={isSubmitting || (mode === 'register' && !!validatePassword(password)) || (mode === 'forgot-password' && cooldownLeft > 0)}
                           style={{
                             width: '100%', padding: '14px', borderRadius: 14, background: '#003f49',
                             color: 'white', fontSize: 14, fontWeight: 900, border: 'none',
-                            cursor: (isSubmitting || (mode === 'register' && !!validatePassword(password))) ? 'not-allowed' : 'pointer',
+                            cursor: (isSubmitting || (mode === 'register' && !!validatePassword(password)) || (mode === 'forgot-password' && cooldownLeft > 0)) ? 'not-allowed' : 'pointer',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                             boxShadow: '0 10px 25px rgba(0, 63, 73, 0.2)', textTransform: 'uppercase', letterSpacing: '0.05em',
-                            opacity: (isSubmitting || (mode === 'register' && !!validatePassword(password))) ? 0.7 : 1,
+                            opacity: (isSubmitting || (mode === 'register' && !!validatePassword(password)) || (mode === 'forgot-password' && cooldownLeft > 0)) ? 0.7 : 1,
                             transition: 'all 300ms', marginTop: 12
                           }}
                         >
                           {isSubmitting ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                               <Loader2 className="animate-spin" size={20} />
-                              <span style={{ fontSize: 12 }}>{mode === 'forgot-password' ? 'Transmitting Protocol...' : 'Securing Link...'}</span>
+                              <span style={{ fontSize: 12 }}>{mode === 'forgot-password' ? 'Sending one-time password...' : 'Securing Link...'}</span>
                             </div>
                           ) : mode === 'login' ? (
                             <>Establish Session <ChevronRight size={18} /></>
                           ) : mode === 'register' ? (
                             <>Authorize Identity <UserPlus size={18} /></>
+                          ) : mode === 'forgot-password' && cooldownLeft > 0 ? (
+                            <>Try again in {fmtRemaining(cooldownLeft)}</>
                           ) : (
-                            <>Request Recovery <ChevronRight size={18} /></>
+                            <>Email One-Time Password <ChevronRight size={18} /></>
                           )}
                         </button>
                     </motion.form>
@@ -714,7 +769,7 @@ function AdminLoginContent() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}
+                style={{ position: 'absolute', inset: 0, background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(8px)' }}
               />
               <motion.div
                 key="modal-content"
@@ -724,11 +779,11 @@ function AdminLoginContent() {
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                 style={{
                   width: '100%', maxWidth: 440,
-                  background: 'rgba(12, 12, 18, 0.95)',
-                  border: '1px solid rgba(16, 185, 129, 0.2)',
+                  background: '#ffffff',
+                  border: '1px solid rgba(0,63,73,0.08)',
                   borderRadius: 28, padding: '48px 40px',
                   textAlign: 'center', position: 'relative', zIndex: 1,
-                  boxShadow: '0 40px 100px rgba(0,0,0,0.8), 0 0 40px rgba(16, 185, 129, 0.1)'
+                  boxShadow: '0 40px 100px rgba(0,63,73,0.18)'
                 }}
               >
                 <motion.div
@@ -736,20 +791,22 @@ function AdminLoginContent() {
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', delay: 0.2, damping: 15 }}
                   style={{
-                    width: 80, height: 80, borderRadius: 24,
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    width: 72, height: 72, borderRadius: 20,
+                    background: `linear-gradient(135deg, ${TEAL}, #015a68)`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 28px',
-                    boxShadow: '0 10px 30px rgba(16, 185, 129, 0.3)'
+                    margin: '0 auto 20px',
+                    boxShadow: '0 12px 30px rgba(0,63,73,0.3)'
                   }}
                 >
-                  <CheckCircle2 size={40} color="#0a0a0f" />
+                  <MailCheck size={34} color="#fff" />
                 </motion.div>
-                <h2 style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: '0 0 12px', letterSpacing: '-0.02em' }}>Verification Sent</h2>
-                <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, margin: '0 0 12px' }}>Check your email to verify your identity.</p>
-                <div style={{ padding: '16px 20px', borderRadius: 16, background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', marginBottom: 32 }}>
-                  <p style={{ color: '#fbbf24', fontSize: 14, fontWeight: 600, margin: 0, lineHeight: 1.6 }}>
-                    ⏳ Once verified, your account must be granted administrative clearance before you can access the Command Center.
+                <h2 style={{ fontSize: 22, fontWeight: 900, color: TEAL, margin: '0 0 10px' }}>Check Your Inbox</h2>
+                <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.6, margin: '0 0 20px' }}>
+                  Your account was created and is awaiting administrator approval. Verify your email at <strong style={{ color: TEAL }}>{email}</strong> to continue.
+                </p>
+                <div style={{ padding: '14px 18px', borderRadius: 14, background: 'rgba(208,171,130,0.1)', border: '1px solid rgba(208,171,130,0.3)', marginBottom: 24 }}>
+                  <p style={{ color: '#b58a3c', fontSize: 13, fontWeight: 600, margin: 0, lineHeight: 1.6 }}>
+                    Once verified, an administrator must grant clearance before you can access the Command Center.
                   </p>
                 </div>
                 <button
@@ -762,15 +819,12 @@ function AdminLoginContent() {
                     setDepartment('');
                   }}
                   style={{
-                    width: '100%', padding: '16px', borderRadius: 16,
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                    color: '#0a0a0f', fontSize: 16, fontWeight: 800,
-                    border: 'none', cursor: 'pointer',
-                    boxShadow: '0 10px 30px rgba(16, 185, 129, 0.25)',
+                    width: '100%', padding: '14px', borderRadius: 14,
+                    background: TEAL, color: '#fff', fontSize: 14, fontWeight: 800,
+                    border: 'none', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.08em',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
                   }}
                 >
-                  <ArrowLeft size={18} color="#0a0a0f" />
                   Back to Sign In
                 </button>
               </motion.div>
@@ -787,7 +841,7 @@ function AdminLoginContent() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}
+                style={{ position: 'absolute', inset: 0, background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(8px)' }}
               />
               <motion.div
                 key="modal-content"
@@ -797,11 +851,11 @@ function AdminLoginContent() {
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                 style={{
                   width: '100%', maxWidth: 440,
-                  background: 'rgba(12, 12, 18, 0.95)',
-                  border: '1px solid rgba(212, 175, 55, 0.2)',
+                  background: '#ffffff',
+                  border: '1px solid rgba(0,63,73,0.08)',
                   borderRadius: 28, padding: '48px 40px',
                   textAlign: 'center', position: 'relative', zIndex: 1,
-                  boxShadow: '0 40px 100px rgba(0,0,0,0.8), 0 0 40px rgba(212, 175, 55, 0.1)'
+                  boxShadow: '0 40px 100px rgba(0,63,73,0.18)'
                 }}
               >
                 <motion.div
@@ -809,38 +863,31 @@ function AdminLoginContent() {
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', delay: 0.2, damping: 15 }}
                   style={{
-                    width: 80, height: 80, borderRadius: 24,
-                    background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                    width: 72, height: 72, borderRadius: 20,
+                    background: `linear-gradient(135deg, ${TEAL}, #015a68)`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 28px',
-                    boxShadow: '0 10px 30px rgba(212, 175, 55, 0.3)'
+                    margin: '0 auto 20px',
+                    boxShadow: '0 12px 30px rgba(0,63,73,0.3)'
                   }}
                 >
-                  <Mail size={40} color="#0a0a0f" />
+                  <MailCheck size={34} color="#fff" />
                 </motion.div>
-                <h2 style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: '0 0 12px', letterSpacing: '-0.02em' }}>Link Transmitted!</h2>
-                <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, margin: '0 0 12px' }}>A secure recovery protocol has been engaged.</p>
-                <div style={{ padding: '16px 20px', borderRadius: 16, background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.2)', marginBottom: 32 }}>
-                  <p style={{ color: '#D4AF37', fontSize: 13, fontWeight: 600, margin: 0, lineHeight: 1.6 }}>
-                    Check your Work Email for the verification cluster. Follow the instructions to reset your security signature.
-                  </p>
-                </div>
+                <h2 style={{ fontSize: 22, fontWeight: 900, color: TEAL, margin: '0 0 10px' }}>One-Time Password Sent</h2>
+                <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.6, margin: '0 0 24px' }}>
+                  A <strong style={{ color: TEAL }}>one-time password</strong> is on its way to <strong style={{ color: TEAL }}>{email}</strong>. Sign in with it, then set your new password. Check your inbox and spam folder.
+                </p>
                 <button
                   onClick={() => {
                     setShowResetSuccess(false);
                     setMode('login');
-                    setEmail('');
                   }}
                   style={{
-                    width: '100%', padding: '16px', borderRadius: 16,
-                    background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
-                    color: '#0a0a0f', fontSize: 16, fontWeight: 800,
-                    border: 'none', cursor: 'pointer',
-                    boxShadow: '0 10px 30px rgba(212, 175, 55, 0.25)',
+                    width: '100%', padding: '14px', borderRadius: 14,
+                    background: TEAL, color: '#fff', fontSize: 14, fontWeight: 800,
+                    border: 'none', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.08em',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
                   }}
                 >
-                  <ArrowLeft size={18} color="#0a0a0f" />
                   Back to Sign In
                 </button>
               </motion.div>
