@@ -273,23 +273,19 @@ function AdminLoginContent() {
 
   if (loading && !isSubmitting) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a1220' }}>
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
         <Loader2 className="animate-spin" size={32} color="var(--teal)" />
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', display: 'flex', flexDirection: 'column', background: '#001519' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
       <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, overflow: 'hidden' }}>
-        {/* Deep Green Ambient Glow */}
-        <div style={{ 
-          position: 'absolute', inset: 0, opacity: 0.6, pointerEvents: 'none',
-          background: 'radial-gradient(circle at 50% 0%, rgba(0, 242, 255, 0.1) 0%, transparent 70%)'
-        }} />
-        <div style={{ 
-          position: 'absolute', inset: 0, opacity: 0.4, pointerEvents: 'none',
-          background: 'radial-gradient(circle at 50% 100%, rgba(208, 171, 130, 0.05) 0%, transparent 70%)'
+        {/* Subtle premium brand wash (light) — matches the user portal aesthetic */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'radial-gradient(60% 50% at 50% 0%, rgba(0,63,73,0.06) 0%, transparent 70%), radial-gradient(55% 45% at 50% 100%, rgba(208,171,130,0.08) 0%, transparent 70%)'
         }} />
 
         <motion.div
