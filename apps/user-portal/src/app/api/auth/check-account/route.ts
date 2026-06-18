@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { isDomainAllowed, accountExists } from '@/lib/authPolicy';
 
 export const runtime = 'edge';

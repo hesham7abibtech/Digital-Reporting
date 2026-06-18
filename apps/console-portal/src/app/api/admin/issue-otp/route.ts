@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { verifyAdmin, authErrorResponse } from '@/lib/adminAuth';
-import { getSupabaseAdmin } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { issueOtp } from '@/lib/otp';
 
 export const runtime = 'edge';

@@ -7,7 +7,7 @@
  * Storage is Supabase only (no Firestore).
  */
 import { BIMReview } from './types';
-import { getSupabaseAdmin } from './supabase';
+import { getSupabaseAdmin } from './supabaseAdmin';
 import {
   NotionConfig,
   NotionPage,

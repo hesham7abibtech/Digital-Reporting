@@ -5,7 +5,7 @@
  * then authorizes against their row in the Supabase `users` table. No Firestore,
  * no Firebase. Edge-compatible.
  */
-import { getSupabaseAdmin } from './supabase';
+import { getSupabaseAdmin } from './supabaseAdmin';
 import { isSuperAdmin } from './siteConfig';
 
 export class AuthError extends Error {

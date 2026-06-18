@@ -5,8 +5,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
  *
  *  - `supabaseBrowser`     : client-side, publishable key, session-only persistence
  *                            (mirrors the old Firebase browserSessionPersistence).
- *  - `getSupabaseAdmin()`  : server-only, service_role key, bypasses RLS.
- *                            NEVER import into client components.
+ *  - `getSupabaseAdmin()`  : MOVED to `./supabaseAdmin` (server-only) so this
+ *                            client-safe module never pulls in next-on-pages.
  *  - `getSupabaseForToken` : server-side, RLS-respecting client acting as a user.
  *
  * Edge-compatible (uses global fetch) — safe on Cloudflare Pages route handlers.
@@ -26,21 +26,7 @@ export const supabaseBrowser: SupabaseClient = createClient(URL, PUBLISHABLE, {
   },
 });
 
-// ── Server admin (service_role — bypasses RLS) ─────────────────────
-let _admin: SupabaseClient | null = null;
-export function getSupabaseAdmin(): SupabaseClient {
-  if (typeof window !== 'undefined') {
-    throw new Error('getSupabaseAdmin() must never run in the browser');
-  }
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured');
-  if (!_admin) {
-    _admin = createClient(URL, key, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-  }
-  return _admin;
-}
+// ── Server admin (service_role) moved to ./supabaseAdmin (server-only) ──
 
 // ── Server, scoped to a user's JWT (RLS-respecting) ────────────────
 export function getSupabaseForToken(accessToken: string): SupabaseClient {
