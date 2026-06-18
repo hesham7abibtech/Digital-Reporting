@@ -4,7 +4,7 @@
  * so they are forced to choose a new password on first sign-in, and optionally
  * emails it via the AWS relay (bypasses Supabase's email rate limit).
  */
-import { mailService } from '@/services/MailService';
+import { serverMail } from '@/lib/serverMail';
 import { SITE_URL } from '@/lib/siteConfig';
 
 export function genOtp(): string {
@@ -19,7 +19,7 @@ export function genOtp(): string {
 }
 
 async function emailOtp(u: { email: string; name?: string }, otp: string): Promise<void> {
-  await mailService.dispatch({
+  await serverMail().dispatch({
     to: u.email,
     subject: 'Your REH Digital one-time password',
     type: 'SYSTEM_ALERT',

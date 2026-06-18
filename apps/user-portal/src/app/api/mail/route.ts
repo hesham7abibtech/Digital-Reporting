@@ -1,4 +1,4 @@
-import { mailService } from '@/services/MailService';
+import { serverMail } from '@/lib/serverMail';
 
 export const runtime = 'edge';
 
@@ -23,6 +23,7 @@ export async function POST(request: Request) {
       });
     }
 
+    const mailService = serverMail();
     let result;
     switch (type) {
       case 'REGISTRATION_PENDING':

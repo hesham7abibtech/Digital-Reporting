@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
-import { mailService } from '@/services/MailService';
+import { serverMail } from '@/lib/serverMail';
 
 export const runtime = 'edge';
 
@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     await sb.from('tickets').insert({ id: ticketId, email, status: 'OPEN', data: ticket, created_at: now, updated_at: now });
 
     // 2. Notify User
+    const mailService = serverMail();
     try {
       await mailService.dispatch({
         to: email,

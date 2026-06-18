@@ -4,14 +4,25 @@
  * Bypasses Cloudflare API routes to eliminate 500 errors.
  */
 class MailService {
-  // Prefer server-only vars (not shipped to the browser); fall back to the
-  // NEXT_PUBLIC variants for client-side senders. Read at call-time so edge
-  // runtimes that populate env per-request still resolve them.
+  // Relay creds injected by server code via configure(). On Cloudflare Pages
+  // (next-on-pages) secrets live on the request context, NOT process.env, so
+  // server callers resolve them with readEnv() and inject here. This module
+  // stays client-safe (it never imports next-on-pages). process.env is the
+  // local-dev / node fallback.
+  private _relayUrl?: string;
+  private _relaySecret?: string;
+
+  /** Inject relay URL/secret (server-side: from readEnv → request context). */
+  configure(cfg: { url?: string; secret?: string }) {
+    if (cfg.url) this._relayUrl = cfg.url;
+    if (cfg.secret) this._relaySecret = cfg.secret;
+  }
+
   private get RELAY_URL() {
-    return process.env.SMTP_RELAY_URL || process.env.NEXT_PUBLIC_SMTP_RELAY_URL || 'https://api.rehdigital.com';
+    return this._relayUrl || process.env.SMTP_RELAY_URL || process.env.NEXT_PUBLIC_SMTP_RELAY_URL || 'https://api.rehdigital.com';
   }
   private get RELAY_SECRET() {
-    return process.env.SMTP_RELAY_SECRET || process.env.NEXT_PUBLIC_SMTP_RELAY_SECRET;
+    return this._relaySecret || process.env.SMTP_RELAY_SECRET || process.env.NEXT_PUBLIC_SMTP_RELAY_SECRET;
   }
 
   private async call(endpoint: string, data: any) {
